@@ -780,6 +780,30 @@ function clearConfigTabAnnotations(prNum){
     	}
     }
     
+    function leapMotionEvent(frame, prNum){
+	
+	 if (previousFrame && previousFrame.valid) {
+		if(frame.hands.length>0 && frame.hands[0].valid) {
+			if(baseFrame == null)
+				baseFrame = frame;
+			
+			var hand = frame.hands[0];			
+			var translation = hand.translation(previousFrame);
+			var rotationAxis = hand.rotationAxis(previousFrame);
+			var rotationAngle = hand.rotationAngle(baseFrame);
+						
+			$("#x3dom_leapmotion_pd" + prNum).attr("set_destination", translation[0] * 0.4 + " " + translation[1] * 0.4 + " " + translation[2] * 0.4);
+			$("#x3dom_leapmotion_oc" + prNum).attr("set_destination", rotationAxis[0] + " " + rotationAxis[1] + " " + rotationAxis[2] + " " + rotationAngle);
+	 	}
+		else {
+			$("#x3dom_leapmotion_pd" + prNum).attr("set_destination",  "0 0 0");
+			$("#x3dom_leapmotion_oc" + prNum).attr("set_destination",  "0 0 0 0");
+			baseFrame = null;
+		}
+	}
+	previousFrame = frame;
+   }	
+
     function leaveFullscreen(prNum){
     	$("#annotFields"+prNum).removeClass("fullscreenSubelement");
 		
@@ -862,6 +886,10 @@ function clearConfigTabAnnotations(prNum){
   window["currentMeasureStart" + prNum] = new Array();
   window["modelMaxDimension" + prNum] = 1.0;
   
+  //Leapmotion global variables
+  previousFrame = null;
+  baseFrame = null;
+  
   //Lighting vars
   window["isCClicked" + prNum] = false;
 //  window["currentLightingOffset" + prNum] = new Array(0,0,0);
@@ -940,6 +968,10 @@ function clearConfigTabAnnotations(prNum){
       dataType: "json"
     });
   
+  $("#x3dElement" + prNum + " > scene > transform[data-actualshape]").each(function(index){
+	$(this).attr("DEF","3dmodel_" + index);
+  });
+  
   $("#x3dElement" + prNum + " > scene > transform[data-actualshape] > shape > indexedfaceset").attr("DEF","model");
   $("#x3dElement" + prNum + " > scene > transform[data-actualshape] > shape > indexedfaceset").attr("solid","true");
   $("#x3dElement" + prNum + " > scene > transform[data-actualshape] > shape > indexedfaceset").attr("onclick","handleObjectClick(event,'" + prNum + "');");
@@ -984,6 +1016,30 @@ function clearConfigTabAnnotations(prNum){
   lightTrafo.setAttribute("id", "EyeCoords" + prNum);
   lightTrafo.appendChild(directionalLight);  
   $("#x3dElement" + prNum + " > scene").prepend(lightTrafo);
+
+  var leapControlPosition = document.createElement('positiondamper');
+  leapControlPosition.setAttribute("id", "x3dom_leapmotion_pd" + prNum);
+  leapControlPosition.setAttribute("tau", ".3");
+  leapControlPosition.setAttribute("order", "5");
+  //leapControlPosition.setAttribute("duration", "2.5");	  
+  leapControlPosition.setAttribute("initialDestination", "0 0 0");
+  leapControlPosition.setAttribute("initialValue", "0 0 0");
+  $("#x3dElement" + prNum + " > scene").append(leapControlPosition);
+  
+var leapControlOrientation = document.createElement('orientationDamper');
+  leapControlOrientation.setAttribute("id", "x3dom_leapmotion_oc" + prNum);
+  leapControlOrientation.setAttribute("tau", ".3");
+  leapControlOrientation.setAttribute("order", "5");
+  //leapControlOrientation.setAttribute("duration", "2.5");
+  leapControlOrientation.setAttribute("initialDestination", "0 0 0 0");
+  leapControlOrientation.setAttribute("initialValue", "0 0 0 0");
+  $("#x3dElement" + prNum + " > scene").append(leapControlOrientation);
+
+  var numTransforms = $("#x3dElement" + prNum + " > scene > transform[data-actualshape]").length;
+  for(var i=0; i <  numTransforms; i++){
+	  $("#x3dElement" + prNum + " > scene").append("<route fromNode='x3dom_leapmotion_pd" + prNum + "' fromField='value_changed' toNode='3dmodel_" + i + "' toField='translation'> </route>");
+	  $("#x3dElement" + prNum + " > scene").append("<route fromNode='x3dom_leapmotion_oc" + prNum + "' fromField='value_changed' toNode='3dmodel_" + i + "' toField='rotation'> </route>");
+  }
   
   if(isPageLoaded){
 	 x3dom.reload();
@@ -1310,6 +1366,9 @@ function clearConfigTabAnnotations(prNum){
 		  window["isx3domRefocusSet"] = "set"; 
 	  }
 	  
-	  
+	// Setup Leap loop with frame callback function
+  	var controllerOptions = {enableGestures: true};
+	Leap.loop(controllerOptions, function(frame) {leapMotionEvent(frame,prNum);} );
+	console.log("Leapmotion device has been connected.");	  
 
 }(jQuery, Configuration));
