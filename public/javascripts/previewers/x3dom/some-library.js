@@ -792,7 +792,7 @@ function clearConfigTabAnnotations(prNum){
 			var rotationAxis = hand.rotationAxis(previousFrame);
 			var rotationAngle = hand.rotationAngle(baseFrame);
 						
-			$("#x3dom_leapmotion_pd" + prNum).attr("set_destination", translation[0] * 0.4 + " " + translation[1] * 0.4 + " " + translation[2] * 0.4);
+			$("#x3dom_leapmotion_pd" + prNum).attr("set_destination", translation[0] * 0.3 + " " + translation[1] * 0.3 + " " + translation[2] * 0.3);
 			$("#x3dom_leapmotion_oc" + prNum).attr("set_destination", rotationAxis[0] + " " + rotationAxis[1] + " " + rotationAxis[2] + " " + rotationAngle);
 	 	}
 		else {
@@ -1025,7 +1025,7 @@ function clearConfigTabAnnotations(prNum){
 
   var leapControlPosition = document.createElement('positiondamper');
   leapControlPosition.setAttribute("id", "x3dom_leapmotion_pd" + prNum);
-  leapControlPosition.setAttribute("tau", ".3");
+  leapControlPosition.setAttribute("tau", ".4");
   leapControlPosition.setAttribute("order", "5");
   //leapControlPosition.setAttribute("duration", "2.5");	  
   leapControlPosition.setAttribute("initialDestination", "0 0 0");
@@ -1034,7 +1034,7 @@ function clearConfigTabAnnotations(prNum){
   
 var leapControlOrientation = document.createElement('orientationDamper');
   leapControlOrientation.setAttribute("id", "x3dom_leapmotion_oc" + prNum);
-  leapControlOrientation.setAttribute("tau", ".3");
+  leapControlOrientation.setAttribute("tau", ".4");
   leapControlOrientation.setAttribute("order", "5");
   //leapControlOrientation.setAttribute("duration", "2.5");
   leapControlOrientation.setAttribute("initialDestination", "0 0 0 0");
