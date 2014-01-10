@@ -788,11 +788,11 @@ function clearConfigTabAnnotations(prNum){
 				baseFrame = frame;
 			
 			var hand = frame.hands[0];			
-			var translation = hand.translation(previousFrame);
-			var rotationAxis = hand.rotationAxis(previousFrame);
+			var translation = hand.translation(baseFrame);
+			var rotationAxis = hand.rotationAxis(baseFrame);
 			var rotationAngle = hand.rotationAngle(baseFrame);
 						
-			$("#x3dom_leapmotion_pd" + prNum).attr("set_destination", translation[0] * 0.3 + " " + translation[1] * 0.3 + " " + translation[2] * 0.3);
+			$("#x3dom_leapmotion_pd" + prNum).attr("set_destination", translation[0] * 0.01 + " " + translation[1] * 0.01+ " " + translation[2] * 0.01);
 			$("#x3dom_leapmotion_oc" + prNum).attr("set_destination", rotationAxis[0] + " " + rotationAxis[1] + " " + rotationAxis[2] + " " + rotationAngle);
 	 	}
 		else {
@@ -995,11 +995,18 @@ function clearConfigTabAnnotations(prNum){
 	  s.src = pathJs + "x3dom.js";
 	  console.log("Updating tab " + Configuration.tab);
 	  $(Configuration.tab).append(s);
+
+	  s = document.createElement("script");
+	  s.type = "text/javascript";
+	  s.src = pathJs + "leap.min.js";
+	  console.log("Updating tab " + Configuration.tab);
+	  $(Configuration.tab).append(s);
   } 
     
   var viewPoint = document.createElement('viewpoint');
   viewPoint.setAttribute("id", "x3dom_viewpoint_cam" + prNum);
   viewPoint.setAttribute("position", "0 0 2");
+//viewPoint.setAttribute("orientation", "1 0 1 0");
   viewPoint.setAttribute("centerOfRotation", "0,0,0");
   viewPoint.setAttribute("bind", "true");
   viewPoint.setAttribute("isActive", "true");
@@ -1023,20 +1030,20 @@ function clearConfigTabAnnotations(prNum){
   lightTrafo.appendChild(directionalLight);  
   $("#x3dElement" + prNum + " > scene").prepend(lightTrafo);
 
-  var leapControlPosition = document.createElement('positiondamper');
+  var leapControlPosition = document.createElement('positionchaser');
   leapControlPosition.setAttribute("id", "x3dom_leapmotion_pd" + prNum);
-  leapControlPosition.setAttribute("tau", ".4");
-  leapControlPosition.setAttribute("order", "5");
-  //leapControlPosition.setAttribute("duration", "2.5");	  
+  //leapControlPosition.setAttribute("tau", ".3");
+  //leapControlPosition.setAttribute("order", "5");
+  leapControlPosition.setAttribute("duration", "1");	  
   leapControlPosition.setAttribute("initialDestination", "0 0 0");
   leapControlPosition.setAttribute("initialValue", "0 0 0");
   $("#x3dElement" + prNum + " > scene").append(leapControlPosition);
   
-var leapControlOrientation = document.createElement('orientationDamper');
+var leapControlOrientation = document.createElement('orientationchaser');
   leapControlOrientation.setAttribute("id", "x3dom_leapmotion_oc" + prNum);
-  leapControlOrientation.setAttribute("tau", ".4");
-  leapControlOrientation.setAttribute("order", "5");
-  //leapControlOrientation.setAttribute("duration", "2.5");
+  //leapControlOrientation.setAttribute("tau", ".3");
+  //leapControlOrientation.setAttribute("order", "5");
+  leapControlOrientation.setAttribute("duration", "1");
   leapControlOrientation.setAttribute("initialDestination", "0 0 0 0");
   leapControlOrientation.setAttribute("initialValue", "0 0 0 0");
   $("#x3dElement" + prNum + " > scene").append(leapControlOrientation);
