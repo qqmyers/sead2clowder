@@ -1,13 +1,18 @@
 package controllers
 
+import scala.collection.mutable.Map
+import com.mongodb.casbah.commons.MongoDBObject
+import jsonutils.JsonUtil
+import models.FileDAO
+import play.api.Logger
 import play.api.Routes
+import play.api.libs.concurrent.Execution.Implicits._
+import play.api.libs.iteratee._
+import play.api.libs.iteratee.Concurrent.Channel
 import play.api.mvc.Action
 import play.api.mvc.Controller
-import api.Sections
-import api.WithPermission
-import api.Permission
-import models.FileDAO
-import com.mongodb.casbah.commons.MongoDBObject
+import play.api.mvc.WebSocket
+import play.api.libs.json.Json
 
 /**
  * Main application controller.
@@ -27,6 +32,37 @@ object Application extends SecuredController {
   	val latestFiles = FileDAO.find(MongoDBObject()).sort(MongoDBObject("uploadDate" -> -1)).limit(5).toList
     Ok(views.html.index(latestFiles))
   }
+
+  //Map to dataset id and (enumerator, channel) pair
+  val channelMap = Map[String, (Enumerator[String], Channel[String])]()
+
+  def webSocket(datasetId: String) = WebSocket.using[String] { request =>
+
+    val iterator = Iteratee.foreach[String] { message =>
+      Logger.info("Logging message: " + message)
+      channelMap(datasetId)._2 push (message)
+    }
+
+    //Dataset not found; add a new entry
+    if (channelMap.contains(datasetId) == false) {
+      Logger.info("Dataset id not found")
+
+      //val (enumerator, channel) = Concurrent.broadcast[String]
+      channelMap += datasetId -> Concurrent.broadcast[String]
+    }
+    //the Enumerator returned by Concurrent.broadcast subscribes to the channel and will 
+    //receive the pushed messages
+    (iterator, channelMap(datasetId)._1)
+  }
+
+  /*lazy val (enumerator, channel) = Concurrent.broadcast[String]
+
+  def webSocketSimple = WebSocket.using[String] { request =>
+    val iteratee = Iteratee.foreach[String] { message =>
+      channel push (message)
+    }
+    (iteratee, enumerator)
+  }*/
   
   /**
    * Testing action.

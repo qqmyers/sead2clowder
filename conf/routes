@@ -4,7 +4,7 @@
 
 # Home page
 GET     /                                 controllers.Application.index
-
+GET     /ws/:datasetId                    controllers.Application.webSocket(datasetId)
 
 # Users
 GET     /users                            controllers.Users.list
