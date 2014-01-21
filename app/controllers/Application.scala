@@ -6,6 +6,12 @@ import javax.inject.{Singleton, Inject}
 import play.api.mvc.Action
 import services.{AppConfiguration, FileService}
 import play.api.Logger
+import scala.collection.mutable.Map
+import play.api.libs.concurrent.Execution.Implicits._
+import play.api.libs.iteratee._
+import play.api.libs.iteratee.Concurrent.Channel
+import play.api.mvc.WebSocket
+import play.api.libs.json.Json
 
 /**
  * Main application controller.
@@ -31,6 +37,37 @@ class Application @Inject() (files: FileService) extends SecuredController {
   	val latestFiles = files.latest(5)
     Ok(views.html.index(latestFiles, AppConfiguration.getDisplayName, AppConfiguration.getWelcomeMessage))
   }
+
+  //Map to dataset id and (enumerator, channel) pair
+  val channelMap = Map[String, (Enumerator[String], Channel[String])]()
+
+  def webSocket(datasetId: String) = WebSocket.using[String] { request =>
+
+    val iterator = Iteratee.foreach[String] { message =>
+      Logger.info("Logging message: " + message)
+      channelMap(datasetId)._2 push (message)
+    }
+
+    //Dataset not found; add a new entry
+    if (channelMap.contains(datasetId) == false) {
+      Logger.info("Dataset id not found")
+
+      //val (enumerator, channel) = Concurrent.broadcast[String]
+      channelMap += datasetId -> Concurrent.broadcast[String]
+    }
+    //the Enumerator returned by Concurrent.broadcast subscribes to the channel and will 
+    //receive the pushed messages
+    (iterator, channelMap(datasetId)._1)
+  }
+
+  /*lazy val (enumerator, channel) = Concurrent.broadcast[String]
+
+  def webSocketSimple = WebSocket.using[String] { request =>
+    val iteratee = Iteratee.foreach[String] { message =>
+      channel push (message)
+    }
+    (iteratee, enumerator)
+  }*/
   
   def options(path:String) = SecuredAction() { implicit request =>
     Logger.info("---controller: PreFlight Information---")

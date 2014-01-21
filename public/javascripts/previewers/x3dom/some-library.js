@@ -780,9 +780,20 @@ function clearConfigTabAnnotations(prNum){
     	}
     }
     
+    /*function 3DInformation(xTranslation, yTranslation, zTranslation, xRotationAxis, yRotationAxis, zRotationAxis, rotationAngle){
+	this.xTranslation = xTranslation;
+	this.yTranslation = yTranslation;
+	this.zTranslation = zTranslation;
+	this.xRotation = xRotationAxis;
+	this.yRotation = yRotationAxis;
+	this.zRotation = zRotationAxis;
+	this.angle = rotationAngle;
+    }*/
+	
     function leapMotionEvent(frame, prNum){
 	
 	 if (previousFrame && previousFrame.valid) {
+		var data = new Object();
 		if(frame.hands.length>0 && frame.hands[0].valid) {
 			if(baseFrame == null)
 				baseFrame = frame;
@@ -791,13 +802,36 @@ function clearConfigTabAnnotations(prNum){
 			var translation = hand.translation(baseFrame);
 			var rotationAxis = hand.rotationAxis(baseFrame);
 			var rotationAngle = hand.rotationAngle(baseFrame);
-						
+			//var rotationMat = hand.rotationMatrix(baseFrame);
+									
+			data.xTranslation = translation[0];
+			data.yTranslation = translation[1];
+			data.zTranslation = translation[2];
+			data.xRotationAxis = rotationAxis[0];
+			data.yRotationAxis = rotationAxis[1];
+			data.zRotationAxis = rotationAxis[2];
+			data.rotationAngle = rotationAngle;
+			//var data = new 3DInformation(, translation[1], translation[2], rotationAxis[0], rotationAxis[1], rotationAxis[2], rotationAngle);
+			
+			ws.send(JSON.stringify(data));
+			//console.log("Message sent..." + data.xTranslation);
+
 			$("#x3dom_leapmotion_pd" + prNum).attr("set_destination", translation[0] * 0.01 + " " + translation[1] * 0.01+ " " + translation[2] * 0.01);
 			$("#x3dom_leapmotion_oc" + prNum).attr("set_destination", rotationAxis[0] + " " + rotationAxis[1] + " " + rotationAxis[2] + " " + rotationAngle);
 	 	}
 		else {
-			$("#x3dom_leapmotion_pd" + prNum).attr("set_destination",  "0 0 0");
+			/*$("#x3dom_leapmotion_pd" + prNum).attr("set_destination",  "0 0 0");
 			$("#x3dom_leapmotion_oc" + prNum).attr("set_destination",  "0 0 0 0");
+			data.xTranslation = 0.0;
+			data.yTranslation = 0.0;
+			data.zTranslation = 0.0;
+			data.xRotationAxis = 0.0;
+			data.yRotationAxis = 0.0;
+			data.zRotationAxis = 0.0;
+			data.rotationAngle = 0.0;
+
+			ws.send(JSON.stringify(data));
+			console.log("Message sent..." + data.xTranslation);*/
 			baseFrame = null;
 		}
 	}
@@ -854,7 +888,64 @@ function clearConfigTabAnnotations(prNum){
 		 window["annotTrackingDiff" + prNum] = 0.000;
 		 window["annotTrackingDiff2" + prNum] = 0.000;	
     }
-    
+    	
+    function webSocketConnection(prNum){
+	
+        var pathWs = "ws://" + Configuration.hostIp + ":" + window.location.port;
+	if ("WebSocket" in window){
+
+	     console.log("WebSocket is supported by your Browser!");
+	     // Let us open a web socket
+	     ws = new WebSocket(pathWs+"/ws/"+ Configuration.id);
+	     ws.onopen = function()
+	     {
+		// Web Socket is connected, send data using send()
+		//ws.send("SENDER");	
+		/*var data = new Object();
+		ws.send(JSON.stringify(data));
+		console.log("Message is sent...");*/
+	     };
+
+	     ws.onmessage = function (evt) 
+	     { 
+		var received_msg = evt.data;
+		var objData = JSON.parse(received_msg);
+		//console.log("Message received: " + objData.xTranslation);
+		if(isSender == false)
+		{			
+			$("#x3dom_leapmotion_pd" + prNum).attr("set_destination", objData.xTranslation * 0.01 + " " + objData.yTranslation * 0.01+ " " + objData.zTranslation * 0.01);
+			$("#x3dom_leapmotion_oc" + prNum).attr("set_destination", objData.xRotationAxis + " " + objData.yRotationAxis + " " + objData.zRotationAxis + " " + objData.rotationAngle);
+		}
+		//else do nothing
+		
+	     };
+
+	     ws.onclose = function()
+	     { 
+		// websocket is closed.
+		console.log("Connection is closed..."); 
+	     };
+	  }
+	  else
+	  {
+	     // The browser doesn't support WebSocket
+	     console.log("WebSocket NOT supported by your Browser!");
+	  }
+    }
+    function startLeapMotion(prNum){
+
+	// Setup Leap loop with frame callback function
+  	var controllerOptions = {enableGestures: true};
+	Leap.loop(controllerOptions, function(frame) {leapMotionEvent(frame,prNum);} );
+	console.log("Leapmotion device has been connected.");
+	isSender = true;
+    }
+
+    function stopLeapMotion() {
+	isSender = false;
+	ws.close();
+    }
+
 (function ($, Configuration) {
 
   console.log("X3D previewer for " + Configuration.id);
@@ -870,6 +961,7 @@ function clearConfigTabAnnotations(prNum){
 	  $(Configuration.tab).append("<p><b>New 3D model added to dataset. Reload the webpage to see it.</b></p>");
 	  return;
   }
+  
    
   //Annotations vars
   window["showAnnotations" + prNum] = false; 
@@ -895,6 +987,7 @@ function clearConfigTabAnnotations(prNum){
   //Leapmotion global variables
   previousFrame = null;
   baseFrame = null;
+  isSender = false;
   
   //Lighting vars
   window["isCClicked" + prNum] = false;
@@ -929,7 +1022,8 @@ function clearConfigTabAnnotations(prNum){
   else if(Configuration.calledFrom == "file")
 	  window["x3dOffset2" + prNum] = 200;
   
-
+  $(Configuration.tab).append("<a href='javascript:startLeapMotion(\"" + prNum + "\");'>Start</a>");
+  $(Configuration.tab).append("<a href='javascript:stopLeapMotion();'>Stop</a>");
   $(Configuration.tab).append("<table id='x3dElementTable" + prNum + "' style ='margin-bottom:560px;'><tr><td>Left mouse button drag</td><td>&nbsp;&nbsp;&nbsp;&nbsp;Rotate</td></tr>" 
 		  					+ "<tr><td>Ctrl + Left mouse button drag</td><td>&nbsp;&nbsp;&nbsp;&nbsp;Pan</td></tr>"
 		  					+ "<tr><td>Right mouse button drag / Alt + Left mouse button drag</td><td>&nbsp;&nbsp;&nbsp;&nbsp;Zoom</td></tr>"
@@ -1000,7 +1094,7 @@ function clearConfigTabAnnotations(prNum){
 	  s.type = "text/javascript";
 	  s.src = pathJs + "leap.min.js";
 	  console.log("Updating tab " + Configuration.tab);
-	  $(Configuration.tab).append(s);
+	  $(Configuration.tab).append(s);	  	  
   } 
     
   var viewPoint = document.createElement('viewpoint');
@@ -1380,10 +1474,7 @@ var leapControlOrientation = document.createElement('orientationchaser');
 		  		  
 		  window["isx3domRefocusSet"] = "set"; 
 	  }
-	  
-	// Setup Leap loop with frame callback function
-  	var controllerOptions = {enableGestures: true};
-	Leap.loop(controllerOptions, function(frame) {leapMotionEvent(frame,prNum);} );
-	console.log("Leapmotion device has been connected.");	  
+
+  webSocketConnection(prNum);	  		  
 
 }(jQuery, Configuration));
