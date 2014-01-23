@@ -76,6 +76,10 @@ GET     /assets/*file                     controllers.Assets.at(path="/public", 
 # test json
 GET		/test						      controllers.Application.testJson
 
+# Newsletters
+GET		/newsletters/subscribe		controllers.Subscribers.subscribe
+GET		/newsletters/unsubscribe	controllers.Subscribers.unsubscribe
+
 ## SecureSocial ##
 
 # Login page
