@@ -798,34 +798,43 @@ function clearConfigTabAnnotations(prNum){
 			if(baseFrame == null)
 				baseFrame = frame;
 			
-			var hand = frame.hands[0];			
-			var translation = hand.translation(baseFrame);
-			var rotationAxis = hand.rotationAxis(baseFrame);
-			var rotationAngle = hand.rotationAngle(baseFrame);
+			var firstHand = frame.hands[0];			
+			var translationFirstHand = firstHand.translation(baseFrame);
+			var rotationAxisFirstHand = firstHand.rotationAxis(baseFrame);
+			var rotationAngleFirstHand = firstHand.rotationAngle(baseFrame);
 			
-			var hand2 = frame.hands[1];			
-			var translation2 = hand2.translation(baseFrame);
-			var rotationAxis2 = hand2.rotationAxis(baseFrame);
-			var rotationAngle2 = hand2.rotationAngle(baseFrame);
+			var secondHand = frame.hands[1];			
+			var translationSecondHand = secondHand.translation(baseFrame);
+			var rotationAxisSecondHand = secondHand.rotationAxis(baseFrame);
+			var rotationAngleSecondHand = secondHand.rotationAngle(baseFrame);
 
 			//var rotationMat = hand.rotationMatrix(baseFrame);
 									
-			data.xTranslation = translation[0];
-			data.yTranslation = translation[1];
-			data.zTranslation = translation[2];
-			data.xRotationAxis = rotationAxis[0];
-			data.yRotationAxis = rotationAxis[1];
-			data.zRotationAxis = rotationAxis[2];
-			data.rotationAngle = rotationAngle;
+			data.xTranslationFirstHand = translationFirstHand[0];
+			data.yTranslationFirstHand = translationFirstHand[1];
+			data.zTranslationFirstHand = translationFirstHand[2];
+			data.xRotationAxisFirstHand = rotationAxisFirstHand[0];
+			data.yRotationAxisFirstHand = rotationAxisFirstHand[1];
+			data.zRotationAxisFirstHand = rotationAxisFirstHand[2];
+			data.rotationAngleFirstHand = rotationAngleFirstHand;
+
+			data.xTranslationSecondHand = translationSecondHand[0];
+			data.yTranslationSecondHand = translationSecondHand[1];
+			data.zTranslationSecondHand = translationSecondHand[2];
+			data.xRotationAxisSecondHand = translationSecondHand[0];
+			data.yRotationAxisSecondHand = translationSecondHand[1];
+			data.zRotationAxisSecondHand = translationSecondHand[2];
+			data.rotationAngleSecondHand = translationSecondHand;
+
 			//var data = new 3DInformation(, translation[1], translation[2], rotationAxis[0], rotationAxis[1], rotationAxis[2], rotationAngle);
 			
 			ws.send(JSON.stringify(data));
 			//console.log("Message sent..." + data.xTranslation);
 
-			$("#x3dom_leapmotion_pd" + prNum + "_0").attr("set_destination", translation[0] * 0.01 + " " + translation[1] * 0.01+ " " + translation[2] * 0.01);
-			$("#x3dom_leapmotion_pd" + prNum + "_1").attr("set_destination", translation2[0] * 0.01 + " " + translation2[1] * 0.01+ " " + translation2[2] * 0.01);
-			$("#x3dom_leapmotion_oc" + prNum + "_0").attr("set_destination", rotationAxis[0] + " " + rotationAxis[1] + " " + rotationAxis[2] + " " + rotationAngle);
-			$("#x3dom_leapmotion_oc" + prNum + "_1").attr("set_destination", rotationAxis2[0] + " " + rotationAxis2[1] + " " + rotationAxis2[2] + " " + rotationAngle2);
+			$("#x3dom_leapmotion_pd" + prNum + "_0").attr("set_destination", translationFirstHand[0] * 0.01 + " " + translationFirstHand[1] * 0.01+ " " + translationFirstHand[2] * 0.01);
+			$("#x3dom_leapmotion_pd" + prNum + "_1").attr("set_destination", translationSecondHand[0] * 0.01 + " " + translationSecondHand[1] * 0.01+ " " + translationSecondHand[2] * 0.01);
+			$("#x3dom_leapmotion_oc" + prNum + "_0").attr("set_destination", rotationAxisFirstHand[0] + " " + rotationAxisFirstHand[1] + " " + rotationAxisFirstHand[2] + " " + rotationAngleFirstHand);
+			$("#x3dom_leapmotion_oc" + prNum + "_1").attr("set_destination", rotationAxisSecondHand[0] + " " + rotationAxisSecondHand[1] + " " + rotationAxisSecondHand[2] + " " + rotationAngleSecondHand);
 	 	}
 		else {
 			/*$("#x3dom_leapmotion_pd" + prNum).attr("set_destination",  "0 0 0");
@@ -915,8 +924,10 @@ function clearConfigTabAnnotations(prNum){
 		//console.log("Message received: " + objData.xTranslation);
 		if(isSender == false)
 		{			
-			$("#x3dom_leapmotion_pd" + prNum + "_0").attr("set_destination", objData.xTranslation * 0.01 + " " + objData.yTranslation * 0.01+ " " + objData.zTranslation * 0.01);
-			$("#x3dom_leapmotion_oc" + prNum + "_0").attr("set_destination", objData.xRotationAxis + " " + objData.yRotationAxis + " " + objData.zRotationAxis + " " + objData.rotationAngle);
+			$("#x3dom_leapmotion_pd" + prNum + "_0").attr("set_destination", objData.xTranslationFirstHand * 0.01 + " " + objData.yTranslationFirstHand * 0.01+ " " + objData.zTranslationFirstHand * 0.01);
+			$("#x3dom_leapmotion_oc" + prNum + "_0").attr("set_destination", objData.xRotationAxisFirstHand + " " + objData.yRotationAxisFirstHand + " " + objData.zRotationAxisFirstHand + " " + objData.rotationAngleFirstHand);
+			$("#x3dom_leapmotion_pd" + prNum + "_1").attr("set_destination", objData.xTranslationSecondHand * 0.01 + " " + objData.yTranslationSecondHand * 0.01+ " " + objData.zTranslationSecondHand * 0.01);
+			$("#x3dom_leapmotion_oc" + prNum + "_1").attr("set_destination", objData.xRotationAxisSecondHand + " " + objData.yRotationAxisSecondHand + " " + objData.zRotationAxisSecondHand + " " + objData.rotationAngleSecondHand);
 		}
 		//else do nothing
 		
