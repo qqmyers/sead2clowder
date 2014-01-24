@@ -8,6 +8,7 @@ import api.WithPermission
 import api.Permission
 import play.api.Logger
 import play.api.mvc.Flash
+import cryptutils.BCrypt
 
 object Subscribers extends SecuredController {
 
@@ -18,19 +19,36 @@ object Subscribers extends SecuredController {
     mapping(
       "name" -> nonEmptyText,
       "surname" -> nonEmptyText,
-      "email" -> email
+      "email" -> email,
+      "password" -> nonEmptyText
     )
-    ((name, surname, email) => Subscriber(name = name, surname = surname, email = email))
-    ((subscriber: Subscriber) => Some((subscriber.name, subscriber.surname, subscriber.email)))
+    ((name, surname, email, password) => Subscriber(name = name, surname = surname, email = email, hashedPassword = BCrypt.hashpw(password, BCrypt.gensalt())))
+    ((subscriber: Subscriber) => Some((subscriber.name, subscriber.surname, subscriber.email, "")))
    )
    
    val unsubscriptionForm = Form(
-     single(
-      "email" -> email
+     tuple(
+      "email" -> email,
+      "password" -> nonEmptyText
      )verifying("Subscriber with input email not found.", fields => fields match {
-     		case inputEmail => Subscriber.findOneByEmail(inputEmail).isDefined
+     		case inputEmailPassword => validateRemoval(inputEmailPassword).isDefined
      	})
   )
+  
+  def validateRemoval(inputEmailPassword :(String,String)): Option[Subscriber] = {
+    
+    Subscriber.findOneByEmail(inputEmailPassword._1) match{
+      case Some(subscriber) => {
+        if(BCrypt.checkpw(inputEmailPassword._1, subscriber.hashedPassword)){
+        	Some(subscriber)
+          }
+        else{
+          None
+        }
+      }
+      case None => None      
+    }    
+  }
   
    def subscribe()  = SecuredAction(authorization=WithPermission(Permission.Public)) { implicit request =>
     implicit val user = request.user
@@ -66,10 +84,10 @@ object Subscribers extends SecuredController {
     
         unsubscriptionForm.bindFromRequest.fold(
           errors => BadRequest(views.html.removeSubscriber(errors)),
-	      email => {
-		        Logger.debug("Deleting subscription with email " + email)
+	      inputEmailPassword => {
+		        Logger.debug("Deleting subscription with email " + inputEmailPassword._1)
 		        		
-		        Subscriber.findOneByEmail(email) match{
+		        Subscriber.findOneByEmail(inputEmailPassword._1) match{
 		          case Some(subscriber) => {
 		            // TODO create a service instead of calling salat directly
 		            Subscriber.remove(subscriber)
@@ -77,7 +95,7 @@ object Subscribers extends SecuredController {
 		            Redirect(routes.Application.index)
 		          }
 		          case None => {
-		            Logger.error("Subscriber with email " + email + " not found.")
+		            Logger.error("Subscriber with email " + inputEmailPassword._1 + " not found.")
 		            Redirect(routes.Application.index)
 		          }		          
 		        }		        

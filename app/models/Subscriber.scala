@@ -11,7 +11,8 @@ case class Subscriber (
   id: ObjectId = new ObjectId,
   name: String,
   surname: String,
-  email: String   
+  email: String,
+  hashedPassword: String
 )
 
 
