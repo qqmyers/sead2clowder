@@ -283,6 +283,10 @@ fieldset #email_field .controls #email{
 	width:208px;
 	height:30px;
 }
+#nameSurnameEmailFieldSet .control-group .controls input[type='text']{
+	width:208px;
+	height:30px;
+}
 
 
 
@@ -321,4 +325,6 @@ textarea:focus, input[type='text']:focus, input[type='password']:focus{
 textarea, input[type='text'], input[type='password']{
 	transition: border-color 0.15s ease-in-out 0s, box-shadow 0.15s ease-in-out 0s;
 }
+
+
 
