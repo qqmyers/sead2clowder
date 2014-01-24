@@ -77,9 +77,10 @@ GET     /assets/*file                     controllers.Assets.at(path="/public", 
 GET		/test						      controllers.Application.testJson
 
 # Newsletters
-GET		/newsletters/subscribe		controllers.Subscribers.subscribe
-GET		/newsletters/unsubscribe	controllers.Subscribers.unsubscribe
-POST	/newsletters/submit			controllers.Subscribers.submit
+GET		/newsletters/subscribe				controllers.Subscribers.subscribe
+GET		/newsletters/unsubscribe			controllers.Subscribers.unsubscribe
+POST	/newsletters/submit					controllers.Subscribers.submit
+POST	/newsletters/removeSubscription		controllers.Subscribers.removeSubscription
 
 ## SecureSocial ##
 

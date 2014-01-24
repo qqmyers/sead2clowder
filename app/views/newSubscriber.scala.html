@@ -12,7 +12,7 @@
 	@if(myForm.hasErrors) {
 		<div class="alert alert-error">
             <p>Please fix all errors</p>
-        </div>
+        </div>        
     }
     @flash.get("error").map { message =>
     	<div class="alert alert-error">

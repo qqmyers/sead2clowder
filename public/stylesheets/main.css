@@ -287,6 +287,10 @@ fieldset #email_field .controls #email{
 	width:208px;
 	height:30px;
 }
+#unsubscribeEmailFieldSet .control-group .controls input[type='text']{
+	width:208px;
+	height:30px;
+}
 
 
 
