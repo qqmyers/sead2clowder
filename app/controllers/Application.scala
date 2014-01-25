@@ -39,13 +39,13 @@ object Application extends SecuredController {
   def webSocket(datasetId: String) = WebSocket.using[String] { request =>
 
     val iterator = Iteratee.foreach[String] { message =>
-      Logger.info("Logging message: " + message)
+      //Logger.info("Logging message: " + message)
       channelMap(datasetId)._2 push (message)
     }
 
     //Dataset not found; add a new entry
     if (channelMap.contains(datasetId) == false) {
-      Logger.info("Dataset id not found")
+      Logger.info("Dataset id not found. Creating an entry in the map")
 
       //val (enumerator, channel) = Concurrent.broadcast[String]
       channelMap += datasetId -> Concurrent.broadcast[String]
