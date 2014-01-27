@@ -781,40 +781,78 @@ function clearConfigTabAnnotations(prNum){
     }    
 	
     function leapMotionEvent(frame, prNum){
-	
-	 if (previousFrame && previousFrame.valid) {
+			
+	if(frame.hands.length>0 && frame.hands[0].valid) {
 		var data = new Object();				
 
-		if(frame.hands.length>0 && frame.hands[0].valid) {
-			if(baseFrameFirstHand == null)
-				baseFrameFirstHand = frame;
+		if(baseFrameFirstHand == null)
+			baseFrameFirstHand = frame;
+
+		if($("#firstObjectCheck").is(":checked") == true && $("#secondObjectCheck").is(":checked") == false) {
 			
-			if($("#firstObjectCheck").is(":checked") == true && $("#secondObjectCheck").is(":checked") == false) {
-				
-				console.log("left checked");
-				var firstHand = frame.hands[0];			
-				var translationFirstHand = firstHand.translation(baseFrameFirstHand);
-				var rotationAxisFirstHand = firstHand.rotationAxis(baseFrameFirstHand);
-				var rotationAngleFirstHand = firstHand.rotationAngle(baseFrameFirstHand);
+			var firstHand = frame.hands[0];			
+			var translationFirstHand = firstHand.translation(baseFrameFirstHand);
+			var rotationAxisFirstHand = firstHand.rotationAxis(baseFrameFirstHand);
+			var rotationAngleFirstHand = firstHand.rotationAngle(baseFrameFirstHand);
 
-				data.xTranslationFirstHand = translationFirstHand[0];
-				data.yTranslationFirstHand = translationFirstHand[1];
-				data.zTranslationFirstHand = translationFirstHand[2];
-				data.xRotationAxisFirstHand = rotationAxisFirstHand[0];
-				data.yRotationAxisFirstHand = rotationAxisFirstHand[1];
-				data.zRotationAxisFirstHand = rotationAxisFirstHand[2];
-				data.rotationAngleFirstHand = rotationAngleFirstHand;
+			data.xTranslationFirstHand = translationFirstHand[0];
+			data.yTranslationFirstHand = translationFirstHand[1];
+			data.zTranslationFirstHand = translationFirstHand[2];
+			data.xRotationAxisFirstHand = rotationAxisFirstHand[0];
+			data.yRotationAxisFirstHand = rotationAxisFirstHand[1];
+			data.zRotationAxisFirstHand = rotationAxisFirstHand[2];
+			data.rotationAngleFirstHand = rotationAngleFirstHand;
 
-				$("#x3dom_leapmotion_pd" + prNum + "_0").attr("set_destination", translationFirstHand[0] * 0.01 + " " + translationFirstHand[1] * 0.01+ " " + translationFirstHand[2] * 0.01);
-				$("#x3dom_leapmotion_oc" + prNum + "_0").attr("set_destination", rotationAxisFirstHand[0] + " " + rotationAxisFirstHand[1] + " " + rotationAxisFirstHand[2] + " " + rotationAngleFirstHand);
-				webSocket.send(JSON.stringify(data));
-			}
-			else if($("#secondObjectCheck").is(":checked") == true && $("#firstObjectCheck").is(":checked") == false) {
-				
+			$("#x3dom_leapmotion_pd" + prNum + "_0").attr("set_destination", translationFirstHand[0] * 0.01 + " " + translationFirstHand[1] * 0.01+ " " + translationFirstHand[2] * 0.01);
+			$("#x3dom_leapmotion_oc" + prNum + "_0").attr("set_destination", rotationAxisFirstHand[0] + " " + rotationAxisFirstHand[1] + " " + rotationAxisFirstHand[2] + " " + rotationAngleFirstHand);
+			webSocket.send(JSON.stringify(data));
+		}
+		else if($("#secondObjectCheck").is(":checked") == true && $("#firstObjectCheck").is(":checked") == false) {
+			
+			//actually this is the first hand itself. There is no way to distinguish between left hand and right hand
+			var secondHand = frame.hands[0];			
+			var translationSecondHand = secondHand.translation(baseFrameFirstHand);
+			var rotationAxisSecondHand = secondHand.rotationAxis(baseFrameFirstHand);
+			var rotationAngleSecondHand = secondHand.rotationAngle(baseFrameFirstHand);
+
+			data.xTranslationSecondHand = translationSecondHand[0];
+			data.yTranslationSecondHand = translationSecondHand[1];
+			data.zTranslationSecondHand = translationSecondHand[2];
+			data.xRotationAxisSecondHand = rotationAxisSecondHand[0];
+			data.yRotationAxisSecondHand = rotationAxisSecondHand[1];
+			data.zRotationAxisSecondHand = rotationAxisSecondHand[2];
+			data.rotationAngleSecondHand = rotationAngleSecondHand;
+
+			$("#x3dom_leapmotion_pd" + prNum + "_1").attr("set_destination", translationSecondHand[0] * 0.01 + " " + translationSecondHand[1] * 0.01+ " " + translationSecondHand[2] * 0.01);			
+			$("#x3dom_leapmotion_oc" + prNum + "_1").attr("set_destination", rotationAxisSecondHand[0] + " " + rotationAxisSecondHand[1] + " " + rotationAxisSecondHand[2] + " " + rotationAngleSecondHand);
+			webSocket.send(JSON.stringify(data));
+
+		}
+		else if ($("#firstObjectCheck").is(":checked") == true && $("#secondObjectCheck").is(":checked") == true ){
+
+			var firstHand = frame.hands[0];			
+			var translationFirstHand = firstHand.translation(baseFrameFirstHand);
+			var rotationAxisFirstHand = firstHand.rotationAxis(baseFrameFirstHand);
+			var rotationAngleFirstHand = firstHand.rotationAngle(baseFrameFirstHand);
+
+			data.xTranslationFirstHand = translationFirstHand[0];
+			data.yTranslationFirstHand = translationFirstHand[1];
+			data.zTranslationFirstHand = translationFirstHand[2];
+			data.xRotationAxisFirstHand = rotationAxisFirstHand[0];
+			data.yRotationAxisFirstHand = rotationAxisFirstHand[1];
+			data.zRotationAxisFirstHand = rotationAxisFirstHand[2];
+			data.rotationAngleFirstHand = rotationAngleFirstHand;
+
+			$("#x3dom_leapmotion_pd" + prNum + "_0").attr("set_destination", translationFirstHand[0] * 0.01 + " " + translationFirstHand[1] * 0.01+ " " + translationFirstHand[2] * 0.01);
+			$("#x3dom_leapmotion_oc" + prNum + "_0").attr("set_destination", rotationAxisFirstHand[0] + " " + rotationAxisFirstHand[1] + " " + rotationAxisFirstHand[2] + " " + rotationAngleFirstHand);
+
+			//check if the second hand is visible and valid
+			if(frame.hands.length>1 && frame.hands[1].valid){
+			
 				if(baseFrameSecondHand == null)
 					baseFrameSecondHand = frame;
-				
-				var secondHand = frame.hands[0];			
+
+				var secondHand = frame.hands[1];			
 				var translationSecondHand = secondHand.translation(baseFrameSecondHand);
 				var rotationAxisSecondHand = secondHand.rotationAxis(baseFrameSecondHand);
 				var rotationAngleSecondHand = secondHand.rotationAngle(baseFrameSecondHand);
@@ -822,72 +860,25 @@ function clearConfigTabAnnotations(prNum){
 				data.xTranslationSecondHand = translationSecondHand[0];
 				data.yTranslationSecondHand = translationSecondHand[1];
 				data.zTranslationSecondHand = translationSecondHand[2];
-				data.xRotationAxisSecondHand = translationSecondHand[0];
-				data.yRotationAxisSecondHand = translationSecondHand[1];
-				data.zRotationAxisSecondHand = translationSecondHand[2];
-				data.rotationAngleSecondHand = translationSecondHand;
+				data.xRotationAxisSecondHand = rotationAxisSecondHand[0];
+				data.yRotationAxisSecondHand = rotationAxisSecondHand[1];
+				data.zRotationAxisSecondHand = rotationAxisSecondHand[2];
+				data.rotationAngleSecondHand = rotationAngleSecondHand;
 
 				$("#x3dom_leapmotion_pd" + prNum + "_1").attr("set_destination", translationSecondHand[0] * 0.01 + " " + translationSecondHand[1] * 0.01+ " " + translationSecondHand[2] * 0.01);			
 				$("#x3dom_leapmotion_oc" + prNum + "_1").attr("set_destination", rotationAxisSecondHand[0] + " " + rotationAxisSecondHand[1] + " " + rotationAxisSecondHand[2] + " " + rotationAngleSecondHand);
-				webSocket.send(JSON.stringify(data));
-
 			}
-			else if ($("#firstObjectCheck").is(":checked") == true && $("#secondObjectCheck").is(":checked") == true ){
-
-				var firstHand = frame.hands[0];			
-				var translationFirstHand = firstHand.translation(baseFrameFirstHand);
-				var rotationAxisFirstHand = firstHand.rotationAxis(baseFrameFirstHand);
-				var rotationAngleFirstHand = firstHand.rotationAngle(baseFrameFirstHand);
-
-				data.xTranslationFirstHand = translationFirstHand[0];
-				data.yTranslationFirstHand = translationFirstHand[1];
-				data.zTranslationFirstHand = translationFirstHand[2];
-				data.xRotationAxisFirstHand = rotationAxisFirstHand[0];
-				data.yRotationAxisFirstHand = rotationAxisFirstHand[1];
-				data.zRotationAxisFirstHand = rotationAxisFirstHand[2];
-				data.rotationAngleFirstHand = rotationAngleFirstHand;
-
-				$("#x3dom_leapmotion_pd" + prNum + "_0").attr("set_destination", translationFirstHand[0] * 0.01 + " " + translationFirstHand[1] * 0.01+ " " + translationFirstHand[2] * 0.01);
-				$("#x3dom_leapmotion_oc" + prNum + "_0").attr("set_destination", rotationAxisFirstHand[0] + " " + rotationAxisFirstHand[1] + " " + rotationAxisFirstHand[2] + " " + rotationAngleFirstHand);
-	
-				//check if the second hand is visible and valid
-				if(frame.hands.length>1 && frame.hands[1].valid){
-				
-					if(baseFrameSecondHand == null)
-						baseFrameSecondHand = frame;
-
-					var secondHand = frame.hands[1];			
-					var translationSecondHand = secondHand.translation(baseFrameSecondHand);
-					var rotationAxisSecondHand = secondHand.rotationAxis(baseFrameSecondHand);
-					var rotationAngleSecondHand = secondHand.rotationAngle(baseFrameSecondHand);
-
-					data.xTranslationSecondHand = translationSecondHand[0];
-					data.yTranslationSecondHand = translationSecondHand[1];
-					data.zTranslationSecondHand = translationSecondHand[2];
-					data.xRotationAxisSecondHand = translationSecondHand[0];
-					data.yRotationAxisSecondHand = translationSecondHand[1];
-					data.zRotationAxisSecondHand = translationSecondHand[2];
-					data.rotationAngleSecondHand = translationSecondHand;
-
-					$("#x3dom_leapmotion_pd" + prNum + "_1").attr("set_destination", translationSecondHand[0] * 0.01 + " " + translationSecondHand[1] * 0.01+ " " + translationSecondHand[2] * 0.01);			
-					$("#x3dom_leapmotion_oc" + prNum + "_1").attr("set_destination", rotationAxisSecondHand[0] + " " + rotationAxisSecondHand[1] + " " + rotationAxisSecondHand[2] + " " + rotationAngleSecondHand);
-				}
-				else {
-					baseFrameSecondHand = null;
-				}
-
-				webSocket.send(JSON.stringify(data));
+			else {
+				baseFrameSecondHand = null;
 			}
-			
-			
-			//console.log("Message sent..." + data.xTranslation);
-			
-	 	}
-		else {
-			baseFrameFirstHand = null;
+
+			webSocket.send(JSON.stringify(data));
 		}
-	}
-	previousFrame = frame;
+		
+ 	}
+	else {
+		baseFrameFirstHand = null;
+	}	
    }	
 
     function leaveFullscreen(prNum){
