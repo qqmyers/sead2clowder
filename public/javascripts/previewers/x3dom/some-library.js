@@ -778,17 +778,7 @@ function clearConfigTabAnnotations(prNum){
     		$("#x3dElement" + prNum).attr("style", "position:absolute;top:" + (window["thisPreview" + prNum].offset().top + window["x3dOffset" + prNum] - 80 - window["x3dOffset2" + prNum]) + "px;");
     		window["oldx3dposition" + prNum] = window["thisPreview" + prNum].offset().top;
     	}
-    }
-    
-    /*function 3DInformation(xTranslation, yTranslation, zTranslation, xRotationAxis, yRotationAxis, zRotationAxis, rotationAngle){
-	this.xTranslation = xTranslation;
-	this.yTranslation = yTranslation;
-	this.zTranslation = zTranslation;
-	this.xRotation = xRotationAxis;
-	this.yRotation = yRotationAxis;
-	this.zRotation = zRotationAxis;
-	this.angle = rotationAngle;
-    }*/
+    }    
 	
     function leapMotionEvent(frame, prNum){
 	
@@ -824,7 +814,6 @@ function clearConfigTabAnnotations(prNum){
 				if(baseFrameSecondHand == null)
 					baseFrameSecondHand = frame;
 				
-				console.log("right checked");
 				var secondHand = frame.hands[0];			
 				var translationSecondHand = secondHand.translation(baseFrameSecondHand);
 				var rotationAxisSecondHand = secondHand.rotationAxis(baseFrameSecondHand);
@@ -844,7 +833,6 @@ function clearConfigTabAnnotations(prNum){
 
 			}
 			else if ($("#firstObjectCheck").is(":checked") == true && $("#secondObjectCheck").is(":checked") == true ){
-				console.log("both checked");				
 
 				var firstHand = frame.hands[0];			
 				var translationFirstHand = firstHand.translation(baseFrameFirstHand);
@@ -868,7 +856,6 @@ function clearConfigTabAnnotations(prNum){
 					if(baseFrameSecondHand == null)
 						baseFrameSecondHand = frame;
 
-					console.log("second hand valid");
 					var secondHand = frame.hands[1];			
 					var translationSecondHand = secondHand.translation(baseFrameSecondHand);
 					var rotationAxisSecondHand = secondHand.rotationAxis(baseFrameSecondHand);
@@ -882,13 +869,10 @@ function clearConfigTabAnnotations(prNum){
 					data.zRotationAxisSecondHand = translationSecondHand[2];
 					data.rotationAngleSecondHand = translationSecondHand;
 
-					console.log(JSON.stringify(data));
-
 					$("#x3dom_leapmotion_pd" + prNum + "_1").attr("set_destination", translationSecondHand[0] * 0.01 + " " + translationSecondHand[1] * 0.01+ " " + translationSecondHand[2] * 0.01);			
 					$("#x3dom_leapmotion_oc" + prNum + "_1").attr("set_destination", rotationAxisSecondHand[0] + " " + rotationAxisSecondHand[1] + " " + rotationAxisSecondHand[2] + " " + rotationAngleSecondHand);
 				}
 				else {
-					console.log("second hand not valid");
 					baseFrameSecondHand = null;
 				}
 
@@ -900,18 +884,6 @@ function clearConfigTabAnnotations(prNum){
 			
 	 	}
 		else {
-			/*$("#x3dom_leapmotion_pd" + prNum).attr("set_destination",  "0 0 0");
-			$("#x3dom_leapmotion_oc" + prNum).attr("set_destination",  "0 0 0 0");
-			data.xTranslation = 0.0;
-			data.yTranslation = 0.0;
-			data.zTranslation = 0.0;
-			data.xRotationAxis = 0.0;
-			data.yRotationAxis = 0.0;
-			data.zRotationAxis = 0.0;
-			data.rotationAngle = 0.0;
-
-			webSocket.send(JSON.stringify(data));
-			console.log("Message sent..." + data.xTranslation);*/
 			baseFrameFirstHand = null;
 		}
 	}
@@ -979,18 +951,13 @@ function clearConfigTabAnnotations(prNum){
 	     webSocket = new WebSocket(pathWs+"/ws/"+ Configuration.id);
 	     webSocket.onopen = function()
 	     {
-		// Web Socket is connected, send data using send()
-		//webSocket.send("SENDER");	
-		/*var data = new Object();
-		webSocket.send(JSON.stringify(data));*/
 		console.log("Websocket connection is now open...");
 	     };
 
 	     webSocket.onmessage = function (evt) 
 	     { 
-		var received_msg = evt.data;
-		var objData = JSON.parse(received_msg);
-		//console.log("Message received: " + objData.xTranslation);
+		var message = evt.data;
+		var objData = JSON.parse(message);
 
 		if(isFirstObjectSender == false)
 		{			
@@ -1022,8 +989,7 @@ function clearConfigTabAnnotations(prNum){
     }
     function startLeapMotion(prNum){
 
-	//Leap.loop(controllerOptions, function(frame) {leapMotionEvent(frame,prNum);} );
-	//console.log("Leapmotion device has been connected.");
+	console.log("Leapmotion device connected.");
 
 	if($("#firstObjectCheck").is(":checked") || $("#secondObjectCheck").is(":checked")) {
 		
@@ -1053,16 +1019,12 @@ function clearConfigTabAnnotations(prNum){
     function stopLeapMotion() {
 
 	isFirstObjectSender = false;
-	isSecondObjectSender = false;
-	
-	/*if(webSocket != null){
-		webSocket.close();
-		webSocket = null;
-	}*/
+	isSecondObjectSender = false;	
 	
 	if(leapController != null){
 		leapController.disconnect();
 		leapController = null;
+		console.log("Leapmotion device disconnected.");
 	}
 	
 	$("#btnStartLeapMotion").prop('disabled',false);
