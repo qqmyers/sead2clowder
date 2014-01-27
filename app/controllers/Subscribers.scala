@@ -9,6 +9,7 @@ import api.Permission
 import play.api.Logger
 import play.api.mvc.Flash
 import cryptutils.BCrypt
+import play.api.mvc.{AnyContent, Request}
 
 object Subscribers extends SecuredController {
 
@@ -53,12 +54,10 @@ object Subscribers extends SecuredController {
   }
   
    def subscribe()  = SecuredAction(authorization=WithPermission(Permission.Public)) { implicit request =>
-    implicit val user = request.user
   	Ok(views.html.newSubscriber(subscriptionForm)) 
   }
   
   def unsubscribe()  = SecuredAction(authorization=WithPermission(Permission.Public)) { implicit request =>
-    implicit val user = request.user
   	Ok(views.html.removeSubscriber(unsubscriptionForm))
   }
   
@@ -67,7 +66,6 @@ object Subscribers extends SecuredController {
    */
   def submit() = SecuredAction(authorization=WithPermission(Permission.Public)) { implicit request =>
     implicit val user = request.user
-    
         subscriptionForm.bindFromRequest.fold(
           errors => BadRequest(views.html.newSubscriber(errors)),
 	      subscriber => {

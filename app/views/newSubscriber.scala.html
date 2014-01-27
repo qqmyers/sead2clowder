@@ -1,6 +1,7 @@
-@(myForm: Form[Subscriber])(implicit flash: play.api.mvc.Flash, user: Option[securesocial.core.Identity])
+@(myForm: Form[Subscriber])(implicit flash: play.api.mvc.Flash, request: RequestHeader)
 
 @import helper._
+@import securesocial.core.IdentityProvider
 @implicitFieldConstructor = @{ FieldConstructor(twitterBootstrapInput.f) }
 
 @main("Subscriber") {
@@ -20,7 +21,8 @@
         </div>
     }
     
-	  @form(action = routes.Subscribers.submit, 'enctype -> "multipart/form-data", 'class -> "form-horizontal") {	 
+	  <form action = "@routes.Subscribers.submit.absoluteURL(IdentityProvider.sslEnabled)"
+                      class="form-horizontal" method="POST" enctype="multipart/form-data">	 
 	    <fieldset  id="nameSurnameEmailFieldSet">
 	      @inputText(myForm("name"), '_label -> "Name")
 	      @inputText(myForm("surname"), '_label -> "Surname")
@@ -30,7 +32,7 @@
         <div class="form-actions">
           <input type="submit" class="btn btn-default" value="Subscribe"/>
         </div>
-	  }
+	  </form>
     </div>
   </div>
 }
