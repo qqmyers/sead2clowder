@@ -295,6 +295,10 @@ fieldset #email_field .controls #email{
 	width:208px;
 	height:30px;
 }
+#unsubscribeEmailFieldSet .control-group .controls input[type='password']{
+	width:208px;
+	height:30px;
+}
 
 
 

@@ -15,7 +15,7 @@
         </div>
         @if(flash.get("error").size == 0){
         	<div class="alert alert-error">
-            	<p>Subscriber with input email not found.</p>
+            	<p>Wrong email and/or password.</p>
         	</div>
         }        
     }
@@ -28,6 +28,7 @@
 	  @form(action = routes.Subscribers.removeSubscription, 'enctype -> "multipart/form-data", 'class -> "form-horizontal") {	 
 	    <fieldset  id="unsubscribeEmailFieldSet">
 	      @inputText(myForm("email"), '_label -> "Email")
+	      @inputPassword(myForm("password"), '_label -> "Password")
 	    </fieldset>
         <div class="form-actions">
           <input type="submit" class="btn btn-default" value="Unsubscribe"/>

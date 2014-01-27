@@ -30,7 +30,7 @@ object Subscribers extends SecuredController {
      tuple(
       "email" -> email,
       "password" -> nonEmptyText
-     )verifying("Subscriber with input email not found.", fields => fields match {
+     )verifying("Wrong email and/or password.", fields => fields match {
      		case inputEmailPassword => validateRemoval(inputEmailPassword).isDefined
      	})
   )
@@ -39,7 +39,7 @@ object Subscribers extends SecuredController {
     
     Subscriber.findOneByEmail(inputEmailPassword._1) match{
       case Some(subscriber) => {
-        if(BCrypt.checkpw(inputEmailPassword._1, subscriber.hashedPassword)){
+        if(BCrypt.checkpw(inputEmailPassword._2, subscriber.hashedPassword)){
         	Some(subscriber)
           }
         else{
