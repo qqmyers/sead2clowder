@@ -877,7 +877,7 @@ function clearConfigTabAnnotations(prNum){
 		
  	}
 	else {
-		baseFrameFirstHand = null;
+		baseFrameFirstHand = null;	
 	}	
    }	
 
@@ -944,14 +944,28 @@ function clearConfigTabAnnotations(prNum){
 		var message = evt.data;
 		var objData = JSON.parse(message);
 
-		if(isFirstObjectSender == false)
-		{			
-			$("#x3dom_leapmotion_pd" + prNum + "_0").attr("set_destination", objData.xTranslationFirstHand * 0.01 + " " + objData.yTranslationFirstHand * 0.01+ " " + objData.zTranslationFirstHand * 0.01);
-			$("#x3dom_leapmotion_oc" + prNum + "_0").attr("set_destination", objData.xRotationAxisFirstHand + " " + objData.yRotationAxisFirstHand + " " + objData.zRotationAxisFirstHand + " " + objData.rotationAngleFirstHand);			
+		if(isFirstObjectSender == false && 
+		   objData.xTranslationFirstHand && 
+		   objData.yTranslationFirstHand &&
+		   objData.zTranslationFirstHand && 
+		   objData.xRotationAxisFirstHand && 
+		   objData.yRotationAxisFirstHand && 
+		   objData.zRotationAxisFirstHand &&
+		   objData.rotationAngleFirstHand){
+
+				$("#x3dom_leapmotion_pd" + prNum + "_0").attr("set_destination", objData.xTranslationFirstHand * 0.01 + " " + objData.yTranslationFirstHand * 0.01+ " " + objData.zTranslationFirstHand * 0.01);
+				$("#x3dom_leapmotion_oc" + prNum + "_0").attr("set_destination", objData.xRotationAxisFirstHand + " " + objData.yRotationAxisFirstHand + " " + objData.zRotationAxisFirstHand + " " + objData.rotationAngleFirstHand);
 		}
 		
-		if(isSecondObjectSender == false)
-		{
+		if(isSecondObjectSender == false && 
+		   objData.xTranslationSecondHand && 
+		   objData.yTranslationSecondHand &&
+		   objData.zTranslationSecondHand && 
+		   objData.xRotationAxisSecondHand && 
+		   objData.yRotationAxisSecondHand && 
+		   objData.zRotationAxisSecondHand &&
+		   objData.rotationAngleSecondHand){
+
 			$("#x3dom_leapmotion_pd" + prNum + "_1").attr("set_destination", objData.xTranslationSecondHand * 0.01 + " " + objData.yTranslationSecondHand * 0.01+ " " + objData.zTranslationSecondHand * 0.01);
 			$("#x3dom_leapmotion_oc" + prNum + "_1").attr("set_destination", objData.xRotationAxisSecondHand + " " + objData.yRotationAxisSecondHand + " " + objData.zRotationAxisSecondHand + " " + objData.rotationAngleSecondHand);
 		}
@@ -1224,20 +1238,20 @@ function clearConfigTabAnnotations(prNum){
   var numTransforms = $("#x3dElement" + prNum + " > scene > transform[data-actualshape]").length;
   for(var i=0; i < numTransforms; i++){
 
-	var leapControlPosition = document.createElement('positionchaser');
+	var leapControlPosition = document.createElement('positiondamper');
   	leapControlPosition.setAttribute("id", "x3dom_leapmotion_pd" + prNum + "_" + i);
- 	//leapControlPosition.setAttribute("tau", ".3");
-  	//leapControlPosition.setAttribute("order", "5");
-  	leapControlPosition.setAttribute("duration", "1");	  
+ 	leapControlPosition.setAttribute("tau", ".2");
+  	leapControlPosition.setAttribute("order", "50");
+  	//leapControlPosition.setAttribute("duration", "1");	  
   	leapControlPosition.setAttribute("initialDestination", i*0.5 + " 0 0");
   	leapControlPosition.setAttribute("initialValue", i*0.5 + " 0 0");
 	$("#x3dElement" + prNum + " > scene").append(leapControlPosition);
   
-  	var leapControlOrientation = document.createElement('orientationchaser');
+  	var leapControlOrientation = document.createElement('orientationdamper');
   	leapControlOrientation.setAttribute("id", "x3dom_leapmotion_oc" + prNum + "_" + i);
-  	//leapControlOrientation.setAttribute("tau", ".3");
-  	//leapControlOrientation.setAttribute("order", "5");
-  	leapControlOrientation.setAttribute("duration", "1");
+  	leapControlOrientation.setAttribute("tau", ".2");
+  	leapControlOrientation.setAttribute("order", "50");
+  	//leapControlOrientation.setAttribute("duration", "1");
   	leapControlOrientation.setAttribute("initialDestination", "0 0 0 0");	
   	leapControlOrientation.setAttribute("initialValue", "0 0 0 0");
   	$("#x3dElement" + prNum + " > scene").append(leapControlOrientation);
