@@ -19,7 +19,9 @@ object Subscribers extends SecuredController {
     mapping(
       "name" -> nonEmptyText,
       "surname" -> nonEmptyText,
-      "email" -> email,
+      "email" -> email.verifying("Subscription with this email exists already.", fields => fields match {
+     		case inputEmail => !Subscriber.findOneByEmail(inputEmail).isDefined 
+     	}),
       "password" -> nonEmptyText
     )
     ((name, surname, email, password) => Subscriber(name = name, surname = surname, email = email, hashedPassword = BCrypt.hashpw(password, BCrypt.gensalt())))
