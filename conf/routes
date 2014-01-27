@@ -82,6 +82,7 @@ GET		/newsletters/unsubscribe			controllers.Subscribers.unsubscribe
 POST	/newsletters/submit					controllers.Subscribers.submit
 POST	/newsletters/removeSubscription		controllers.Subscribers.removeSubscription
 
+
 ## SecureSocial ##
 
 # Login page
@@ -265,4 +266,7 @@ POST	/api/comment/:id					api.Comments.comment(id)
 
 GET   	/api/search                       api.Search.search(query: String ?= "")
 POST	/api/sparqlquery				  api.Search.querySPARQL
+
+POST	/api/newsletters/submitLoggedIn					api.Subscribers.submitLoggedIn
+POST	/api/newsletters/removeSubscriptionLoggedIn		api.Subscribers.removeSubscriptionLoggedIn
 

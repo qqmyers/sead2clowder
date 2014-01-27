@@ -19,6 +19,8 @@ object Permission extends Enumeration {
 	type Permission = Value
 	val Public,					// Page is public accessible, i.e. no login needed 
 		Admin,
+		Subscribe,
+		Unsubscribe,
 		CreateCollections,
 		DeleteCollections,
 		ListCollections,

@@ -15,4 +15,9 @@ object SocialUserDAO extends ModelCompanion[Identity, ObjectId] {
     case None    => throw new RuntimeException("No MongoSalatPlugin");
     case Some(x) =>  new SalatDAO[Identity, ObjectId](collection = x.collection("social.users")) {}
   }
+  
+  def findOneByEmail(email: String): Option[Identity] = {
+    dao.findOne(MongoDBObject("email" -> email))
+  }
+  
 }
