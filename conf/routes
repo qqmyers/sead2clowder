@@ -124,6 +124,7 @@ DELETE 	/admin/index/deleteAll		controllers.Admin.deleteAllIndexes
 GET     /admin/extractions          controllers.Extractors.extractions
 GET     /admin/subscribers          controllers.Subscribers.list
 POST    /admin/theme                controllers.Admin.setTheme
+GET		/admin/makeNewsFeed			controllers.Subscribers.makeNewsFeed
 
 # Javascript Endpoints
 GET     /javascriptRoutes           controllers.Application.javascriptRoutes
@@ -270,4 +271,5 @@ POST	/api/sparqlquery				  api.Search.querySPARQL
 
 POST	/api/newsletters/submitLoggedIn					api.Subscribers.submitLoggedIn
 POST	/api/newsletters/removeSubscriptionLoggedIn		api.Subscribers.removeSubscriptionLoggedIn
+POST	/api/newsletters/sendFeed						api.Subscribers.sendFeed
 

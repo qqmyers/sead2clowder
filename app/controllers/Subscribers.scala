@@ -108,7 +108,10 @@ object Subscribers extends SecuredController {
     Ok(views.html.subscriptions(Subscriber.findAll.toList))
   }
   
-  
+  def makeNewsFeed = SecuredAction(authorization=WithPermission(Permission.Admin)) { implicit request =>
+    implicit val user = request.user
+    Ok(views.html.makeNewsFeed(Subscriber.findAll.toList))
+  }
   
    
 }

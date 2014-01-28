@@ -1,0 +1,115 @@
+@(subscriptions: List[models.Subscriber])(implicit user: Option[securesocial.core.Identity])
+
+@main("New news feed") {
+	<div class="page-header">
+		<h1>New news feed.</h1>
+	</div>
+	<script src="@routes.Assets.at("javascripts/tinymce/tinymce.min.js")" type="text/javascript"></script>
+	<script>
+		tinymce.init({selector:'.notesArea',
+	    	theme: "modern",
+	    	plugins: [
+	    	          "advlist autolink lists link image charmap print preview hr anchor pagebreak",
+	    	          "searchreplace wordcount visualblocks visualchars code fullscreen",
+	    	          "insertdatetime media nonbreaking save table contextmenu directionality",
+	    	          "template paste textcolor"
+	    	      ],
+	    	      toolbar1: "insertfile undo redo | styleselect | bold italic | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link image",
+	    	      toolbar2: "print preview media | forecolor backcolor emoticons",
+	    	      image_advtab: true,
+	    	      templates: [
+	    	          {title: 'Test template 1', content: 'Test 1'},
+	    	          {title: 'Test template 2', content: 'Test 2'}
+	    	      ]
+	    });
+	</script>
+	<div class="row">
+		<div class="col-md-8" id="editCol">
+			<form class="form-inline" style="margin-top:20px;">
+				<div id="noteContainer_feed" style="display:none;">
+				</div>
+				<div id="noteEditor_feed" style="display:block;">
+					<textarea name="content" class="notesArea" id="noteField_feed" style="width:100%;"></textarea>
+				</div>
+				<button class="btn btn-default" onclick="return openForEdit();" style="display:none;" id="noteEdit_feed">Edit</button>
+				<button class="btn btn-default" onclick="return openForPreview();" style="display:inline;" id="notePreview_feed">Preview</button>		
+				<button class="btn btn-default" onclick="return postFeed();" style="display:inline;" id="notePost_feed">Post</button>				
+			</form>
+		</div>
+		<div class="col-md-4">
+				<table class="table" id="allSubscribers">
+				     <tbody>
+					    @for(s <- subscriptions) {
+					      <tr>
+					      	<td><input type="checkbox" name="@(s.name + " " + s.surname)" value="@s.email" checked="checked"></td>
+							<td>
+								@(s.name + " " + s.surname)
+							</td>
+							<td>
+								@s.email
+							</td>										
+						  </tr>
+						}
+					</tbody>
+				</table>
+		</div>
+	</div>
+	<script language="javascript">
+			function postFeed() {			
+				var html =  tinyMCE.get('noteField_feed').getContent();
+				var posturl = "@api.routes.Subscribers.sendFeed"
+				var subscribersString = "";
+				var subscribersArray = new Array();
+				
+				$("#allSubscribers :checkbox:checked").each(function() {
+	        	    var thisEmail = $(this).val();
+	        	    subscribersString = subscribersString + ", " + thisEmail;
+	        	    subscribersArray.push(thisEmail);	        	    
+	        	});
+				if(subscribersString != "")
+					subscribersString = subscribersString.substring(2);
+				
+				console.log("Posting " + html + " to the following subscribers: " + subscribersString);
+				var request = $.ajax({
+					url:  posturl,
+					data: JSON.stringify({ feedHTML: html, subscribers: subscribersArray}),
+					type: "POST",
+					contentType: "application/json",
+		     	});
+				request.done(function (response) { 
+					console.log("Response: " + response);
+					if(response.indexOf("Feed posted successfully.") >= 0 )
+						alert("Feed posted successfully.");
+					else
+						alert(response);
+				});
+				request.fail(function (jqXHR, textStatus, errorThrown){
+					console.error("The following error occured: " + textStatus, errorThrown);
+					alert("The feed was not posted due to : " + errorThrown);
+				});						
+				return false;			
+			}
+			
+			function openForPreview(){
+				$('#noteContainer_feed').html(tinyMCE.get('noteField_feed').getContent());			
+				$('#noteEditor_feed').css("display","none");
+
+				$('#noteContainer_feed').css("display","block");						
+				$('#notePreview_feed').css("display","none");
+				$('#noteEdit_feed').css("display","inline");
+				
+				return false;
+			}
+			
+			function openForEdit(){
+				$('#noteContainer_feed').css("display","none");
+				$('#noteEditor_feed').css("display","block");	
+				
+				$('#noteEdit_feed').css("display","none");
+				$('#notePreview_feed').css("display","inline");
+				
+				return false;
+			}
+		</script>
+
+}
