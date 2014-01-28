@@ -103,6 +103,11 @@ object Subscribers extends SecuredController {
 	)
   }
   
+  def list = SecuredAction(authorization=WithPermission(Permission.Admin)) { implicit request =>
+    implicit val user = request.user
+    Ok(views.html.subscriptions(Subscriber.findAll.toList))
+  }
+  
   
   
    

@@ -16,8 +16,7 @@ function subscribeUser(userEmail){
         if(textStatus == "success")
         	alert("Subscribed.");
         else if(textStatus == "notmodified")
-        	alert("You were subscribed already.")
-        
+        	alert("Subscribed already.")
     });
 	request.fail(function (jqXHR, textStatus, errorThrown){
 		console.error(
@@ -32,7 +31,7 @@ function unsubscribeUser(userEmail){
 
 	var emailData = {};
 	emailData['email'] = userEmail;
-	
+
 	var request = $.ajax({
 	       type: 'POST',
 	       url: "http://"+hostIp+":"+window.location.port+"/api/newsletters/removeSubscriptionLoggedIn",
@@ -46,8 +45,7 @@ function unsubscribeUser(userEmail){
         if(textStatus == "success")
         	alert("Unsubscribed.");
         else if(textStatus == "notmodified")
-        	alert("You were not subscribed already.")
-        
+        	alert("Not subscribed already.")              
     });
 	request.fail(function (jqXHR, textStatus, errorThrown){
 		console.error(

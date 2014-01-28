@@ -40,8 +40,6 @@ object Subscribers extends ApiController {
       Logger.debug("Unsubscribing")
       
       (request.body \ "email").asOpt[String].map { email =>
-      	SocialUserDAO.findOneByEmail(email) match {
-      	  case Some(user) => {
       	    Subscriber.findOneByEmail(email) match {
       	      case Some(subscriber) => {
       	        Logger.debug("Cancelling subscription with email " + email)
@@ -53,12 +51,7 @@ object Subscribers extends ApiController {
       	    	  Logger.info("Email was not subscribed.")
       	    	  Ok(toJson(Map("status" -> "notmodified")))
       	      }
-      	    }      	    
-      	  }
-      	  case None => {
-      	    Logger.error("Error getting user with email " + email); InternalServerError
-      	  }      	  
-      	}      
+      	    }      	          
       }.getOrElse {
         BadRequest(toJson("Missing parameter [email]"))
       }      

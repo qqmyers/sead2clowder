@@ -1,0 +1,50 @@
+@(subscriptions: List[models.Subscriber])(implicit user: Option[securesocial.core.Identity])
+
+@main("Subscribers") {
+	<script language="javascript">	
+		var hostIp = "@play.Play.application().configuration().getString("hostIp")";
+	</script>
+	<script src="@routes.Assets.at("javascripts/userSubscriptions.js")" type="text/javascript"></script>
+	<script>
+		function handleRemoval(email, theElement){
+			var couldUnsubscribe = unsubscribeUser(email);
+			$(theElement).parent().parent().remove();				
+		}
+	</script>
+	<div class="page-header">
+		<h1>Subscribers</h1>
+	</div>
+	@if(subscriptions.size == 0) {
+	<div class="row">
+		<div class="col-md-12">
+			No subscribers present.
+		</div>
+	</div>
+	}
+	@if(subscriptions.size > 0) {
+	<table class="table">
+		<thead>
+	       <tr>
+	         <th>Name</th>
+	         <th>Email</th>
+	       </tr>
+	     </thead>
+	     <tbody>
+	    @for(s <- subscriptions) {
+	      <tr>
+			<td>
+				@(s.name + " " + s.surname)
+			</td>
+			<td>
+				@s.email
+			</td>
+			<td><a href="#" onclick="handleRemoval('@s.email',this);">Remove</a></td>			
+		  </tr>
+		}
+		</tbody>
+		</table>
+	}
+
+
+
+}

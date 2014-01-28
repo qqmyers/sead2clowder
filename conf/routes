@@ -122,6 +122,7 @@ DELETE   /admin/index/:id/delete    controllers.Admin.deleteIndex(id:String)
 DELETE 	/admin/index/deleteAll		controllers.Admin.deleteAllIndexes
 
 GET     /admin/extractions          controllers.Extractors.extractions
+GET     /admin/subscribers          controllers.Subscribers.list
 POST    /admin/theme                controllers.Admin.setTheme
 
 # Javascript Endpoints
