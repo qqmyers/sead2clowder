@@ -302,6 +302,8 @@ def submit() = SecuredAction(parse.multipartFormData, authorization=WithPermissi
 						        //current.plugin[ElasticsearchPlugin].foreach{_.index("data", "file", id, List(("filename",nameOfFile), ("contentType", f.contentType)))}
 					        }
 					        
+					        val dateFormat = new SimpleDateFormat("dd/MM/yyyy")
+					        
 					        //for metadata files
 							  if(fileType.equals("application/xml") || fileType.equals("text/xml")){
 								  		  val xmlToJSON = FilesUtils.readXMLgetJSON(uploadedFile.ref.file)
@@ -312,7 +314,7 @@ def submit() = SecuredAction(parse.multipartFormData, authorization=WithPermissi
 										  
 										  //index the file
 										  current.plugin[ElasticsearchPlugin].foreach{
-								  			  _.index("data", "file", id, List(("filename",f.filename), ("contentType", fileType),("datasetId",dt.id.toString()),("datasetName",dt.name), ("xmlmetadata", xmlToJSON)))
+								  			  _.index("data", "file", id, List(("filename",f.filename), ("contentType", fileType), ("author", identity.fullName), ("uploadDate", dateFormat.format(new Date())), ("datasetId",dt.id.toString()),("datasetName",dt.name), ("xmlmetadata", xmlToJSON)))
 								  		  }
 								  		  // index dataset
 								  		  current.plugin[ElasticsearchPlugin].foreach{_.index("data", "dataset", dt.id.toString, 
@@ -320,7 +322,7 @@ def submit() = SecuredAction(parse.multipartFormData, authorization=WithPermissi
 							  }
 							  else{
 								  //index the file
-								  current.plugin[ElasticsearchPlugin].foreach{_.index("data", "file", id, List(("filename",f.filename), ("contentType", fileType),("datasetId",dt.id.toString),("datasetName",dt.name)))}
+								  current.plugin[ElasticsearchPlugin].foreach{_.index("data", "file", id, List(("filename",f.filename), ("contentType", fileType), ("author", identity.fullName), ("uploadDate", dateFormat.format(new Date())), ("datasetId",dt.id.toString),("datasetName",dt.name)))}
 								  // index dataset
 								  current.plugin[ElasticsearchPlugin].foreach{_.index("data", "dataset", dt.id.toString, 
 								  List(("name",dt.name), ("description", dt.description)))}

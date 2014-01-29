@@ -236,6 +236,8 @@ object Files extends Controller with SecuredController {
 	            val id = f.id.toString
 	            current.plugin[RabbitmqPlugin].foreach{_.extract(ExtractorMessage(id, id, host, key, Map.empty, f.length.toString, "", flags))}
 	            
+	            val dateFormat = new SimpleDateFormat("dd/MM/yyyy")
+	            
 	            //for metadata files
 	            if(fileType.equals("application/xml") || fileType.equals("text/xml")){
 	              val xmlToJSON = FilesUtils.readXMLgetJSON(uploadedFile.ref.file)
@@ -244,12 +246,12 @@ object Files extends Controller with SecuredController {
 	              Logger.debug("xmlmd=" + xmlToJSON)
 	              
 	              current.plugin[ElasticsearchPlugin].foreach{
-		              _.index("data", "file", id, List(("filename",f.filename), ("contentType", f.contentType),("datasetId",""),("datasetName",""), ("xmlmetadata", xmlToJSON)))
+		              _.index("data", "file", id, List(("filename",f.filename), ("contentType", f.contentType), ("author", identity.fullName), ("uploadDate", dateFormat.format(new Date())), ("datasetId",""),("datasetName",""), ("xmlmetadata", xmlToJSON)))
 		            }
 	            }
 	            else{
 		            current.plugin[ElasticsearchPlugin].foreach{
-		              _.index("data", "file", id, List(("filename",f.filename), ("contentType", f.contentType),("datasetId",""),("datasetName","")))
+		              _.index("data", "file", id, List(("filename",f.filename), ("contentType", f.contentType), ("author", identity.fullName), ("uploadDate", dateFormat.format(new Date())), ("datasetId",""),("datasetName","")))
 		            }
 	            }
 	           
@@ -431,6 +433,8 @@ object Files extends Controller with SecuredController {
             val id = f.id.toString
             current.plugin[RabbitmqPlugin].foreach{_.extract(ExtractorMessage(id, id, host, key, Map.empty, f.length.toString, "", flags))}
             
+            val dateFormat = new SimpleDateFormat("dd/MM/yyyy")
+            
             //for metadata files
 	            if(fileType.equals("application/xml") || fileType.equals("text/xml")){
 	              val xmlToJSON = FilesUtils.readXMLgetJSON(uploadedFile.ref.file)
@@ -439,12 +443,12 @@ object Files extends Controller with SecuredController {
 	              Logger.debug("xmlmd=" + xmlToJSON)
 	              
 	              current.plugin[ElasticsearchPlugin].foreach{
-		              _.index("files", "file", id, List(("filename",nameOfFile), ("contentType", f.contentType), ("xmlmetadata", xmlToJSON)))
+		              _.index("files", "file", id, List(("filename",nameOfFile), ("contentType", f.contentType), ("uploadDate", dateFormat.format(new Date())), ("xmlmetadata", xmlToJSON)))
 		            }
 	            }
 	            else{
 		            current.plugin[ElasticsearchPlugin].foreach{
-		            	_.index("files", "file", id, List(("filename",nameOfFile), ("contentType", f.contentType)))
+		            	_.index("files", "file", id, List(("filename",nameOfFile), ("contentType", f.contentType), ("uploadDate", dateFormat.format(new Date()))))
 		            }
 	            }
 	            
@@ -535,6 +539,7 @@ object Files extends Controller with SecuredController {
             val path=f.path
             current.plugin[RabbitmqPlugin].foreach{_.extract(ExtractorMessage(id, id, host, key, Map.empty, f.length.toString, "", flags))}
             
+            val dateFormat = new SimpleDateFormat("dd/MM/yyyy")
             
             //for metadata files
 	            if(fileType.equals("application/xml") || fileType.equals("text/xml")){
@@ -544,12 +549,12 @@ object Files extends Controller with SecuredController {
 	              Logger.debug("xmlmd=" + xmlToJSON)
 	              
 	              current.plugin[ElasticsearchPlugin].foreach{
-		              _.index("files", "file", id, List(("filename",nameOfFile), ("contentType", f.contentType), ("xmlmetadata", xmlToJSON)))
+		              _.index("files", "file", id, List(("filename",nameOfFile), ("contentType", f.contentType), ("uploadDate", dateFormat.format(new Date())), ("xmlmetadata", xmlToJSON)))
 		            }
 	            }
 	            else{
 		            current.plugin[ElasticsearchPlugin].foreach{
-		            	_.index("files", "file", id, List(("filename",nameOfFile), ("contentType", f.contentType)))
+		            	_.index("files", "file", id, List(("filename",nameOfFile), ("contentType", f.contentType), ("uploadDate", dateFormat.format(new Date()))))
 		            }
 	            }
 	            
@@ -639,6 +644,8 @@ object Files extends Controller with SecuredController {
             val id = f.id.toString
             current.plugin[RabbitmqPlugin].foreach{_.extract(ExtractorMessage(id, id, host, key, Map.empty, f.length.toString, "", flags))}
             
+            val dateFormat = new SimpleDateFormat("dd/MM/yyyy")
+            
             //for metadata files
 	            if(fileType.equals("application/xml") || fileType.equals("text/xml")){
 	              val xmlToJSON = FilesUtils.readXMLgetJSON(uploadedFile.ref.file)
@@ -647,12 +654,12 @@ object Files extends Controller with SecuredController {
 	              Logger.debug("xmlmd=" + xmlToJSON)
 	              
 	              current.plugin[ElasticsearchPlugin].foreach{
-		              _.index("data", "file", id, List(("filename",nameOfFile), ("contentType", f.contentType), ("xmlmetadata", xmlToJSON)))
+		              _.index("data", "file", id, List(("filename",nameOfFile), ("contentType", f.contentType), ("uploadDate", dateFormat.format(new Date())), ("xmlmetadata", xmlToJSON)))
 		            }
 	            }
 	            else{
 		            current.plugin[ElasticsearchPlugin].foreach{
-		            	_.index("data", "file", id, List(("filename",nameOfFile), ("contentType", f.contentType)))
+		            	_.index("data", "file", id, List(("filename",nameOfFile), ("contentType", f.contentType), ("uploadDate", dateFormat.format(new Date()))))
 		            }
 	            }
 	            
@@ -748,6 +755,7 @@ object Files extends Controller with SecuredController {
 //					  			  _.index("files", "file", id, List(("filename",nameOfFile), ("contentType", f.contentType)))
 //					  }
 					  
+					  val dateFormat = new SimpleDateFormat("dd/MM/yyyy")
 					  
 					  //for metadata files
 					  if(fileType.equals("application/xml") || fileType.equals("text/xml")){
@@ -757,12 +765,12 @@ object Files extends Controller with SecuredController {
 								  Logger.debug("xmlmd=" + xmlToJSON)
 
 								  current.plugin[ElasticsearchPlugin].foreach{
-						  			  _.index("data", "file", id, List(("filename",f.filename), ("contentType", f.contentType),("datasetId",dataset.id.toString()),("datasetName",dataset.name), ("xmlmetadata", xmlToJSON)))
+						  			  _.index("data", "file", id, List(("filename",f.filename), ("contentType", f.contentType), ("author", identity.fullName), ("uploadDate", dateFormat.format(new Date())), ("datasetId",dataset.id.toString()),("datasetName",dataset.name), ("xmlmetadata", xmlToJSON)))
 						  		  }
 					  }
 					  else{
 						  current.plugin[ElasticsearchPlugin].foreach{
-							  _.index("data", "file", id, List(("filename",f.filename), ("contentType", f.contentType),("datasetId",dataset.id.toString()),("datasetName",dataset.name)))
+							  _.index("data", "file", id, List(("filename",f.filename), ("contentType", f.contentType), ("author", identity.fullName), ("uploadDate", dateFormat.format(new Date())), ("datasetId",dataset.id.toString()),("datasetName",dataset.name)))
 						  }
 					  }
 					  

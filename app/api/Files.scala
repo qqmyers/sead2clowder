@@ -12,6 +12,8 @@ import java.io.FileWriter
 import java.io.FileReader
 import java.io.ByteArrayInputStream
 
+import java.text.SimpleDateFormat
+
 import org.bson.types.ObjectId
 
 import com.mongodb.WriteConcern
@@ -264,7 +266,8 @@ object Files extends ApiController {
 	               }
 	               case None => {}
 	             }
-	         } 	        
+	         }
+	        var realUserName = realUser.fullName
 	        val file = Services.files.save(new FileInputStream(f.ref.file), nameOfFile, f.contentType, realUser, showPreviews)
 	        val uploadedFile = f
 	        file match {
@@ -305,7 +308,9 @@ object Files extends ApiController {
 	            val host = "http://" + request.host + request.path.replaceAll("api/files$", "")
 
 	            current.plugin[RabbitmqPlugin].foreach{_.extract(ExtractorMessage(id, id, host, key, Map.empty, f.length.toString, "", flags))}
-	            	            
+	            	       
+	            val dateFormat = new SimpleDateFormat("dd/MM/yyyy") 
+	            
 	            //for metadata files
 	            if(fileType.equals("application/xml") || fileType.equals("text/xml")){
 	              val xmlToJSON = FilesUtils.readXMLgetJSON(uploadedFile.ref.file)
@@ -314,7 +319,7 @@ object Files extends ApiController {
 	              Logger.debug("xmlmd=" + xmlToJSON)
 	              
 	              current.plugin[ElasticsearchPlugin].foreach{
-		              _.index("data", "file", id, List(("filename",nameOfFile), ("contentType", f.contentType), ("xmlmetadata", xmlToJSON)))
+		              _.index("data", "file", id, List(("filename",nameOfFile), ("contentType", f.contentType), ("author", realUserName), ("uploadDate", dateFormat.format(new Date())), ("xmlmetadata", xmlToJSON)))
 		            }
 	              
 	              //add file to RDF triple store if triple store is used
@@ -327,7 +332,7 @@ object Files extends ApiController {
 	            }
 	            else{
 		            current.plugin[ElasticsearchPlugin].foreach{
-		              _.index("data", "file", id, List(("filename",nameOfFile), ("contentType", f.contentType)))
+		              _.index("data", "file", id, List(("filename",nameOfFile), ("contentType", f.contentType), ("author", realUserName), ("uploadDate", dateFormat.format(new Date()))))
 		            }
 	            }
 	            
@@ -425,7 +430,8 @@ object Files extends ApiController {
                }
                case None => {}
              }
-         }          
+         }
+          var realUserName = realUser.fullName
           val file = Services.files.save(new FileInputStream(f.ref.file), nameOfFile, f.contentType, realUser, showPreviews)
           val uploadedFile = f         
           
@@ -470,6 +476,8 @@ object Files extends ApiController {
 	              
 	          current.plugin[RabbitmqPlugin].foreach { _.extract(ExtractorMessage(id, id, host, key, Map.empty, f.length.toString, dataset_id, flags)) }
 	          
+	          val dateFormat = new SimpleDateFormat("dd/MM/yyyy") 
+	          
 	          //for metadata files
               if(fileType.equals("application/xml") || fileType.equals("text/xml")){
             	  		  val xmlToJSON = FilesUtils.readXMLgetJSON(uploadedFile.ref.file)
@@ -478,12 +486,12 @@ object Files extends ApiController {
             			  Logger.debug("xmlmd=" + xmlToJSON)
 
             			  current.plugin[ElasticsearchPlugin].foreach{
-            		  		_.index("data", "file", id, List(("filename",f.filename), ("contentType", f.contentType),("datasetId",dataset.id.toString),("datasetName",dataset.name), ("xmlmetadata", xmlToJSON)))
+            		  		_.index("data", "file", id, List(("filename",f.filename), ("contentType", f.contentType), ("author", realUserName), ("uploadDate", dateFormat.format(new Date())), ("datasetId",dataset.id.toString),("datasetName",dataset.name), ("xmlmetadata", xmlToJSON)))
             	  		  }
               }
               else{
             	  current.plugin[ElasticsearchPlugin].foreach{
-            		  _.index("data", "file", id, List(("filename",f.filename), ("contentType", f.contentType),("datasetId",dataset.id.toString),("datasetName",dataset.name)))
+            		  _.index("data", "file", id, List(("filename",f.filename), ("contentType", f.contentType), ("author", realUserName), ("uploadDate", dateFormat.format(new Date())), ("datasetId",dataset.id.toString), ("datasetName",dataset.name)))
             	  }
               }
                            
@@ -573,9 +581,9 @@ object Files extends ApiController {
 	            val host = "http://" + request.host + request.path.replaceAll("api/files/uploadIntermediate/[A-Za-z0-9_+]*$", "")
 	            val id = f.id.toString
 	            current.plugin[RabbitmqPlugin].foreach{_.extract(ExtractorMessage(originalId, id, host, key, Map.empty, f.length.toString, "", flags))}
-	            current.plugin[ElasticsearchPlugin].foreach{
-	              _.index("files", "file", id, List(("filename",f.filename), ("contentType", f.contentType)))
-	            }
+//	            current.plugin[ElasticsearchPlugin].foreach{
+//	              _.index("files", "file", id, List(("filename",f.filename), ("contentType", f.contentType)))
+//	            }
 	            Ok(toJson(Map("id"->id)))   
 	          }
 	          case None => {
@@ -1531,11 +1539,13 @@ object Files extends ApiController {
         for(dataset <- Dataset.findByFileId(file.id)){
           fileDsId = fileDsId + dataset.id.toString + "  "
           fileDsName = fileDsName + dataset.name + "  "
-        }  
+        }
+        
+        val formatter = new SimpleDateFormat("dd/MM/yyyy")
 
         current.plugin[ElasticsearchPlugin].foreach {
           _.index("data", "file", id,
-            List(("filename", file.filename), ("contentType", file.contentType),("datasetId",fileDsId),("datasetName",fileDsName), ("tag", tagsJson.toString), ("comments", commentJson.toString), ("usermetadata", usrMd), ("technicalmetadata", techMd), ("xmlmetadata", xmlMd)))
+            List(("filename", file.filename), ("contentType", file.contentType),("author",file.author.fullName),("author",formatter.format(file.uploadDate)),("datasetId",fileDsId),("datasetName",fileDsName), ("tag", tagsJson.toString), ("comments", commentJson.toString), ("usermetadata", usrMd), ("technicalmetadata", techMd), ("xmlmetadata", xmlMd)))
         }
       }
       case None => Logger.error("File not found: " + id)
