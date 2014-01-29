@@ -460,8 +460,8 @@ object Datasets extends ApiController {
         var dsCollsName = ""
           
         for(collection <- Collection.listInsideDataset(dataset.id.toString)){
-          dsCollsId = dsCollsId + collection.id.toString + "  "
-          dsCollsName = dsCollsName + collection.name + "  "
+          dsCollsId = dsCollsId + collection.id.toString + " %%% "
+          dsCollsName = dsCollsName + collection.name + " %%% "
         }
 	    
 	    val formatter = new SimpleDateFormat("dd/MM/yyyy")

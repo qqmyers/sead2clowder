@@ -1,4 +1,6 @@
-@(query: String, files: Array[models.File], datasets: Array[models.Dataset], mapdatasetIds:scala.collection.mutable.HashMap[String,(String,String)])
+@(query: String, files: Array[models.File], datasets: Array[models.Dataset], mapdatasetIds:scala.collection.mutable.HashMap[String,scala.collection.mutable.ListBuffer[(String, String)]])
+
+@import scala.collection.mutable.ListBuffer
 
 @main("Search Results") {
 	<div class="page-header">
@@ -28,8 +30,12 @@
 					<dd>@file.contentType</dd>
 					<dt>Uploaded on:</dt>
 					<dd>@file.uploadDate</dd>
-					<dt>Dataset name:</dt>
-					<dd><a href="@(routes.Datasets.dataset(mapdatasetIds.get(file.id.toString).get._1.trim))">@mapdatasetIds.get(file.id.toString).get._2.trim</a></dd>
+					<dt>Dataset name(s):</dt>
+					<dd>
+						@for(currMapping <- mapdatasetIds.get(file.id.toString).get){
+							<a href="@(routes.Datasets.dataset(currMapping._1.trim))">@currMapping._2.trim</a>
+						}
+					</dd>
 				</dl>
 			</div>
 		</div>

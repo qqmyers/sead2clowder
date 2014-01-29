@@ -1540,8 +1540,8 @@ object Files extends ApiController {
         var fileDsName = ""
           
         for(dataset <- Dataset.findByFileId(file.id)){
-          fileDsId = fileDsId + dataset.id.toString + "  "
-          fileDsName = fileDsName + dataset.name + "  "
+          fileDsId = fileDsId + dataset.id.toString + " %%% "
+          fileDsName = fileDsName + dataset.name + " %%% "
         }
         
         val formatter = new SimpleDateFormat("dd/MM/yyyy")

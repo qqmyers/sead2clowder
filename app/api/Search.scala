@@ -32,7 +32,6 @@ object Search extends ApiController {
         Logger.debug("Searching for: " + query)
         var files = ListBuffer.empty[models.File]
         var datasets = ListBuffer.empty[models.Dataset]
-        var mapdatasetIds = new scala.collection.mutable.HashMap[String, (String, String)]
         if (query != "") {
           import play.api.Play.current
           
@@ -52,7 +51,6 @@ object Search extends ApiController {
                       Logger.debug("FILES:hits.hits._id: Search result found file " + hit.getId());
                       Logger.debug("FILES:hits.hits._source: Search result found dataset " + hit.getSource().get("datasetId"))
                       //Logger.debug("Search result found file " + hit.getId()); files += file
-                      mapdatasetIds.put(hit.getId(), (hit.getSource().get("datasetId").toString(), hit.getSource.get("datasetName").toString))
                       files += file
                     }
                     case None => Logger.debug("File not found " + hit.getId())
