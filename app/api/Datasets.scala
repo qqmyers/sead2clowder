@@ -5,6 +5,7 @@ package api
 
 import java.util.Date
 import java.util.ArrayList
+import java.text.SimpleDateFormat
 import com.wordnik.swagger.annotations.Api
 import com.wordnik.swagger.annotations.ApiOperation
 import models.Comment
@@ -112,15 +113,18 @@ object Datasets extends ApiController {
 		      	     case Some(id) => {
 		      	       import play.api.Play.current
 		      	       api.Files.index(file_id)
+		      	       
+		      	       val dateFormat = new SimpleDateFormat("dd/MM/yyyy")
+		      	       
 		      	       if(!file.xmlMetadata.isEmpty){
 		      	           val xmlToJSON = FileDAO.getXMLMetadataJSON(file_id)
 		      	    	   Dataset.addXMLMetadata(id.toString, file_id, xmlToJSON)
 		      	    	   current.plugin[ElasticsearchPlugin].foreach{_.index("data", "dataset", id.toString, 
-			      	        			List(("name",d.name), ("description", d.description), ("xmlmetadata", xmlToJSON)))}
+			      	        			List(("name",d.name), ("description", d.description), ("author", request.user.get.fullName), ("created", dateFormat.format(new Date())), ("xmlmetadata", xmlToJSON)))}
 		      	       }
 		      	       else{
 			      	        current.plugin[ElasticsearchPlugin].foreach{_.index("data", "dataset", id.toString, 
-			      	        			List(("name",d.name), ("description", d.description)))}
+			      	        			List(("name",d.name), ("description", d.description), ("author", request.user.get.fullName), ("created", dateFormat.format(new Date()))))}
 		      	        }
 		      	       
 		      	       Ok(toJson(Map("id" -> id.toString)))
@@ -150,10 +154,8 @@ object Datasets extends ApiController {
             if(!isInDataset(theFile,dataset)){
 	            Dataset.addFile(dsId, theFile)	            
 	            api.Files.index(fileId)
-	            if(!theFile.xmlMetadata.isEmpty){
-	            	index(dsId)
-		      	}	            
-       
+	            index(dsId)
+		      		                   
 	            if(dataset.thumbnail_id.isEmpty && !theFile.thumbnail_id.isEmpty){
 		                        Dataset.dao.collection.update(MongoDBObject("_id" -> dataset.id), 
 		                        $set("thumbnail_id" -> theFile.thumbnail_id), false, false, WriteConcern.SAFE)
@@ -203,9 +205,7 @@ object Datasets extends ApiController {
 	            //remove file from dataset
 	            Dataset.removeFile(dataset.id.toString, theFile.id.toString)
 	            api.Files.index(fileId)
-	            if(!theFile.xmlMetadata.isEmpty){
-	            	index(datasetId)
-		      	}
+	            index(datasetId)
 	            Logger.info("Removing file from dataset completed")
 	            
 	            if(!dataset.thumbnail_id.isEmpty && !theFile.thumbnail_id.isEmpty){
@@ -448,10 +448,27 @@ object Datasets extends ApiController {
         
         val xmlMd = Dataset.getXMLMetadataJSON(id)
 	    Logger.debug("xmlmd=" + xmlMd)
+	    
+	    var fileDsId = ""
+        var fileDsName = ""          
+        for(file <- dataset.files){
+          fileDsId = fileDsId + file.id.toString + "  "
+          fileDsName = fileDsName + file.filename + "  "
+        }
+        
+        var dsCollsId = ""
+        var dsCollsName = ""
+          
+        for(collection <- Collection.listInsideDataset(dataset.id.toString)){
+          dsCollsId = dsCollsId + collection.id.toString + "  "
+          dsCollsName = dsCollsName + collection.name + "  "
+        }
+	    
+	    val formatter = new SimpleDateFormat("dd/MM/yyyy")
 
         current.plugin[ElasticsearchPlugin].foreach {
           _.index("data", "dataset", id,
-            List(("name", dataset.name), ("description", dataset.description), ("tag", tagsJson.toString), ("comments", commentJson.toString), ("usermetadata", usrMd), ("technicalmetadata", techMd), ("xmlmetadata", xmlMd)  ))
+            List(("name", dataset.name), ("description", dataset.description), ("author",dataset.author.fullName),("created",formatter.format(dataset.created)), ("fileId",fileDsId),("fileName",fileDsName), ("collId",dsCollsId),("collName",dsCollsName), ("tag", tagsJson.toString), ("comments", commentJson.toString), ("usermetadata", usrMd), ("technicalmetadata", techMd), ("xmlmetadata", xmlMd)  ))
         }
       }
       case None => Logger.error("Dataset not found: " + id)
@@ -510,6 +527,7 @@ object Datasets extends ApiController {
     request.body.\("tagId").asOpt[String].map { tagId =>
       Logger.debug("Removing " + tagId + " from " + id)
       Dataset.removeTag(id, tagId)
+      index(id)
     }
     Ok(toJson(""))
   }
@@ -519,7 +537,9 @@ object Datasets extends ApiController {
    *  Requires that the request body contains a "tags" field of List[String] type.
    */
   def addTags(id: String) = SecuredAction(authorization = WithPermission(Permission.CreateTags)) { implicit request =>
-  	Files.addTagsHelper(TagCheck_Dataset, id, request)
+  	val theResponse = Files.addTagsHelper(TagCheck_Dataset, id, request)
+  	index(id)
+  	theResponse
   }
 
   /**
@@ -527,7 +547,9 @@ object Datasets extends ApiController {
    *  Requires that the request body contains a "tags" field of List[String] type.
    */
   def removeTags(id: String) = SecuredAction(authorization = WithPermission(Permission.DeleteTags)) { implicit request =>
-  	Files.removeTagsHelper(TagCheck_Dataset, id, request)
+  	val theResponse = Files.removeTagsHelper(TagCheck_Dataset, id, request)
+  	index(id)
+  	theResponse
   }
 
   /**
@@ -539,6 +561,7 @@ object Datasets extends ApiController {
       Services.datasets.get(id) match {
         case Some(dataset) => {
           Dataset.removeAllTags(id)
+          index(id)
           Ok(Json.obj("status" -> "success"))
         }
         case None => {
@@ -708,13 +731,15 @@ object Datasets extends ApiController {
         }
         
         Dataset.removeDataset(id)
+        for(file <- dataset.files)
+          Files.index(file.id.toString)
         
         Ok(toJson(Map("status"->"success")))
       }
       case None => Ok(toJson(Map("status"->"success")))
     }
   }
-  
+
   
   def getRDFUserMetadata(id: String, mappingNumber: String="1") = SecuredAction(parse.anyContent, authorization=WithPermission(Permission.ShowDatasetsMetadata)) {implicit request =>
     play.Play.application().configuration().getString("rdfexporter") match{

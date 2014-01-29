@@ -534,7 +534,7 @@ def searchMetadataFormulateQuery(requestedMap: java.util.LinkedHashMap[String,An
 	    for(f <- dataset.files){
 	      var notTheDataset = for(currDataset<-findByFileId(f.id) if !dataset.id.toString.equals(currDataset.id.toString)) yield currDataset
 	      if(notTheDataset.size == 0)
-	    	FileDAO.removeFile(f.id.toString)
+	    	FileDAO.removeFile(f.id.toString)	      	
 	    }
         Dataset.remove(MongoDBObject("_id" -> dataset.id))        
       }

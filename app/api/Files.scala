@@ -499,9 +499,7 @@ object Files extends ApiController {
               // TODO create a service instead of calling salat directly
               val theFile = FileDAO.get(f.id.toString).get
               Dataset.addFile(dataset.id.toString, theFile)              
-              if(!theFile.xmlMetadata.isEmpty){
-	            	Datasets.index(dataset_id)
-		      	}	
+	          Datasets.index(dataset_id)
 
               // TODO RK need to replace unknown with the server name and dataset type
               val dtkey = "unknown." + "dataset." + "unknown"
@@ -1283,7 +1281,9 @@ object Files extends ApiController {
    *  so will be added.
    */
   def addTags(id: String) = SecuredAction(authorization = WithPermission(Permission.CreateTags)) { implicit request =>
-  	addTagsHelper(TagCheck_File, id, request)
+  	val theResponse = addTagsHelper(TagCheck_File, id, request)
+  	index(id)
+  	theResponse
   }
 
   /**
@@ -1294,7 +1294,9 @@ object Files extends ApiController {
    *  the same user or extractor.
    */
   def removeTags(id: String) = SecuredAction(authorization = WithPermission(Permission.DeleteTags)) { implicit request =>
-  	removeTagsHelper(TagCheck_File, id, request)
+  	val theResponse = removeTagsHelper(TagCheck_File, id, request)
+  	index(id)
+  	theResponse
   }
 
   /**
@@ -1308,6 +1310,7 @@ object Files extends ApiController {
       Services.files.getFile(id) match {
         case Some(file) => {
           FileDAO.removeAllTags(id)
+          index(id)
           Ok(Json.obj("status" -> "success"))
         }
         case None => {

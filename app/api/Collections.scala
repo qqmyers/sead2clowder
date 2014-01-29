@@ -28,6 +28,8 @@ object Collections extends ApiController {
 	            //add collection to dataset
 	            Dataset.addCollection(dataset.id.toString, collection.id.toString)
 	            
+	            api.Datasets.index(dataset.id.toString)
+	            
 	            Logger.info("Adding dataset to collection completed")
             }
             else{
@@ -58,6 +60,8 @@ object Collections extends ApiController {
 	            
 	            //remove collection from dataset
 	            Dataset.removeCollection(dataset.id.toString, collection.id.toString)
+	            
+	            api.Datasets.index(dataset.id.toString)
 	            
 	            Logger.info("Removing dataset from collection completed")
             }
@@ -96,6 +100,8 @@ object Collections extends ApiController {
         for(dataset <- collection.datasets){
           //remove collection from dataset
           Dataset.removeCollection(dataset.id.toString, collection.id.toString)
+          
+          api.Datasets.index(dataset.id.toString)
         }       
         Collection.remove(MongoDBObject("_id" -> collection.id))
         Ok(toJson(Map("status" -> "success")))
