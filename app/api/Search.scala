@@ -36,7 +36,7 @@ object Search extends ApiController {
         if (query != "") {
           import play.api.Play.current
           
-          val result = current.plugin[ElasticsearchPlugin].map { _.search("data", query) }
+          val result = current.plugin[ElasticsearchPlugin].map { _.search("data", query.replaceAll("[:/\\\\]", "\\$1")) }
           
           result match {
             case Some(searchResponse) => {
