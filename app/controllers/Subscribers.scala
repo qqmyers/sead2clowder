@@ -54,6 +54,13 @@ object Subscribers extends SecuredController {
   }
   
    def subscribe()  = SecuredAction(authorization=WithPermission(Permission.Public)) { implicit request =>
+    //in case it is called from admin add subscription screen 
+    implicit val user = request.user 
+  	Ok(views.html.newSubscriber(subscriptionForm)) 
+  }
+   
+  def addSubscriber()  = SecuredAction(authorization=WithPermission(Permission.Admin)) { implicit request =>
+    implicit val user = request.user 
   	Ok(views.html.newSubscriber(subscriptionForm)) 
   }
   

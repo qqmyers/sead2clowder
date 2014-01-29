@@ -125,6 +125,7 @@ GET     /admin/extractions          controllers.Extractors.extractions
 GET     /admin/subscribers          controllers.Subscribers.list
 POST    /admin/theme                controllers.Admin.setTheme
 GET		/admin/makeNewsFeed			controllers.Subscribers.makeNewsFeed
+GET		/admin/addSubscriber		controllers.Subscribers.addSubscriber
 
 # Javascript Endpoints
 GET     /javascriptRoutes           controllers.Application.javascriptRoutes
