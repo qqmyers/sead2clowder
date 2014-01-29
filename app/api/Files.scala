@@ -1545,7 +1545,7 @@ object Files extends ApiController {
 
         current.plugin[ElasticsearchPlugin].foreach {
           _.index("data", "file", id,
-            List(("filename", file.filename), ("contentType", file.contentType),("author",file.author.fullName),("author",formatter.format(file.uploadDate)),("datasetId",fileDsId),("datasetName",fileDsName), ("tag", tagsJson.toString), ("comments", commentJson.toString), ("usermetadata", usrMd), ("technicalmetadata", techMd), ("xmlmetadata", xmlMd)))
+            List(("filename", file.filename), ("contentType", file.contentType),("author",file.author.fullName),("uploadDate",formatter.format(file.uploadDate)),("datasetId",fileDsId),("datasetName",fileDsName), ("tag", tagsJson.toString), ("comments", commentJson.toString), ("usermetadata", usrMd), ("technicalmetadata", techMd), ("xmlmetadata", xmlMd)))
         }
       }
       case None => Logger.error("File not found: " + id)
