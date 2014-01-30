@@ -1113,14 +1113,17 @@ function clearConfigTabAnnotations(prNum){
       window["x3dOffset" + prNum] = 248;	
 	  x3dMeasureInstructions = "";
   }  
-  if(Configuration.calledFrom == "dataset")
+  if(Configuration.calledFrom == "dataset" || Configuration.calledFrom == "3d_dataset")
 	  window["x3dOffset2" + prNum] = 100;
   else if(Configuration.calledFrom == "file")
 	  window["x3dOffset2" + prNum] = 200;
   
   $(Configuration.tab).append("<div><input id='firstObjectCheck' type='checkbox' value='firstObjSelected'> Select object on the left</input></div>");
   $(Configuration.tab).append("<div><input id='secondObjectCheck' type='checkbox' value='secondObjSelected'> Select object on the right</input></div>");
-  $(Configuration.tab).append("<div><input id='btnStartLeapMotion' type='button' onclick='javascript:startLeapMotion(\"" + prNum + "\");' value='Start Leapmotion'/>  <input id='btnStopLeapMotion' disabled='true' type='button' onclick='javascript:stopLeapMotion();' value='Stop Leapmotion '/></div></br>");
+
+  if(Configuration.calledFrom == "3d_dataset"){
+  	$(Configuration.tab).append("<div><input id='btnStartLeapMotion' type='button' onclick='javascript:startLeapMotion(\"" + prNum + "\");' value='Start Leapmotion'/>  <input id='btnStopLeapMotion' disabled='true' type='button' onclick='javascript:stopLeapMotion();' value='Stop Leapmotion '/></div></br>");
+  }
 
   //$(Configuration.tab).append("<a href='javascript:startLeapMotion(\"" + prNum + "\");'>Start</a>");
   //$(Configuration.tab).append("<a href='javascript:stopLeapMotion();'>Stop</a>");
@@ -1145,9 +1148,13 @@ function clearConfigTabAnnotations(prNum){
   window["thisPreview" + prNum] = $(Configuration.tab); 
   //setInterval(function(){updatex3dPosition(prNum);},50);
   setInterval("updatex3dPosition('" + prNum + "');", 50);
-  console.log("url: "+Configuration.url)
-  $.ajax({
-	    url: Configuration.url, //   api/previews/52d02fc5e4b027f15b766ca2 
+  console.log("url: "+Configuration.url);
+
+  if(Configuration.calledFrom == "3d_dataset"){
+	console.log("url: "+Configuration.fileUrl[0]);
+	console.log("url: "+Configuration.fileUrl[1]);
+	$.ajax({
+	    url: Configuration.fileUrl[0], //   api/previews/52d02fc5e4b027f15b766ca2 
 	    async:false,
 	    success: function (data) {
 	    	inner = inner + data;
@@ -1155,22 +1162,31 @@ function clearConfigTabAnnotations(prNum){
 	    dataType: 'text'
 	});
 
-  //Start: Comment the lines below for demo
-  var inner1 = "";
-  $.ajax({
-	    url: "/api/previews/52d02fc5e4b027f15b766ca2",
+	  //Start: Comment the lines below for demo
+	  var inner1 = "";
+	  $.ajax({
+		    url: Configuration.fileUrl[1],
+		    async:false,
+		    success: function (data) {
+			inner1 = data;
+		    	 },
+		    dataType: 'text'
+		});
+
+	  inner1 = inner1.replace("<transform ","<transform translation='-3,0,0'");  
+	  inner = inner.substring(0,inner.indexOf("</scene>")-1) + inner1.substring(inner1.indexOf("<transform"));
+  }
+  else{
+	$.ajax({
+	    url: Configuration.url,
 	    async:false,
 	    success: function (data) {
-		inner1 = data;
+	    	inner = inner + data;
 	    	 },
 	    dataType: 'text'
 	});
+  }
 
-  inner1 = inner1.replace("<transform ","<transform translation='-3,0,0'");  
-  inner = inner.substring(0,inner.indexOf("</scene>")-1) + inner1.substring(inner1.indexOf("<transform"));
-  /*inner = inner.substring(0,inner.indexOf("</scene>")-1) + '<Transform data-actualshape="true" xmlns="http://www.web3d.org/specifications/x3d-namespace" DEF="3dmodel_1" translation="-3 0 0" render="true" bboxCenter="0,0,0" bboxSize="-1,-1,-1" center="0,0,0" rotation="0,0,0,0" scale="1,1,1" scaleOrientation="0,0,0,0"><Shape DEF="coneShape" render="true" bboxCenter="0,0,0" bboxSize="-1,-1,-1" isPickable="true"><Appearance DEF="coneApp" sortType="auto"> <Material diffuseColor="0 1 0" specularColor=".5 .5 .5" ambientIntensity="0.2" emissiveColor="0,0,0" shininess="0.2"/></Appearance><Cone DEF="cone" solid="true" ccw="true" useGeoCache="true" bottomRadius="0.25" height="0.75" bottom="true" side="true" top="true" subdivision="32"/></Shape></Transform></scene>';*/
-
-  //End: Comment the lines above for demo
   inner = inner + "</x3d>";
   
   $(Configuration.tab).append(inner);
@@ -1206,12 +1222,14 @@ function clearConfigTabAnnotations(prNum){
 	  s.src = pathJs + "x3dom.js";
 	  console.log("Updating tab " + Configuration.tab);
 	  $(Configuration.tab).append(s);
-
-	  s = document.createElement("script");
-	  s.type = "text/javascript";
-	  s.src = pathJs + "leap.min.js";
-	  console.log("Updating tab " + Configuration.tab);
-	  $(Configuration.tab).append(s);	  	  
+	
+	 if(Configuration.calledFrom == "3d_dataset"){
+		  s = document.createElement("script");
+		  s.type = "text/javascript";
+		  s.src = pathJs + "leap.min.js";
+		  console.log("Updating tab " + Configuration.tab);
+		  $(Configuration.tab).append(s);
+	}
   } 
     
   var viewPoint = document.createElement('viewpoint');
@@ -1241,34 +1259,33 @@ function clearConfigTabAnnotations(prNum){
   lightTrafo.appendChild(directionalLight);  
   $("#x3dElement" + prNum + " > scene").prepend(lightTrafo);
 
-  var numTransforms = $("#x3dElement" + prNum + " > scene > transform[data-actualshape]").length;
-  for(var i=0; i < numTransforms; i++){
+  if(Configuration.calledFrom == "3d_dataset"){
+	  var numTransforms = $("#x3dElement" + prNum + " > scene > transform[data-actualshape]").length;
+	  for(var i=0; i < numTransforms; i++){
 
-	var leapControlPosition = document.createElement('positiondamper');
-  	leapControlPosition.setAttribute("id", "x3dom_leapmotion_pd" + prNum + "_" + i);
- 	leapControlPosition.setAttribute("tau", ".2");
-  	leapControlPosition.setAttribute("order", "50");
-  	//leapControlPosition.setAttribute("duration", "1");	  
-  	leapControlPosition.setAttribute("initialDestination", i*0.5 + " 0 0");
-  	leapControlPosition.setAttribute("initialValue", i*0.5 + " 0 0");
-	$("#x3dElement" + prNum + " > scene").append(leapControlPosition);
-  
-  	var leapControlOrientation = document.createElement('orientationdamper');
-  	leapControlOrientation.setAttribute("id", "x3dom_leapmotion_oc" + prNum + "_" + i);
-  	leapControlOrientation.setAttribute("tau", ".2");
-  	leapControlOrientation.setAttribute("order", "50");
-  	//leapControlOrientation.setAttribute("duration", "1");
-  	leapControlOrientation.setAttribute("initialDestination", "0 0 0 0");	
-  	leapControlOrientation.setAttribute("initialValue", "0 0 0 0");
-  	$("#x3dElement" + prNum + " > scene").append(leapControlOrientation);
+		var leapControlPosition = document.createElement('positiondamper');
+	  	leapControlPosition.setAttribute("id", "x3dom_leapmotion_pd" + prNum + "_" + i);
+	 	leapControlPosition.setAttribute("tau", ".2");
+	  	leapControlPosition.setAttribute("order", "50");
+	  	//leapControlPosition.setAttribute("duration", "1");	  
+	  	leapControlPosition.setAttribute("initialDestination", i*0.5 + " 0 0");
+	  	leapControlPosition.setAttribute("initialValue", i*0.5 + " 0 0");
+		$("#x3dElement" + prNum + " > scene").append(leapControlPosition);
+	  
+	  	var leapControlOrientation = document.createElement('orientationdamper');
+	  	leapControlOrientation.setAttribute("id", "x3dom_leapmotion_oc" + prNum + "_" + i);
+	  	leapControlOrientation.setAttribute("tau", ".2");
+	  	leapControlOrientation.setAttribute("order", "50");
+	  	//leapControlOrientation.setAttribute("duration", "1");
+	  	leapControlOrientation.setAttribute("initialDestination", "0 0 0 0");	
+	  	leapControlOrientation.setAttribute("initialValue", "0 0 0 0");
+	  	$("#x3dElement" + prNum + " > scene").append(leapControlOrientation);
 
-	$("#x3dElement" + prNum + " > scene").append("<route fromNode='x3dom_leapmotion_pd" + prNum + "_" + i + "' fromField='value_changed' toNode='3dmodel_" + i + "' toField='translation'> </route>");
-	$("#x3dElement" + prNum + " > scene").append("<route fromNode='x3dom_leapmotion_oc" + prNum + "_" + i + "' fromField='value_changed' toNode='3dmodel_" + i + "' toField='rotation'> </route>");
+		$("#x3dElement" + prNum + " > scene").append("<route fromNode='x3dom_leapmotion_pd" + prNum + "_" + i + "' fromField='value_changed' toNode='3dmodel_" + i + "' toField='translation'> </route>");
+		$("#x3dElement" + prNum + " > scene").append("<route fromNode='x3dom_leapmotion_oc" + prNum + "_" + i + "' fromField='value_changed' toNode='3dmodel_" + i + "' toField='rotation'> </route>");
+	  }
   }
 
-	//$("#x3dElement" + prNum + " > scene").append("<route fromNode='x3dom_leapmotion_pd" + prNum + "_1' fromField='value_changed' toNode='3dmodel_" + 1 + "' toField='translation'> </route>");
-	//$("#x3dElement" + prNum + " > scene").append("<route fromNode='x3dom_leapmotion_oc" + prNum + "_1' fromField='value_changed' toNode='3dmodel_" + 1 + "' toField='rotation'> </route>");
-  
   if(isPageLoaded){
 	 x3dom.reload();
   }
@@ -1596,6 +1613,8 @@ function clearConfigTabAnnotations(prNum){
 		  window["isx3domRefocusSet"] = "set"; 
 	  }
 
-  webSocketConnection(prNum);	  		  
+  	if(Configuration.calledFrom == "3d_dataset"){
+		webSocketConnection(prNum);
+	}  
 
 }(jQuery, Configuration));
