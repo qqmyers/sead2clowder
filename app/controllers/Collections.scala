@@ -119,8 +119,9 @@ object Collections extends SecuredController {
 		            Collection.save(collection)
 		            
 		            // index collection
-//		            current.plugin[ElasticsearchPlugin].foreach{_.index("data", "dataset", id, 
-//		                List(("name",dt.name), ("description", dt.description)))}
+		            val dateFormat = new SimpleDateFormat("dd/MM/yyyy")
+		            current.plugin[ElasticsearchPlugin].foreach{_.index("data", "collection", collection.id.toString, 
+		                List(("name",collection.name), ("description", collection.description), ("created",dateFormat.format(new Date()))))}
 
 		            // redirect to collection page
 		            Redirect(routes.Collections.collection(collection.id.toString))

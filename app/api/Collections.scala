@@ -11,6 +11,9 @@ import play.api.libs.json.Json
 import play.api.libs.json.Json.toJson
 import models.Dataset
 import com.mongodb.casbah.commons.MongoDBObject
+import java.text.SimpleDateFormat
+import play.api.Play.current
+import services.ElasticsearchPlugin
 
 object Collections extends ApiController {
   
@@ -29,6 +32,7 @@ object Collections extends ApiController {
 	            Dataset.addCollection(dataset.id.toString, collection.id.toString)
 	            
 	            api.Datasets.index(dataset.id.toString)
+	            index(collection.id.toString)
 	            
 	            Logger.info("Adding dataset to collection completed")
             }
@@ -62,6 +66,7 @@ object Collections extends ApiController {
 	            Dataset.removeCollection(dataset.id.toString, collection.id.toString)
 	            
 	            api.Datasets.index(dataset.id.toString)
+	            index(collection.id.toString)
 	            
 	            Logger.info("Removing dataset from collection completed")
             }
@@ -119,6 +124,29 @@ object Collections extends ApiController {
   
   def jsonCollection(collection: Collection): JsValue = {
     toJson(Map("id" -> collection.id.toString, "name" -> collection.name, "description" -> collection.description, "created" -> collection.created.toString))
+  }
+  
+  def index(id: String) {
+    Services.collections.get(id) match {
+      case Some(collection) => {
+        
+        var dsCollsId = ""
+        var dsCollsName = ""
+          
+        for(dataset <- collection.datasets){
+          dsCollsId = dsCollsId + dataset.id.toString + " %%% "
+          dsCollsName = dsCollsName + dataset.name + " %%% "
+        }
+	    
+	    val formatter = new SimpleDateFormat("dd/MM/yyyy")
+
+        current.plugin[ElasticsearchPlugin].foreach {
+          _.index("data", "collection", id,
+            List(("name", collection.name), ("description", collection.description), ("created",formatter.format(collection.created)), ("datasetId",dsCollsId),("datasetName",dsCollsName)))
+        }
+      }
+      case None => Logger.error("Collection not found: " + id)
+    }
   }
 
   

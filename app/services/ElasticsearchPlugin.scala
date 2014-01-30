@@ -38,6 +38,7 @@ class ElasticsearchPlugin(application: Application) extends Plugin {
 
       client.prepareIndex("data", "file")
       client.prepareIndex("data", "dataset")
+      client.prepareIndex("data", "collection")
       
       Logger.info("ElasticsearchPlugin has started")
     } catch {
@@ -50,7 +51,7 @@ class ElasticsearchPlugin(application: Application) extends Plugin {
     Logger.info("Searching ElasticSearch for " + query)
     
     val response = client.prepareSearch(index)
-      .setTypes("file","dataset")
+      .setTypes("file","dataset","collection")
       .setSearchType(SearchType.DFS_QUERY_THEN_FETCH)
       //.setQuery(QueryBuilders.matchQuery("_all", query))
       .setQuery(QueryBuilders.queryString(query))

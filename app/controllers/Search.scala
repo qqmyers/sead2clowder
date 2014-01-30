@@ -68,7 +68,9 @@ object Search extends SecuredController {
         Logger.debug("Searching for: " + query)
         var files = ListBuffer.empty[models.File]
         var datasets = ListBuffer.empty[models.Dataset]
+        var collections = ListBuffer.empty[models.Collection]
         var mapdatasetIds = new scala.collection.mutable.HashMap[String, ListBuffer[(String, String)]]
+        var mapcollectionIds = new scala.collection.mutable.HashMap[String, ListBuffer[(String, String)]]
         if (query != "") {
           import play.api.Play.current
           
@@ -82,6 +84,7 @@ object Search extends SecuredController {
                 for ((key, value) <- mapAsScalaMap(hit.getFields())) {
                   Logger.info(value.getName + " = " + value.getValue())
                 }
+                
                 if (hit.getType() == "file") {
                   Services.files.getFile(hit.getId()) match {
                     case Some(file) => {
@@ -101,20 +104,62 @@ object Search extends SecuredController {
                     }
                     case None => Logger.debug("File not found " + hit.getId())
                   }
-                } else if (hit.getType() == "dataset") {
+                }
+                
+                else if (hit.getType() == "dataset") {
                   Logger.debug("DATASETS:hits.hits._source: Search result found dataset " + hit.getSource().get("name"))
                   Logger.debug("DATASETS:Dataset.id=" + hit.getId());
                   //Dataset.findOneById(new ObjectId(hit.getId())) match {
                   Services.datasets.get(hit.getId()) match {
-                    case Some(dataset) =>
-                      Logger.debug("Search result found dataset" + hit.getId()); datasets += dataset
+                    case Some(dataset) =>{
+                      Logger.debug("Search result found dataset" + hit.getId())
+                      
+                      var collectionsList =  ListBuffer() : ListBuffer[(String, String)]
+                      val collectionsIdsList = hit.getSource().get("collId").toString().split(" %%% ").toList
+                      val collectionsNamesList = hit.getSource().get("collName").toString().split(" %%% ").toList.iterator
+                      for(currentCollectionId <- collectionsIdsList){
+                        collectionsList = collectionsList :+ (currentCollectionId, collectionsNamesList.next())
+                      }
+                      
+                      mapcollectionIds.put(hit.getId(), collectionsList)
+                      
+                      datasets += dataset
+                      }
                     case None => {
                       Logger.debug("Dataset not found " + hit.getId())
                       Redirect(routes.Datasets.dataset(hit.getId))
                     }
                   }
                 }
-                Ok(views.html.searchResults(query, files.toArray, datasets.toArray, mapdatasetIds))
+                
+                else if (hit.getType() == "collection") {
+                  Logger.debug("COLLECTIONS:hits.hits._source: Search result found collection " + hit.getSource().get("name"))
+                  Logger.debug("COLLECTIONS:Collection.id=" + hit.getId());
+                  //Dataset.findOneById(new ObjectId(hit.getId())) match {
+                  Services.collections.get(hit.getId()) match {
+                    case Some(collection) =>
+                      Logger.debug("Search result found collection" + hit.getId());                      
+                      var collectionThumbnail:Option[String] = None
+                      try{
+				        for(dataset <- collection.datasets){
+				          if(!dataset.thumbnail_id.isEmpty){
+				            collectionThumbnail = dataset.thumbnail_id
+				            throw ThumbnailFound		
+				          }
+				        }
+				        }catch {
+				        	case ThumbnailFound =>
+				        }
+                      val collectionWithThumbnail = collection.copy(thumbnail_id = collectionThumbnail)
+                      collections += collectionWithThumbnail
+                    case None => {
+                      Logger.debug("Collection not found " + hit.getId())
+                      Redirect(routes.Collections.collection(hit.getId))
+                    }
+                  }
+                }
+ 
+                Ok(views.html.searchResults(query, files.toArray, datasets.toArray, collections.toArray, mapdatasetIds, mapcollectionIds))
               }
             }
             case None => {
@@ -122,7 +167,8 @@ object Search extends SecuredController {
             }
           }
         }
-        Ok(views.html.searchResults(query, files.toArray, datasets.toArray, mapdatasetIds))
+        
+        Ok(views.html.searchResults(query, files.toArray, datasets.toArray, collections.toArray, mapdatasetIds, mapcollectionIds))
       }
       case None => {
         Logger.debug("Search plugin not enabled")

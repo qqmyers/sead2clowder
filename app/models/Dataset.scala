@@ -526,8 +526,10 @@ def searchMetadataFormulateQuery(requestedMap: java.util.LinkedHashMap[String,An
   def removeDataset(id: String){
     dao.findOneById(new ObjectId(id)) match{
       case Some(dataset) => {
-        for(collection <- Collection.listInsideDataset(id))
-          Collection.removeDataset(collection.id.toString, dataset)
+        for(collection <- Collection.listInsideDataset(id)){
+        	Collection.removeDataset(collection.id.toString, dataset)
+        	api.Collections.index(collection.id.toString())
+          }
         for(comment <- Comment.findCommentsByDatasetId(id)){
         	Comment.removeComment(comment)
         }  
