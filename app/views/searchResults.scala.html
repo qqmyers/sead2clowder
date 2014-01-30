@@ -18,7 +18,7 @@
 	   
 	    <h3>Files</h3>
 	    @for(file <- files) {
-		  <div class="row">
+		  <div class="row" id="filediv_@file.id.toString">
 			<div class="col-md-2">
 				@if(!file.thumbnail_id.isEmpty){<img src="@(routes.Files.thumbnail(file.thumbnail_id.toString().substring(5,file.thumbnail_id.toString().length-1)))" alt="Thumbnail of @(file.filename)" width="120">}
 			</div>
@@ -33,12 +33,15 @@
 					<dt>Dataset name(s):</dt>
 					<dd>
 						@for(currMapping <- mapdatasetIds.get(file.id.toString).get){
-							<a href="@(routes.Datasets.dataset(currMapping._1.trim))">@currMapping._2.trim</a>
+							<a href="@(routes.Datasets.dataset(currMapping._1.trim))">@currMapping._2.trim</a><br/>
 						}
 					</dd>
 				</dl>
 			</div>
 		</div>
+		<script>
+			$("#filediv_@file.id.toString br").last().remove();
+		</script>
 		}
 		</div>
 		@if(datasets.size!=0){
