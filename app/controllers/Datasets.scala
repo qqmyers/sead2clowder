@@ -318,14 +318,14 @@ def submit() = SecuredAction(parse.multipartFormData, authorization=WithPermissi
 								  		  }
 								  		  // index dataset
 								  		  current.plugin[ElasticsearchPlugin].foreach{_.index("data", "dataset", dt.id.toString, 
-								  		  List(("name",dt.name), ("description", dt.description), ("author", identity.fullName), ("created", dateFormat.format(new Date())), ("fileId",f.id.toString),("fileName",f.filename), ("xmlmetadata", xmlToJSON)))}
+								  		  List(("name",dt.name), ("description", dt.description), ("author", identity.fullName), ("created", dateFormat.format(new Date())), ("fileId",f.id.toString),("fileName",f.filename), ("collId",""),("collName",""), ("xmlmetadata", xmlToJSON)))}
 							  }
 							  else{
 								  //index the file
 								  current.plugin[ElasticsearchPlugin].foreach{_.index("data", "file", id, List(("filename",f.filename), ("contentType", fileType), ("author", identity.fullName), ("uploadDate", dateFormat.format(new Date())), ("datasetId",dt.id.toString),("datasetName",dt.name)))}
 								  // index dataset
 								  current.plugin[ElasticsearchPlugin].foreach{_.index("data", "dataset", dt.id.toString, 
-								  List(("name",dt.name), ("description", dt.description), ("author", identity.fullName), ("created", dateFormat.format(new Date())), ("fileId",f.id.toString),("fileName",f.filename)))}
+								  List(("name",dt.name), ("description", dt.description), ("author", identity.fullName), ("created", dateFormat.format(new Date())), ("fileId",f.id.toString),("fileName",f.filename), ("collId",""),("collName","")))}
 							  }
 
 					    	// TODO RK need to replace unknown with the server name and dataset type		            
@@ -387,11 +387,11 @@ def submit() = SecuredAction(parse.multipartFormData, authorization=WithPermissi
 		            Dataset.addXMLMetadata(dt.id.toString, fileId, xmlToJSON)
 		            // index dataset
 		            current.plugin[ElasticsearchPlugin].foreach{_.index("data", "dataset", dt.id.toString, 
-			        List(("name",dt.name), ("description", dt.description), ("author", identity.fullName), ("created", dateFormat.format(new Date())), ("fileId",theFileGet.id.toString),("fileName",theFileGet.filename), ("xmlmetadata", xmlToJSON)))}
+			        List(("name",dt.name), ("description", dt.description), ("author", identity.fullName), ("created", dateFormat.format(new Date())), ("fileId",theFileGet.id.toString),("fileName",theFileGet.filename), ("collId",""),("collName",""), ("xmlmetadata", xmlToJSON)))}
 		          }else{
 		            // index dataset
 		        	  current.plugin[ElasticsearchPlugin].foreach{_.index("data", "dataset", dt.id.toString, 
-			    	   List(("name",dt.name), ("description", dt.description), ("author", identity.fullName), ("created", dateFormat.format(new Date())), ("fileId",theFileGet.id.toString),("fileName",theFileGet.filename)))}
+			    	   List(("name",dt.name), ("description", dt.description), ("author", identity.fullName), ("created", dateFormat.format(new Date())), ("fileId",theFileGet.id.toString),("fileName",theFileGet.filename), ("collId",""),("collName","")))}
 		          }
 		          
 		          //reindex file

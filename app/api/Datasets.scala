@@ -120,11 +120,11 @@ object Datasets extends ApiController {
 		      	           val xmlToJSON = FileDAO.getXMLMetadataJSON(file_id)
 		      	    	   Dataset.addXMLMetadata(id.toString, file_id, xmlToJSON)
 		      	    	   current.plugin[ElasticsearchPlugin].foreach{_.index("data", "dataset", id.toString, 
-			      	        			List(("name",d.name), ("description", d.description), ("author", request.user.get.fullName), ("created", dateFormat.format(new Date())), ("xmlmetadata", xmlToJSON)))}
+			      	        			List(("name",d.name), ("description", d.description), ("author", request.user.get.fullName), ("created", dateFormat.format(new Date())), ("fileId",""),("fileName",""), ("collId",""),("collName",""), ("xmlmetadata", xmlToJSON)))}
 		      	       }
 		      	       else{
 			      	        current.plugin[ElasticsearchPlugin].foreach{_.index("data", "dataset", id.toString, 
-			      	        			List(("name",d.name), ("description", d.description), ("author", request.user.get.fullName), ("created", dateFormat.format(new Date()))))}
+			      	        			List(("name",d.name), ("description", d.description), ("author", request.user.get.fullName), ("created", dateFormat.format(new Date())), ("fileId",""),("fileName",""), ("collId",""),("collName","")))}
 		      	        }
 		      	       
 		      	       Ok(toJson(Map("id" -> id.toString)))
