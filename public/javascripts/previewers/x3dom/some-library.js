@@ -1112,10 +1112,9 @@ function clearConfigTabAnnotations(prNum){
   else if(Configuration.calledFrom == "file")
 	  window["x3dOffset2" + prNum] = 200;
   
-  $(Configuration.tab).append("<div><input id='firstObjectCheck' type='checkbox' value='firstObjSelected'> Select object on the left</input></div>");
-  $(Configuration.tab).append("<div><input id='secondObjectCheck' type='checkbox' value='secondObjSelected'> Select object on the right</input></div>");
-
   if(Configuration.calledFrom == "3d_dataset"){
+  	$(Configuration.tab).append("<div><input id='firstObjectCheck' type='checkbox' value='firstObjSelected'> Select object on the left</input></div>");
+	$(Configuration.tab).append("<div><input id='secondObjectCheck' type='checkbox' value='secondObjSelected'> Select object on the right</input></div>");
   	$(Configuration.tab).append("<div><input id='btnStartLeapMotion' type='button' onclick='javascript:startLeapMotion(\"" + prNum + "\");' value='Start Leapmotion'/>  <input id='btnStopLeapMotion' disabled='true' type='button' onclick='javascript:stopLeapMotion();' value='Stop Leapmotion '/></div></br>");
   }
 
