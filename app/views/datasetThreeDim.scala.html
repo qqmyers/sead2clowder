@@ -1,0 +1,96 @@
+@(dataset: models.Dataset, comments: List[Comment], previews : Map[models.File, Array[(java.lang.String, String, String, String, java.lang.String, String, Long)]], md: Map[String,Any], usrmd: scala.collection.mutable.Map[String,Any], beingProcessed: Boolean, collectionsOutside: List[models.Collection], collectionsInside: List[models.Collection], filesOutside: List[models.File])(implicit user: Option[securesocial.core.Identity]) 
+
+
+@import helper._
+@import collection.JavaConverters._
+@import com.mongodb.casbah.Imports.DBObject
+@implicitFieldConstructor = @{ FieldConstructor(twitterBootstrapInput.f) }
+
+@main("Dataset 3D") {
+	<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/swfobject/2.2/swfobject.js"></script>
+    <script>
+    	var isPageLoaded = false;
+    	var isx3dActive = false;
+    	var Configuration = {};
+    	Configuration.id  = "@dataset.id";
+		Configuration.authenticated = @user.isDefined;
+		Configuration.hostIp = "@play.Play.application().configuration().getString("hostIp")";
+		Configuration.ptmAppletPath = "@(routes.Assets.at("plugins") + "/" + "envlib.jar")";
+		Configuration.expressInstallPath = "@(routes.Assets.at("plugins") + "/" + "expressInstall.swf")";
+		Configuration.iipZoomPath = "@(routes.Assets.at("plugins") + "/" + "IIPZoom.swf")";
+		Configuration.jsPath = "@(routes.Assets.at("javascripts"))";
+		Configuration.imagesPath = "@(routes.Assets.at("images"))";
+		Configuration.calledFrom = "3d_dataset";
+		Configuration.fileUrl = new Array();
+		Configuration.url = "";
+		Configuration.tab = "#previewer_@dataset.id";
+		Configuration.previewer = "/assets/javascripts/previewers/x3dom";
+		var previewName = "";
+    </script>
+    <script>
+    	window.onload = function() {
+    		isPageLoaded = true;
+    	}
+    </script>
+    
+	<div class="page-header">
+		<h1>@dataset.name</h1>
+	</div>
+	
+	<div class="row">	
+	
+		<div class="col-md-8" id="filePrevsCol">
+		@for((f, pvs) <- previews) {			
+			@for(i <- pvs.indices) {
+				<script> Configuration.fileUrl.push("@pvs(i)._5");
+					previewName = "@pvs(i)._2";
+				</script>
+				
+			}
+		}
+		
+		<div id='previewedFileName_@(dataset.id.toString)' class='filenameDiv'></div>
+			
+				<div class="row" id="filePrevContainer_@(dataset.id.toString)" data-previewsCount="1" >
+					<div class="span12">
+				  		<div class="tabbable">
+							<ul class="nav nav-pills" id="myTab_@(dataset.id.toString)">
+						    		<li class=""><a href="#previewer_@(dataset.id.toString)" data-toggle="tab">X3d</a></li>
+							</ul>
+							<div class="tab-content" id="previewsContent_@(dataset.id.toString)">
+						  		<div class="tab-pane previewDiv" id="previewer_@(dataset.id.toString)"></div>
+						  		<script type="text/javascript" src="/assets/javascripts/previewers/x3dom/some-library.js"></script>						  							  								  		
+							</div>
+						</div>					
+		  			</div>
+				</div>
+				
+				@if(beingProcessed == true){
+    			<div id='beingProcessed' style='display:block;'><h5>Dataset is being processed...</h5></div>  		
+	    		}else{
+	    			<div id='beingProcessed' style='display:none;'><h5>Dataset is being processed...</h5></div> 
+	    		}
+	    		<script>
+	    			function updateIsBeingProcessed(){
+	    				var request = $.ajax({
+	 				       type: 'GET',  
+	 				       url: "@api.routes.Datasets.isBeingProcessed(dataset.id.toString)",
+	 				       contentType: "application/json"
+	 				     });
+	    				request.done(function (respJSON){
+							if(respJSON.isBeingProcessed == "true")
+								$("#beingProcessed").css('display','block');
+							else
+								$("#beingProcessed").css('display','none');
+		     			});				 
+					  request.fail(function (jqXHR, textStatus, errorThrown){
+		     			});
+	    			}
+	    			$(function() {
+	    				setInterval("updateIsBeingProcessed();", 1000);
+	    			});
+    			</script>
+		</div>
+	</div>
+	
+}
