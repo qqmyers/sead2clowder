@@ -72,9 +72,8 @@ object Search extends SecuredController {
         var mapdatasetIds = new scala.collection.mutable.HashMap[String, ListBuffer[(String, String)]]
         var mapcollectionIds = new scala.collection.mutable.HashMap[String, ListBuffer[(String, String)]]
         if (query != "") {
-          import play.api.Play.current
-          
-          val result = current.plugin[ElasticsearchPlugin].map { _.search("data", query.replaceAll("[:/\\\\]", "\\$1"))}
+          import play.api.Play.current          
+          val result = current.plugin[ElasticsearchPlugin].map { _.search("data", query.replaceAll("([:/\\\\])", "\\\\$1"))}
           
           result match {
             case Some(searchResponse) => {
@@ -168,6 +167,7 @@ object Search extends SecuredController {
           }
         }
         
+        Logger.debug("newquery: " + query.replaceAll("([:/\\\\])", "\\\\$1"))
         Ok(views.html.searchResults(query, files.toArray, datasets.toArray, collections.toArray, mapdatasetIds, mapcollectionIds))
       }
       case None => {
