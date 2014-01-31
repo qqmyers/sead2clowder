@@ -32,6 +32,7 @@ object Search extends ApiController {
         Logger.debug("Searching for: " + query)
         var files = ListBuffer.empty[models.File]
         var datasets = ListBuffer.empty[models.Dataset]
+        var collections = ListBuffer.empty[models.Collection]
         if (query != "") {
           import play.api.Play.current
           
@@ -68,6 +69,19 @@ object Search extends ApiController {
                     }
                   }
                 }
+                else if (hit.getType() == "collection") {
+                  Logger.debug("COLLECTIONS:hits.hits._source: Search result found collection " + hit.getSource().get("name"))
+                  Logger.debug("COLLECTIONS:Collection.id=" + hit.getId())
+                  
+                  Services.collections.get(hit.getId()) match {
+                    case Some(collection) =>
+                      Logger.debug("Search result found collection" + hit.getId()); collections += collection
+                    case None => {
+                      Logger.debug("Collection not found " + hit.getId())
+                    }
+                  }
+                  
+                }
               }
             }
             case None => {
@@ -82,8 +96,11 @@ object Search extends ApiController {
         val datasetsJson = toJson(for(currDataset <- datasets.toList) yield {
           currDataset.id.toString
         } )
+        val collectionsJson = toJson(for(currCollection <- collections.toList) yield {
+          currCollection.id.toString
+        } )
         
-        val fullJSON = toJson(Map[String,JsValue]("files" -> filesJson, "datasets" -> datasetsJson))
+        val fullJSON = toJson(Map[String,JsValue]("files" -> filesJson, "datasets" -> datasetsJson, "collections" -> collectionsJson))
         
         Ok(fullJSON)
       }
