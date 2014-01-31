@@ -731,6 +731,9 @@ object Datasets extends ApiController {
         }
         
         Dataset.removeDataset(id)
+        current.plugin[ElasticsearchPlugin].foreach {
+          _.delete("data", "dataset", id)
+        }
         for(file <- dataset.files)
           Files.index(file.id.toString)
         

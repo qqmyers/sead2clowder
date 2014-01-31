@@ -109,6 +109,9 @@ object Collections extends ApiController {
           api.Datasets.index(dataset.id.toString)
         }       
         Collection.remove(MongoDBObject("_id" -> collection.id))
+         current.plugin[ElasticsearchPlugin].foreach {
+          _.delete("data", "collection", collectionId)
+        }
         Ok(toJson(Map("status" -> "success")))
       }
       case None => {

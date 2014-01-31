@@ -77,6 +77,13 @@ class ElasticsearchPlugin(application: Application) extends Plugin {
       .actionGet()
     Logger.info("Indexing document: " + response.getId())
   }
+  
+  def delete(index: String, docType: String, id: String) {    
+    val response = client.prepareDelete(index, docType, id)
+      .execute()
+      .actionGet()
+    Logger.info("Deleting document: " + response.getId())
+  }
 
   def testQuery() {
     val response = client.prepareSearch("twitter")

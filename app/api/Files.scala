@@ -1444,6 +1444,10 @@ object Files extends ApiController {
     Services.files.getFile(id)  match {
       case Some(file) => {
         FileDAO.removeFile(id)
+        current.plugin[ElasticsearchPlugin].foreach {
+          _.delete("data", "file", id)
+        }
+        
         Logger.debug(file.filename)
         //remove file from RDF triple store if triple store is used
 	        play.api.Play.configuration.getString("userdfSPARQLStore").getOrElse("no") match{      
