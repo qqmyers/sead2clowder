@@ -60,7 +60,13 @@
 							</ul>
 							<div class="tab-content" id="previewsContent_@(dataset.id.toString)">
 						  		<div class="tab-pane previewDiv" id="previewer_@(dataset.id.toString)"></div>
-						  		<script type="text/javascript" src="/assets/javascripts/previewers/x3dom/some-library.js"></script>						  							  								  		
+						  		<script type="text/javascript" src="/assets/javascripts/previewers/x3dom/some-library.js"></script>
+						  		<script type="text/javascript">
+									$(function () {
+					    				$('#myTab_@(dataset.id.toString) a:first').tab('show');
+					    				$('#myTab_@(dataset.id.toString)').attr('style', 'display:none;');
+					 				 })
+								</script>						  							  								  		
 							</div>
 						</div>					
 		  			</div>
