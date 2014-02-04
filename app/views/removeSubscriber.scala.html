@@ -1,4 +1,4 @@
-@(myForm: Form[(String,String)])(implicit flash: play.api.mvc.Flash, request: RequestHeader)
+@(myForm: Form[(String,String)], FBEnabled: Boolean)(implicit flash: play.api.mvc.Flash, request: RequestHeader)
 
 @import helper._
 @import securesocial.core.IdentityProvider
@@ -16,7 +16,12 @@
         </div>
         @if(flash.get("error").size == 0){
         	<div class="alert alert-error">
-            	<p>Wrong email and/or password.</p>
+        		@if(FBEnabled){
+            		<p>Wrong email, Facebook username or Facebook ID and/or password.</p>
+            	}
+        		@if(!FBEnabled){
+            		<p>Wrong email and/or password.</p>
+            	}
         	</div>
         }        
     }
@@ -28,8 +33,13 @@
     
 	  <form action = "@routes.Subscribers.removeSubscription.absoluteURL(IdentityProvider.sslEnabled)"
                       class="form-horizontal" method="POST" enctype="multipart/form-data">	 
-	    <fieldset  id="unsubscribeEmailFieldSet">
-	      @inputText(myForm("email"), '_label -> "Email")
+	    <fieldset  id="unsubscribeIdentifierFieldSet">
+	      @if(FBEnabled){	
+	      	@inputText(myForm("identifier"), '_label -> "Email, Facebook username or Facebook ID")
+	      }
+	      @if(!FBEnabled){	
+	      	@inputText(myForm("identifier"), '_label -> "Email")
+	      }
 	      @inputPassword(myForm("password"), '_label -> "Password")
 	    </fieldset>
         <div class="form-actions">

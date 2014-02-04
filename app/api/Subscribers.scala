@@ -22,7 +22,7 @@ object Subscribers extends ApiController {
       	      case None => {
       	        Logger.debug("Saving subscription with email " + email)
       	        // TODO create a service instead of calling salat directly
-		        Subscriber.save(Subscriber(name = user.firstName, surname =  user.lastName, email = email, hashedPassword = user.passwordInfo.get.password))
+		        Subscriber.save(Subscriber(name = user.firstName, surname =  user.lastName, email = Some(email), hashedPassword = user.passwordInfo.get.password))
 		        Ok(toJson(Map("status" -> "success")))
       	      }
       	      case Some(subscriber) => {

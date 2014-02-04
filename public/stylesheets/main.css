@@ -283,19 +283,19 @@ fieldset #email_field .controls #email{
 	width:208px;
 	height:30px;
 }
-#nameSurnameEmailFieldSet .control-group .controls input[type='text']{
+#nameSurnameIdentifierFieldSet .control-group .controls input[type='text']{
 	width:208px;
 	height:30px;
 }
-#nameSurnameEmailFieldSet .control-group .controls input[type='password']{
+#nameSurnameIdentifierFieldSet .control-group .controls input[type='password']{
 	width:208px;
 	height:30px;
 }
-#unsubscribeEmailFieldSet .control-group .controls input[type='text']{
+#unsubscribeIdentifierFieldSet .control-group .controls input[type='text']{
 	width:208px;
 	height:30px;
 }
-#unsubscribeEmailFieldSet .control-group .controls input[type='password']{
+#unsubscribeIdentifierFieldSet .control-group .controls input[type='password']{
 	width:208px;
 	height:30px;
 }

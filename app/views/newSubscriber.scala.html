@@ -1,4 +1,4 @@
-@(myForm: Form[Subscriber])(implicit flash: play.api.mvc.Flash, request: RequestHeader, user: Option[securesocial.core.Identity])
+@(myForm: Form[Subscriber], FBEnabled: Boolean)(implicit flash: play.api.mvc.Flash, request: RequestHeader, user: Option[securesocial.core.Identity])
 
 @import helper._
 @import securesocial.core.IdentityProvider
@@ -28,10 +28,15 @@
     
 	  <form action = "@routes.Subscribers.submit.absoluteURL(IdentityProvider.sslEnabled)"
                       class="form-horizontal" method="POST" enctype="multipart/form-data">	 
-	    <fieldset  id="nameSurnameEmailFieldSet">
+	    <fieldset  id="nameSurnameIdentifierFieldSet">
 	      @inputText(myForm("name"), '_label -> "Name")
 	      @inputText(myForm("surname"), '_label -> "Surname")
-	      @inputText(myForm("email"), '_label -> "Email")
+	      @if(FBEnabled){
+	      	@inputText(myForm("identifier"), '_label -> "Email, Facebook username or Facebook ID")
+	      }
+	      @if(!FBEnabled){
+	      	@inputText(myForm("identifier"), '_label -> "Email")
+	      }
 	      @inputPassword(myForm("password"), '_label -> "Password (for unregistering)")
 	    </fieldset>
         <div class="form-actions">
