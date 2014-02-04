@@ -15,7 +15,7 @@ object Subscribers extends ApiController {
   def submitLoggedIn = SecuredAction(authorization=WithPermission(Permission.Subscribe)) { request =>    
       Logger.debug("Subscribing")
       
-      (request.body \ "email").asOpt[String].map { email =>
+      (request.body \ "identifier").asOpt[String].map { email =>
       	SocialUserDAO.findOneByEmail(email) match {
       	  case Some(user) => {
       	    Subscriber.findOneByEmail(email) match {
@@ -36,28 +36,28 @@ object Subscribers extends ApiController {
       	  }      	  
       	}      
       }.getOrElse {
-        BadRequest(toJson("Missing parameter [email]"))
+        BadRequest(toJson("Missing parameter [identifier]"))
       }      
   }
   
   def removeSubscriptionLoggedIn = SecuredAction(authorization=WithPermission(Permission.Unsubscribe)) { request =>    
       Logger.debug("Unsubscribing")
       
-      (request.body \ "email").asOpt[String].map { email =>
-      	    Subscriber.findOneByEmail(email) match {
+      (request.body \ "identifier").asOpt[String].map { identifier =>
+      	    Subscriber.findOneByIdentifier(identifier) match {
       	      case Some(subscriber) => {
-      	        Logger.debug("Cancelling subscription with email " + email)
+      	        Logger.debug("Cancelling subscription with identifier " + identifier)
       	        // TODO create a service instead of calling salat directly
 		        Subscriber.remove(subscriber)
       	        Ok(toJson(Map("status" -> "success")))
       	      }
       	      case None => {
-      	    	  Logger.info("Email was not subscribed.")
+      	    	  Logger.info("Identified person was not subscribed.")
       	    	  Ok(toJson(Map("status" -> "notmodified")))
       	      }
       	    }      	          
       }.getOrElse {
-        BadRequest(toJson("Missing parameter [email]"))
+        BadRequest(toJson("Missing parameter [identifier]"))
       }      
   }
   

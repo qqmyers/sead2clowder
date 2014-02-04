@@ -26,7 +26,7 @@
 		<thead>
 	       <tr>
 	         <th>Name</th>
-	         <th>Email</th>
+	         <th>Email/ FB Identifier</th>
 	       </tr>
 	     </thead>
 	     <tbody>
@@ -36,9 +36,9 @@
 				@(s.name + " " + s.surname)
 			</td>
 			<td>
-				@s.email
+				@s.email.getOrElse(s.FBIdentifier)
 			</td>
-			<td><a href="#" onclick="handleRemoval('@s.email',this);">Remove</a></td>			
+			<td><a href="#" onclick="handleRemoval('@s.email.getOrElse(s.FBIdentifier)',this);">Remove</a></td>			
 		  </tr>
 		}
 		</tbody>

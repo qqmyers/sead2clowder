@@ -1,12 +1,12 @@
-function subscribeUser(userEmail){
+function subscribeUser(userIdentifier){
 	
-	var emailData = {};
-	emailData['email'] = userEmail;
+	var identifierData = {};
+	identifierData['identifier'] = userIdentifier;
 	
 	var request = $.ajax({
 	       type: 'POST',
 	       url: "http://"+hostIp+":"+window.location.port+"/api/newsletters/submitLoggedIn",
-	       data: JSON.stringify(emailData),
+	       data: JSON.stringify(identifierData),
 	       contentType: "application/json"
 	     });
 
@@ -27,15 +27,15 @@ function subscribeUser(userEmail){
 			});	
 }
 
-function unsubscribeUser(userEmail){
+function unsubscribeUser(userIdentifier){
 
-	var emailData = {};
-	emailData['email'] = userEmail;
+	var identifierData = {};
+	identifierData['identifier'] = userIdentifier;
 
 	var request = $.ajax({
 	       type: 'POST',
 	       url: "http://"+hostIp+":"+window.location.port+"/api/newsletters/removeSubscriptionLoggedIn",
-	       data: JSON.stringify(emailData),
+	       data: JSON.stringify(identifierData),
 	       contentType: "application/json"
 	     });
 
