@@ -42,12 +42,12 @@
 				     <tbody>
 					    @for(s <- subscriptions) {
 					      <tr>
-					      	<td><input type="checkbox" name="@(s.name + " " + s.surname)" value="@s.email.getOrElse(s.FBIdentifier)" checked="checked"></td>
+					      	<td><input type="checkbox" name="@(s.name + " " + s.surname)" value="@s.email.getOrElse(s.FBIdentifier.get)" checked="checked"></td>
 							<td>
 								@(s.name + " " + s.surname)
 							</td>
 							<td>
-								@s.email.getOrElse(s.FBIdentifier)
+								@s.email.getOrElse("Facebook identifier: " + s.FBIdentifier.get)
 							</td>										
 						  </tr>
 						}

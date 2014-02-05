@@ -15,7 +15,8 @@ case class Subscriber (
   surname: String,
   email: Option[String] = None,
   FBIdentifier: Option[String] = None,
-  hashedPassword: String
+  hashedPassword: String,
+  fbAuthToken: Option[String] = None
 )
 
 
@@ -48,8 +49,15 @@ object Subscriber extends ModelCompanion[Subscriber, ObjectId] {
     	searchList = searchList :+ MongoDBObject("FBIdentifier" -> current.plugin[FacebookService].get.getUsernameById(identifier))
       } 
     }
-    
     dao.findOne(MongoDBObject("$or" -> searchList))    
   }
+  
+  def setAuthToken(id: String, token: String){
+    dao.update(MongoDBObject("_id" -> new ObjectId(id)), $set("fbAuthToken" -> token), false, false, WriteConcern.Safe)
+  }
+  
+  def get(id: String): Option[Subscriber] = {
+    dao.findOneById(new ObjectId(id))
+  } 
   
 }

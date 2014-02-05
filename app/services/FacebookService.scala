@@ -7,6 +7,7 @@ import com.restfb.types.FacebookType
 import com.restfb.Parameter
 import fbutils.LoggedInFacebookClient
 import com.restfb.exception.FacebookGraphException
+import com.restfb.DefaultFacebookClient
 
 class FacebookService (application: Application) extends Plugin  {
 
@@ -31,7 +32,11 @@ class FacebookService (application: Application) extends Plugin  {
         	val fbObject = fbClient.fetchObject(id, classOf[User])
         	//exception thrown from fetchObject if user does not exist
         	try{
-        		fbObject.getUsername()
+        		val theUsername = fbObject.getUsername()
+        		if(theUsername != null)
+        		  theUsername
+        		else //user exists but has no username
+        		   "0"        		
         	}catch{ case ex: FacebookGraphException => {
         		//user exists but has no username
         		"0"

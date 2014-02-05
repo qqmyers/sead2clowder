@@ -19,6 +19,9 @@ import play.api.data.validation.Valid
 import play.api.data.validation.Invalid
 import play.api.data.validation.ValidationError
 import com.restfb.exception.FacebookGraphException
+import org.apache.http.impl.client.DefaultHttpClient
+import org.apache.http.client.methods.HttpGet
+import org.apache.http.util.EntityUtils
 
 object Subscribers extends SecuredController {
 
@@ -171,11 +174,49 @@ object Subscribers extends SecuredController {
 		        		     
 			        // TODO create a service instead of calling salat directly
 		            Subscriber.save(subscriber)
-		            // redirect to main page
-		            Redirect(routes.Application.index)
+		            
+		            subscriber.email match{
+		            	case Some(email) => {
+		            	  // redirect to main page if subscribed using email
+		            	  Redirect(routes.Application.index)
+		            	}
+		            	case None => {
+		            	  //Redirect to FB oauth page to get user token if subscribed using FB
+		            	  val fbAppId = play.Play.application().configuration().getString("fb.appId")
+		            	  val hostIp = play.Play.application().configuration().getString("hostIp")
+		            	  val hostPort = play.Play.application().configuration().getString("http.port")
+		            	  Redirect("https://www.facebook.com/dialog/oauth?client_id="+fbAppId+"&redirect_uri=http://"+hostIp+":"+hostPort+routes.Subscribers.getAuthToken(subscriber.id.toString)+"&scope=publish_stream")		            	  
+		            	}
+		        	}		        
 			      } 
 	)
   }
+  
+  def getAuthToken(subscriberId: String, code: String) = SecuredAction(authorization=WithPermission(Permission.Public)) { implicit request =>
+    
+    Subscriber.get(subscriberId) match{
+      case Some(subscriber) => {
+
+        val fbAppId = play.Play.application().configuration().getString("fb.appId")
+        val fbAppSecret = play.Play.application().configuration().getString("fb.appSecret")
+        val hostIp = play.Play.application().configuration().getString("hostIp")
+		val hostPort = play.Play.application().configuration().getString("http.port")
+        val httpclient = new DefaultHttpClient()
+        val httpGet = new HttpGet("https://graph.facebook.com/oauth/access_token?client_id="+fbAppId+"&redirect_uri=http://"+hostIp+":"+hostPort+routes.Subscribers.getAuthToken(subscriber.id.toString)+"&client_secret="+fbAppSecret+"&code="+code)
+        val tokenRequestResponse = httpclient.execute(httpGet)
+        Logger.info(tokenRequestResponse.getStatusLine().toString())
+        val tokenResponseString = EntityUtils.toString(tokenRequestResponse.getEntity())
+        val authToken = tokenResponseString.substring(13, tokenResponseString.indexOf("&"))
+        
+        Subscriber.setAuthToken(subscriberId, authToken)
+      }
+      case None =>{
+        Logger.error("Subscriber with id " + subscriberId + " not found. Coludn't set FB authentication token.")
+      }     
+    }
+    
+    Redirect(routes.Application.index)
+  } 
   
   def removeSubscription() = SecuredAction(authorization=WithPermission(Permission.Public)) { implicit request =>
     implicit val user = request.user
