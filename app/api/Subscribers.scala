@@ -9,6 +9,7 @@ import models.Subscriber
 import javax.mail._
 import javax.mail.internet._
 import javax.activation._
+import services.FacebookService
 
 object Subscribers extends ApiController {
 
@@ -44,7 +45,15 @@ object Subscribers extends ApiController {
       Logger.debug("Unsubscribing")
       
       (request.body \ "identifier").asOpt[String].map { identifier =>
-      	    Subscriber.findOneByIdentifier(identifier) match {
+        	var subscriberExisting : Option[Subscriber] = None
+        	try{
+		        	new InternetAddress(identifier).validate()
+		        	subscriberExisting = Subscriber.findOneByEmail(identifier)
+		        }catch{case ex: AddressException => {
+		        	subscriberExisting = Subscriber.findOneByIdentifier(identifier, false)
+		    }} 
+        
+      	    subscriberExisting match {
       	      case Some(subscriber) => {
       	        Logger.debug("Cancelling subscription with identifier " + identifier)
       	        // TODO create a service instead of calling salat directly
@@ -70,10 +79,18 @@ object Subscribers extends ApiController {
 	    	  		Logger.info("Sending feed: "+ html)
 	    	  	  
 	    	  	    var subscribersNotSent = ""
-	    	  		for(subscriberMail <- subscribers){
-	    	  			val wasSent =  sendFeedToSubscriber(subscriberMail, html)
+	    	  		for(subscriberIdentifier <- subscribers){
+	    	  			var wasSent = false
+	    	  			try{//If input is not an email address, try sending to Facebook.
+	    	  			  new InternetAddress(subscriberIdentifier).validate() 
+	    	  			  wasSent =  sendFeedToSubscriber(subscriberIdentifier, html)	    	  			  
+	    	  			}catch{ case ex: AddressException => {
+//	    	  			    	 current.plugin[FacebookService].foreach{currentPlugin => {
+//	    	  			    		 	wasSent = wasSent || currentPlugin.sendFeedToSubscriberFacebook(subscriberIdentifier, html)}}
+	    	  			  	}
+	    	  			}		
 	    	  			if(!wasSent)
-	    	  				subscribersNotSent = subscribersNotSent + ", " + subscriberMail
+	    	  				subscribersNotSent = subscribersNotSent + ", " + subscriberIdentifier
 	    	  		}
 	    	  		if(subscribersNotSent.equals("")){
 	    	  		  Ok("Feed posted successfully.")
@@ -151,7 +168,5 @@ object Subscribers extends ApiController {
       }
       return true
   }
-  
-  
   
 }

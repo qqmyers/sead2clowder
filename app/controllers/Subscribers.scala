@@ -38,13 +38,13 @@ object Subscribers extends SecuredController {
 	     				if(!Subscriber.findOneByEmail(inputIdentifier).isDefined)
 	     				  Valid
 	     				else
-	     				  Invalid(ValidationError("Subscription with this identifier exists already."))     				
+	     				  Invalid(ValidationError("Subscription with this email exists already."))     				
 		        }catch{ case ex: AddressException => {
 			          try{
 			        	if(!Subscriber.findOneByIdentifier(inputIdentifier).isDefined)
 			        	  Valid
 			        	else
-			        	  Invalid(ValidationError("Subscription with this email exists already."))	
+			        	  Invalid(ValidationError("Subscription with this identifier exists already."))	
 			          }catch{ case exFB: FacebookGraphException => {
      						Invalid(ValidationError("FB user not found."))
      					}     				
@@ -93,14 +93,27 @@ object Subscribers extends SecuredController {
      tuple(
       "identifier" -> nonEmptyText,
       "password" -> nonEmptyText
-     )verifying("Wrong identifier and/or password.", fields => fields match {
+     )verifying("No subscriber found with this identifier and password.", fields => fields match {
      		case inputIdentifierPassword => validateRemoval(inputIdentifierPassword).isDefined
      	})
   )
   
   def validateRemoval(inputEmailPassword :(String,String)): Option[Subscriber] = {
     
-    Subscriber.findOneByIdentifier(inputEmailPassword._1) match{
+    var subscriberExisting : Option[Subscriber] = None
+    try{
+		new InternetAddress(inputEmailPassword._1).validate()
+		subscriberExisting = Subscriber.findOneByEmail(inputEmailPassword._1)
+    }catch{case ex: AddressException => {
+      try{
+    	  subscriberExisting = Subscriber.findOneByIdentifier(inputEmailPassword._1)
+      }catch{ case ex2: FacebookGraphException => {
+        		//If could not translate id/username (ie if subscriber has left Facebook), try finding without translating
+    	  		subscriberExisting = Subscriber.findOneByIdentifier(inputEmailPassword._1, false)
+      }}
+    }}
+    
+    subscriberExisting match{
       case Some(subscriber) => {
         if(BCrypt.checkpw(inputEmailPassword._2, subscriber.hashedPassword)){
         	Some(subscriber)
@@ -180,8 +193,21 @@ object Subscribers extends SecuredController {
             },
 	      inputIdentifierPassword => {
 		        Logger.debug("Deleting subscription with identifier " + inputIdentifierPassword._1)
-		        		
-		        Subscriber.findOneByIdentifier(inputIdentifierPassword._1) match{
+		        
+		        var subscriberExisting : Option[Subscriber] = None
+		        try{
+		        	new InternetAddress(inputIdentifierPassword._1).validate()
+		        	subscriberExisting = Subscriber.findOneByEmail(inputIdentifierPassword._1)
+		        }catch{case ex: AddressException => {
+		        	try{
+		        		subscriberExisting = Subscriber.findOneByIdentifier(inputIdentifierPassword._1)
+		        	}catch{ case ex2: FacebookGraphException => {
+		        		//If could not translate id/username (ie if subscriber has left Facebook), try finding without translating
+		        		subscriberExisting = Subscriber.findOneByIdentifier(inputIdentifierPassword._1, false)
+		        	}}
+		        }} 
+		        
+		        subscriberExisting match{
 		          case Some(subscriber) => {
 		            // TODO create a service instead of calling salat directly
 		            Subscriber.remove(subscriber)

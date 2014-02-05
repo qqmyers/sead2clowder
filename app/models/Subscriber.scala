@@ -31,24 +31,25 @@ object Subscriber extends ModelCompanion[Subscriber, ObjectId] {
     dao.findOne(MongoDBObject("email" -> email))
   }
   
-  def findOneByIdentifier(identifier: String): Option[Subscriber] = {
+  def findOneByIdentifier(identifier: String, translateIdUsername: Boolean = true): Option[Subscriber] = {
+    
+    var searchList = List(MongoDBObject("FBIdentifier" -> identifier))
+        
     if(!(identifier forall Character.isDigit)){
-      //Non-numeric, so input must be email or FB username. However, search by associated FB profile ID as well.
-      if(current.plugin[FacebookService].isDefined){
-    	dao.findOne(MongoDBObject("$or" -> List(MongoDBObject("email" -> identifier), MongoDBObject("FBIdentifier" -> identifier), MongoDBObject("FBIdentifier" -> current.plugin[FacebookService].get.getIdByUsername(identifier)) )))
-      }
-      else{
-        dao.findOne(MongoDBObject("$or" -> List(MongoDBObject("email" -> identifier), MongoDBObject("FBIdentifier" -> identifier))))
+      //Non-numeric, so input must be email or FB username. However, search by associated FB profile ID as well if plugin available to translate and translation is required.
+      searchList = searchList :+ MongoDBObject("email" -> identifier)
+      if(current.plugin[FacebookService].isDefined && translateIdUsername){
+    	searchList = searchList :+ MongoDBObject("FBIdentifier" -> current.plugin[FacebookService].get.getIdByUsername(identifier))
       }
     }
     else{
-      //Numeric, so input must be FB profile ID. However, search by associated FB username as well.
-      if(current.plugin[FacebookService].isDefined){
-    	dao.findOne(MongoDBObject("$or" -> List(MongoDBObject("FBIdentifier" -> identifier), MongoDBObject("FBIdentifier" -> current.plugin[FacebookService].get.getUsernameById(identifier)))))
-      }else{
-        dao.findOne(MongoDBObject("$or" -> List(MongoDBObject("FBIdentifier" -> identifier))))
-      }  
+      //Numeric, so input must be FB profile ID. However, search by associated FB username as well if plugin available to translate and translation is required.
+      if(current.plugin[FacebookService].isDefined && translateIdUsername){
+    	searchList = searchList :+ MongoDBObject("FBIdentifier" -> current.plugin[FacebookService].get.getUsernameById(identifier))
+      } 
     }
+    
+    dao.findOne(MongoDBObject("$or" -> searchList))    
   }
   
 }
