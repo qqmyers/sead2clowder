@@ -8,6 +8,7 @@ import com.restfb.Parameter
 import fbutils.LoggedInFacebookClient
 import com.restfb.exception.FacebookGraphException
 import com.restfb.DefaultFacebookClient
+import models.Subscriber
 
 class FacebookService (application: Application) extends Plugin  {
 
@@ -60,17 +61,29 @@ class FacebookService (application: Application) extends Plugin  {
     }
   }
   
-//  def sendFeedToSubscriberFacebook(subscriberIdentifier : String, html: String): Boolean = {
-//    FBClient match{
-//      case Some(fbClient) => {
-//        fbClient.publish(subscriberIdentifier+"/feed", classOf[FacebookType], Parameter.`with`("message", html))
-//        true
-//      }
-//      case None => {
-//        Logger.warn("Could not publish feed to Facebook subscriber. No active Facebook client.")
-//        false
-//      }
-//    }
-//  }
+  def sendFeedToSubscriberFacebook(subscriberIdentifier : String, html: String): Boolean = {
+
+		Subscriber.getAuthToken(subscriberIdentifier) match{
+		  case Some(authToken) =>{
+		    //val visibleName = play.Play.application().configuration().getString("fb.visibleName")
+		    //val visibleLink = play.Play.application().configuration().getString("fb.visibleLink")
+		    //val visiblePic = play.Play.application().configuration().getString("fb.visiblePic")
+		    val fbClient = new DefaultFacebookClient(authToken)
+		    val fbAppId = play.Play.application().configuration().getString("fb.appId")
+		    try{
+		    	fbClient.publish("me"+"/feed",classOf[FacebookType],Parameter.`with`("message", html))
+		    	true
+		    }catch{ case ex: Exception => {
+		    	Logger.error(ex.toString())
+        		Logger.error("Could not send feed to subscriber. Subscriber does not exist on Facebook, or authentication token was invalid.")
+        		false
+        	}}		    
+		  }
+		  case None=>{
+		    Logger.error("Subscriber or subscriber authentication token not found. Could not send feed to subscriber.")
+		    false
+		  }		  
+		}  	
+  }
   
 }

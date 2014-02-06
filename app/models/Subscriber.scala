@@ -56,6 +56,21 @@ object Subscriber extends ModelCompanion[Subscriber, ObjectId] {
     dao.update(MongoDBObject("_id" -> new ObjectId(id)), $set("fbAuthToken" -> token), false, false, WriteConcern.Safe)
   }
   
+  def getAuthToken(identifier: String): Option[String] = {
+    
+    findOneByIdentifier(identifier, false) match{
+      case Some(subscriber) =>{
+        subscriber.fbAuthToken
+      }
+      case None =>{
+        Logger.error("Subscriber with identifier "+identifier+" not found.")
+        None
+      }
+      
+    }
+    
+  }
+  
   def get(id: String): Option[Subscriber] = {
     dao.findOneById(new ObjectId(id))
   } 

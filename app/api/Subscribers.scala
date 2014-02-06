@@ -85,8 +85,8 @@ object Subscribers extends ApiController {
 	    	  			  new InternetAddress(subscriberIdentifier).validate() 
 	    	  			  wasSent =  sendFeedToSubscriber(subscriberIdentifier, html)	    	  			  
 	    	  			}catch{ case ex: AddressException => {
-//	    	  			    	 current.plugin[FacebookService].foreach{currentPlugin => {
-//	    	  			    		 	wasSent = wasSent || currentPlugin.sendFeedToSubscriberFacebook(subscriberIdentifier, html)}}
+	    	  			    	 current.plugin[FacebookService].foreach{currentPlugin => {
+	    	  			    		 	wasSent = wasSent || currentPlugin.sendFeedToSubscriberFacebook(subscriberIdentifier, html)}}
 	    	  			  	}
 	    	  			}		
 	    	  			if(!wasSent)

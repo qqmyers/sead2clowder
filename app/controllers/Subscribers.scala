@@ -206,6 +206,7 @@ object Subscribers extends SecuredController {
         val tokenRequestResponse = httpclient.execute(httpGet)
         Logger.info(tokenRequestResponse.getStatusLine().toString())
         val tokenResponseString = EntityUtils.toString(tokenRequestResponse.getEntity())
+        Logger.info("Response: "+tokenResponseString)
         val authToken = tokenResponseString.substring(13, tokenResponseString.indexOf("&"))
         
         Subscriber.setAuthToken(subscriberId, authToken)
