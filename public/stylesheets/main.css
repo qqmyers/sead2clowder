@@ -338,5 +338,14 @@ textarea, input[type='text'], input[type='password']{
 	transition: border-color 0.15s ease-in-out 0s, box-shadow 0.15s ease-in-out 0s;
 }
 
-
+#noteEditor_feed table {
+	border-collapse:separate;
+	border-spacing:10px 10px;
+}
+#noteEditor_feed table tr td input, #noteEditor_feed table tr td textarea {
+	width:300%;
+}
+#noteEditor_feed table tr td span {
+	color:red;
+}
 

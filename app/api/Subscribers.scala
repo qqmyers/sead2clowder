@@ -85,8 +85,13 @@ object Subscribers extends ApiController {
 	    	  			  new InternetAddress(subscriberIdentifier).validate() 
 	    	  			  wasSent =  sendFeedToSubscriber(subscriberIdentifier, html)	    	  			  
 	    	  			}catch{ case ex: AddressException => {
+	    	  					val url = (request.body \ "url").asOpt[String].getOrElse("")
+	    	  					val image = (request.body \ "image").asOpt[String].getOrElse("")
+	    	  					val name = (request.body \ "name").asOpt[String].getOrElse("")
+	    	  					val description = (request.body \ "description").asOpt[String].getOrElse("")
+	    	  			  
 	    	  			    	 current.plugin[FacebookService].foreach{currentPlugin => {
-	    	  			    		 	wasSent = wasSent || currentPlugin.sendFeedToSubscriberFacebook(subscriberIdentifier, html)}}
+	    	  			    		 	wasSent = wasSent || currentPlugin.sendFeedToSubscriberFacebook(subscriberIdentifier,html,url,image,name,description)}}
 	    	  			  	}
 	    	  			}		
 	    	  			if(!wasSent)

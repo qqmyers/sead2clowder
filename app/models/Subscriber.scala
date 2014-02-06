@@ -32,6 +32,14 @@ object Subscriber extends ModelCompanion[Subscriber, ObjectId] {
     dao.findOne(MongoDBObject("email" -> email))
   }
   
+  def findAllHavingEmail(): List[Subscriber] = {
+    dao.find(MongoDBObject("email" -> MongoDBObject("$ne" ->  None))).toList
+  }
+  
+  def findAllHavingFB(): List[Subscriber] = {
+    dao.find(MongoDBObject("FBIdentifier" -> MongoDBObject("$ne" ->  None))).toList
+  }
+  
   def findOneByIdentifier(identifier: String, translateIdUsername: Boolean = true): Option[Subscriber] = {
     
     var searchList = List(MongoDBObject("FBIdentifier" -> identifier))

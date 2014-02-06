@@ -9,6 +9,7 @@ import fbutils.LoggedInFacebookClient
 import com.restfb.exception.FacebookGraphException
 import com.restfb.DefaultFacebookClient
 import models.Subscriber
+import scala.collection.mutable.ArrayBuffer
 
 class FacebookService (application: Application) extends Plugin  {
 
@@ -61,17 +62,31 @@ class FacebookService (application: Application) extends Plugin  {
     }
   }
   
-  def sendFeedToSubscriberFacebook(subscriberIdentifier : String, html: String): Boolean = {
+  def sendFeedToSubscriberFacebook(subscriberIdentifier : String, html: String, url: String, image: String, name: String, description: String): Boolean = {
 
 		Subscriber.getAuthToken(subscriberIdentifier) match{
 		  case Some(authToken) =>{
-		    //val visibleName = play.Play.application().configuration().getString("fb.visibleName")
-		    //val visibleLink = play.Play.application().configuration().getString("fb.visibleLink")
+		    val visibleName = play.Play.application().configuration().getString("fb.visibleName")
+		    val visibleLink = play.Play.application().configuration().getString("fb.visibleLink")
 		    //val visiblePic = play.Play.application().configuration().getString("fb.visiblePic")
 		    val fbClient = new DefaultFacebookClient(authToken)
 		    val fbAppId = play.Play.application().configuration().getString("fb.appId")
-		    try{
-		    	fbClient.publish("me"+"/feed",classOf[FacebookType],Parameter.`with`("message", html))
+		    
+		    var publishingParams = ArrayBuffer.empty[Parameter]
+		    if(!html.equals(""))
+		      publishingParams += Parameter.`with`("message", html)
+		    if(!url.equals(""))
+		      publishingParams += Parameter.`with`("link", url)
+		    if(!image.equals(""))
+		      publishingParams += Parameter.`with`("picture", image)
+		    if(!name.equals(""))
+		      publishingParams += Parameter.`with`("name", name)
+		    if(!description.equals(""))
+		      publishingParams += Parameter.`with`("description", name)
+		      
+		    
+		    try{  //"<a href='"+visibleLink+"'><b>"+visibleName+"</b></a><br /><br />"+
+		    	fbClient.publish("me"+"/feed",classOf[FacebookType], publishingParams.toArray:_*)
 		    	true
 		    }catch{ case ex: Exception => {
 		    	Logger.error(ex.toString())
