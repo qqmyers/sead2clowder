@@ -39,6 +39,12 @@
 	      }
 	      @inputPassword(myForm("password"), '_label -> "Password (for unregistering)")
 	    </fieldset>
+	    @if(FBEnabled){
+		    <div style="margin-top:10px;margin-bottom:10px;">
+		    	<b>Note: Facebook-based subscribers will need to resubscribe every two months due to Facebook app restrictions.</b>
+		    	<br /><b>A notice for this will be sent to the subscriber's Facebook wall when his/her resubscription is needed.</b>
+		    </div>
+	    }
         <div class="form-actions">
           <input type="submit" class="btn btn-default" value="Subscribe"/>
         </div>

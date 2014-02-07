@@ -8,6 +8,7 @@ import MongoContext.context
 import com.mongodb.casbah.Imports._
 import services.FacebookService
 import play.api.Logger
+import java.util.Date
 
 case class Subscriber (
   id: ObjectId = new ObjectId,
@@ -16,7 +17,8 @@ case class Subscriber (
   email: Option[String] = None,
   FBIdentifier: Option[String] = None,
   hashedPassword: String,
-  fbAuthToken: Option[String] = None
+  fbAuthToken: Option[String] = None,
+  expirationTime: Option[Date] = None
 )
 
 
@@ -60,8 +62,9 @@ object Subscriber extends ModelCompanion[Subscriber, ObjectId] {
     dao.findOne(MongoDBObject("$or" -> searchList))    
   }
   
-  def setAuthToken(id: String, token: String){
-    dao.update(MongoDBObject("_id" -> new ObjectId(id)), $set("fbAuthToken" -> token), false, false, WriteConcern.Safe)
+  def setAuthToken(id: String, token: String, expirationOffset: Int){
+    val expirationTime = (expirationOffset * 1000) + System.currentTimeMillis() 
+    dao.update(MongoDBObject("_id" -> new ObjectId(id)), $set("fbAuthToken" -> token, "expirationTime" -> new Date(expirationTime)), false, false, WriteConcern.Safe)
   }
   
   def getAuthToken(identifier: String): Option[String] = {
@@ -78,9 +81,15 @@ object Subscriber extends ModelCompanion[Subscriber, ObjectId] {
     }
     
   }
+
   
   def get(id: String): Option[Subscriber] = {
     dao.findOneById(new ObjectId(id))
-  } 
+  }
+  
+  def getAllExpiring(): List[Subscriber] = {
+    val interval = play.Play.application().configuration().getInt("fb.checkAndRemoveExpired.every") * (24*60*60*1000) * 2 //double the time, for safety
+    dao.find("expirationTime" $lt (new Date(System.currentTimeMillis()+interval))).toList
+  }
   
 }

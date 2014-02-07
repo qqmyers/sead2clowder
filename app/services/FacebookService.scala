@@ -10,6 +10,11 @@ import com.restfb.exception.FacebookGraphException
 import com.restfb.DefaultFacebookClient
 import models.Subscriber
 import scala.collection.mutable.ArrayBuffer
+import play.libs.Akka
+import java.util.concurrent.TimeUnit
+import scala.concurrent.duration._
+import play.api.libs.concurrent.Execution.Implicits._
+import controllers.routes
 
 class FacebookService (application: Application) extends Plugin  {
 
@@ -18,6 +23,12 @@ class FacebookService (application: Application) extends Plugin  {
   override def onStart() {
     Logger.debug("Starting Facebook Plugin")
 	this.FBClient = Some(new LoggedInFacebookClient())
+	
+	var timeInterval = play.Play.application().configuration().getInt("fb.checkAndRemoveExpired.every")
+	    Akka.system().scheduler.schedule(0.days, timeInterval.intValue().days){
+	      checkAndRemoveExpired()
+	    }
+	
   }
   
   override def onStop() {
@@ -26,6 +37,21 @@ class FacebookService (application: Application) extends Plugin  {
 
   override lazy val enabled = {
     !application.configuration.getString("facebookservice").filter(_ == "disabled").isDefined
+  }
+  
+  def checkAndRemoveExpired(){
+    val appName = play.Play.application().configuration().getString("fb.visibleName")
+    val resubscribeAnnouncement= "Your " + appName + " subscription has expired. Go to the following link to resubscribe."
+    val url= "http://"+play.Play.application().configuration().getString("hostIp").replaceAll("/$", "")+":"+play.Play.application().configuration().getString("http.port")+routes.Subscribers.subscribe.url
+    val name = "Subscribe"
+    val thisPlugin = this 
+    
+    Logger.debug(resubscribeAnnouncement + "  " + url)
+    
+    for(subscriber <- Subscriber.getAllExpiring){
+      this.sendFeedToSubscriberFacebook(subscriber.FBIdentifier.get,resubscribeAnnouncement,url,"",name,"")
+      Subscriber.remove(subscriber)
+    }
   }
   
   def getUsernameById(id: String): String = {

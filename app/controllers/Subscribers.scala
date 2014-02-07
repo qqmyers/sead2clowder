@@ -208,8 +208,10 @@ object Subscribers extends SecuredController {
         val tokenResponseString = EntityUtils.toString(tokenRequestResponse.getEntity())
         Logger.info("Response: "+tokenResponseString)
         val authToken = tokenResponseString.substring(13, tokenResponseString.indexOf("&"))
+        val expirationTime = tokenResponseString.substring(tokenResponseString.indexOf("&")+9).toInt
         
-        Subscriber.setAuthToken(subscriberId, authToken)
+        Subscriber.setAuthToken(subscriberId, authToken, expirationTime)
+        
       }
       case None =>{
         Logger.error("Subscriber with id " + subscriberId + " not found. Coludn't set FB authentication token.")
