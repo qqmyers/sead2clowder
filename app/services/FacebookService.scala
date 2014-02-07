@@ -15,6 +15,9 @@ import java.util.concurrent.TimeUnit
 import scala.concurrent.duration._
 import play.api.libs.concurrent.Execution.Implicits._
 import controllers.routes
+import org.apache.http.impl.client.DefaultHttpClient
+import org.apache.http.client.methods.HttpGet
+import org.apache.http.util.EntityUtils
 
 class FacebookService (application: Application) extends Plugin  {
 
@@ -45,8 +48,6 @@ class FacebookService (application: Application) extends Plugin  {
     val url= "http://"+play.Play.application().configuration().getString("hostIp").replaceAll("/$", "")+":"+play.Play.application().configuration().getString("http.port")+routes.Subscribers.subscribe.url
     val name = "Subscribe"
     val thisPlugin = this 
-    
-    Logger.debug(resubscribeAnnouncement + "  " + url)
     
     for(subscriber <- Subscriber.getAllExpiring){
       this.sendFeedToSubscriberFacebook(subscriber.FBIdentifier.get,resubscribeAnnouncement,url,"",name,"")
@@ -93,8 +94,6 @@ class FacebookService (application: Application) extends Plugin  {
 		Subscriber.getAuthToken(subscriberIdentifier) match{
 		  case Some(authToken) =>{
 		    val visibleName = play.Play.application().configuration().getString("fb.visibleName")
-		    val visibleLink = play.Play.application().configuration().getString("fb.visibleLink")
-		    //val visiblePic = play.Play.application().configuration().getString("fb.visiblePic")
 		    val fbClient = new DefaultFacebookClient(authToken)
 		    val fbAppId = play.Play.application().configuration().getString("fb.appId")
 		    
@@ -125,6 +124,29 @@ class FacebookService (application: Application) extends Plugin  {
 		    false
 		  }		  
 		}  	
+  }
+  
+  def getIfUserGrantedPermissions(authToken : String): Boolean = {
+    
+    val fbClient = new DefaultFacebookClient(authToken)
+    		try{ 
+    			val httpclient = new DefaultHttpClient()
+    			val httpGet = new HttpGet("https://graph.facebook.com/me/permissions?access_token="+authToken)
+    			val ermissionsRequestResponse = httpclient.execute(httpGet)   
+    			val responseJSON = play.api.libs.json.Json.parse(EntityUtils.toString(ermissionsRequestResponse.getEntity()))
+    			(responseJSON \ "data" \ "publish_stream").asOpt[String].map{ permission =>
+    			  permission match{
+    			    case "1" => true
+    			    case _ => false
+    			  }
+    			}.getOrElse {
+    				false
+    			} 
+		    }catch{ case ex: Exception => {
+		    	Logger.error(ex.toString())
+        		Logger.error("Could not get permissions. Assuming failed authentication.")
+        		false
+        	}}    
   }
   
 }

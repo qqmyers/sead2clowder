@@ -18,7 +18,12 @@
 	@if(myForm.hasErrors) {
 		<div class="alert alert-error">
             <p>Please fix all errors</p>
-        </div>        
+        </div>
+        @if(flash.get("error").size == 0){
+        	<div class="alert alert-error">
+            		<p>Subscriber refused to authenticate with Facebook and grant publish feeds permission.</p>
+        	</div>
+        }         
     }
     @flash.get("error").map { message =>
     	<div class="alert alert-error">

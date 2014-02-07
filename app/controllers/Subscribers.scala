@@ -22,6 +22,8 @@ import com.restfb.exception.FacebookGraphException
 import org.apache.http.impl.client.DefaultHttpClient
 import org.apache.http.client.methods.HttpGet
 import org.apache.http.util.EntityUtils
+import java.util.ArrayList
+import play.api.data.FormError
 
 object Subscribers extends SecuredController {
 
@@ -205,20 +207,38 @@ object Subscribers extends SecuredController {
         val httpGet = new HttpGet("https://graph.facebook.com/oauth/access_token?client_id="+fbAppId+"&redirect_uri=http://"+hostIp+":"+hostPort+routes.Subscribers.getAuthToken(subscriber.id.toString)+"&client_secret="+fbAppSecret+"&code="+code)
         val tokenRequestResponse = httpclient.execute(httpGet)
         Logger.info(tokenRequestResponse.getStatusLine().toString())
-        val tokenResponseString = EntityUtils.toString(tokenRequestResponse.getEntity())
-        Logger.info("Response: "+tokenResponseString)
-        val authToken = tokenResponseString.substring(13, tokenResponseString.indexOf("&"))
-        val expirationTime = tokenResponseString.substring(tokenResponseString.indexOf("&")+9).toInt
+        if(tokenRequestResponse.getStatusLine().getStatusCode().toString.startsWith("4")){
+          //subscriber refused to allow access to FB account
+          Logger.error("Error authenticating user. User probably refused to allow access to FB account by the feeder app. Removing subscriber.")
+          Subscriber.remove(subscriber)
+          implicit val user = request.user
+     
+          BadRequest(views.html.newSubscriber(subscriptionForm.copy(errors = subscriptionForm.errors :+ new FormError("error.key", "Subscriber refused to authenticate with Facebook.")), true))
+        }
+        else{
+        	val tokenResponseString = EntityUtils.toString(tokenRequestResponse.getEntity())
+        	Logger.info("Response: "+tokenResponseString)
+        	val authToken = tokenResponseString.substring(13, tokenResponseString.indexOf("&"))
+        	
+        	if(current.plugin[FacebookService].get.getIfUserGrantedPermissions(authToken)){
+        	  val expirationTime = tokenResponseString.substring(tokenResponseString.indexOf("&")+9).toInt
         
-        Subscriber.setAuthToken(subscriberId, authToken, expirationTime)
-        
+        	  Subscriber.setAuthToken(subscriberId, authToken, expirationTime)
+        	
+        	  Redirect(routes.Application.index)
+        	}else{ //user has not granted publish permission to the feed app
+        	  Logger.error("Error authenticating user. User refused to grant publish permission to the feeder app. Removing subscriber.")
+        	  Subscriber.remove(subscriber)
+        	  implicit val user = request.user
+        	  BadRequest(views.html.newSubscriber(subscriptionForm.copy(errors = subscriptionForm.errors :+ new FormError("error.key", "Subscriber refused to grant publish feeds permission.")), true))
+        	}    	
+        }
       }
       case None =>{
         Logger.error("Subscriber with id " + subscriberId + " not found. Coludn't set FB authentication token.")
+        InternalServerError("Subscriber not found. Coludn't authenticate.")
       }     
-    }
-    
-    Redirect(routes.Application.index)
+    }        
   } 
   
   def removeSubscription() = SecuredAction(authorization=WithPermission(Permission.Public)) { implicit request =>
