@@ -347,5 +347,7 @@ textarea, input[type='text'], input[type='password']{
 }
 #noteEditor_feed table tr td span {
 	color:red;
+	position:relative;
+	right:-430%;
 }
 
