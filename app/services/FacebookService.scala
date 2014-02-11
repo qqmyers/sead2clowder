@@ -107,7 +107,7 @@ class FacebookService (application: Application) extends Plugin  {
 		    if(!name.equals(""))
 		      publishingParams += Parameter.`with`("name", name)
 		    if(!description.equals(""))
-		      publishingParams += Parameter.`with`("description", name)
+		      publishingParams += Parameter.`with`("description", description)
 		      
 		    
 		    try{  //"<a href='"+visibleLink+"'><b>"+visibleName+"</b></a><br /><br />"+
