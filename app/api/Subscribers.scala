@@ -10,6 +10,7 @@ import javax.mail._
 import javax.mail.internet._
 import javax.activation._
 import services.FacebookService
+import services.MailerPlugin
 
 object Subscribers extends ApiController {
 
@@ -83,7 +84,10 @@ object Subscribers extends ApiController {
 	    	  			var wasSent = false
 	    	  			try{//If input is not an email address, try sending to Facebook.
 	    	  			  new InternetAddress(subscriberIdentifier).validate() 
-	    	  			  wasSent =  sendFeedToSubscriber(subscriberIdentifier, html)	    	  			  
+
+	    	  			  current.plugin[MailerPlugin].foreach{currentPlugin => {
+	    	  			    		 	wasSent = wasSent || currentPlugin.sendMail(subscriberIdentifier, html, "Medici 2 newsletter feed.")}}
+	    	  			  
 	    	  			}catch{ case ex: AddressException => {
 	    	  					val url = (request.body \ "url").asOpt[String].getOrElse("")
 	    	  					val image = (request.body \ "image").asOpt[String].getOrElse("")
@@ -116,62 +120,5 @@ object Subscribers extends ApiController {
     	} 
     }
   }
-  
-  
-  def sendFeedToSubscriber(subscriberMail : String, html: String): Boolean = {
-		  
-	  Logger.info("Sending feed to " + subscriberMail)	  
-    
-      val from = play.Play.application().configuration().getString("smtp.from")
-      val host =  play.Play.application().configuration().getString("smtp.host")
-      val properties = System.getProperties()
-      properties.setProperty("mail.smtp.host", host)
-      
-      //SSL or regular SMTP
-      var port = play.api.Play.configuration.getInt("smtp.port").getOrElse(0)
-      if(play.api.Play.configuration.getBoolean("smtp.ssl").getOrElse(false)){
-        if(port == 0)
-          port = 465
-          
-        properties.setProperty("mail.smtp.socketFactory.port", port.toString)
-        properties.setProperty("mail.smtp.socketFactory.class", "javax.net.ssl.SSLSocketFactory")          
-      }
-      else{
-        if(port == 0)
-          port = 25
-      }
-      properties.setProperty("mail.smtp.port", port.toString)
-      
-      //Authenticate if needed
-      var session = Session.getDefaultInstance(properties)
-      val user = play.api.Play.configuration.getString("smtp.user").getOrElse("")      
-      if(!user.equals("")){
-        properties.setProperty("mail.smtp.auth", "true")
-        session = Session.getInstance(properties,
-			  new javax.mail.Authenticator() {
-				override def getPasswordAuthentication(): PasswordAuthentication = {
-					return new PasswordAuthentication(user, play.api.Play.configuration.getString("smtp.password").getOrElse(""))
-				}
-			  })
-      }
-      
-      try{
-        val message = new MimeMessage(session)
-        message.setFrom(new InternetAddress(from))
-        message.addRecipient(Message.RecipientType.TO,
-                                  new InternetAddress(subscriberMail))
-        message.setSubject("Medici 2 newsletter feed.")
-        message.setContent(html, "text/html")
-        Transport.send(message)
-                                  
-        Logger.info("Sent message successfully.")        
-      }catch {
-        case msgex: MessagingException =>{
-        	Logger.error(msgex.toString())
-        	return false
-        }  
-      }
-      return true
-  }
-  
-}
+
+}  

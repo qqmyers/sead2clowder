@@ -19,13 +19,9 @@ object Application extends SecuredController {
   /**
    * Main page.
    */
-//  def index = Action { implicit request =>
-//    Ok(views.html.index())
-//  }
-  def index() = SecuredAction() { request =>
+  def index = SecuredAction() { request =>
   	implicit val user = request.user
   	val latestFiles = FileDAO.find(MongoDBObject()).sort(MongoDBObject("uploadDate" -> -1)).limit(5).toList
-  	
     Ok(views.html.index(latestFiles))
   }
   

@@ -1,3 +1,4 @@
+
 html,body {
   height: 100%;
   /* The html and body elements cannot have any padding or margin. */
@@ -291,11 +292,16 @@ fieldset #email_field .controls #email{
 	width:208px;
 	height:30px;
 }
-#unsubscribeIdentifierFieldSet .control-group .controls input[type='text']{
+#unsubscribeIdentifierFieldSet  .control-group .controls input[type='text']{
 	width:208px;
 	height:30px;
 }
-#unsubscribeIdentifierFieldSet .control-group .controls input[type='password']{
+#unsubscribeIdentifierFieldSet  .control-group .controls input[type='password']{
+	width:208px;
+	height:30px;
+}
+
+#adminMailFieldSet .control-group .controls input[type='text']{
 	width:208px;
 	height:30px;
 }
@@ -348,6 +354,4 @@ textarea, input[type='text'], input[type='password']{
 #noteEditor_feed table tr td span {
 	color:red;
 	position:relative;
-	right:-430%;
-}
 
