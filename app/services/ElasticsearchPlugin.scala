@@ -14,6 +14,11 @@ import org.elasticsearch.action.search.SearchType
 import org.elasticsearch.client.transport.NoNodeAvailableException
 import org.elasticsearch.action.search.SearchResponse
 import org.elasticsearch.index.query.QueryBuilders
+import models.Dataset
+import scala.collection.mutable.ListBuffer
+import models.Comment
+import scala.util.parsing.json.JSONArray
+
 
 /**
  * Elasticsearch plugin.
@@ -78,11 +83,16 @@ class ElasticsearchPlugin(application: Application) extends Plugin {
     Logger.info("Indexing document: " + response.getId())
   }
   
+
   def delete(index: String, docType: String, id: String) {    
     val response = client.prepareDelete(index, docType, id)
       .execute()
       .actionGet()
     Logger.info("Deleting document: " + response.getId())
+  }
+
+  def indexDataset(dataset: Dataset) {
+    Dataset.index(dataset.id.toString)
   }
 
   def testQuery() {
