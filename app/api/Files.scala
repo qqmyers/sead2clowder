@@ -72,6 +72,7 @@ class Files @Inject() (files: FileService, datasets: DatasetService, queries: Qu
     var tags: Option[List[String]] = None
   }
 
+
   val USERID_ANONYMOUS = "anonymous"
   
   def get(id: String) = SecuredAction(parse.anyContent, authorization=WithPermission(Permission.ShowFile)) { implicit request =>
@@ -90,15 +91,14 @@ class Files @Inject() (files: FileService, datasets: DatasetService, queries: Qu
       Ok(toJson(list))
     }
   
-  def downloadByDatasetAndFilename(datasetId: String, filename: String, preview_id: String) = 
-    SecuredAction(parse.anyContent, authorization=WithPermission(Permission.DownloadFiles)){ request =>
+  def downloadByDatasetAndFilename(datasetId: String, filename: String, preview_id: String) = SecuredAction(parse.anyContent, authorization=WithPermission(Permission.DownloadFiles)){ request =>
       datasets.getFileId(datasetId, filename) match{
         case Some(id) => { 
           Redirect(routes.Files.download(id)) 
         }
         case None => {
           InternalServerError
-      }
+        }
       case None => { Logger.error("Error getting dataset" + datasetId); InternalServerError }
     }  
   }
@@ -384,9 +384,9 @@ class Files @Inject() (files: FileService, datasets: DatasetService, queries: Qu
    */
   def uploadToDataset(dataset_id: String, showPreviews: String="DatasetLevel", originalZipFile: String = "") = SecuredAction(parse.multipartFormData, authorization=WithPermission(Permission.CreateFiles)) { implicit request =>
     request.user match {
-        case Some(user) => {
-    datasets.get(dataset_id) match {
-      case Some(dataset) => {
+     case Some(user) => {
+      datasets.get(dataset_id) match {
+       case Some(dataset) => {
         request.body.file("File").map { f =>
           		var nameOfFile = f.filename
 	            var flags = ""
