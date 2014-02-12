@@ -63,6 +63,7 @@ object MustBreak extends Exception { }
 
 class Files @Inject() (files: FileService, datasets: DatasetService, queries: QueryService, tags: TagService)  extends ApiController {
   
+  
   // Helper class and function to check for error conditions for tags.
   class TagCheck {
     var error_str: String = ""
