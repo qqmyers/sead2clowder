@@ -76,7 +76,6 @@ class Files @Inject() (files: FileService, datasets: DatasetService, queries: Qu
   }
 
   val USERID_ANONYMOUS = "anonymous"
-
   
   def get(id: String) = SecuredAction(parse.anyContent, authorization=WithPermission(Permission.ShowFile)) { implicit request =>
 	    Logger.info("GET file with id " + id)    
@@ -1347,5 +1346,28 @@ class Files @Inject() (files: FileService, datasets: DatasetService, queries: Qu
       case None => Logger.error("File not found: " + id)
     }
   }
-	
+
+    
+  def setNotesHTML(id: String) = SecuredAction(authorization=WithPermission(Permission.CreateNotes))  { implicit request =>
+	  request.user match {
+	    case Some(identity) => {
+		    request.body.\("notesHTML").asOpt[String] match {
+			    case Some(html) => {
+			        FileDAO.setNotesHTML(id, html)
+			        //index(id)
+			        Ok(toJson(Map("status"->"success")))
+			    }
+			    case None => {
+			    	Logger.error("no html specified.")
+			    	BadRequest(toJson("no html specified."))
+			    }
+		    }
+	    }
+	    case None =>
+	      Logger.error(("No user identity found in the request, request body: " + request.body))
+	      BadRequest(toJson("No user identity found in the request, request body: " + request.body))
+	  }
+    }
+  
+  
 }
