@@ -18,6 +18,7 @@ import controllers.routes
 import org.apache.http.impl.client.DefaultHttpClient
 import org.apache.http.client.methods.HttpGet
 import org.apache.http.util.EntityUtils
+import play.api.libs.json.JsObject
 
 class FacebookService (application: Application) extends Plugin  {
 
@@ -134,9 +135,9 @@ class FacebookService (application: Application) extends Plugin  {
     			val httpGet = new HttpGet("https://graph.facebook.com/me/permissions?access_token="+authToken)
     			val ermissionsRequestResponse = httpclient.execute(httpGet)   
     			val responseJSON = play.api.libs.json.Json.parse(EntityUtils.toString(ermissionsRequestResponse.getEntity()))
-    			(responseJSON \ "data" \ "publish_stream").asOpt[String].map{ permission =>
+    			((responseJSON \ "data").validate[List[JsObject]].get(0)   \ "publish_stream").asOpt[Int].map{ permission =>
     			  permission match{
-    			    case "1" => true
+    			    case 1 => true
     			    case _ => false
     			  }
     			}.getOrElse {
