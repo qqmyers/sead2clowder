@@ -43,6 +43,7 @@ class ElasticsearchPlugin(application: Application) extends Plugin {
 
       client.prepareIndex("data", "file")
       client.prepareIndex("data", "dataset")
+      client.prepareIndex("data", "collection")
       
       Logger.info("ElasticsearchPlugin has started")
     } catch {
@@ -55,7 +56,7 @@ class ElasticsearchPlugin(application: Application) extends Plugin {
     Logger.info("Searching ElasticSearch for " + query)
     
     val response = client.prepareSearch(index)
-      .setTypes("file","dataset")
+      .setTypes("file","dataset","collection")
       .setSearchType(SearchType.DFS_QUERY_THEN_FETCH)
       //.setQuery(QueryBuilders.matchQuery("_all", query))
       .setQuery(QueryBuilders.queryString(query))
@@ -82,26 +83,16 @@ class ElasticsearchPlugin(application: Application) extends Plugin {
     Logger.info("Indexing document: " + response.getId())
   }
   
+
+  def delete(index: String, docType: String, id: String) {    
+    val response = client.prepareDelete(index, docType, id)
+      .execute()
+      .actionGet()
+    Logger.info("Deleting document: " + response.getId())
+  }
+
   def indexDataset(dataset: Dataset) {
-    var tagListBuffer = new ListBuffer[String]()
-
-        for (tag <- dataset.tags) {
-          tagListBuffer += tag.name
-        }
-
-        val tagsJson = new JSONArray(tagListBuffer.toList)
-
-        Logger.debug("tagStr=" + tagsJson);
-
-        val comments = for (comment <- Comment.findCommentsByDatasetId(dataset.id.toString, false)) yield {
-          comment.text
-        }
-        val commentJson = new JSONArray(comments)
-
-        Logger.debug("commentStr=" + commentJson.toString())
-
-        index("data", "dataset", dataset.id.toString,
-            List(("name", dataset.name), ("description", dataset.description), ("tag", tagsJson.toString), ("comments", commentJson.toString)))
+    Dataset.index(dataset.id.toString)
   }
 
   def testQuery() {

@@ -22,6 +22,7 @@ import securesocial.core.Identity
 import scala.collection.mutable.ListBuffer
 import scala.util.parsing.json.JSONArray
 import jsonutils.JsonUtil
+import java.text.SimpleDateFormat
 
 /**
  * A dataset is a collection of files, and streams.
@@ -478,15 +479,17 @@ def searchMetadataFormulateQuery(requestedMap: java.util.LinkedHashMap[String,An
   def removeDataset(id: String){
     dao.findOneById(new ObjectId(id)) match{
       case Some(dataset) => {
-        for(collection <- Collection.listInsideDataset(id))
-          Collection.removeDataset(collection.id.toString, dataset)
+        for(collection <- Collection.listInsideDataset(id)){
+        	Collection.removeDataset(collection.id.toString, dataset)
+        	Collection.index(collection.id.toString())
+          }
         for(comment <- Comment.findCommentsByDatasetId(id)){
         	Comment.removeComment(comment)
         }  
 	    for(f <- dataset.files){
 	      var notTheDataset = for(currDataset<-findByFileId(f.id) if !dataset.id.toString.equals(currDataset.id.toString)) yield currDataset
 	      if(notTheDataset.size == 0)
-	    	FileDAO.removeFile(f.id.toString)
+	    	FileDAO.removeFile(f.id.toString)	      	
 	    }
         Dataset.remove(MongoDBObject("_id" -> dataset.id))        
       }
@@ -522,10 +525,27 @@ def searchMetadataFormulateQuery(requestedMap: java.util.LinkedHashMap[String,An
 
         val xmlMd = Dataset.getXMLMetadataJSON(id)
         Logger.debug("xmlmd=" + xmlMd)
+        
+        var fileDsId = ""
+        var fileDsName = ""          
+        for(file <- dataset.files){
+          fileDsId = fileDsId + file.id.toString + "  "
+          fileDsName = fileDsName + file.filename + "  "
+        }
+        
+        var dsCollsId = ""
+        var dsCollsName = ""
+          
+        for(collection <- Collection.listInsideDataset(dataset.id.toString)){
+          dsCollsId = dsCollsId + collection.id.toString + " %%% "
+          dsCollsName = dsCollsName + collection.name + " %%% "
+        }
+	    
+	    val formatter = new SimpleDateFormat("dd/MM/yyyy")
 
         current.plugin[ElasticsearchPlugin].foreach {
           _.index("data", "dataset", id,
-            List(("name", dataset.name), ("description", dataset.description), ("tag", tagsJson.toString), ("comments", commentJson.toString), ("usermetadata", usrMd), ("technicalmetadata", techMd), ("xmlmetadata", xmlMd)  ))
+            List(("name", dataset.name), ("description", dataset.description), ("author",dataset.author.fullName),("created",formatter.format(dataset.created)), ("fileId",fileDsId),("fileName",fileDsName), ("collId",dsCollsId),("collName",dsCollsName), ("tag", tagsJson.toString), ("comments", commentJson.toString), ("usermetadata", usrMd), ("technicalmetadata", techMd), ("xmlmetadata", xmlMd)  ))
         }
       }
       case None => Logger.error("Dataset not found: " + id)

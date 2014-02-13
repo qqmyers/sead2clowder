@@ -13,6 +13,8 @@ import java.io.FileWriter
 import java.io.FileReader
 import java.io.ByteArrayInputStream
 
+import java.text.SimpleDateFormat
+
 import org.bson.types.ObjectId
 
 import com.mongodb.WriteConcern
@@ -64,7 +66,6 @@ object MustBreak extends Exception { }
 
 class Files @Inject() (files: FileService, datasets: DatasetService, queries: QueryService, tags: TagService)  extends ApiController {
   
-  
   // Helper class and function to check for error conditions for tags.
   class TagCheck {
     var error_str: String = ""
@@ -74,8 +75,8 @@ class Files @Inject() (files: FileService, datasets: DatasetService, queries: Qu
     var tags: Option[List[String]] = None
   }
 
-
   val USERID_ANONYMOUS = "anonymous"
+
   
   def get(id: String) = SecuredAction(parse.anyContent, authorization=WithPermission(Permission.ShowFile)) { implicit request =>
 	    Logger.info("GET file with id " + id)    
@@ -254,7 +255,8 @@ class Files @Inject() (files: FileService, datasets: DatasetService, queries: Qu
 	               }
 	               case None => {}
 	             }
-	         } 	        
+	         }
+	        var realUserName = realUser.fullName
 	        val file = files.save(new FileInputStream(f.ref.file), nameOfFile, f.contentType, realUser, showPreviews)
 
 	        val uploadedFile = f
@@ -296,7 +298,9 @@ class Files @Inject() (files: FileService, datasets: DatasetService, queries: Qu
 	            val host = "http://" + request.host + request.path.replaceAll("api/files$", "")
 
 	            current.plugin[RabbitmqPlugin].foreach{_.extract(ExtractorMessage(id, id, host, key, Map.empty, f.length.toString, "", flags))}
-	            	            
+	            	       
+	            val dateFormat = new SimpleDateFormat("dd/MM/yyyy") 
+	            
 	            //for metadata files
 	            if(fileType.equals("application/xml") || fileType.equals("text/xml")){
 	              val xmlToJSON = FilesUtils.readXMLgetJSON(uploadedFile.ref.file)
@@ -305,7 +309,7 @@ class Files @Inject() (files: FileService, datasets: DatasetService, queries: Qu
 	              Logger.debug("xmlmd=" + xmlToJSON)
 	              
 	              current.plugin[ElasticsearchPlugin].foreach{
-		              _.index("data", "file", id, List(("filename",nameOfFile), ("contentType", f.contentType), ("xmlmetadata", xmlToJSON)))
+		              _.index("data", "file", id, List(("filename",nameOfFile), ("contentType", f.contentType), ("author", realUserName), ("uploadDate", dateFormat.format(new Date())), ("xmlmetadata", xmlToJSON)))
 		            }
 	              
 	              //add file to RDF triple store if triple store is used
@@ -318,7 +322,7 @@ class Files @Inject() (files: FileService, datasets: DatasetService, queries: Qu
 	            }
 	            else{
 		            current.plugin[ElasticsearchPlugin].foreach{
-		              _.index("data", "file", id, List(("filename",nameOfFile), ("contentType", f.contentType)))
+		              _.index("data", "file", id, List(("filename",nameOfFile), ("contentType", f.contentType), ("author", realUserName), ("uploadDate", dateFormat.format(new Date()))))
 		            }
 	            }
 	            
@@ -412,7 +416,8 @@ class Files @Inject() (files: FileService, datasets: DatasetService, queries: Qu
                }
                case None => {}
              }
-         }          
+         }
+          var realUserName = realUser.fullName
           val file = files.save(new FileInputStream(f.ref.file), nameOfFile, f.contentType, realUser, showPreviews)
           val uploadedFile = f         
           
@@ -458,6 +463,8 @@ class Files @Inject() (files: FileService, datasets: DatasetService, queries: Qu
 	              
 	          current.plugin[RabbitmqPlugin].foreach { _.extract(ExtractorMessage(id, id, host, key, Map.empty, f.length.toString, dataset_id, flags)) }
 	          
+	          val dateFormat = new SimpleDateFormat("dd/MM/yyyy") 
+	          
 	          //for metadata files
               if(fileType.equals("application/xml") || fileType.equals("text/xml")){
             	  		  val xmlToJSON = FilesUtils.readXMLgetJSON(uploadedFile.ref.file)
@@ -466,12 +473,12 @@ class Files @Inject() (files: FileService, datasets: DatasetService, queries: Qu
             			  Logger.debug("xmlmd=" + xmlToJSON)
 
             			  current.plugin[ElasticsearchPlugin].foreach{
-            		  		_.index("data", "file", id, List(("filename",f.filename), ("contentType", f.contentType),("datasetId",dataset.id.toString),("datasetName",dataset.name), ("xmlmetadata", xmlToJSON)))
+            		  		_.index("data", "file", id, List(("filename",f.filename), ("contentType", f.contentType), ("author", realUserName), ("uploadDate", dateFormat.format(new Date())), ("datasetId",dataset.id.toString),("datasetName",dataset.name), ("xmlmetadata", xmlToJSON)))
             	  		  }
               }
               else{
             	  current.plugin[ElasticsearchPlugin].foreach{
-            		  _.index("data", "file", id, List(("filename",f.filename), ("contentType", f.contentType),("datasetId",dataset.id.toString),("datasetName",dataset.name)))
+            		  _.index("data", "file", id, List(("filename",f.filename), ("contentType", f.contentType), ("author", realUserName), ("uploadDate", dateFormat.format(new Date())), ("datasetId",dataset.id.toString), ("datasetName",dataset.name)))
             	  }
               }
                            
@@ -479,9 +486,8 @@ class Files @Inject() (files: FileService, datasets: DatasetService, queries: Qu
               // TODO create a service instead of calling salat directly
               val theFile = FileDAO.get(f.id.toString).get
               Dataset.addFile(dataset.id.toString, theFile)              
-              if(!theFile.xmlMetadata.isEmpty){
-	            	Dataset.index(dataset_id)
-		      	}	
+
+	          Dataset.index(dataset_id)
 
               // TODO RK need to replace unknown with the server name and dataset type
               val dtkey = "unknown." + "dataset." + "unknown"
@@ -560,9 +566,9 @@ class Files @Inject() (files: FileService, datasets: DatasetService, queries: Qu
 	            val host = "http://" + request.host + request.path.replaceAll("api/files/uploadIntermediate/[A-Za-z0-9_+]*$", "")
 	            val id = f.id.toString
 	            current.plugin[RabbitmqPlugin].foreach{_.extract(ExtractorMessage(originalId, id, host, key, Map.empty, f.length.toString, "", flags))}
-	            current.plugin[ElasticsearchPlugin].foreach{
-	              _.index("files", "file", id, List(("filename",f.filename), ("contentType", f.contentType)))
-	            }
+//	            current.plugin[ElasticsearchPlugin].foreach{
+//	              _.index("files", "file", id, List(("filename",f.filename), ("contentType", f.contentType)))
+//	            }
 	            Ok(toJson(Map("id"->id)))   
 	          }
 	          case None => {
@@ -1067,7 +1073,9 @@ class Files @Inject() (files: FileService, datasets: DatasetService, queries: Qu
    *  so will be added.
    */
   def addTags(id: String) = SecuredAction(authorization = WithPermission(Permission.CreateTags)) { implicit request =>
-  	addTagsHelper(TagCheck_File, id, request)
+  	val theResponse = addTagsHelper(TagCheck_File, id, request)
+  	index(id)
+  	theResponse
   }
 
   /**
@@ -1078,7 +1086,9 @@ class Files @Inject() (files: FileService, datasets: DatasetService, queries: Qu
    *  the same user or extractor.
    */
   def removeTags(id: String) = SecuredAction(authorization = WithPermission(Permission.DeleteTags)) { implicit request =>
-  	removeTagsHelper(TagCheck_File, id, request)
+  	val theResponse = removeTagsHelper(TagCheck_File, id, request)
+  	index(id)
+  	theResponse
   }
 
   /**
@@ -1092,6 +1102,7 @@ class Files @Inject() (files: FileService, datasets: DatasetService, queries: Qu
       files.getFile(id) match {
         case Some(file) => {
           FileDAO.removeAllTags(id)
+          index(id)
           Ok(Json.obj("status" -> "success"))
         }
         case None => {
@@ -1222,6 +1233,10 @@ class Files @Inject() (files: FileService, datasets: DatasetService, queries: Qu
     files.getFile(id)  match {
       case Some(file) => {
         FileDAO.removeFile(id)
+        current.plugin[ElasticsearchPlugin].foreach {
+          _.delete("data", "file", id)
+        }
+        
         Logger.debug(file.filename)
         //remove file from RDF triple store if triple store is used
 	        play.api.Play.configuration.getString("userdfSPARQLStore").getOrElse("no") match{      
@@ -1318,13 +1333,15 @@ class Files @Inject() (files: FileService, datasets: DatasetService, queries: Qu
         var fileDsName = ""
           
         for(dataset <- Dataset.findByFileId(file.id)){
-          fileDsId = fileDsId + dataset.id.toString + "  "
-          fileDsName = fileDsName + dataset.name + "  "
-        }  
+          fileDsId = fileDsId + dataset.id.toString + " %%% "
+          fileDsName = fileDsName + dataset.name + " %%% "
+        }
+        
+        val formatter = new SimpleDateFormat("dd/MM/yyyy")
 
         current.plugin[ElasticsearchPlugin].foreach {
           _.index("data", "file", id,
-            List(("filename", file.filename), ("contentType", file.contentType),("datasetId",fileDsId),("datasetName",fileDsName), ("tag", tagsJson.toString), ("comments", commentJson.toString), ("usermetadata", usrMd), ("technicalmetadata", techMd), ("xmlmetadata", xmlMd)))
+            List(("filename", file.filename), ("contentType", file.contentType),("author",file.author.fullName),("uploadDate",formatter.format(file.uploadDate)),("datasetId",fileDsId),("datasetName",fileDsName), ("tag", tagsJson.toString), ("comments", commentJson.toString), ("usermetadata", usrMd), ("technicalmetadata", techMd), ("xmlmetadata", xmlMd)))
         }
       }
       case None => Logger.error("File not found: " + id)

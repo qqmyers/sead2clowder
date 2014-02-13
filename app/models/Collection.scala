@@ -10,6 +10,9 @@ import play.api.Play.current
 import services.DI
 import services.DatasetService
 import services.CollectionService
+import java.text.SimpleDateFormat
+import services.ElasticsearchPlugin
+import play.api.Logger
 
 case class Collection (
   id: ObjectId = new ObjectId,
@@ -82,6 +85,29 @@ object Collection extends ModelCompanion[Collection, ObjectId]{
   
   def removeDataset(collectionId:String, dataset: Dataset){
     Collection.update(MongoDBObject("_id" -> new ObjectId(collectionId)), $pull("datasets" ->  MongoDBObject( "_id" -> dataset.id)), false, false, WriteConcern.Safe)
-  }  
+  }
+  
+  def index(id: String) {
+    dao.findOneById(new ObjectId(id)) match {
+      case Some(collection) => {
+        
+        var dsCollsId = ""
+        var dsCollsName = ""
+          
+        for(dataset <- collection.datasets){
+          dsCollsId = dsCollsId + dataset.id.toString + " %%% "
+          dsCollsName = dsCollsName + dataset.name + " %%% "
+        }
+	    
+	    val formatter = new SimpleDateFormat("dd/MM/yyyy")
+
+        current.plugin[ElasticsearchPlugin].foreach {
+          _.index("data", "collection", id,
+            List(("name", collection.name), ("description", collection.description), ("created",formatter.format(collection.created)), ("datasetId",dsCollsId),("datasetName",dsCollsName)))
+        }
+      }
+      case None => Logger.error("Collection not found: " + id)
+    }
+  }
   
 }

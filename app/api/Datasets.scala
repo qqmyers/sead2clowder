@@ -3,6 +3,7 @@ package api
 
 import java.util.Date
 import java.util.ArrayList
+import java.text.SimpleDateFormat
 import com.wordnik.swagger.annotations.Api
 import com.wordnik.swagger.annotations.ApiOperation
 import models._
@@ -142,11 +143,10 @@ class Datasets @Inject() (datasets: DatasetService, files: FileService) extends 
             val theFile = FileDAO.get(fileId).get
             if(!isInDataset(theFile,dataset)){
 	            Dataset.addFile(dsId, theFile)	            
+
 	            files.index(fileId)
-	            if(!theFile.xmlMetadata.isEmpty){
-	            	index(dsId)
-		      	}	            
-       
+	            index(dsId)
+
 	            if(dataset.thumbnail_id.isEmpty && !theFile.thumbnail_id.isEmpty){
 		                        Dataset.dao.collection.update(MongoDBObject("_id" -> dataset.id), 
 		                        $set("thumbnail_id" -> theFile.thumbnail_id), false, false, WriteConcern.SAFE)
@@ -195,10 +195,10 @@ class Datasets @Inject() (datasets: DatasetService, files: FileService) extends 
             if(isInDataset(theFile,dataset)){
 	            //remove file from dataset
 	            Dataset.removeFile(dataset.id.toString, theFile.id.toString)
+
 	            files.index(fileId)
-	            if(!theFile.xmlMetadata.isEmpty){
-	            	index(datasetId)
-		      	}
+	            index(datasetId)
+
 	            Logger.info("Removing file from dataset completed")
 	            
 	            if(!dataset.thumbnail_id.isEmpty && !theFile.thumbnail_id.isEmpty){
@@ -348,6 +348,7 @@ class Datasets @Inject() (datasets: DatasetService, files: FileService) extends 
     request.body.\("tagId").asOpt[String].map { tagId =>
 		  Logger.debug("Removing " + tagId + " from "+ id)
           Dataset.removeTag(id, tagId)
+          index(id)
 		}
       Ok(toJson(""))    
   }
@@ -357,7 +358,9 @@ class Datasets @Inject() (datasets: DatasetService, files: FileService) extends 
    *  Requires that the request body contains a "tags" field of List[String] type.
    */
   def addTags(id: String) = SecuredAction(authorization = WithPermission(Permission.CreateTags)) { implicit request =>
-    addTagsHelper(TagCheck_Dataset, id, request)
+    val theResponse = addTagsHelper(TagCheck_Dataset, id, request)
+    index(id)
+  	theResponse
   }
 
   /**
@@ -365,7 +368,9 @@ class Datasets @Inject() (datasets: DatasetService, files: FileService) extends 
    *  Requires that the request body contains a "tags" field of List[String] type.
    */
   def removeTags(id: String) = SecuredAction(authorization = WithPermission(Permission.DeleteTags)) { implicit request =>
-    removeTagsHelper(TagCheck_Dataset, id, request)
+  	val theResponse = removeTagsHelper(TagCheck_Dataset, id, request)
+  	index(id)
+  	theResponse
   }
 
   /*
@@ -532,6 +537,7 @@ class Datasets @Inject() (datasets: DatasetService, files: FileService) extends 
       datasets.get(id) match {
         case Some(dataset) => {
           Dataset.removeAllTags(id)
+          index(id)
           Ok(Json.obj("status" -> "success"))
         }
         case None => {
@@ -698,13 +704,18 @@ class Datasets @Inject() (datasets: DatasetService, files: FileService) extends 
         }
         
         Dataset.removeDataset(id)
+        current.plugin[ElasticsearchPlugin].foreach {
+          _.delete("data", "dataset", id)
+        }
+        for(file <- dataset.files)
+          files.index(file.id.toString)
         
         Ok(toJson(Map("status"->"success")))
       }
       case None => Ok(toJson(Map("status"->"success")))
     }
   }
-  
+
   
   def getRDFUserMetadata(id: String, mappingNumber: String="1") = SecuredAction(parse.anyContent, authorization=WithPermission(Permission.ShowDatasetsMetadata)) {implicit request =>
     play.Play.application().configuration().getString("rdfexporter") match{

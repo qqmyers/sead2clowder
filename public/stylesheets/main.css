@@ -344,6 +344,7 @@ textarea, input[type='text'], input[type='password']{
 	transition: border-color 0.15s ease-in-out 0s, box-shadow 0.15s ease-in-out 0s;
 }
 
+
 #noteEditor_feed table {
 	border-collapse:separate;
 	border-spacing:10px 10px;
@@ -355,3 +356,7 @@ textarea, input[type='text'], input[type='password']{
 	color:red;
 	position:relative;
 
+
+.elasticsearchResult{
+	margin-bottom:10px;
+}

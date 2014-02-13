@@ -9,6 +9,9 @@ import models.Dataset
 import javax.inject.{ Singleton, Inject }
 import services.DatasetService
 import com.mongodb.casbah.commons.MongoDBObject
+import java.text.SimpleDateFormat
+import play.api.Play.current
+import services.ElasticsearchPlugin
 import services.CollectionService
 
 /**
@@ -31,6 +34,9 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
 	            
 	            //add collection to dataset
 	            Dataset.addCollection(dataset.id.toString, collection.id.toString)
+	            
+	            Dataset.index(dataset.id.toString)
+	            index(collection.id.toString)
 	            
 	            Logger.info("Adding dataset to collection completed")
             }
@@ -62,6 +68,9 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
 	            
 	            //remove collection from dataset
 	            Dataset.removeCollection(dataset.id.toString, collection.id.toString)
+	            
+	            Dataset.index(dataset.id.toString)
+	            index(collection.id.toString)
 	            
 	            Logger.info("Removing dataset from collection completed")
             }
@@ -100,8 +109,13 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
         for(dataset <- collection.datasets){
           //remove collection from dataset
           Dataset.removeCollection(dataset.id.toString, collection.id.toString)
+          
+          Dataset.index(dataset.id.toString)
         }       
         Collection.remove(MongoDBObject("_id" -> collection.id))
+         current.plugin[ElasticsearchPlugin].foreach {
+          _.delete("data", "collection", collectionId)
+        }
         Ok(toJson(Map("status" -> "success")))
       }
       case None => {
@@ -117,6 +131,10 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
   
   def jsonCollection(collection: Collection): JsValue = {
     toJson(Map("id" -> collection.id.toString, "name" -> collection.name, "description" -> collection.description, "created" -> collection.created.toString))
+  }
+  
+  def index(id: String) {
+    Collection.index(id)
   }
 
 }

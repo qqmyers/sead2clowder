@@ -1,6 +1,6 @@
 package api
 
-import services.{QueryService, DatasetService, FileService, ElasticsearchPlugin}
+import services.{QueryService, DatasetService, FileService, CollectionService, ElasticsearchPlugin}
 import play.api.Play.current
 import play.Logger
 import scala.collection.mutable.ListBuffer
@@ -23,7 +23,7 @@ import java.io.InputStreamReader
 
 
 @Singleton
-class Search @Inject() (files: FileService, datasets: DatasetService)  extends ApiController {
+class Search @Inject() (files: FileService, datasets: DatasetService, collections: CollectionService)  extends ApiController {
   /**
    * Search results.
    */
@@ -31,13 +31,15 @@ class Search @Inject() (files: FileService, datasets: DatasetService)  extends A
     current.plugin[ElasticsearchPlugin] match {
       case Some(plugin) => {
         Logger.debug("Searching for: " + query)
+
         var filesFound = ListBuffer.empty[models.File]
         var datasetsFound = ListBuffer.empty[models.Dataset]
-        var mapdatasetIds = new scala.collection.mutable.HashMap[String, (String, String)]
+        var collectionsFound = ListBuffer.empty[models.Collection]
+
         if (query != "") {
           import play.api.Play.current
           
-          val result = current.plugin[ElasticsearchPlugin].map { _.search("data", query) }
+          val result = current.plugin[ElasticsearchPlugin].map { _.search("data", query.replaceAll("([:/\\\\])", "\\\\$1"))}
           
           result match {
             case Some(searchResponse) => {
@@ -53,8 +55,9 @@ class Search @Inject() (files: FileService, datasets: DatasetService)  extends A
                       Logger.debug("FILES:hits.hits._id: Search result found file " + hit.getId());
                       Logger.debug("FILES:hits.hits._source: Search result found dataset " + hit.getSource().get("datasetId"))
                       //Logger.debug("Search result found file " + hit.getId()); files += file
-                      mapdatasetIds.put(hit.getId(), (hit.getSource().get("datasetId").toString(), hit.getSource.get("datasetName").toString))
+
                       filesFound += file
+
                     }
                     case None => Logger.debug("File not found " + hit.getId())
                   }
@@ -71,6 +74,19 @@ class Search @Inject() (files: FileService, datasets: DatasetService)  extends A
                     }
                   }
                 }
+                else if (hit.getType() == "collection") {
+                  Logger.debug("COLLECTIONS:hits.hits._source: Search result found collection " + hit.getSource().get("name"))
+                  Logger.debug("COLLECTIONS:Collection.id=" + hit.getId())
+                  
+                  collections.get(hit.getId()) match {
+                    case Some(collection) =>
+                      Logger.debug("Search result found collection" + hit.getId()); collectionsFound += collection
+                    case None => {
+                      Logger.debug("Collection not found " + hit.getId())
+                    }
+                  }
+                  
+                }
               }
             }
             case None => {
@@ -85,8 +101,11 @@ class Search @Inject() (files: FileService, datasets: DatasetService)  extends A
         val datasetsJson = toJson(for(currDataset <- datasetsFound.toList) yield {
           currDataset.id.toString
         } )
+        val collectionsJson = toJson(for(currCollection <- collectionsFound.toList) yield {
+          currCollection.id.toString
+        } )
         
-        val fullJSON = toJson(Map[String,JsValue]("files" -> filesJson, "datasets" -> datasetsJson))
+        val fullJSON = toJson(Map[String,JsValue]("files" -> filesJson, "datasets" -> datasetsJson, "collections" -> collectionsJson))
         
         Ok(fullJSON)
       }
