@@ -177,6 +177,79 @@ object ActivityFound extends Exception { }
   }
   
   /**
+   * Dataset.
+   */
+  def datasetThreeDim(id: String) = SecuredAction(authorization=WithPermission(Permission.ShowDataset)) { implicit request =>
+    implicit val user = request.user    
+    Previewers.findPreviewers.foreach(p => Logger.info("Previewer found " + p.id))
+    datasets.get(id)  match {
+      case Some(dataset) => {
+        val files = dataset.files map { f =>{
+        		FileDAO.get(f.id.toString).get
+        	}
+        }
+        
+        //Search whether dataset is currently being processed by extractor(s)
+        var isActivity = false
+        try{
+        	for(f <- files){
+        		Extraction.findIfBeingProcessed(f.id) match{
+        			case false => 
+        			case true => { 
+        				isActivity = true
+        				throw ActivityFound
+        			  }       
+        		}
+        	}
+        }catch{
+          case ActivityFound =>
+        }
+        
+        
+        val datasetWithFiles = dataset.copy(files = files)
+        val previewers = Previewers.findPreviewers
+        val previewslist = for(f <- datasetWithFiles.files) yield {          
+          val pvf = for(p <- previewers ; pv <- f.previews; if (f.showPreviews.equals("DatasetLevel")) && (p.contentType.contains(pv.contentType))) yield { 
+            (pv.id.toString, p.id, p.path, p.main, api.routes.Previews.download(pv.id.toString).toString, pv.contentType, pv.length)
+          }         
+          if (pvf.length > 0) {
+            (f -> pvf)
+          } else {
+  	        val ff = for(p <- previewers ; if (f.showPreviews.equals("DatasetLevel")) && (p.contentType.contains(f.contentType))) yield {
+  	          (f.id.toString, p.id, p.path, p.main, routes.Files.download(f.id.toString).toString, f.contentType, f.length)
+  	        }
+  	        (f -> ff)
+          }
+        }
+        val previews = Map(previewslist:_*)
+        val metadata = Dataset.getMetadata(id)
+        Logger.debug("Metadata: " + metadata)
+        for (md <- metadata) {
+          Logger.debug(md.toString)
+        }       
+        val userMetadata = Dataset.getUserMetadata(id)
+        Logger.debug("User metadata: " + userMetadata.toString)
+        
+        val collectionsOutside = Collection.listOutsideDataset(id).sortBy(_.name)
+        val collectionsInside = Collection.listInsideDataset(id).sortBy(_.name)
+        val filesOutside = FileDAO.listOutsideDataset(id).sortBy(_.filename)
+        
+        var comments = Comment.findCommentsByDatasetId(id)
+        files.map { file =>
+          comments ++= Comment.findCommentsByFileId(file.id.toString())
+          SectionDAO.findByFileId(file.id).map { section =>
+            comments ++= Comment.findCommentsBySectionId(section.id.toString())
+          } 
+        }
+        comments = comments.sortBy(_.posted)
+        
+        Ok(views.html.datasetThreeDim(datasetWithFiles, comments, previews, metadata, userMetadata, isActivity, collectionsOutside, collectionsInside, filesOutside))
+      }
+      case None => {Logger.error("Error getting dataset" + id); InternalServerError}
+    }
+  }
+  
+  /**
    * Dataset by section.
    */
   def datasetBySection(section_id: String) = SecuredAction(authorization=WithPermission(Permission.ShowDataset)) { request =>
