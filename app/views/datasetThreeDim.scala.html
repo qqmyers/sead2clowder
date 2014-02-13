@@ -39,16 +39,19 @@
 	</div>
 	
 	<div class="row">	
-	
 		<div class="col-md-8" id="filePrevsCol">
-		@for((f, pvs) <- previews) {			
-			@for(i <- pvs.indices) {
-				<script> Configuration.fileUrl.push("@pvs(i)._5");
-					previewName = "@pvs(i)._2";
-				</script>
-				
+			@if(dataset.files.length == 2) {
+				@for((f, pvs) <- previews) {
+					@for(i <- pvs.indices) {
+						@if(pvs(i)._2 == "X3d"){
+							@println("in right?")
+							<script> Configuration.fileUrl.push("@pvs(i)._5");
+								previewName = "@pvs(i)._2";
+							</script>
+						}
+					}
+				}
 			}
-		}
 		
 		<div id='previewedFileName_@(dataset.id.toString)' class='filenameDiv'></div>
 			
