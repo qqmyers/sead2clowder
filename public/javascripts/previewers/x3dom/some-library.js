@@ -1113,10 +1113,12 @@ function clearConfigTabAnnotations(prNum){
       window["x3dOffset" + prNum] = 248;	
 	  x3dMeasureInstructions = "";
   }  
-  if(Configuration.calledFrom == "dataset" || Configuration.calledFrom == "3d_dataset")
+  if(Configuration.calledFrom == "dataset")
 	  window["x3dOffset2" + prNum] = 100;
   else if(Configuration.calledFrom == "file")
 	  window["x3dOffset2" + prNum] = 200;
+  else if(Configuration.calledFrom == "3d_dataset")
+	  window["x3dOffset2" + prNum] = 0;
   
   if(Configuration.calledFrom == "3d_dataset"){
   	$(Configuration.tab).append("<div><input id='firstObjectCheck' type='checkbox' value='firstObjSelected'> Select the object on your left</input></div>");
@@ -1124,8 +1126,6 @@ function clearConfigTabAnnotations(prNum){
   	$(Configuration.tab).append("<div><input id='btnStartLeapMotion' type='button' onclick='javascript:startLeapMotion(\"" + prNum + "\");' value='Start Leapmotion'/>  <input id='btnStopLeapMotion' disabled='true' type='button' onclick='javascript:stopLeapMotion();' value='Stop Leapmotion '/></div></br>");
   }
 
-  //$(Configuration.tab).append("<a href='javascript:startLeapMotion(\"" + prNum + "\");'>Start</a>");
-  //$(Configuration.tab).append("<a href='javascript:stopLeapMotion();'>Stop</a>");
   $(Configuration.tab).append("<table id='x3dElementTable" + prNum + "' style ='margin-bottom:560px;'><tr><td>Left mouse button drag</td><td>&nbsp;&nbsp;&nbsp;&nbsp;Rotate</td></tr>" 
 		  					+ "<tr><td>Ctrl + Left mouse button drag</td><td>&nbsp;&nbsp;&nbsp;&nbsp;Pan</td></tr>"
 		  					+ "<tr><td>Right mouse button drag / Alt + Left mouse button drag</td><td>&nbsp;&nbsp;&nbsp;&nbsp;Zoom</td></tr>"
@@ -1150,30 +1150,36 @@ function clearConfigTabAnnotations(prNum){
   console.log("url: "+Configuration.url);
 
   if(Configuration.calledFrom == "3d_dataset"){
-	console.log("url: "+Configuration.fileUrl[0]);
-	console.log("url: "+Configuration.fileUrl[1]);
-	$.ajax({
-	    url: Configuration.fileUrl[0], //   api/previews/52d02fc5e4b027f15b766ca2 
-	    async:false,
-	    success: function (data) {
-	    	inner = inner + data;
-	    	 },
-	    dataType: 'text'
-	});
-
-	  //Start: Comment the lines below for demo
-	  var inner1 = "";
-	  $.ajax({
-		    url: Configuration.fileUrl[1],
+	if (Configuration.fileUrl[0] != undefined && Configuration.fileUrl[1] != undefined) {
+		console.log("url: "+Configuration.fileUrl[0]);
+		console.log("url: "+Configuration.fileUrl[1]);
+		$.ajax({
+		    url: Configuration.fileUrl[0], //   api/previews/52d02fc5e4b027f15b766ca2 
 		    async:false,
 		    success: function (data) {
-			inner1 = data;
+		    	inner = inner + data;
 		    	 },
 		    dataType: 'text'
 		});
 
-	  inner1 = inner1.replace("<transform ","<transform translation='-3,0,0'");  
-	  inner = inner.substring(0,inner.indexOf("</scene>")-1) + inner1.substring(inner1.indexOf("<transform"));
+		  //Start: Comment the lines below for demo
+		  var inner1 = "";
+		  $.ajax({
+			    url: Configuration.fileUrl[1],
+			    async:false,
+			    success: function (data) {
+				inner1 = data;
+			    	 },
+			    dataType: 'text'
+			});
+
+		  inner1 = inner1.replace("<transform ","<transform translation='-3,0,0'");  
+		  inner = inner.substring(0,inner.indexOf("</scene>")-1) + inner1.substring(inner1.indexOf("<transform"));
+	}
+	else {
+		console.log("Error obtaining file preview ids");
+	}
+
   }
   else{
 	$.ajax({
