@@ -10,13 +10,15 @@ function subscribeUser(userIdentifier){
 	       contentType: "application/json"
 	     });
 
-	request.done(function (response, textStatus, jqXHR){
+	request.done(function (response){
         console.log("Response " + response);
-        
-        if(textStatus == "success")
+        if(response == "success")
         	alert("Subscribed.");
-        else if(textStatus == "notmodified")
+        else if(response == "notmodified")
         	alert("Subscribed already.")
+        else
+        	//FB authentication redirection
+        	window.location.replace(response);
     });
 	request.fail(function (jqXHR, textStatus, errorThrown){
 		console.error(

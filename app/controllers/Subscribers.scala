@@ -198,7 +198,6 @@ object Subscribers extends SecuredController {
     
     Subscriber.get(subscriberId) match{
       case Some(subscriber) => {
-
         val fbAppId = play.Play.application().configuration().getString("fb.appId")
         val fbAppSecret = play.Play.application().configuration().getString("fb.appSecret")
         val hostIp = play.Play.application().configuration().getString("hostIp")

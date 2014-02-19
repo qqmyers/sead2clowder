@@ -17,3 +17,4 @@
 10007:services.FacebookService
 10008:services.RDFUpdateService
 10009:services.MailerPlugin
+10011:securesocial.core.providers.FacebookProvider

@@ -75,18 +75,12 @@
 								<li><a href="@routes.Subscribers.unsubscribe">Unsubscribe</a></li>
 							}
 							@if(user.isDefined) {
-								@if(!user.get.email.isDefined) {
-									<li><a href="@routes.Subscribers.subscribe">Subscribe</a></li>
-									<li><a href="@routes.Subscribers.unsubscribe">Unsubscribe</a></li>
-								}
-								@if(user.get.email.isDefined) {
 									<script language="javascript">	
 										var hostIp = "@play.Play.application().configuration().getString("hostIp")";
 									</script>
 									<script src="@routes.Assets.at("javascripts/userSubscriptions.js")" type="text/javascript"></script>
-									<li><a href="#" onclick="subscribeUser('@user.get.email.get')">Subscribe</a></li>
-									<li><a href="#" onclick="unsubscribeUser('@user.get.email.get')">Unsubscribe</a></li>
-								}								
+									<li><a href="#" onclick="subscribeUser('@user.get.identityId.userId')">Subscribe</a></li>
+									<li><a href="#" onclick="unsubscribeUser('@user.get.identityId.userId')">Unsubscribe</a></li>																
 							}
 						   </ul>
 						</li>

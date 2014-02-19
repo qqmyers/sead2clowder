@@ -20,4 +20,8 @@ object SocialUserDAO extends ModelCompanion[Identity, ObjectId] {
     dao.findOne(MongoDBObject("email" -> email))
   }
   
+  def findOneByIdentifier(identifier: String): Option[Identity] = {
+    dao.findOne(MongoDBObject("identityId.userId" -> identifier))
+  }
+  
 }
