@@ -44,7 +44,7 @@
 				@for((f, pvs) <- previews) {
 					@for(i <- pvs.indices) {
 						@if(pvs(i)._2 == "X3d"){
-							@println("in right?")
+							@println("X3d preview found")
 							<script> Configuration.fileUrl.push("@pvs(i)._5");
 								previewName = "@pvs(i)._2";
 							</script>
