@@ -932,7 +932,7 @@ function clearConfigTabAnnotations(prNum){
 	if ("WebSocket" in window){
 
 	     console.log("WebSocket is supported by your Browser!");
-	     // Let us open a web socket
+	     // Opening a websocket
 	     webSocket = new WebSocket(pathWs+"/ws/"+ Configuration.id);
 	     webSocket.onopen = function()
 	     {
@@ -976,7 +976,7 @@ function clearConfigTabAnnotations(prNum){
 
 	     webSocket.onclose = function()
 	     { 
-		// websocket is closed.
+		// websocket closed.
 		console.log("Connection is closed..."); 
 	     };
 	  }
@@ -1151,23 +1151,23 @@ function clearConfigTabAnnotations(prNum){
 		    url: Configuration.fileUrl[0], //   api/previews/52d02fc5e4b027f15b766ca2 
 		    async:false,
 		    success: function (data) {
+			data = data.replace(/<transform/gi,"<transform groupId='3dgroup_0'"); //Grouping all transforms belonging to the first model
 		    	inner = inner + data;
 		    	 },
 		    dataType: 'text'
 		});
 
-		  //Start: Comment the lines below for demo
 		  var inner1 = "";
 		  $.ajax({
 			    url: Configuration.fileUrl[1],
 			    async:false,
 			    success: function (data) {
+				data = data.replace(/<transform/gi,"<transform groupId='3dgroup_1'"); //Grouping all transforms belonging to the second model
 				inner1 = data;
 			    	 },
 			    dataType: 'text'
 			});
 
-		  inner1 = inner1.replace("<transform ","<transform translation='-3,0,0'");  
 		  inner = inner.substring(0,inner.indexOf("</scene>")-1) + inner1.substring(inner1.indexOf("<transform"));
 	}
 	else {
@@ -1200,6 +1200,7 @@ function clearConfigTabAnnotations(prNum){
       dataType: "json"
     });
   
+  //Giving unique identifiers to all transforms irrespective of the model that they belong to
   $("#x3dElement" + prNum + " > scene > transform[data-actualshape]").each(function(index){
 	$(this).attr("DEF","3dmodel_" + index);
   });
@@ -1259,30 +1260,55 @@ function clearConfigTabAnnotations(prNum){
   $("#x3dElement" + prNum + " > scene").prepend(lightTrafo);
 
   if(Configuration.calledFrom == "3d_dataset"){
-	  var numTransforms = $("#x3dElement" + prNum + " > scene > transform[data-actualshape]").length;
-	  for(var i=0; i < numTransforms; i++){
 
-		var leapControlPosition = document.createElement('positiondamper');
-	  	leapControlPosition.setAttribute("id", "x3dom_leapmotion_pd" + prNum + "_" + i);
-	 	leapControlPosition.setAttribute("tau", ".2");
-	  	leapControlPosition.setAttribute("order", "50");
-	  	//leapControlPosition.setAttribute("duration", "1");	  
-	  	leapControlPosition.setAttribute("initialDestination", i*0.5 + " 0 0");
-	  	leapControlPosition.setAttribute("initialValue", i*0.5 + " 0 0");
-		$("#x3dElement" + prNum + " > scene").append(leapControlPosition);
-	  
-	  	var leapControlOrientation = document.createElement('orientationdamper');
-	  	leapControlOrientation.setAttribute("id", "x3dom_leapmotion_oc" + prNum + "_" + i);
-	  	leapControlOrientation.setAttribute("tau", ".2");
-	  	leapControlOrientation.setAttribute("order", "50");
-	  	//leapControlOrientation.setAttribute("duration", "1");
-	  	leapControlOrientation.setAttribute("initialDestination", "0 0 0 0");	
-	  	leapControlOrientation.setAttribute("initialValue", "0 0 0 0");
-	  	$("#x3dElement" + prNum + " > scene").append(leapControlOrientation);
+	//Inserting position damper and orientation damper for two models
 
-		$("#x3dElement" + prNum + " > scene").append("<route fromNode='x3dom_leapmotion_pd" + prNum + "_" + i + "' fromField='value_changed' toNode='3dmodel_" + i + "' toField='translation'> </route>");
-		$("#x3dElement" + prNum + " > scene").append("<route fromNode='x3dom_leapmotion_oc" + prNum + "_" + i + "' fromField='value_changed' toNode='3dmodel_" + i + "' toField='rotation'> </route>");
-	  }
+	var leapControlPosition = document.createElement('positiondamper');
+  	leapControlPosition.setAttribute("id", "x3dom_leapmotion_pd" + prNum + "_0");
+ 	leapControlPosition.setAttribute("tau", ".2");
+  	leapControlPosition.setAttribute("order", "50");
+  	leapControlPosition.setAttribute("initialDestination", "0 0 0");
+  	leapControlPosition.setAttribute("initialValue", "0 0 0");
+	$("#x3dElement" + prNum + " > scene").append(leapControlPosition);
+  
+  	var leapControlOrientation = document.createElement('orientationdamper');
+  	leapControlOrientation.setAttribute("id", "x3dom_leapmotion_oc" + prNum + "_0");
+  	leapControlOrientation.setAttribute("tau", ".2");
+  	leapControlOrientation.setAttribute("order", "50");
+  	leapControlOrientation.setAttribute("initialDestination", "0 0 0 0");	
+  	leapControlOrientation.setAttribute("initialValue", "0 0 0 0");
+  	$("#x3dElement" + prNum + " > scene").append(leapControlOrientation);
+	
+	leapControlPosition = document.createElement('positiondamper');
+  	leapControlPosition.setAttribute("id", "x3dom_leapmotion_pd" + prNum + "_1");
+ 	leapControlPosition.setAttribute("tau", ".2");
+  	leapControlPosition.setAttribute("order", "50");
+  	leapControlPosition.setAttribute("initialDestination", "1 0 0");
+  	leapControlPosition.setAttribute("initialValue", "1 0 0");
+	$("#x3dElement" + prNum + " > scene").append(leapControlPosition);
+  
+  	leapControlOrientation = document.createElement('orientationdamper');
+  	leapControlOrientation.setAttribute("id", "x3dom_leapmotion_oc" + prNum + "_1");
+  	leapControlOrientation.setAttribute("tau", ".2");
+  	leapControlOrientation.setAttribute("order", "50");
+  	leapControlOrientation.setAttribute("initialDestination", "0 0 0 0");	
+  	leapControlOrientation.setAttribute("initialValue", "0 0 0 0");
+  	$("#x3dElement" + prNum + " > scene").append(leapControlOrientation);
+	
+	var attributeVal = "";
+	$("#x3dElement" + prNum + " > scene > transform[data-actualshape]").each(function(index){
+		attributeVal = $(this).attr("groupId");
+		// Transform belongs to first model
+		if(attributeVal == "3dgroup_0"){
+			$(this).parent().append("<route fromNode='x3dom_leapmotion_pd" + prNum + "_0" + "' fromField='value_changed' toNode='3dmodel_" + index + "' toField='translation'> </route>");
+			$(this).parent().append("<route fromNode='x3dom_leapmotion_oc" + prNum + "_0" + "' fromField='value_changed' toNode='3dmodel_" + index + "' toField='rotation'> </route>");
+		}
+		// Transform belongs to second model
+		else if (attributeVal == "3dgroup_1"){
+			$(this).parent().append("<route fromNode='x3dom_leapmotion_pd" + prNum + "_1" + "' fromField='value_changed' toNode='3dmodel_" + index + "' toField='translation'> </route>");
+			$(this).parent().append("<route fromNode='x3dom_leapmotion_oc" + prNum + "_1" + "' fromField='value_changed' toNode='3dmodel_" + index + "' toField='rotation'> </route>");
+		}
+	});
   }
 
   if(isPageLoaded){
