@@ -289,5 +289,43 @@ trait MongoFileDB {
   }
   
   
+  def dumpAllFileMetadata(): List[String] = {    
+    Logger.debug("Dumping metadata of all files.")
+    
+    val fileSep = System.getProperty("file.separator")
+    val lineSep = System.getProperty("line.separator")
+    var fileMdDumpDir = play.api.Play.configuration.getString("filedump.dir").getOrElse("")
+	if(!fileMdDumpDir.endsWith(fileSep))
+		fileMdDumpDir = fileMdDumpDir + fileSep
+    
+	var unsuccessfulDumps: ListBuffer[String] = ListBuffer.empty 	
+		
+	for(file <- FileDAO.findAll){
+	  try{
+		  val fileId = file.id.toString
+		  val filenameNoExtension = file.filename.substring(0, file.filename.lastIndexOf("."))
+		  
+		  val mdFile = new java.io.File(fileMdDumpDir + fileId.charAt(fileId.length()-3)+ fileSep + fileId.charAt(fileId.length()-2)+fileId.charAt(fileId.length()-1)+ fileSep + fileId + fileSep + filenameNoExtension + "__metadata.txt")
+		  mdFile.getParentFile().mkdirs()
+		  
+		  val fileTechnicalMetadata = FileDAO.getTechnicalMetadataJSON(fileId)
+		  val fileUserMetadata = FileDAO.getUserMetadataJSON(fileId)
+		  		  
+		  val fileWriter =  new BufferedWriter(new FileWriter(mdFile))
+		  fileWriter.write(fileTechnicalMetadata + lineSep + lineSep + fileUserMetadata)
+		  
+		  fileWriter.close()
+	  }catch {case ex:Exception =>{
+	    val badFileId = file.id.toString
+	    Logger.error("Unable to dump metadata of file with id "+badFileId+": "+ex.printStackTrace())
+	    unsuccessfulDumps += badFileId
+	  }}
+	}
+    
+    return unsuccessfulDumps.toList
+  }
+  
+  
+  
   
 }

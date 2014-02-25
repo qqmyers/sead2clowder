@@ -1339,5 +1339,20 @@ class Files @Inject() (files: FileService, datasets: DatasetService, queries: Qu
       case None => Logger.error("File not found: " + id)
     }
   }
+  
+  def dumpFilesMetadata = SecuredAction(parse.anyContent, authorization=WithPermission(Permission.Admin)) { request =>
+    
+    val unsuccessfulDumps = files.dumpAllFileMetadata
+    if(unsuccessfulDumps.size == 0)
+      Ok("Dumping of files metadata was successful for all files.")
+    else{
+      var unsuccessfulMessage = "Dumping of files metadata was successful for all files except file(s) with id(s) "
+      for(badFile <- unsuccessfulDumps){
+        unsuccessfulMessage = unsuccessfulMessage + badFile + ", "
+      }
+      unsuccessfulMessage = unsuccessfulMessage.substring(0, unsuccessfulMessage.length()-2) + "."
+      Ok(unsuccessfulMessage)  
+    }      
+  }
 	
 }

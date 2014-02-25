@@ -384,4 +384,11 @@ object Admin extends SecuredController {
     }  
   }
   
+  
+  def viewDumpers()  = SecuredAction(authorization=WithPermission(Permission.Admin)) { implicit request =>
+    implicit val user = request.user
+  	Ok(views.html.viewDumpers())
+  }
+  
+  
 }
