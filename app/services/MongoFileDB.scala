@@ -310,11 +310,16 @@ trait MongoFileDB {
 		  
 		  val fileTechnicalMetadata = FileDAO.getTechnicalMetadataJSON(fileId)
 		  val fileUserMetadata = FileDAO.getUserMetadataJSON(fileId)
-		  		  
-		  val fileWriter =  new BufferedWriter(new FileWriter(mdFile))
-		  fileWriter.write(fileTechnicalMetadata + lineSep + lineSep + fileUserMetadata)
-		  
-		  fileWriter.close()
+		  		  		  
+		  if(fileTechnicalMetadata != "{}" || fileUserMetadata != "{}"){
+		      val fileWriter =  new BufferedWriter(new FileWriter(mdFile))
+			  fileWriter.write(fileTechnicalMetadata + lineSep + lineSep + fileUserMetadata)
+			  fileWriter.close()
+		  }
+		  else{
+		    mdFile.delete()
+		  }
+
 	  }catch {case ex:Exception =>{
 	    val badFileId = file.id.toString
 	    Logger.error("Unable to dump metadata of file with id "+badFileId+": "+ex.printStackTrace())
