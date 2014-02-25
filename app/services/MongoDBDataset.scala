@@ -19,6 +19,8 @@ import java.io.FileWriter
 import java.io.FileInputStream
 import org.apache.commons.io.FileUtils
 import org.json.JSONObject
+import scala.collection.mutable.ListBuffer
+import java.io.PrintStream
 
 /**
  * Implementation of DatasetService using Mongodb.
@@ -250,6 +252,40 @@ trait MongoDBDataset {
     return xmlFile    
   }
   
-  
+  def dumpAllDatasetGroupings(): List[String] = {
+    
+    Logger.debug("Dumping dataset gropuings of all datasets.")
+    
+    val fileSep = System.getProperty("file.separator")
+    val lineSep = System.getProperty("line.separator")
+    var datasetsDumpDir = play.api.Play.configuration.getString("datasetdump.dir").getOrElse("")
+	if(!datasetsDumpDir.endsWith(fileSep))
+		datasetsDumpDir = datasetsDumpDir + fileSep
+		
+	var unsuccessfulDumps: ListBuffer[String] = ListBuffer.empty
+	
+	for(dataset <- Dataset.findAll){
+	  try{
+		  val dsId = dataset.id.toString
+		  val datasetnameNoSpaces = dataset.name.replaceAll("\\s+","_")
+		  
+		  val groupingFile = new java.io.File(datasetsDumpDir + dsId.charAt(dsId.length()-3)+ fileSep + dsId.charAt(dsId.length()-2)+dsId.charAt(dsId.length()-1)+ fileSep + dsId + fileSep + datasetnameNoSpaces + ".txt")
+		  groupingFile.getParentFile().mkdirs()
+		  
+		  val filePrintStream =  new PrintStream(groupingFile)
+		  for(file <- dataset.files){
+		    filePrintStream.println("id:"+file.id.toString+" "+"filename:"+file.filename)
+		  }
+		  filePrintStream.close()
+		  
+	  }catch {case ex:Exception =>{
+	    val badDatasetId = dataset.id.toString
+	    Logger.error("Unable to dump file grouping of dataset with id "+badDatasetId+": "+ex.printStackTrace())
+	    unsuccessfulDumps += badDatasetId
+	  }}
+	}
+	
+    return unsuccessfulDumps.toList
+  }
   
 }
