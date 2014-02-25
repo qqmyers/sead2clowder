@@ -310,7 +310,7 @@ trait MongoFileDB {
 		  
 		  val fileTechnicalMetadata = FileDAO.getTechnicalMetadataJSON(fileId)
 		  val fileUserMetadata = FileDAO.getUserMetadataJSON(fileId)
-		  		  		  
+	  		  
 		  if(fileTechnicalMetadata != "{}" || fileUserMetadata != "{}"){
 		      val fileWriter =  new BufferedWriter(new FileWriter(mdFile))
 			  fileWriter.write(fileTechnicalMetadata + lineSep + lineSep + fileUserMetadata)
