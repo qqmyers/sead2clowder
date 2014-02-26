@@ -64,6 +64,14 @@ object Global extends GlobalSettings {
 	    }
     }
     
+    //Dump metadata of all datasets periodically if dataset metadata autodumper is activated
+    if(current.plugin[DatasetsMetadataAutodumpService].isDefined){
+	    timeInterval = play.Play.application().configuration().getInt("datasetmetadatadump.dumpEvery") 
+	    Akka.system().scheduler.schedule(0.days, timeInterval.intValue().days){
+	      current.plugin[DatasetsMetadataAutodumpService].get.dumpAllDatasetMetadata
+	    }
+    }
+    
   }
 
   override def onStop(app: Application) {

@@ -19,3 +19,4 @@
 10010:services.AdminsNotifierPlugin
 10013:services.FileMetadataAutodumpService
 10014:services.DatasetsAutodumpService
+10015:services.DatasetsMetadataAutodumpService
