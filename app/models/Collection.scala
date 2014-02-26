@@ -13,6 +13,7 @@ import services.CollectionService
 import java.text.SimpleDateFormat
 import services.ElasticsearchPlugin
 import play.api.Logger
+import models.Dataset
 
 case class Collection (
   id: ObjectId = new ObjectId,
@@ -85,6 +86,27 @@ object Collection extends ModelCompanion[Collection, ObjectId]{
   
   def removeDataset(collectionId:String, dataset: Dataset){
     Collection.update(MongoDBObject("_id" -> new ObjectId(collectionId)), $pull("datasets" ->  MongoDBObject( "_id" -> dataset.id)), false, false, WriteConcern.Safe)
+  }
+  
+  def newThumbnail(collectionId:String){
+    dao.findOneById(new ObjectId(collectionId)) match{
+	    case Some(collection) => {
+	    		val selecteddatasets = collection.datasets map { ds =>{
+	    			datasets.get(ds.id.toString).getOrElse{None}
+	    		}}
+			    for(dataset <- selecteddatasets){
+			      if(dataset.isInstanceOf[models.Dataset]){
+			          val theDataset = dataset.asInstanceOf[models.Dataset]
+				      if(!theDataset.thumbnail_id.isEmpty){
+				        Collection.update(MongoDBObject("_id" -> new ObjectId(collectionId)), $set("thumbnail_id" -> theDataset.thumbnail_id.get), false, false, WriteConcern.Safe)
+				        return
+				      }
+			      }
+			    }
+			    Collection.update(MongoDBObject("_id" -> new ObjectId(collectionId)), $set("thumbnail_id" -> None), false, false, WriteConcern.Safe)
+	    }
+	    case None =>
+    }  
   }
   
   def index(id: String) {

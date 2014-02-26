@@ -15,6 +15,8 @@ import play.api.Play.current
 import services.ElasticsearchPlugin
 import services.CollectionService
 import services.AdminsNotifierPlugin
+import com.mongodb.casbah.Imports._
+import com.mongodb.WriteConcern
 
 /**
  * Manipulate collections.
@@ -39,6 +41,11 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
 	            
 	            Dataset.index(dataset.id.toString)
 	            index(collection.id.toString)
+
+	            if(collection.thumbnail_id.isEmpty && !dataset.thumbnail_id.isEmpty){
+		                        Collection.dao.collection.update(MongoDBObject("_id" -> collection.id), 
+		                        $set("thumbnail_id" -> dataset.thumbnail_id), false, false, WriteConcern.SAFE)
+		        }
 	            
 	            Logger.info("Adding dataset to collection completed")
             }
@@ -73,6 +80,12 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
 	            
 	            Dataset.index(dataset.id.toString)
 	            index(collection.id.toString)
+	            
+	            if(!collection.thumbnail_id.isEmpty && !dataset.thumbnail_id.isEmpty){
+	              if(collection.thumbnail_id.get == dataset.thumbnail_id.get){
+		             Collection.newThumbnail(collection.id.toString)
+		          }		                        
+		        }
 	            
 	            Logger.info("Removing dataset from collection completed")
             }

@@ -345,8 +345,22 @@ def getJsonArray(list: List[JsObject]): JsArray = {
 	            	Dataset.index(fileDataset.id.toString())
 
 	        	if(!file.thumbnail_id.isEmpty && !fileDataset.thumbnail_id.isEmpty)
-		        	if(file.thumbnail_id.get == fileDataset.thumbnail_id.get)
+		        	if(file.thumbnail_id.get == fileDataset.thumbnail_id.get){
 		        	  Dataset.newThumbnail(fileDataset.id.toString())
+		        	  
+		        	  for(collectionId <- fileDataset.collections){
+		                          Collection.findOneByID(new ObjectId(collectionId)) match{
+		                            case Some(collection) =>{		                              
+		                            	if(!collection.thumbnail_id.isEmpty){
+		                            		if(collection.thumbnail_id.get == fileDataset.thumbnail_id.get){
+		                            			Collection.newThumbnail(collection.id.toString)
+		                            		}		                        
+		                            	}
+		                            }
+		                            case None=>{}
+		                          }
+		                        }		        	  
+		        	}
 		    }   		        	  
 	        for(section <- SectionDAO.findByFileId(file.id)){
 	          SectionDAO.removeSection(section)
@@ -384,13 +398,20 @@ def getJsonArray(list: List[JsObject]): JsArray = {
 
     val listOfFiles = rdfTmpDir.listFiles()
     for(currFileDir <- listOfFiles){
-      val currFile = currFileDir.listFiles()(0)
-      val attrs = Files.readAttributes(FileSystems.getDefault().getPath(currFile.getAbsolutePath()),  classOf[BasicFileAttributes])
-      val timeCreated = new Date(attrs.creationTime().toMillis())
-      if(timeCreated.compareTo(oldDate) < 0){
+      val filesListAtDir = currFileDir.listFiles()	
+      
+      if(filesListAtDir.length > 0){
+        val currFile = filesListAtDir(0)
+        val attrs = Files.readAttributes(FileSystems.getDefault().getPath(currFile.getAbsolutePath()),  classOf[BasicFileAttributes])
+        val timeCreated = new Date(attrs.creationTime().toMillis())
+        if(timeCreated.compareTo(oldDate) < 0){
     	  currFile.delete()
     	  currFileDir.delete()
         }
+      }
+      else{
+        currFileDir.delete()
+      }
     }
   }
   

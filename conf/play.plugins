@@ -20,3 +20,4 @@
 10009:services.MailerPlugin
 10010:services.AdminsNotifierPlugin
 10011:securesocial.core.providers.FacebookProvider
+10013:services.RDFExportService
