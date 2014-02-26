@@ -13,6 +13,7 @@ GET      /users                                                              con
 GET      /users/by-country/:country                                          controllers.Users.listByCountry(country)
 GET      /users/create/:username                                             controllers.Users.create(username)
 GET      /users/view/:id                                                     controllers.Users.view(id)
+POST	 /users/registerThroughAdmins										 controllers.Users.handleStartSignUp
 
 # Files
 GET		/files					          @controllers.Files.list(when: String ?= "", date: String ?= "", size: Int ?= 10)
@@ -50,6 +51,7 @@ GET      /collection/:id                                                     @co
 
 # Tags
 GET     /tags/search                      controllers.Tags.search(tag)
+GET     /tags/cloud                       controllers.Tags.tagCloud
 
 # Authentication
 GET      /loginTest                                                          controllers.Authentication.login
@@ -183,6 +185,7 @@ GET     /api/queries/:id				                       @api.Files.downloadquery(id)
 GET     /api/delete-data                    					api.Admin.deleteAllData
 
 POST	/api/remove-admin										api.Admin.removeAdmin
+POST	/api/changeAppearance									api.Admin.submitAppearance
 
 GET     /api-docs.json/datasets           controllers.ApiHelpController.getResource(path = "/api-docs.json/datasets")
 

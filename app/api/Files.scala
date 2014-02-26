@@ -54,6 +54,9 @@ import fileutils.FilesUtils
 import services.DumpOfFile
 
 import controllers.Previewers
+
+import java.io.BufferedInputStream
+import javax.imageio.ImageIO
   
 /**
  * Json API for files.
@@ -325,7 +328,9 @@ class Files @Inject() (files: FileService, datasets: DatasetService, queries: Qu
 		            }
 	            }
 	            
-	            Ok(toJson(Map("id"->id)))   
+	            Ok(toJson(Map("id"->id)))
+	            current.plugin[AdminsNotifierPlugin].foreach{_.sendAdminsNotification("File","added",id, nameOfFile)}
+	            Ok(toJson(Map("id"->id)))
 	          }
 	          case None => {
 	            Logger.error("Could not retrieve file that was just saved.")
@@ -507,6 +512,8 @@ class Files @Inject() (files: FileService, datasets: DatasetService, queries: Qu
               }
 
               //sending success message
+              Ok(toJson(Map("id" -> id)))
+              current.plugin[AdminsNotifierPlugin].foreach{_.sendAdminsNotification("File","added",id, nameOfFile)}
               Ok(toJson(Map("id" -> id)))
             }
             case None => {
@@ -924,6 +931,7 @@ class Files @Inject() (files: FileService, datasets: DatasetService, queries: Qu
 	            }
 	          }
 	          case None => {
+	            //IMPORTANT: Setting CONTENT_LENGTH header here introduces bug!
 	            Ok.chunked(Enumerator.fromStream(inputStream))
 	            	.withHeaders(CONTENT_TYPE -> contentType)
 	            	.withHeaders(CONTENT_DISPOSITION -> ("attachment; filename=" + filename))
@@ -947,6 +955,7 @@ class Files @Inject() (files: FileService, datasets: DatasetService, queries: Qu
     SecuredAction(parse.anyContent, authorization=WithPermission(Permission.ShowFile)) { request => 
       ThreeDTextureDAO.findTexture(new ObjectId(three_d_file_id), filename) match {
         case Some(texture) => {
+          
           
           ThreeDTextureDAO.getBlob(texture.id.toString()) match {
             
@@ -976,9 +985,10 @@ class Files @Inject() (files: FileService, datasets: DatasetService, queries: Qu
 	            }
 	          }
 	          case None => {
+	            //IMPORTANT: Setting CONTENT_LENGTH header here introduces bug!
 	            Ok.stream(Enumerator.fromStream(inputStream))
 	            	.withHeaders(CONTENT_TYPE -> contentType)
-	            	.withHeaders(CONTENT_LENGTH -> contentLength.toString)
+	            	//.withHeaders(CONTENT_LENGTH -> contentLength.toString)
 	            	.withHeaders(CONTENT_DISPOSITION -> ("attachment; filename=" + filename))
       
 	          }
@@ -1232,11 +1242,13 @@ class Files @Inject() (files: FileService, datasets: DatasetService, queries: Qu
     files.getFile(id)  match {
       case Some(file) => {
         FileDAO.removeFile(id)
+
         current.plugin[ElasticsearchPlugin].foreach {
           _.delete("data", "file", id)
         }
         
         Logger.debug(file.filename)
+
         //remove file from RDF triple store if triple store is used
 	        play.api.Play.configuration.getString("userdfSPARQLStore").getOrElse("no") match{      
 		        case "yes" => {
@@ -1249,6 +1261,8 @@ class Files @Inject() (files: FileService, datasets: DatasetService, queries: Qu
 	        }
         
                 
+        Ok(toJson(Map("status"->"success")))
+        current.plugin[AdminsNotifierPlugin].foreach{_.sendAdminsNotification("File","removed",id, file.filename)}
         Ok(toJson(Map("status"->"success")))
       }
       case None => Ok(toJson(Map("status"->"success")))

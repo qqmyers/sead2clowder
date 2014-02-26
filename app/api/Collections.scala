@@ -2,6 +2,7 @@ package api
 
 import models.Collection
 import play.api.Logger
+import play.api.Play.current
 import org.bson.types.ObjectId
 import play.api.libs.json.JsValue
 import play.api.libs.json.Json.toJson
@@ -13,6 +14,7 @@ import java.text.SimpleDateFormat
 import play.api.Play.current
 import services.ElasticsearchPlugin
 import services.CollectionService
+import services.AdminsNotifierPlugin
 
 /**
  * Manipulate collections.
@@ -117,11 +119,12 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
           _.delete("data", "collection", collectionId)
         }
         Ok(toJson(Map("status" -> "success")))
+        current.plugin[AdminsNotifierPlugin].foreach{_.sendAdminsNotification("Collection","removed",collection.id.toString, collection.name)}
       }
-      case None => {
-        Ok(toJson(Map("status" -> "success")))
+      case None => {        
       }       
-    }    
+    }
+    Ok(toJson(Map("status" -> "success")))
   }
 
   def listCollections() = SecuredAction(parse.anyContent, authorization=WithPermission(Permission.ListCollections)) { request =>

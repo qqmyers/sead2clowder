@@ -21,6 +21,7 @@ import api.WithPermission
 import api.Permission
 import javax.inject.{ Singleton, Inject }
 import services.{ DatasetService, CollectionService }
+import services.AdminsNotifierPlugin
 
 object ThumbnailFound extends Exception { }
 
@@ -51,7 +52,7 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
     implicit val user = request.user
     var direction = "b"
     if (when != "") direction = when
-    val formatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss")
+    val formatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS")
     var prev, next = ""
     var collectionList = List.empty[models.Collection]
     if (direction == "b") {
@@ -127,6 +128,8 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
 		                List(("name",collection.name), ("description", collection.description), ("created",dateFormat.format(new Date()))))}
 
 		            // redirect to collection page
+		            Redirect(routes.Collections.collection(collection.id.toString))
+		            current.plugin[AdminsNotifierPlugin].foreach{_.sendAdminsNotification("Collection","added",collection.id.toString,collection.name)}
 		            Redirect(routes.Collections.collection(collection.id.toString))
 			      } 
 	)
