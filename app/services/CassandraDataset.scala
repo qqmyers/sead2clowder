@@ -77,4 +77,7 @@ class CassandraDataset extends DatasetService {
     List.empty[String]
   }
   
+  def dumpAllDatasetMetadata(): List[String] = {
+    List.empty[String]
+  }
 }

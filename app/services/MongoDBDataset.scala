@@ -288,4 +288,47 @@ trait MongoDBDataset {
     return unsuccessfulDumps.toList
   }
   
+  
+  def dumpAllDatasetMetadata(): List[String] = {    
+    Logger.debug("Dumping metadata of all datasets.")
+    
+    val fileSep = System.getProperty("file.separator")
+    val lineSep = System.getProperty("line.separator")
+    var dsMdDumpDir = play.api.Play.configuration.getString("datasetdump.dir").getOrElse("")
+	if(!dsMdDumpDir.endsWith(fileSep))
+		dsMdDumpDir = dsMdDumpDir + fileSep
+    
+	var unsuccessfulDumps: ListBuffer[String] = ListBuffer.empty 	
+		
+	for(dataset <- Dataset.findAll){
+	  try{
+		  val dsId = dataset.id.toString
+		  val datasetnameNoSpaces = dataset.name.replaceAll("\\s+","_")
+		  
+		  val mdFile = new java.io.File(dsMdDumpDir + dsId.charAt(dsId.length()-3)+ fileSep + dsId.charAt(dsId.length()-2)+dsId.charAt(dsId.length()-1)+ fileSep + dsId + fileSep + datasetnameNoSpaces + "__metadata.txt")
+		  mdFile.getParentFile().mkdirs()
+		  
+		  val dsTechnicalMetadata = Dataset.getTechnicalMetadataJSON(dsId)
+		  val dsUserMetadata = Dataset.getUserMetadataJSON(dsId)
+		  val dsXMLMetadata = Dataset.getXMLMetadataJSON(dsId)
+	  		  
+		  if(dsTechnicalMetadata != "{}" || dsUserMetadata != "{}" || dsXMLMetadata != "{}"){
+		      val fileWriter =  new BufferedWriter(new FileWriter(mdFile))
+			  fileWriter.write(dsTechnicalMetadata + lineSep + lineSep + dsUserMetadata + lineSep + lineSep + dsXMLMetadata)
+			  fileWriter.close()
+		  }
+		  else{
+		    mdFile.delete()
+		  }
+
+	  }catch {case ex:Exception =>{
+	    val badDatasetId = dataset.id.toString
+	    Logger.error("Unable to dump metadata of dataset with id "+badDatasetId+": "+ex.printStackTrace())
+	    unsuccessfulDumps += badDatasetId
+	  }}
+	}
+    
+    return unsuccessfulDumps.toList
+  }
+  
 }
