@@ -17,24 +17,49 @@ object Subscribers extends ApiController {
   def submitLoggedIn = SecuredAction(authorization=WithPermission(Permission.Subscribe)) { request =>    
       Logger.debug("Subscribing")
       
-      (request.body \ "identifier").asOpt[String].map { email =>
-      	SocialUserDAO.findOneByEmail(email) match {
+      (request.body \ "identifier").asOpt[String].map { identifier =>
+      	SocialUserDAO.findOneByIdentifier(identifier) match {
       	  case Some(user) => {
-      	    Subscriber.findOneByEmail(email) match {
+      	    var subscriberExisting : Option[Subscriber] = None
+      	    var isEmail = true
+        	try{
+		        	new InternetAddress(identifier).validate()
+		        	subscriberExisting = Subscriber.findOneByEmail(identifier)
+		        }catch{case ex: AddressException => {
+		        	subscriberExisting = Subscriber.findOneByIdentifier(identifier, false)
+		        	isEmail = false
+		    }} 
+      	    
+      	    subscriberExisting match {
       	      case None => {
-      	        Logger.debug("Saving subscription with email " + email)
-      	        // TODO create a service instead of calling salat directly
-		        Subscriber.save(Subscriber(name = user.firstName, surname =  user.lastName, email = Some(email), hashedPassword = user.passwordInfo.get.password))
-		        Ok(toJson(Map("status" -> "success")))
+      	        if(isEmail){
+	      	        Logger.debug("Saving subscription with email " + identifier)
+	      	        // TODO create a service instead of calling salat directly
+			        Subscriber.save(Subscriber(name = user.firstName, surname =  user.lastName, email = Some(identifier), hashedPassword = user.passwordInfo.get.password))
+			        Ok("success")
+		        }
+      	        else{
+      	        	Logger.debug("Saving subscription with FB identifier " + identifier)
+      	        	val newSubscriber = Subscriber(name = user.firstName, surname =  user.lastName, FBIdentifier = Some(identifier), hashedPassword = "")
+	      	        // TODO create a service instead of calling salat directly
+			        Subscriber.save(newSubscriber)
+			        
+			        //Redirect to FB oauth page to get user token if subscribed using FB
+			        val fbAppId = play.Play.application().configuration().getString("fb.appId")
+			        val hostIp = play.Play.application().configuration().getString("hostIp")
+			        val hostPort = play.Play.application().configuration().getString("http.port")
+			        
+			        Ok("https://www.facebook.com/dialog/oauth?client_id="+fbAppId+"&redirect_uri=http://"+hostIp+":"+hostPort+controllers.routes.Subscribers.getAuthToken(newSubscriber.id.toString)+"&scope=publish_stream")
+      	        }		        		        
       	      }
       	      case Some(subscriber) => {
       	        Logger.info("Subscriber already existed.")
-      	        Ok(toJson(Map("status" -> "notmodified")))
+      	        Ok("notmodified")
       	      }
-      	    }      	    
+      	    }
       	  }
       	  case None => {
-      	    Logger.error("Error getting user with email " + email); InternalServerError
+      	    Logger.error("Error getting user with identifier " + identifier); InternalServerError
       	  }      	  
       	}      
       }.getOrElse {
