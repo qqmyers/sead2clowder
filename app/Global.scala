@@ -48,6 +48,30 @@ object Global extends GlobalSettings {
 	    }
     }
     
+    //Dump metadata of all files periodically if file metadata autodumper is activated
+    if(current.plugin[FileMetadataAutodumpService].isDefined){
+	    timeInterval = play.Play.application().configuration().getInt("filemetadatadump.dumpEvery") 
+	    Akka.system().scheduler.schedule(0.days, timeInterval.intValue().days){
+	      current.plugin[FileMetadataAutodumpService].get.dumpAllFileMetadata
+	    }
+    }
+    
+    //Dump dataset file groupings periodically if dataset file groupings autodumper is activated
+    if(current.plugin[DatasetsAutodumpService].isDefined){
+	    timeInterval = play.Play.application().configuration().getInt("datasetdump.dumpEvery") 
+	    Akka.system().scheduler.schedule(0.days, timeInterval.intValue().days){
+	      current.plugin[DatasetsAutodumpService].get.dumpDatasetGroupings
+	    }
+    }
+    
+    //Dump metadata of all datasets periodically if dataset metadata autodumper is activated
+    if(current.plugin[DatasetsMetadataAutodumpService].isDefined){
+	    timeInterval = play.Play.application().configuration().getInt("datasetmetadatadump.dumpEvery") 
+	    Akka.system().scheduler.schedule(0.days, timeInterval.intValue().days){
+	      current.plugin[DatasetsMetadataAutodumpService].get.dumpAllDatasetMetadata
+	    }
+    }
+    
   }
 
   override def onStop(app: Application) {

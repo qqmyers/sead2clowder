@@ -57,4 +57,9 @@ abstract class DatasetService {
   def modifyRDFOfMetadataChangedDatasets()
   
   def modifyRDFUserMetadata(id: String, mappingNumber: String="1")
+
+  def dumpAllDatasetGroupings(): List[String]
+  
+  def dumpAllDatasetMetadata(): List[String]
 }
+

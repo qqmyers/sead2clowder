@@ -57,4 +57,6 @@ abstract class FileService {
   def modifyRDFOfMetadataChangedFiles()
   
   def modifyRDFUserMetadata(id: String, mappingNumber: String="1")
+  
+  def dumpAllFileMetadata(): List[String]
 }

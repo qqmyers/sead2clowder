@@ -127,6 +127,7 @@ GET		/admin/listAdmins			controllers.Admin.listAdmins
 POST    /admin/submitNew 			controllers.Admin.submitNew
 POST    /admin/createIndex  		controllers.Admin.createIndex
 POST  	 /admin/index/:id/build     controllers.Admin.buildIndex(id:String)
+GET		 /admin/dataDumps			controllers.Admin.viewDumpers
 DELETE   /admin/index/:id/delete    controllers.Admin.deleteIndex(id:String)
 DELETE 	/admin/index/deleteAll		controllers.Admin.deleteAllIndexes
 
@@ -186,6 +187,9 @@ GET     /api/delete-data                    					api.Admin.deleteAllData
 
 POST	/api/remove-admin										api.Admin.removeAdmin
 POST	/api/changeAppearance									api.Admin.submitAppearance
+POST	/api/dumpFilesMd										@api.Files.dumpFilesMetadata
+POST	/api/dumpDatasetsMd										@api.Datasets.dumpDatasetsMetadata
+POST	/api/dumpDatasetGroupings								@api.Datasets.dumpDatasetGroupings
 
 GET     /api-docs.json/datasets           controllers.ApiHelpController.getResource(path = "/api-docs.json/datasets")
 

@@ -73,4 +73,11 @@ class CassandraDataset extends DatasetService {
   
   def modifyRDFUserMetadata(id: String, mappingNumber: String="1") = {}
   
+  def dumpAllDatasetGroupings(): List[String] = {
+    List.empty[String]
+  }
+  
+  def dumpAllDatasetMetadata(): List[String] = {
+    List.empty[String]
+  }
 }
