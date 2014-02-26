@@ -56,6 +56,14 @@ object Global extends GlobalSettings {
 	    }
     }
     
+    //Dump dataset file groupings periodically if dataset file groupings autodumper is activated
+    if(current.plugin[DatasetsAutodumpService].isDefined){
+	    timeInterval = play.Play.application().configuration().getInt("datasetdump.dumpEvery") 
+	    Akka.system().scheduler.schedule(0.days, timeInterval.intValue().days){
+	      current.plugin[DatasetsAutodumpService].get.dumpDatasetGroupings
+	    }
+    }
+    
   }
 
   override def onStop(app: Application) {
