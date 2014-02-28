@@ -39,10 +39,10 @@
 		    	swfobject.embedSWF(Configuration.iipZoomPath, "iip" + Configuration.tab.replace("#previewer",""), width, height, "9.0.0",Configuration.expressInstallPath, flashvars, params);
 		    	
 		    	var fn = function(e) {	    		
-		            var element = document.elementFromPoint(e.pageX - window.pageXOffset, e.pageY - window.pageYOffset);
+		            var element = document.elementFromPoint(e.pageX - window.pageXOffset, e.pageY - window.pageYOffset);		            
 		            if(element || true){ 
 		            	if(element.hasAttribute("data"))
-				            if (element.getAttribute("data").toLowerCase().indexOf("iipzoom") != -1) {			            	
+				            if (element.getAttribute("data").toLowerCase().indexOf("iipzoom") != -1) {
 				                e.preventDefault();
 				                e.stopPropagation();
 				            }

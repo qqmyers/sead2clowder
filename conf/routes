@@ -31,6 +31,9 @@ POST   	/uploaddnd/:id					  @controllers.Files.uploaddnd(id)
 POST    /uploadDragDrop					  @controllers.Files.uploadDragDrop
 GET		/fileThumbnail/:id/blob			  @controllers.Files.thumbnail(id)
 
+#For IIPMooViewer
+GET		/assets/javascripts/previewers/iipJS/images/:imgResource	  @controllers.Datasets.redirectToImg(imgResource)
+
 # Datasets
 GET		/datasets					      @controllers.Datasets.list(when: String ?= "", date: String ?= "", size: Int ?= 10)
 GET     /datasets/new                     @controllers.Datasets.newDataset
