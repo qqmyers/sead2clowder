@@ -48,6 +48,9 @@
 		}
 		else if("@p._2" === "Oni"){							
 		}
+		else if("@p._2" === "Multispectral"){
+			Configuration.multispectralIframe = "@(routes.Assets.at("javascripts/previewers/multispectral/multispectralIframe.html"))";
+		}
 	</script>
 	<script type="text/javascript" src="@(routes.Assets.at(p._3) + "/" + p._4)"></script>
 }
@@ -66,7 +69,8 @@
 		Configuration.expressInstallPath = "@(routes.Assets.at("plugins") + "/" + "expressInstall.swf")";
 		Configuration.iipZoomPath = "@(routes.Assets.at("plugins") + "/" + "IIPZoom.swf")";
 		Configuration.jsPath = "@(routes.Assets.at("javascripts"))";
-		Configuration.imagesPath = "@(routes.Assets.at("images"))";		
+		Configuration.imagesPath = "@(routes.Assets.at("images"))";
+		Configuration.stylesheetsPath = "@(routes.Assets.at("stylesheets"))";
     </script>
     <script>
     	window.onload = function() {

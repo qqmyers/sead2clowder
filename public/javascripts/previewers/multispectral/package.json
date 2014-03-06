@@ -1,0 +1,4 @@
+{ "name" : "Multispectral",
+  "main" : "some-library.js",
+  "contentType" : ["image/multispectral"]
+  }

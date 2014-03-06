@@ -23,6 +23,8 @@ public class FilesUtils {
 		try {
 			if(filename.startsWith("MEDICI2DATASET_") && containerType.equals("dataset"))
 				return "multi/files-zipped";
+			if(filename.startsWith("MEDICI2MULTISPECTRAL_"))
+				return "image/zipped_multispectral";
 			
 			ZipFile zipFile = new ZipFile(compressedFile);			
 			Enumeration zipEntries = zipFile.entries();

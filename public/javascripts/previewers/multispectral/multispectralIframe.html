@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1" />
+<title>Insert title here</title>
+<style type="text/css">
+    body{
+	height: 100%;
+	width: 100%;
+	padding: 0;
+	margin: 0;
+    }
+    div#viewer{
+	width: 100%;
+	height: 100%;
+	left: 0%;
+	right: 0px;
+	position: absolute;
+    }
+  </style>
+</head>
+<body style="background:grey;color:white">
+
+<script type="text/javascript">
+
+function getUrlVars() {
+    var vars = {};
+    var parts = window.location.href.replace(/[?&]+([^=&]+)=([^&]*)/gi, function(m,key,value) {
+        vars[key] = value;
+    });
+    return vars;
+}
+
+window.onload=function(){
+	
+	
+	
+};
+
+var s = document.createElement("link");
+s.type = "text/css";
+s.href =  decodeURIComponent(getUrlVars()["pathCss"].substring(getUrlVars()["pathCss"].lastIndexOf("http%3A")))   + "iip2.css";
+s.media = "all";
+s.rel = "stylesheet";
+document.getElementsByTagName("head")[0].appendChild(s);
+
+s = document.createElement("link");
+s.type = "text/css";
+s.href =  decodeURIComponent(getUrlVars()["pathCss"].substring(getUrlVars()["pathCss"].lastIndexOf("http%3A")))   + "blending.css";
+s.media = "all";
+s.rel = "stylesheet";
+document.getElementsByTagName("head")[0].appendChild(s);
+
+s = document.createElement("link");
+s.href = decodeURIComponent(getUrlVars()["pathImages"].substring(getUrlVars()["pathImages"].lastIndexOf("http%3A"))) + "iip-favicon.png";
+s.rel = "shortcut icon";
+document.getElementsByTagName("head")[0].appendChild(s);
+
+var pathJs = decodeURIComponent(getUrlVars()["pathJs"].substring(getUrlVars()["pathJs"].lastIndexOf("http%3A")))  ;
+
+// s = document.createElement("script");
+// s.type = "text/javascript";
+// s.src = pathJs + "protocols.js";
+// s.async = false;
+// s.defer = false;
+// document.getElementsByTagName("head")[0].appendChild(s);
+
+s = document.createElement("script");
+s.type = "text/javascript";
+s.src = pathJs + "mootools-yui-compressed.js";
+s.async = false;
+s.defer = false;
+document.getElementsByTagName("head")[0].appendChild(s);
+
+s = document.createElement("script");
+s.type = "text/javascript";
+s.src = pathJs + "iipmooviewer-2.0-compressed.js";
+s.async = false;
+s.defer = false;
+document.getElementsByTagName("head")[0].appendChild(s);
+
+
+
+
+
+var prNum = window.frameElement.id.replace("multispectralIframe","");
+var uploadDirsArrays = window.frameElement.contentWindow.parent.window["currentMultispectral" + prNum];
+var uploadDirsServer = window.frameElement.contentWindow.parent.window["multispectralServer" + prNum];
+
+var firstImage = uploadDirsArrays[0][0];
+
+alert(uploadDirsArrays.join(","));
+
+var uploadDirsArray = uploadDirsArrays.join(",").split(",");
+var finalArray = new Array();
+for(var i = 0; i < uploadDirsArray.length; i = i+2){
+	finalArray[i/2] = new Array();
+	finalArray[i/2][0] = uploadDirsArray[i];
+	finalArray[i/2][1] = uploadDirsArray[i+1];
+}
+
+
+iipmooviewer = new IIPMooViewer( "viewer", {
+	image: firstImage,
+	server: uploadDirsServer
+      });
+
+iipmooviewer.blend(finalArray);
+
+</script>
+<div style="width:99%;height:99%;margin-left:auto;margin-right:auto" id="viewer"></div>
+
+</body>
+</html>
