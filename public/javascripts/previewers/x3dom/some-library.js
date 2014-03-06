@@ -779,7 +779,9 @@ function clearConfigTabAnnotations(prNum){
     		window["oldx3dposition" + prNum] = window["thisPreview" + prNum].offset().top;
     	}
     }    
-	
+    /**
+	Function to handle LeapMotion event.
+    **/	
     function leapMotionEvent(frame, prNum){
 			
 	if(frame.hands.length>0 && frame.hands[0].valid) {
@@ -809,7 +811,7 @@ function clearConfigTabAnnotations(prNum){
 		}
 		else if($("#secondObjectCheck").is(":checked") == true && $("#firstObjectCheck").is(":checked") == false) {
 			
-			//actually this is the first hand itself. There is no way to distinguish between left hand and right hand
+			//Actually this is the first hand itself. There is no way to distinguish between left hand and right hand
 			var secondHand = frame.hands[0];			
 			var translationSecondHand = secondHand.translation(baseFrameFirstHand);
 			var rotationAxisSecondHand = secondHand.rotationAxis(baseFrameFirstHand);
@@ -931,7 +933,10 @@ function clearConfigTabAnnotations(prNum){
 		 window["annotTrackingDiff" + prNum] = 0.000;
 		 window["annotTrackingDiff2" + prNum] = 0.000;	
     }
-    	
+    
+    /**
+	Function to open a WebSocket connection
+    **/	
     function webSocketConnection(prNum){
 	
         var pathWs = "ws://" + Configuration.hostIp + ":" + window.location.port;
@@ -992,6 +997,10 @@ function clearConfigTabAnnotations(prNum){
 	     console.log("WebSocket NOT supported by your Browser!");
 	  }
     }
+
+    /**
+	Function to start LeapMotion device
+    **/
     function startLeapMotion(prNum){
 
 	console.log("Leapmotion device connected.");
@@ -1021,6 +1030,9 @@ function clearConfigTabAnnotations(prNum){
 				
     }
 
+    /**
+	Function to stop LeapMotion device
+    **/
     function stopLeapMotion() {
 
 	isFirstObjectSender = false;
@@ -1154,7 +1166,7 @@ function clearConfigTabAnnotations(prNum){
 		console.log("url: "+Configuration.fileUrl[0]);
 		console.log("url: "+Configuration.fileUrl[1]);
 		$.ajax({
-		    url: Configuration.fileUrl[0], //   api/previews/52d02fc5e4b027f15b766ca2 
+		    url: Configuration.fileUrl[0],
 		    async:false,
 		    success: function (data) {
 			data = data.replace(/<transform/gi,"<transform groupId='3dgroup_0'"); //Grouping all transforms belonging to the first model
@@ -1644,6 +1656,7 @@ function clearConfigTabAnnotations(prNum){
 		  window["isx3domRefocusSet"] = "set"; 
 	  }
 
+	//Open WebSocket connection for 3D datasets
   	if(Configuration.calledFrom == "3d_dataset"){
 		webSocketConnection(prNum);
 	}  

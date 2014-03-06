@@ -367,7 +367,8 @@ class Datasets @Inject()(
       dataset.description = StringEscapeUtils.unescapeHtml(dataset.description)
   }
 
-   * Dataset.
+  /**
+   * 3D Dataset.
    */
   def datasetThreeDim(id: String) = SecuredAction(authorization=WithPermission(Permission.ShowDataset), resourceId = Some(UUID(id))) { implicit request =>
     implicit val user = request.user    
@@ -439,7 +440,6 @@ class Datasets @Inject()(
     }
   }
   
->>>>>>> Provided a dataset interface for leapmotion code
   /**
    * Dataset by section.
    */

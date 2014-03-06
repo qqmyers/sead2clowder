@@ -38,13 +38,14 @@ class Application @Inject() (files: FileService) extends SecuredController {
     Ok(views.html.index(latestFiles, AppConfiguration.getDisplayName, AppConfiguration.getWelcomeMessage))
   }
 
-  //Map to dataset id and (enumerator, channel) pair
+  //Global map to store dataset id and (enumerator, channel) pairs
   val channelMap = Map[String, (Enumerator[String], Channel[String])]()
 
+  /**
+   * WebSocket implementation. Creates WebSockets based on dataset id.
+   */
   def webSocket(datasetId: String) = WebSocket.using[String] { request =>
-
     val iterator = Iteratee.foreach[String] { message =>
-      //Logger.info("Logging message: " + message)
       channelMap(datasetId)._2 push (message)
     }
 
@@ -52,22 +53,12 @@ class Application @Inject() (files: FileService) extends SecuredController {
     if (channelMap.contains(datasetId) == false) {
       Logger.info("Dataset id not found. Creating an entry in the map")
 
-      //val (enumerator, channel) = Concurrent.broadcast[String]
       channelMap += datasetId -> Concurrent.broadcast[String]
     }
-    //the Enumerator returned by Concurrent.broadcast subscribes to the channel and will 
-    //receive the pushed messages
+    /*The Enumerator returned by Concurrent.broadcast subscribes to the channel and will 
+    receive the pushed messages*/
     (iterator, channelMap(datasetId)._1)
   }
-
-  /*lazy val (enumerator, channel) = Concurrent.broadcast[String]
-
-  def webSocketSimple = WebSocket.using[String] { request =>
-    val iteratee = Iteratee.foreach[String] { message =>
-      channel push (message)
-    }
-    (iteratee, enumerator)
-  }*/
   
   def options(path:String) = SecuredAction() { implicit request =>
     Logger.info("---controller: PreFlight Information---")
