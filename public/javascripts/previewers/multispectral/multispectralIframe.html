@@ -34,7 +34,27 @@ function getUrlVars() {
 
 window.onload=function(){
 	
-	
+	var prNum = window.frameElement.id.replace("multispectralIframe","");
+	var uploadDirsArrays = window.frameElement.contentWindow.parent.window["currentMultispectral" + prNum];
+	var uploadDirsServer = window.frameElement.contentWindow.parent.window["multispectralServer" + prNum];
+
+	var firstImage = uploadDirsArrays[0][0];
+
+	var uploadDirsArray = uploadDirsArrays.join(",").split(",");
+	var finalArray = new Array();
+	for(var i = 0; i < uploadDirsArray.length; i = i+2){
+		finalArray[i/2] = new Array();
+		finalArray[i/2][0] = uploadDirsArray[i];
+		finalArray[i/2][1] = uploadDirsArray[i+1];
+	}
+
+
+	iipmooviewer = new IIPMooViewer( "viewer", {
+		image: firstImage,
+		server: uploadDirsServer
+	      });
+
+	iipmooviewer.blend(finalArray);
 	
 };
 
@@ -79,34 +99,6 @@ s.src = pathJs + "iipmooviewer-2.0-compressed.js";
 s.async = false;
 s.defer = false;
 document.getElementsByTagName("head")[0].appendChild(s);
-
-
-
-
-
-var prNum = window.frameElement.id.replace("multispectralIframe","");
-var uploadDirsArrays = window.frameElement.contentWindow.parent.window["currentMultispectral" + prNum];
-var uploadDirsServer = window.frameElement.contentWindow.parent.window["multispectralServer" + prNum];
-
-var firstImage = uploadDirsArrays[0][0];
-
-alert(uploadDirsArrays.join(","));
-
-var uploadDirsArray = uploadDirsArrays.join(",").split(",");
-var finalArray = new Array();
-for(var i = 0; i < uploadDirsArray.length; i = i+2){
-	finalArray[i/2] = new Array();
-	finalArray[i/2][0] = uploadDirsArray[i];
-	finalArray[i/2][1] = uploadDirsArray[i+1];
-}
-
-
-iipmooviewer = new IIPMooViewer( "viewer", {
-	image: firstImage,
-	server: uploadDirsServer
-      });
-
-iipmooviewer.blend(finalArray);
 
 </script>
 <div style="width:99%;height:99%;margin-left:auto;margin-right:auto" id="viewer"></div>

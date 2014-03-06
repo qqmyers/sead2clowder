@@ -55,6 +55,10 @@ object PreviewDAO extends ModelCompanion[Preview, ObjectId] {
     dao.update(MongoDBObject("_id" -> new ObjectId(id)), $set("iipURL" -> Some(iipURL), "iipImage" -> Some(iipImage), "iipKey" -> Some(iipKey)), false, false, WriteConcern.Safe)
   }
   
+  def setIIPKey(id: String, iipKey: String){
+    dao.update(MongoDBObject("_id" -> new ObjectId(id)), $set("iipKey" -> Some(iipKey)), false, false, WriteConcern.Safe)
+  }
+  
   def findByFileId(id: ObjectId): List[Preview] = {
     dao.find(MongoDBObject("file_id"->id)).toList
   }
@@ -161,10 +165,10 @@ object PreviewDAO extends ModelCompanion[Preview, ObjectId] {
       entity.addPart("file", new StringBody(p.iipImage.get, "text/plain",
                 Charset.forName( "UTF-8" )))
       httpPost.setEntity(entity)
-      val imageUploadResponse = httpclient.execute(httpPost)
-      Logger.info(imageUploadResponse.getStatusLine().toString())
+      val imageDeletionResponse = httpclient.execute(httpPost)
+      Logger.info(imageDeletionResponse.getStatusLine().toString())
       
-      val dirEntity = imageUploadResponse.getEntity()
+      val dirEntity = imageDeletionResponse.getEntity()
       Logger.info("IIP server: " + EntityUtils.toString(dirEntity))
     }
     
@@ -195,7 +199,43 @@ object PreviewDAO extends ModelCompanion[Preview, ObjectId] {
     	  	    	  PreviewDAO.remove(MongoDBObject("_id" -> new ObjectId(currLine.substring(currLine.indexOf(": ")+2))))
     	  		  currLine = frameRefReader.readLine()
     	  	  }
-    	  	  frameRefReader.close()       
+    	  	  frameRefReader.close()
+      //same for multispectral images	  	  
+      }else if(p.filename.get.endsWith(".multispectral")){
+    	  	  val theFile = getBlob(p.id.toString()) 
+    	  	  val frameRefReader = new BufferedReader(new InputStreamReader(theFile.get._1))
+    	  	  var currLine = frameRefReader.readLine()
+    	  	  var serverUrl = ""
+    	  	  while(currLine != null) {
+    	  	      if(!currLine.equals("")){
+    	  	    	  val serverRefs = currLine.split(",")
+    	  	          if(serverUrl.equals("")){
+    	  	              var urlEnd = serverRefs(2).indexOf("/",serverRefs(2).indexOf("://")+3)
+				          if(urlEnd == -1){
+				            urlEnd = serverRefs(2).length()
+				          }
+				          serverUrl = serverRefs(2).substring(0,urlEnd) 
+    	  	          }
+    	  	    	  
+    	  	    	  val iipImage = serverRefs(0).substring(serverRefs(0).lastIndexOf("/")+1)
+    	  	        
+    	  	          val httpclient = new DefaultHttpClient()
+				      val httpPost = new HttpPost(serverUrl+"/deleteFile.php")
+				      val entity = new MultipartEntity(HttpMultipartMode.BROWSER_COMPATIBLE)
+				      entity.addPart("key", new StringBody(p.iipKey.get, "text/plain",
+				                Charset.forName( "UTF-8" )))
+				      entity.addPart("file", new StringBody(iipImage, "text/plain",
+				                Charset.forName( "UTF-8" )))
+				      httpPost.setEntity(entity)
+				      val imageDeletionResponse = httpclient.execute(httpPost)
+				      Logger.info(imageDeletionResponse.getStatusLine().toString())
+				      
+				      val dirEntity = imageDeletionResponse.getEntity()
+				      Logger.info("IIP server: " + EntityUtils.toString(dirEntity))
+    	  	      }
+    	  		  currLine = frameRefReader.readLine()
+    	  	  }
+    	  	  frameRefReader.close()
       }
     
     PreviewDAO.remove(MongoDBObject("_id" -> p.id))    

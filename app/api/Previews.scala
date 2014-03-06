@@ -109,6 +109,9 @@ object Previews extends ApiController {
 	          
 	          PreviewDAO.setIIPReferences(id, iipURL, iipImage, iipKey)  
 	        }
+	        else if(f.filename.endsWith(".multispectral")){
+	          PreviewDAO.setIIPKey(id, iipKey)  
+	        }
         Ok(toJson(Map("id"->id)))   
       }.getOrElse {
          BadRequest(toJson("File not attached."))
