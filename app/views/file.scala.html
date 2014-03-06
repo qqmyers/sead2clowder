@@ -387,6 +387,9 @@
     						Configuration.wasPTM = 'false';
     					Configuration.calledFrom = "file";
     				}
+    				else if(pv.p_id === "Multispectral"){
+    					Configuration.multispectralIframe = "@(routes.Assets.at("javascripts/previewers/multispectral/multispectralIframe.html"))";
+    				}
     				////
     				
     				var s = document.createElement("script");
