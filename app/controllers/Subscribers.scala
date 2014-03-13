@@ -36,26 +36,31 @@ object Subscribers extends SecuredController {
       "surname" -> nonEmptyText,
       "identifier" -> {current.plugin[FacebookService].isDefined match{
         case true =>{
-          nonEmptyText.verifying(Constraint[String] {
+          text.verifying(Constraint[String] {
      		inputIdentifier: String => {
-     			try{//If input is not an email address, validate by identifier in general.
-     					new InternetAddress(inputIdentifier).validate()     				
-	     				if(!Subscriber.findOneByEmail(inputIdentifier).isDefined)
-	     				  Valid
-	     				else
-	     				  Invalid(ValidationError("Subscription with this email exists already."))     				
-		        }catch{ case ex: AddressException => {
-			          try{
-			        	if(!Subscriber.findOneByIdentifier(inputIdentifier).isDefined)
-			        	  Valid
-			        	else
-			        	  Invalid(ValidationError("Subscription with this identifier exists already."))	
-			          }catch{ case exFB: FacebookGraphException => {
-     						Invalid(ValidationError("FB user not found."))
-     					}     				
-			          }
-		        	}		        
-		        }   			
+     		    if(inputIdentifier.equals(""))
+     					  Invalid(ValidationError("This field is required"))
+     			else{
+	     			try{	     					
+	     					//If input is not an email address, validate by identifier in general.
+	     					new InternetAddress(inputIdentifier).validate()     				
+		     				if(!Subscriber.findOneByEmail(inputIdentifier).isDefined)
+		     				  Valid
+		     				else
+		     				  Invalid(ValidationError("Subscription with this email exists already."))     				
+			        }catch{ case ex: AddressException => {
+				          try{
+				        	if(!Subscriber.findOneByIdentifier(inputIdentifier).isDefined)
+				        	  Valid
+				        	else
+				        	  Invalid(ValidationError("Subscription with this identifier exists already."))	
+				          }catch{ case exFB: FacebookGraphException => {
+	     						Invalid(ValidationError("FB user not found."))
+	     					}     				
+				          }
+			        	}		        
+			        }
+     			}
      		  } 
           })
         }

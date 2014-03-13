@@ -19,7 +19,7 @@
 		<div class="alert alert-error">
             <p>Please fix all errors</p>
         </div>
-        @if(flash.get("error").size == 0){
+        @if(flash.get("error").size == 0 && !myForm.error("name") && !myForm.error("surname") && !myForm.error("identifier") && !myForm.error("password")){
         	<div class="alert alert-error">
             		<p>Subscriber refused to authenticate with Facebook and grant publish feeds permission.</p>
         	</div>
