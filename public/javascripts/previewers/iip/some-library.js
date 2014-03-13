@@ -58,6 +58,4 @@
 		    	    },
 		    dataType: 'text'
 		});
-
-	 			
 }(jQuery, Configuration));

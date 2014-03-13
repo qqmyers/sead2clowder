@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1" />
+<title>Insert title here</title>
+</head>
+<body>
+
+<script type="text/javascript">
+
+function getUrlVars() {
+    var vars = {};
+    var parts = window.location.href.replace(/[?&]+([^=&]+)=([^&]*)/gi, function(m,key,value) {
+        vars[key] = value;
+    });
+    return vars;
+}
+
+window.onload=function(){
+	
+	iip = new IIP("targetframe", {
+		image: decodeURIComponent(getUrlVars()["image"].substring(getUrlVars()["image"].lastIndexOf("http%3A"))),
+		server: decodeURIComponent(getUrlVars()["server"].substring(getUrlVars()["server"].lastIndexOf("http%3A"))),
+		zoom: 1,
+		render: 'random',
+	            showNavButtons: true
+	});
+	
+};
+
+var s = document.createElement("link");
+s.type = "text/css";
+s.href =  decodeURIComponent(getUrlVars()["pathCss"].substring(getUrlVars()["pathCss"].lastIndexOf("http%3A")))   + "iip.css";
+s.media = "all";
+s.rel = "stylesheet";
+document.getElementsByTagName("head")[0].appendChild(s);
+
+s = document.createElement("link");
+s.href = decodeURIComponent(getUrlVars()["pathImages"].substring(getUrlVars()["pathImages"].lastIndexOf("http%3A"))) + "iip-favicon.png";
+s.rel = "shortcut icon";
+document.getElementsByTagName("head")[0].appendChild(s);
+
+var pathJs = decodeURIComponent(getUrlVars()["pathJs"].substring(getUrlVars()["pathJs"].lastIndexOf("http%3A")))  ;
+
+s = document.createElement("script");
+s.type = "text/javascript";
+s.src = pathJs + "mootools-1.2-core.js";
+s.async = false;
+s.defer = false;
+document.getElementsByTagName("head")[0].appendChild(s);
+
+s = document.createElement("script");
+s.type = "text/javascript";
+s.src = pathJs + "mootools-1.2-more.js";
+s.async = false;
+s.defer = false;
+document.getElementsByTagName("head")[0].appendChild(s);
+
+s = document.createElement("script");
+s.type = "text/javascript";
+s.src = pathJs + "iipmooviewer-1.1.js";
+s.async = false;
+s.defer = false;
+document.getElementsByTagName("head")[0].appendChild(s);
+
+</script>
+<div style="width:99%;height:99%;margin-left:auto;margin-right:auto" id="targetframe"></div>
+
+</body>
+</html>

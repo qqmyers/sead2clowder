@@ -507,6 +507,8 @@ def submit() = SecuredAction(parse.multipartFormData, authorization=WithPermissi
   	Ok(views.html.generalMetadataSearch()) 
   }
   
-  
+  def redirectToImg(imgResource: String)  = SecuredAction(authorization=WithPermission(Permission.Public)) { implicit request =>
+  	Redirect(routes.Assets.at("images/"+ imgResource))
+  }
   
 }
