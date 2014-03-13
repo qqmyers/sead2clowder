@@ -29,7 +29,7 @@
 	        searchResultsCount--;
 	        if(currentFirstAdd + 10 > searchResultsCount)
 				 $('#addPagerNext').css('visibility','hidden');
-	        for(var i = parseInt(resultId.replace("resultRow",""))+1; i <= searchResultsCount + 1; i++){
+	        for(var i = parseInt(resultId.replace("resultRow",""),10)+1; i <= searchResultsCount + 1; i++){
 				 $("#addDatasetsTable tbody tr[id='resultRow" + i + "']").each(function() {
 					 $(this)[0].innerHTML = $(this)[0].innerHTML.replace("resultRow" + i, "resultRow" + (i-1));
 					 $(this).attr("id", "resultRow" + (i-1));				 
@@ -96,7 +96,7 @@
 	      datasetsInCollectionCount--;
 	      if(currentFirstDatasets + 10 > datasetsInCollectionCount)
 	    	  $('#datasetsPagerNext').css('visibility','hidden');
-	      for(var i = parseInt(rowId.replace("datasetRow",""))+1; i <= datasetsInCollectionCount + 1; i++){
+	      for(var i = parseInt(rowId.replace("datasetRow",""),10)+1; i <= datasetsInCollectionCount + 1; i++){
 	    	  $("#collectionDatasetsTable tbody tr[id='datasetRow" + i + "']").each(function() {
 	    		  $(this)[0].innerHTML = $(this)[0].innerHTML.replace("datasetRow" + i, "datasetRow" + (i-1));
 	    		  $(this).attr("id", "datasetRow" + (i-1));				 
@@ -351,5 +351,3 @@
 		 
 		 return false;
 	 });	
-		
-		

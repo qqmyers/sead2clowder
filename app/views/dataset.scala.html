@@ -75,6 +75,9 @@
 		else if("@p._2" === "IIP-Javascript"){
 			Configuration.iipIframe = "@(routes.Assets.at("javascripts/previewers/iipJS/iipIframe.html"))";
 		}
+		else if("@p._2" === "Multispectral"){
+			Configuration.multispectralIframe = "@(routes.Assets.at("javascripts/previewers/multispectral/multispectralIframe.html"))";
+		}
 	</script>
 	<script type="text/javascript" src="@(routes.Assets.at(p._3) + "/" + p._4)"></script>
 }
@@ -437,6 +440,9 @@
     					else
     						Configuration.wasPTM = 'false';
     					Configuration.calledFrom = "dataset";
+    				}
+    				else if(pv.p_id === "Multispectral"){
+    					Configuration.multispectralIframe = "@(routes.Assets.at("javascripts/previewers/multispectral/multispectralIframe.html"))";
     				}
     				////
     				

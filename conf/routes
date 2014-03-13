@@ -35,6 +35,8 @@ GET		/fileThumbnail/:id/blob			  @controllers.Files.thumbnail(id)
 
 #For IIPMooViewer
 GET		/assets/javascripts/previewers/iipJS/images/:imgResource	  @controllers.Datasets.redirectToImg(imgResource)
+#For IIPMooViewer multispectral
+GET /assets/javascripts/previewers/multispectral/images/:imgResource  @controllers.Datasets.redirectToImg(imgResource)
 
 # Datasets
 GET		/datasets					      @controllers.Datasets.list(when: String ?= "", date: String ?= "", size: Int ?= 10)
