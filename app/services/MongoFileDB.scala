@@ -70,8 +70,8 @@ trait MongoFileDB {
       order = MongoDBObject("uploadDate"-> 1) 
       val sinceDate = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS").parse(date)
       Logger.info("Before " + sinceDate)
-      var fileList = FileDAO.find($and("isIntermediate" $ne true, "uploadDate" $gt sinceDate)).sort(order).limit(limit + 1).toList.reverse
-      fileList = fileList.filter(_ != fileList.last)
+      var fileList = FileDAO.find($and("isIntermediate" $ne true, "uploadDate" $gt sinceDate)).sort(order).limit(limit).toList.reverse
+      //fileList = fileList.filter(_ != fileList.head)
       fileList      
     }
   }
@@ -178,6 +178,13 @@ trait MongoFileDB {
 	            case Some(file) => {
 	              val theJSON = FileDAO.getUserMetadataJSON(id)
 	              val fileSep = System.getProperty("file.separator")
+	              
+	              //for Unix we need an extra \ in the directory path of the LidoToCidocConvertion output file due to Windows-based behavior of LidoToCidocConvertion  
+	              var extraChar = ""
+	              val OS = System.getProperty("os.name").toLowerCase()
+	              if(OS.indexOf("nix") >= 0 || OS.indexOf("nux") >= 0 || OS.indexOf("aix") >= 0)
+	                extraChar = "\\"
+	              
 	              val tmpDir = System.getProperty("java.io.tmpdir")
 		          var resultDir = tmpDir + fileSep + "medici__rdfuploadtemporaryfiles" + fileSep + new ObjectId().toString
 		          val resultDirFile = new java.io.File(resultDir)
@@ -189,9 +196,9 @@ trait MongoFileDB {
 		              xmlFile.delete()
 	              }
 	              else{
-	                new java.io.File(resultDir + fileSep + "Results.rdf").createNewFile()
+	                new java.io.File(resultDir + fileSep + extraChar + "Results.rdf").createNewFile()
 	              }
-	              val resultFile = new java.io.File(resultDir + fileSep + "Results.rdf")
+	              val resultFile = new java.io.File(resultDir + fileSep + extraChar + "Results.rdf")
 	              
 	              //Connecting RDF metadata with the entity describing the original file
 					val rootNodes = new ArrayList[String]()
