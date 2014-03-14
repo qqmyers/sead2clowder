@@ -27,7 +27,7 @@ class FileMetadataAutodumpService (application: Application) extends Plugin {
   def dumpAllFileMetadata() = {
     val unsuccessfulDumps = files.dumpAllFileMetadata
     if(unsuccessfulDumps.size == 0)
-      Logger.info("Dumping of files metadata was successful for all files.")
+      Logger.info("Dumping and staging of files metadata was successful for all files.")
     else{
       var unsuccessfulMessage = "Dumping of files metadata was successful for all files except file(s) with id(s) "
       for(badFile <- unsuccessfulDumps){
