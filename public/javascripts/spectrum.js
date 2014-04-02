@@ -1,9 +1,9 @@
 var Spectrum = new Class({
 
-  initialize: function(container, minWavelength, maxWavelength){
+  initialize: function(container, minWavelength, maxWavelength, graphArray){
 
 	var midpointWaveLength =  Math.round(minWavelength + ((maxWavelength - minWavelength) / 2)); 
-    $(container).set('html', '<h2 title="<h2>Spectral Reflectance</h2>Click on any point within the image to see<br/>the spectral reflectance for that point">Spectral Reflectance</h2><h3>(click on a point on image to display)</h3><img id="loading" src="images/loading.gif"/><span id="Y0">0%</span><span id="Y50">50%</span><span id="Y100">100%</span><br/><span id="X0">'+minWavelength.toString()+'</span><span id="X50">'+midpointWaveLength.toString()+'</span><span id="X100">'+maxWavelength.toString()+'</span><br/>wavelength (nm)' );
+    $(container).set('html', '<h2>Spectral Reflectance</h2><h3>(click on a point on image to display)</h3><img id="loading" src="images/loading.gif"/><span id="Y0">0%</span><span id="Y50">50%</span><span id="Y100">100%</span><br/><span id="X0">'+minWavelength.toString()+'</span><span id="X50">'+midpointWaveLength.toString()+'</span><span id="X100">'+maxWavelength.toString()+'</span><br/><span id="wavelengthspan">wavelength (nm)</span>');
 
     this.canvas = new Canvas({
       id: 'cid',
@@ -18,12 +18,12 @@ var Spectrum = new Class({
     var ctop = this.canvas.getPosition().y;
     var cbottom = ctop + this.canvas.height;
 
-    $('Y0').setStyle('left', cleft - $('Y0').getSize().x - 5);
-    $('Y0').setStyle('top', cbottom - $('Y0').getSize().x/2 );
-    $('Y50').setStyle('left', cleft - $('Y50').getSize().x - 5);
-    $('Y50').setStyle('top', cbottom - this.canvas.height/2 - $('Y50').getSize().x/2 );
-    $('Y100').setStyle('left', cleft - $('Y100').getSize().x - 5);
-    $('Y100').setStyle('top', ctop - $('Y100').getSize().y/2);
+    $('Y0').setStyle('left', '1px');
+    $('Y0').setStyle('top', cbottom - $('Y0').getSize().x/2 -550 );
+    $('Y50').setStyle('left', '1px');
+    $('Y50').setStyle('top', cbottom - this.canvas.height/2 - $('Y50').getSize().x/2 -550 );
+    $('Y100').setStyle('left', '1px');
+    $('Y100').setStyle('top', ctop - $('Y100').getSize().y/2 -550);
 
     $('X0').setStyle('left',cleft - $('X0').getSize().x/2);
     $('X50').setStyle('left',cleft + this.canvas.width/2-$('X50').getSize().x/2);
@@ -31,12 +31,22 @@ var Spectrum = new Class({
 
     $('loading').setStyles({
 	left: this.canvas.getPosition().x + (this.canvas.getSize().x / 2) - 16,
-	top: this.canvas.getPosition().y + (this.canvas.getSize().y / 2) - 16 
+	top: this.canvas.getPosition().y + (this.canvas.getSize().y / 2) - 16 - 550 
     });
+    
+    this.graphArray = graphArray;
+    this.minWavelength = minWavelength;
+    this.maxWavelength = maxWavelength;
+    
     this.drawGrid();
   },
 
   drawGrid: function(){
+
+	var graphArray = this.graphArray;
+	var minWavelength = this.minWavelength;
+	var maxWavelength = this.maxWavelength;
+	  
     var ctx = this.canvas.getContext('2d');
     ctx.clearRect(0, 0, this.canvas.width, this.canvas.height );
     ctx.lineWidth = 2;
@@ -54,11 +64,22 @@ var Spectrum = new Class({
     ctx.lineWidth = 1;
 
     var i, j;
+    var maxDiff = maxWavelength - minWavelength;
+    //vertical
+//    for(i=0;i<graphArray.length;i++){
+//      var currValue = graphArray[i][1];
+//      var currDiff = currValue - minWavelength;
+//      var currPoint = Math.round(this.canvas.width*currDiff/maxDiff); 
+//    	
+//      ctx.moveTo(currPoint,this.canvas.height);
+//      ctx.lineTo(currPoint,0);
+//    }
     for(i=1;i<10;i++){
-      ctx.moveTo(i*this.canvas.width/10,this.canvas.height);
-      ctx.lineTo(i*this.canvas.width/10,0);
-    }
+        ctx.moveTo(i*this.canvas.width/10,this.canvas.height);
+        ctx.lineTo(i*this.canvas.width/10,0);
+      }
 
+    //horizontal
     for(j=1;j<10;j++){
       ctx.moveTo(0,j*this.canvas.height/10);
       ctx.lineTo(this.canvas.width,j*this.canvas.height/10);
@@ -116,16 +137,16 @@ var Spectrum = new Class({
 
       // Convert points to coords and draw a line
       for( i=0; i<n; i++ ){
-          var x = (data[i][0] - min_x) * this.canvas.width/min_x;
+          var x = (data[i][0] - min_x) * this.canvas.width/(max_x - min_x);
           var y = this.canvas.height - data[i][1] * this.canvas.height/max_y;
-	  ctx.lineTo( x, y );
+          ctx.lineTo( x, y );
       }
       ctx.stroke();
 
     // Convert points to coords and draw circles at each point
     ctx.beginPath();
     for( i=0; i<n; i++ ){
-      var x = (data[i][0] - min_x) * this.canvas.width/min_x;
+      var x = (data[i][0] - min_x) * this.canvas.width/(max_x - min_x);
       var y = this.canvas.height - data[i][1] * this.canvas.height/max_y;
       ctx.beginPath();
       ctx.arc( x, y, 1.5, 0, 2*Math.PI, true );
@@ -150,12 +171,10 @@ var Spectrum = new Class({
     // Set our Y axis labels
     var cleft = this.canvas.getPosition().x;
     $('Y100').set('html', Math.round(max_y*100)+'%');
-    $('Y100').setStyle('left', cleft - $('Y100').getSize().x - 5);
+    $('Y100').setStyle('left', '1px');
     $('Y50').set('html', Math.round(max_y*50)+'%');
+    $('Y50').setStyle('left', '1px');
 
-    $('Y100').setStyle('left', cleft - $('Y100').getSize().x - 5);
-    $('Y50').set('html', Math.round(max_y*50)+'%');
-    $('Y50').setStyle('left', cleft - $('Y50').getSize().x - 5);
   }
 
 });

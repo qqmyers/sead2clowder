@@ -4,7 +4,7 @@
 	console.log("Updating tab " + Configuration.tab);
 	
 	var width = 750;
-	var height = 550;
+	var height = 1100;
 	
 	var prNum = Configuration.tab.replace("#previewer","");
 		
@@ -27,13 +27,13 @@
 		    		uploadDirsArrays[i][0] = uploadDirSplit[0];
 		    		uploadDirsArrays[i][1] = uploadDirSplit[1];
 		    		
-//		    		if(uploadDirsArrays[i][1].indexOf("__") > 0){
-//		    			var possibleWavelength = parseInt(uploadDirsArrays[i][1].substring(uploadDirsArrays[i][1].lastIndexOf("__")+2),10);
-//		    			//if wavelength data is included on filename as a number, we are dealing with a reflectance image of that wavelength
-//		    			if(!isNaN(possibleWavelength)){
-//		    				uploadDirsArrays[i][1] = "wavelength " + possibleWavelength.toString() + "nm"
-//		    			}
-//		    		}
+		    		if(uploadDirsArrays[i][1].indexOf("__") > 0){
+		    			var possibleWavelength = parseInt(uploadDirsArrays[i][1].substring(uploadDirsArrays[i][1].lastIndexOf("__")+2),10);
+		    			//if wavelength data is included on filename as a number, we are dealing with a reflectance image of that wavelength
+		    			if(!isNaN(possibleWavelength)){
+		    				uploadDirsArrays[i][1] = "wavelength " + possibleWavelength.toString() + "nm"
+		    			}
+		    		}
 
 		    		uploadDirsArrays[i][1] = uploadDirsArrays[i][1].replace("_"," ");
 		    	}

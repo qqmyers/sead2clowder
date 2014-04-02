@@ -6,23 +6,68 @@
 <title>Insert title here</title>
 <style type="text/css">
     body{
-	height: 100%;
-	width: 100%;
-	padding: 0;
-	margin: 0;
+		height: 100%;
+		width: 100%;
+		padding: 0;
+		margin: 0;
+		background: none;
     }
     div#viewer{
-	width: 100%;
-	height: 100%;
-	left: 0%;
-	right: 0px;
-	position: absolute;
+		width: 100%;
+		height: 100%;
+		left: 0%;
+		right: 0px;
+		position: absolute;
     }
+    div#spectra{
+    	background: none repeat scroll  #000000;
+    	height:100%;
+    	width:100%;
+    	left: 0%;
+    	position: absolute;
+    	overflow:visible;
+
+    }
+    h2, h3{
+    	text-align: center;
+    	color: #BBB;
+    	font-family: verdana,sans-serif;
+    }
+    
+    h2{
+		font-size: 12pt;
+		margin-top: 0.3em;
+    }
+    h3 {
+	    margin-top: -1em;
+	    margin-bottom: 1.5em;
+	    font-size: 7pt;
+	}
+	img#loading {
+	    position: absolute;
+	    visibility: hidden;
+	}
+	#spectra span {
+	    position: absolute;
+	    font-size: 8pt;
+	    text-align: center;
+	    color: #BBB;
+	}
+	#wavelengthspan{
+		position:absolute;
+		left:40%;
+		font-size:10pt !important;
+	    color: #BBB;
+	}
   </style>
 </head>
-<body style="background:grey;color:white">
+<body style="background:none;color:white;">
 
 <script type="text/javascript">
+
+var spectrum;
+var uploadDirsServer;
+var graphArray;
 
 function getUrlVars() {
     var vars = {};
@@ -32,51 +77,99 @@ function getUrlVars() {
     return vars;
 }
 
+function clickTarget( e ){ 
+
+    if( !e.target.src ){
+	spectrum.drawGrid();
+	return;
+    }
+    
+    $('loading').fade('in');
+
+    var tilesrc = e.target.src;
+
+    var xx, yy;
+    if( e.event.layerX ) xx = e.event.layerX; // Only Firefox seems to support this
+    else if( e.event.offsetX ) xx = e.event.offsetX;  // for Opera
+    else xx = e.event.clientX - e.target.offsetLeft;  // For IE
+
+    if( e.event.layerY ) yy = e.event.layerY;
+    else if( e.event.offsetY ) yy = e.event.offsetY;
+    else yy = e.event.clientY - e.target.offsetTop;
+
+    var jtl = tilesrc.substring(tilesrc.search('JTL=')+4);
+    
+    var data = Array();
+    for(i = 0; i < graphArray.length; i++){
+    	new Request({
+    		method: 'get',
+    		async: false,
+    		    url: this.server + "?FIF=" + graphArray[i][0] + "&spectra="+jtl+','+xx+','+yy,
+    		    onSuccess: function(responseText, responseXML)
+    		    {
+	    			var w = graphArray[i][1];
+	    			var r = parseFloat(responseXML.getElementsByTagName('reflectance')[0].childNodes[0].nodeValue);
+	    			data[i] = [w,r];     
+    		    }
+    		}).send()  ; 
+    }
+
+    $('loading').fade('out');
+    spectrum.plot(data);
+
+  };
+
 window.onload=function(){
 	
 	var prNum = window.frameElement.id.replace("multispectralIframe","");
 	var uploadDirsArrays = window.frameElement.contentWindow.parent.window["currentMultispectral" + prNum];
-	var uploadDirsServer = window.frameElement.contentWindow.parent.window["multispectralServer" + prNum];
+	uploadDirsServer = window.frameElement.contentWindow.parent.window["multispectralServer" + prNum];
 
 	var firstImage = uploadDirsArrays[0][0];
 
 	var uploadDirsArray = uploadDirsArrays.join(",").split(",");
-	var graphArray = new Array();
+	graphArray = new Array();
 	var graphArrayCounter = 0;
-	var minWavelength = 0;
-	var maxWaveLength = 1000000;
+	var maxWavelength = 0;
+	var minWavelength = 1000000;
 	var finalArray = new Array();
+	
 	for(var i = 0; i < uploadDirsArray.length; i = i+2){
 		finalArray[i/2] = new Array();
 		finalArray[i/2][0] = uploadDirsArray[i];
 		finalArray[i/2][1] = uploadDirsArray[i+1];
 		
 		//Add wavelength reflectance files references to the array of data to be graphed
-// 		if(uploadDirsArray[i+1].indexOf("wavelength ") == 0){
-// 			graphArray[graphArrayCounter] = new Array();
-// 			graphArray[graphArrayCounter][0] = uploadDirsArray[i];
-// 			var currWavelength = parseInt(uploadDirsArray[i+1].substring(11),10);
-// 			graphArray[graphArrayCounter][1] = currWavelength;
-// 			graphArrayCounter++;
+		if(uploadDirsArray[i+1].indexOf("wavelength ") == 0){
+			graphArray[graphArrayCounter] = new Array();
+			graphArray[graphArrayCounter][0] = uploadDirsArray[i];
+			var currWavelength = parseInt(uploadDirsArray[i+1].substring(11),10);
+			graphArray[graphArrayCounter][1] = currWavelength;
+			graphArrayCounter++;
 			
-// 			if(currWavelength < minWavelength)
-// 				minWavelength = currWavelength;
-// 			else if(currWavelength > maxWavelength)
-// 				maxWavelength = currWavelength;
-// 		}
+			if(currWavelength < minWavelength)
+				minWavelength = currWavelength;
+			else if(currWavelength > maxWavelength)
+				maxWavelength = currWavelength;
+		}
 	}
 
 
 	iipmooviewer = new IIPMooViewer( "viewer", {
 		image: firstImage,
-		server: uploadDirsServer
+		server: uploadDirsServer,
+		click: clickTarget
 	      });
 
 	iipmooviewer.blend(finalArray);
-	
-	// Create our spectral graph object
-    //spectrum = new Spectrum('spectra', minWavelength, maxWaveLength);
-	
+
+	//Must have at least two different spectral reflectance images to have a meaning to draw a graph
+	if(graphArrayCounter >= 2){
+		// Create our spectral graph object
+	    spectrum = new Spectrum('spectra', minWavelength, maxWavelength, graphArray);
+		
+		
+	}
 };
 
 var s = document.createElement("link");
@@ -121,9 +214,23 @@ s.async = false;
 s.defer = false;
 document.getElementsByTagName("head")[0].appendChild(s);
 
+s = document.createElement("script");
+s.type = "text/javascript";
+s.src = pathJs + "moocanvas-compressed.js";
+s.async = false;
+s.defer = false;
+document.getElementsByTagName("head")[0].appendChild(s);
+
+s = document.createElement("script");
+s.type = "text/javascript";
+s.src = pathJs + "spectrum.js";
+s.async = false;
+s.defer = false;
+document.getElementsByTagName("head")[0].appendChild(s);
+
 </script>
-<div style="width:99%;margin-left:auto;margin-right:auto" id="viewer"></div>
-<div style="width:99%;height:40%;margin-left:auto;margin-right:auto"  id="spectra"></div>
+<div style="height:50%;top:50%;" id="spectra"></div>
+<div style="height:50%;" id="viewer"></div>
 
 </body>
 </html>
