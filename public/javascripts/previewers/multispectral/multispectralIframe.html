@@ -125,7 +125,7 @@ window.onload=function(){
 	var uploadDirsArrays = window.frameElement.contentWindow.parent.window["currentMultispectral" + prNum];
 	uploadDirsServer = window.frameElement.contentWindow.parent.window["multispectralServer" + prNum];
 
-	var firstImage = uploadDirsArrays[0][0];
+	var firstImage;
 
 	var uploadDirsArray = uploadDirsArrays.join(",").split(",");
 	graphArray = new Array();
@@ -133,12 +133,9 @@ window.onload=function(){
 	var maxWavelength = 0;
 	var minWavelength = 1000000;
 	var finalArray = new Array();
+	var finalArrayCounter = 0;
 	
 	for(var i = 0; i < uploadDirsArray.length; i = i+2){
-		finalArray[i/2] = new Array();
-		finalArray[i/2][0] = uploadDirsArray[i];
-		finalArray[i/2][1] = uploadDirsArray[i+1];
-		
 		//Add wavelength reflectance files references to the array of data to be graphed
 		if(uploadDirsArray[i+1].indexOf("wavelength ") == 0){
 			graphArray[graphArrayCounter] = new Array();
@@ -152,8 +149,30 @@ window.onload=function(){
 			else if(currWavelength > maxWavelength)
 				maxWavelength = currWavelength;
 		}
+		//Add the rest of the images to the image blender
+		else{
+			if(finalArrayCounter == 0)
+				firstImage = uploadDirsArray[i];
+			
+			finalArray[finalArrayCounter] = new Array();
+			finalArray[finalArrayCounter][0] = uploadDirsArray[i];
+			finalArray[finalArrayCounter][1] = uploadDirsArray[i+1];
+			finalArrayCounter++;
+		}
 	}
 
+	//Do nothing if no visible images, print out error message.
+	if(finalArrayCounter == 0){
+		document.getElementById("spectra").setAttribute("style","display:none;");				
+		var errorMsg = document.createElement('p');
+		errorMsg.innerHTML = "No visible images to display.";
+		errorMsg.setAttribute("style","color:black;");
+		document.getElementById("viewer").appendChild(errorMsg);
+		
+		window.frameElement.setAttribute("style","height:550px;");
+		
+		return;
+	}
 
 	iipmooviewer = new IIPMooViewer( "viewer", {
 		image: firstImage,
@@ -161,14 +180,13 @@ window.onload=function(){
 		click: clickTarget
 	      });
 
-	iipmooviewer.blend(finalArray);
+	if(finalArrayCounter > 1)
+		iipmooviewer.blend(finalArray);
 
 	//Must have at least two different spectral reflectance images to have a meaning to draw a graph
 	if(graphArrayCounter >= 2){
 		// Create our spectral graph object
 	    spectrum = new Spectrum('spectra', minWavelength, maxWavelength, graphArray);
-		
-		
 	}
 };
 
