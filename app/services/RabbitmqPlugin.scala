@@ -21,6 +21,9 @@ import akka.routing.SmallestMailboxRouter
 import models.Extraction
 import java.text.SimpleDateFormat
 import org.bson.types.ObjectId
+import java.io._
+import java.security._
+import javax.net.ssl._
    
 /**
  * Rabbitmq service.
@@ -48,6 +51,30 @@ class RabbitmqPlugin(application: Application) extends Plugin {
       if (!port.equals("")) factory.setPort(port.toInt)
       if (!user.equals("")) factory.setUsername(user)
       if (!password.equals("")) factory.setPassword(password)
+      
+      //Check for using SSL, set SSL connection if yes
+      //val appHttpsPort = play.api.Play.configuration.getString("https.port").getOrElse("")
+      if(play.api.Play.configuration.getString("rabbitmq.useSSL").getOrElse("") == "true"){
+        //If certificates are available use them, else only encrypt 
+        play.api.Play.configuration.getString("rabbitmq.trustStorePath").getOrElse("") match{
+          case "" =>{
+            factory.useSslProtocol()
+          }
+          case trustStorePath =>{
+            val trustPassphrase = play.api.Play.configuration.getString("rabbitmq.trustStorePassphrase").getOrElse("").toCharArray()
+            val tks = KeyStore.getInstance(play.api.Play.configuration.getString("rabbitmq.trustStoreType").getOrElse("JKS"))
+            tks.load(new FileInputStream(trustStorePath), trustPassphrase)
+            
+            val tmf = TrustManagerFactory.getInstance("SunX509")
+            tmf.init(tks)
+            
+            val c = SSLContext.getInstance("SSLv3")
+            c.init(null, tmf.getTrustManagers(), null)
+            factory.useSslProtocol(c)           
+          }         
+        } 
+      }
+            
       val connection: Connection = factory.newConnection()
       val channel = connection.createChannel()
       val replyQueueName = channel.queueDeclare().getQueue()
@@ -70,7 +97,7 @@ class RabbitmqPlugin(application: Application) extends Plugin {
 	      new MsgConsumer(channel, event_filter)
 	    )
     } catch {
-      case ioe: java.io.IOException => Logger.error("Error connecting to rabbitmq broker " + ioe.toString)
+      case ioe: java.io.IOException => Logger.error("Error connecting to rabbitmq broker " + ioe.toString + ":" + ioe.printStackTrace())
       case _:Throwable => Logger.error("Unknown error connecting to rabbitmq broker ")
     }
   }
