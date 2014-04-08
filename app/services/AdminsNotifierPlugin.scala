@@ -6,7 +6,16 @@ import models.AppConfiguration
 
 class AdminsNotifierPlugin(application:Application) extends Plugin {
 
-  val hostUrl = "http://" + play.Play.application().configuration().getString("hostIp").replaceAll("/$", "") + ":" + play.Play.application().configuration().getString("http.port")
+  var appPort = play.api.Play.configuration.getString("https.port").getOrElse("")
+  val hostUrl = {
+    if(!appPort.equals("")){
+          "https://"
+        }
+    else{
+      appPort = play.api.Play.configuration.getString("http.port").getOrElse("")
+      "http://"
+    }
+  } + play.Play.application().configuration().getString("hostIp").replaceAll("/$", "") + ":" + appPort
   
   override def onStart() {
     Logger.debug("Starting Admins Notifier Plugin")

@@ -27,16 +27,29 @@ import models.Dataset
 import org.bson.types.ObjectId
 
 trait FourStore {
+  
+  var appPort = play.api.Play.configuration.getString("https.port").getOrElse("")
+  val httpProtocol = {
+					if(!appPort.equals("")){
+						"https://"
+					}
+					else{
+						appPort = play.api.Play.configuration.getString("http.port").getOrElse("")
+						"http://"
+					}
+		}
 
   def addFileToGraph(fileId: String, selectedGraph:String = "rdfXMLGraphName"): Null = {
     	
 		val queryUrl = play.api.Play.configuration.getString("rdfEndpoint").getOrElse("") + "/data/"
 		val graphName = play.api.Play.configuration.getString(selectedGraph).getOrElse("")
+		
+		
         val httpclient = new DefaultHttpClient()
         val httpPost = new HttpPost(queryUrl)
                 
         val urlParameters = new ArrayList[NameValuePair]()
-        var updateQuery = "<http://" + play.Play.application().configuration().getString("hostIp").replaceAll("/$", "") + ":" + play.Play.application().configuration().getString("http.port") +"/api/files/" + fileId
+        var updateQuery = "<" + httpProtocol + play.Play.application().configuration().getString("hostIp").replaceAll("/$", "") + ":" + appPort +"/api/files/" + fileId
         updateQuery = updateQuery + "> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <" + graphName + "_file" + "> ."        
         
         Logger.debug("the query: "+updateQuery)
@@ -64,7 +77,7 @@ trait FourStore {
         val httpPost = new HttpPost(queryUrl)
                 
         val urlParameters = new ArrayList[NameValuePair]()
-        var updateQuery = "<http://" + play.Play.application().configuration().getString("hostIp").replaceAll("/$", "") + ":" + play.Play.application().configuration().getString("http.port") +"/api/datasets/" + datasetId
+        var updateQuery = "<" + httpProtocol + play.Play.application().configuration().getString("hostIp").replaceAll("/$", "") + ":" + appPort +"/api/datasets/" + datasetId
         updateQuery = updateQuery + "> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <" + graphName + "_dataset" + "> ."
         
         Logger.debug("the query: "+updateQuery)
@@ -92,9 +105,9 @@ trait FourStore {
         val httpPost = new HttpPost(queryUrl)
                 
         val urlParameters = new ArrayList[NameValuePair]()
-        val hostIp = play.Play.application().configuration().getString("hostIp").replaceAll("/$", "") + ":" + play.Play.application().configuration().getString("http.port")
-        var updateQuery = "<http://" + hostIp +"/api/datasets/" + datasetId
-        updateQuery = updateQuery + "> <http://www.cidoc-crm.org/rdfs/cidoc_crm_v5.0.2.rdfs#P148_has_component> <http://"+ hostIp +"/api/files/" + fileId + "> ."
+        val hostIp = play.Play.application().configuration().getString("hostIp").replaceAll("/$", "") + ":" + appPort
+        var updateQuery = "<" + httpProtocol + hostIp +"/api/datasets/" + datasetId
+        updateQuery = updateQuery + "> <http://www.cidoc-crm.org/rdfs/cidoc_crm_v5.0.2.rdfs#P148_has_component> <" + httpProtocol + hostIp +"/api/files/" + fileId + "> ."
         
         Logger.debug("the query: "+updateQuery)
 	    urlParameters.add(new BasicNameValuePair("data", updateQuery))
@@ -111,7 +124,7 @@ trait FourStore {
         Logger.debug("the results: "+resultsString)
 
 		return null
-  }
+  } 
   
   def removeFileFromGraphs(fileId: String, selectedGraph:String = "rdfXMLGraphName"): Null = {
     
@@ -157,11 +170,11 @@ trait FourStore {
         val httpPost = new HttpPost(queryUrl)
                 
         val urlParameters = new ArrayList[NameValuePair]()
-        val hostIp = play.Play.application().configuration().getString("hostIp").replaceAll("/$", "") + ":" + play.Play.application().configuration().getString("http.port")
-        var updateQuery = "DELETE { <http://" + hostIp +"/api/datasets/" + datasetId
-        updateQuery = updateQuery + "> <http://www.cidoc-crm.org/rdfs/cidoc_crm_v5.0.2.rdfs#P148_has_component> <http://"+ hostIp +"/api/files/" + fileId + "> }"
-        updateQuery = updateQuery + "WHERE { <http://" + hostIp +"/api/datasets/" + datasetId
-        updateQuery = updateQuery + "> <http://www.cidoc-crm.org/rdfs/cidoc_crm_v5.0.2.rdfs#P148_has_component> <http://"+ hostIp +"/api/files/" + fileId + "> }"
+        val hostIp = play.Play.application().configuration().getString("hostIp").replaceAll("/$", "") + ":" + appPort
+        var updateQuery = "DELETE { <" + httpProtocol + hostIp +"/api/datasets/" + datasetId
+        updateQuery = updateQuery + "> <http://www.cidoc-crm.org/rdfs/cidoc_crm_v5.0.2.rdfs#P148_has_component> <" + httpProtocol+ hostIp +"/api/files/" + fileId + "> }"
+        updateQuery = updateQuery + "WHERE { <" + httpProtocol + hostIp +"/api/datasets/" + datasetId
+        updateQuery = updateQuery + "> <http://www.cidoc-crm.org/rdfs/cidoc_crm_v5.0.2.rdfs#P148_has_component> <" + httpProtocol+ hostIp +"/api/files/" + fileId + "> }"
         if(!graphName.equals("")){
           updateQuery = "WITH <" + graphName + "_file_" + fileId + "> " + updateQuery
         }
