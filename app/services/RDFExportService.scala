@@ -28,7 +28,17 @@ class RDFExportService (application: Application) extends Plugin {
   val filesMappingsQuantity = Integer.parseInt(play.api.Play.configuration.getString("filesxmltordfmapping.dircount").getOrElse("1"))
   val datasetsMappingsQuantity = Integer.parseInt(play.api.Play.configuration.getString("datasetsxmltordfmapping.dircount").getOrElse("1"))
   
-  val hostUrl = "http://" + play.Play.application().configuration().getString("hostIp").replaceAll("/$", "") + ":" + play.Play.application().configuration().getString("http.port")
+  var appPort = play.api.Play.configuration.getString("https.port").getOrElse("")
+  val httpProtocol = {
+					if(!appPort.equals("")){
+						"https://"
+					}
+					else{
+						appPort = play.api.Play.configuration.getString("http.port").getOrElse("")
+						"http://"
+					}
+		}
+  val hostUrl = httpProtocol + play.Play.application().configuration().getString("hostIp").replaceAll("/$", "") + ":" + appPort
 
   override def onStart() {
     Logger.debug("Starting RDF exporter Plugin")

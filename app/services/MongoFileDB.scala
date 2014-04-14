@@ -37,6 +37,17 @@ import org.json.JSONObject
  *
  */
 trait MongoFileDB {
+  
+  var appPort = play.api.Play.configuration.getString("https.port").getOrElse("")
+  val httpProtocol = {
+					if(!appPort.equals("")){
+						"https://"
+					}
+					else{
+						appPort = play.api.Play.configuration.getString("http.port").getOrElse("")
+						"http://"
+					}
+		}
 
   /**
    * List all files.
@@ -249,7 +260,7 @@ trait MongoFileDB {
 							
 							if(isInRootNodes){
 								val theResource = rdfDescriptions(i).substring(rdfDescriptions(i).indexOf("\"")+1, rdfDescriptions(i).indexOf("\"", rdfDescriptions(i).indexOf("\"")+1))
-								val theHost = "http://" + play.Play.application().configuration().getString("hostIp").replaceAll("/$", "") + ":" + play.Play.application().configuration().getString("http.port")
+								val theHost = httpProtocol + play.Play.application().configuration().getString("hostIp").replaceAll("/$", "") + ":" + appPort
 								var connection = "<rdf:Description rdf:about=\"" + theHost +"/api/files/"+ id
 								connection = connection	+ "\"><P129_is_about xmlns=\"http://www.cidoc-crm.org/rdfs/cidoc_crm_v5.0.2.rdfs#\" rdf:resource=\"" + theResource
 								connection = connection	+ "\"/></rdf:Description>"
