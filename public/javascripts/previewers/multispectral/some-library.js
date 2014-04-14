@@ -7,11 +7,13 @@
 	var height = 1100;
 	
 	var prNum = Configuration.tab.replace("#previewer","");
+	
+	var hostAddress = window.location.protocol + "//" + window.location.hostname + (window.location.port ? ':' + window.location.port: '');
 		
-	var pathJs = "http://" + Configuration.hostIp + ":" + window.location.port + Configuration.jsPath + "/";
-	var pathImages = "http://" + Configuration.hostIp + ":" + window.location.port + Configuration.imagesPath + "/";
-	var pathCss = "http://" + Configuration.hostIp + ":" + window.location.port + Configuration.stylesheetsPath + "/";
-	var iframeURL = "http://" + Configuration.hostIp + ":" + window.location.port + Configuration.multispectralIframe;
+	var pathJs = hostAddress + Configuration.jsPath + "/";
+	var pathImages = hostAddress + Configuration.imagesPath + "/";
+	var pathCss = hostAddress + Configuration.stylesheetsPath + "/";
+	var iframeURL = hostAddress + Configuration.multispectralIframe;
 	
 	$(Configuration.tab).append("<p>Position mouse pointer over IIP logo (top left of image viewer) for help navigating.</p>");
 	
