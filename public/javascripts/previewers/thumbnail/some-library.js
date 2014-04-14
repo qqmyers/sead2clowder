@@ -1,8 +1,8 @@
-
-
 (function ($, Configuration) {	
 	var prNum = Configuration.tab.replace("#previewer","");
 	window["configs" + prNum] = Configuration;
+	
+	$(Configuration.tab).append("<br/>");
 		
 	// --------------------------------------------------------
 	// IMAGE FORMATS SUPPORTED BY MOST BROWSERS

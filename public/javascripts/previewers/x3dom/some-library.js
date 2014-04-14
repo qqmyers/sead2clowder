@@ -935,7 +935,7 @@ function clearConfigTabAnnotations(prNum){
     	
     function webSocketConnection(prNum){
 	
-        var pathWs = "ws://" + Configuration.hostIp + ":" + window.location.port;
+        var pathWs = "ws://" + window.location.hostname + (window.location.port ? ':' + window.location.port: '');
 	if ("WebSocket" in window){
 
 	     console.log("WebSocket is supported by your Browser!");
@@ -1043,7 +1043,7 @@ function clearConfigTabAnnotations(prNum){
 
   console.log("X3D previewer for " + Configuration.id);
   
-  var pathJs = "http://" + Configuration.hostIp + ":" + window.location.port + Configuration.jsPath + "/";
+  var pathJs = window.location.protocol + "//" + window.location.hostname + (window.location.port ? ':' + window.location.port: '') + Configuration.jsPath + "/";
   
   width = 750;
   height = 550;

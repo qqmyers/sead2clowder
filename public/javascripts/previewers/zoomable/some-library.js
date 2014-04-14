@@ -3,7 +3,7 @@
 	
 	console.log("Updating tab " + Configuration.tab);
 	
-	var pathJs = "http://" + Configuration.hostIp + ":" + window.location.port + Configuration.jsPath + "/";
+	var pathJs = window.location.protocol + "//" + window.location.hostname + (window.location.port ? ':' + window.location.port: '') + Configuration.jsPath + "/";
 	
 	var width = 750;
 	var height = 550;
@@ -13,6 +13,8 @@
 	s.src = pathJs + "zoomit.js";
 	console.log("Updating tab " + Configuration.tab);
 	$(Configuration.tab).append(s);
+	
+	$(Configuration.tab).append("<br/>");
 
 	 $(Configuration.tab).append(
 		     "<div style='width: " + width + "px; height: " + height + "px' id='seadragon" + Configuration.tab.replace("#previewer","") + "'>Insert image here</div>"
