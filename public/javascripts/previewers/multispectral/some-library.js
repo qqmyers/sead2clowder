@@ -4,14 +4,16 @@
 	console.log("Updating tab " + Configuration.tab);
 	
 	var width = 750;
-	var height = 550;
+	var height = 1100;
 	
 	var prNum = Configuration.tab.replace("#previewer","");
+	
+	var hostAddress = window.location.protocol + "//" + window.location.hostname + (window.location.port ? ':' + window.location.port: '');
 		
-	var pathJs = "http://" + Configuration.hostIp + ":" + window.location.port + Configuration.jsPath + "/";
-	var pathImages = "http://" + Configuration.hostIp + ":" + window.location.port + Configuration.imagesPath + "/";
-	var pathCss = "http://" + Configuration.hostIp + ":" + window.location.port + Configuration.stylesheetsPath + "/";
-	var iframeURL = "http://" + Configuration.hostIp + ":" + window.location.port + Configuration.multispectralIframe;
+	var pathJs = hostAddress + Configuration.jsPath + "/";
+	var pathImages = hostAddress + Configuration.imagesPath + "/";
+	var pathCss = hostAddress + Configuration.stylesheetsPath + "/";
+	var iframeURL = hostAddress + Configuration.multispectralIframe;
 	
 	$(Configuration.tab).append("<p>Position mouse pointer over IIP logo (top left of image viewer) for help navigating.</p>");
 	
@@ -27,13 +29,13 @@
 		    		uploadDirsArrays[i][0] = uploadDirSplit[0];
 		    		uploadDirsArrays[i][1] = uploadDirSplit[1];
 		    		
-//		    		if(uploadDirsArrays[i][1].indexOf("__") > 0){
-//		    			var possibleWavelength = parseInt(uploadDirsArrays[i][1].substring(uploadDirsArrays[i][1].lastIndexOf("__")+2),10);
-//		    			//if wavelength data is included on filename as a number, we are dealing with a reflectance image of that wavelength
-//		    			if(!isNaN(possibleWavelength)){
-//		    				uploadDirsArrays[i][1] = "wavelength " + possibleWavelength.toString() + "nm"
-//		    			}
-//		    		}
+		    		if(uploadDirsArrays[i][1].indexOf("__") > 0){
+		    			var possibleWavelength = parseInt(uploadDirsArrays[i][1].substring(uploadDirsArrays[i][1].lastIndexOf("__")+2),10);
+		    			//if wavelength data is included on filename as a number, we are dealing with a reflectance image of that wavelength
+		    			if(!isNaN(possibleWavelength)){
+		    				uploadDirsArrays[i][1] = "wavelength " + possibleWavelength.toString() + "nm"
+		    			}
+		    		}
 
 		    		uploadDirsArrays[i][1] = uploadDirsArrays[i][1].replace("_"," ");
 		    	}
