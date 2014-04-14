@@ -8,7 +8,7 @@
 	
 	var prNum = Configuration.tab.replace("#previewer","");
 	
-	var hostAddress = window.location.protocol + "//" + window.location.hostname + (window.location.port ? ':' + window.location.port: '')
+	var hostAddress = window.location.protocol + "//" + window.location.hostname + (window.location.port ? ':' + window.location.port: '');
 		
 	var pathJs = hostAddress + Configuration.jsPath + "/";
 	var pathImages = hostAddress + Configuration.imagesPath + "/";
