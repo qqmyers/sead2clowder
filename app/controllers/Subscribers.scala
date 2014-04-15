@@ -26,6 +26,17 @@ import java.util.ArrayList
 import play.api.data.FormError
 
 object Subscribers extends SecuredController {
+  
+  var appPort = play.api.Play.configuration.getString("https.port").getOrElse("")
+  val httpProtocol = {
+					if(!appPort.equals("")){
+						"https://"
+					}
+					else{
+						appPort = play.api.Play.configuration.getString("http.port").getOrElse("")
+						"http://"
+					}
+		}
 
   /**
    * New subscription form.
@@ -191,8 +202,7 @@ object Subscribers extends SecuredController {
 		            	  //Redirect to FB oauth page to get user token if subscribed using FB
 		            	  val fbAppId = play.Play.application().configuration().getString("fb.appId")
 		            	  val hostIp = play.Play.application().configuration().getString("hostIp")
-		            	  val hostPort = play.Play.application().configuration().getString("http.port")
-		            	  Redirect("https://www.facebook.com/dialog/oauth?client_id="+fbAppId+"&redirect_uri=http://"+hostIp+":"+hostPort+routes.Subscribers.getAuthToken(subscriber.id.toString)+"&scope=publish_stream")		            	  
+		            	  Redirect("https://www.facebook.com/dialog/oauth?client_id="+fbAppId+"&redirect_uri="+httpProtocol+hostIp+":"+appPort+routes.Subscribers.getAuthToken(subscriber.id.toString)+"&scope=publish_stream")		            	  
 		            	}
 		        	}		        
 			      } 
@@ -206,9 +216,8 @@ object Subscribers extends SecuredController {
         val fbAppId = play.Play.application().configuration().getString("fb.appId")
         val fbAppSecret = play.Play.application().configuration().getString("fb.appSecret")
         val hostIp = play.Play.application().configuration().getString("hostIp")
-		val hostPort = play.Play.application().configuration().getString("http.port")
         val httpclient = new DefaultHttpClient()
-        val httpGet = new HttpGet("https://graph.facebook.com/oauth/access_token?client_id="+fbAppId+"&redirect_uri=http://"+hostIp+":"+hostPort+routes.Subscribers.getAuthToken(subscriber.id.toString)+"&client_secret="+fbAppSecret+"&code="+code)
+        val httpGet = new HttpGet("https://graph.facebook.com/oauth/access_token?client_id="+fbAppId+"&redirect_uri="+httpProtocol+hostIp+":"+appPort+routes.Subscribers.getAuthToken(subscriber.id.toString)+"&client_secret="+fbAppSecret+"&code="+code)
         val tokenRequestResponse = httpclient.execute(httpGet)
         Logger.info(tokenRequestResponse.getStatusLine().toString())
         if(tokenRequestResponse.getStatusLine().getStatusCode().toString.startsWith("4")){
