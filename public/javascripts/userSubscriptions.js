@@ -5,7 +5,7 @@ function subscribeUser(userIdentifier){
 	
 	var request = $.ajax({
 	       type: 'POST',
-	       url: "http://"+hostIp+":"+window.location.port+"/api/newsletters/submitLoggedIn",
+	       url: window.location.protocol + "//" + window.location.hostname + (window.location.port ? ':' + window.location.port: '')+"/api/newsletters/submitLoggedIn",
 	       data: JSON.stringify(identifierData),
 	       contentType: "application/json"
 	     });
@@ -36,7 +36,7 @@ function unsubscribeUser(userIdentifier){
 
 	var request = $.ajax({
 	       type: 'POST',
-	       url: "http://"+hostIp+":"+window.location.port+"/api/newsletters/removeSubscriptionLoggedIn",
+	       url: window.location.protocol + "//" + window.location.hostname + (window.location.port ? ':' + window.location.port: '')+"/api/newsletters/removeSubscriptionLoggedIn",
 	       data: JSON.stringify(identifierData),
 	       contentType: "application/json"
 	     });
