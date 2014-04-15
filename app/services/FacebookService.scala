@@ -1,6 +1,7 @@
 package services
 
 import play.api.{ Plugin, Logger, Application }
+import play.api.Play.current
 import com.restfb.FacebookClient
 import com.restfb.types.User
 import com.restfb.types.FacebookType
@@ -21,7 +22,18 @@ import org.apache.http.util.EntityUtils
 import play.api.libs.json.JsObject
 
 class FacebookService (application: Application) extends Plugin  {
-
+  
+  var appPort = play.api.Play.configuration.getString("https.port").getOrElse("")
+  val httpProtocol = {
+					if(!appPort.equals("")){
+						"https://"
+					}
+					else{
+						appPort = play.api.Play.configuration.getString("http.port").getOrElse("")
+						"http://"
+					}
+		}
+  
   var FBClient: Option[FacebookClient] = None
   
   override def onStart() {
@@ -46,7 +58,7 @@ class FacebookService (application: Application) extends Plugin  {
   def checkAndRemoveExpired(){
     val appName = play.Play.application().configuration().getString("fb.visibleName")
     val resubscribeAnnouncement= "Your " + appName + " subscription has expired. Go to the following link to resubscribe."
-    val url= "http://"+play.Play.application().configuration().getString("hostIp").replaceAll("/$", "")+":"+play.Play.application().configuration().getString("http.port")+routes.Subscribers.subscribe.url
+    val url= httpProtocol+play.Play.application().configuration().getString("hostIp").replaceAll("/$", "")+":"+appPort+routes.Subscribers.subscribe.url
     val name = "Subscribe"
     val thisPlugin = this 
     

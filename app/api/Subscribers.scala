@@ -13,6 +13,17 @@ import services.FacebookService
 import services.MailerPlugin
 
 object Subscribers extends ApiController {
+  
+  var appPort = play.api.Play.configuration.getString("https.port").getOrElse("")
+  val httpProtocol = {
+					if(!appPort.equals("")){
+						"https://"
+					}
+					else{
+						appPort = play.api.Play.configuration.getString("http.port").getOrElse("")
+						"http://"
+					}
+		}
 
   def submitLoggedIn = SecuredAction(authorization=WithPermission(Permission.Subscribe)) { request =>    
       Logger.debug("Subscribing")
@@ -47,9 +58,8 @@ object Subscribers extends ApiController {
 			        //Redirect to FB oauth page to get user token if subscribed using FB
 			        val fbAppId = play.Play.application().configuration().getString("fb.appId")
 			        val hostIp = play.Play.application().configuration().getString("hostIp")
-			        val hostPort = play.Play.application().configuration().getString("http.port")
 			        
-			        Ok("https://www.facebook.com/dialog/oauth?client_id="+fbAppId+"&redirect_uri=http://"+hostIp+":"+hostPort+controllers.routes.Subscribers.getAuthToken(newSubscriber.id.toString)+"&scope=publish_stream")
+			        Ok("https://www.facebook.com/dialog/oauth?client_id="+fbAppId+"&redirect_uri="+httpProtocol+hostIp+":"+appPort+controllers.routes.Subscribers.getAuthToken(newSubscriber.id.toString)+"&scope=publish_stream")
       	        }		        		        
       	      }
       	      case Some(subscriber) => {
