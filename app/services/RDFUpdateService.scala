@@ -35,7 +35,7 @@ class RDFUpdateService (application: Application) extends Plugin {
 						"https://"
 					}
 					else{
-						appPort = play.api.Play.configuration.getString("http.port").getOrElse("")
+						appPort = play.api.Play.configuration.getString("http.port").getOrElse("9000")
 						"http://"
 					}
 		}
