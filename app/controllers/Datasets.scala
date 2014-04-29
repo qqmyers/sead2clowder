@@ -177,7 +177,7 @@ object ActivityFound extends Exception { }
   }
   
   /**
-   * Dataset.
+   * 3D Dataset.
    */
   def datasetThreeDim(id: String) = SecuredAction(authorization=WithPermission(Permission.ShowDataset)) { implicit request =>
     implicit val user = request.user    
