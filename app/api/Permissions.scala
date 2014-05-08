@@ -75,18 +75,15 @@ import api.Permission._
  * 
  * @author Rob Kooper
  */
-case class WithPermission(permission: Permission) extends Authorization {
+case class WithPermission(permission: Permission, resourceId: Option[UUID] = None) extends Authorization {
   
   val appConfiguration: AppConfigurationService = services.DI.injector.getInstance(classOf[AppConfigurationService])
   val files: FileService = services.DI.injector.getInstance(classOf[FileService])
   val datasets: DatasetService = services.DI.injector.getInstance(classOf[DatasetService])
   val collections: CollectionService = services.DI.injector.getInstance(classOf[CollectionService])
   
-  def isAuthorized(user: Identity): Boolean = {
-    isAuthorized(user, None)
-  }
 
-	def isAuthorized(user: Identity, resourceId: Option[UUID] = None): Boolean = {
+	def isAuthorized(user: Identity): Boolean = {
 	  
 		// order is important
 		(user, permission) match {
