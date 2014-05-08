@@ -322,7 +322,7 @@
 				
 				
 					<div id='fileUserMetadata_@(f.id.toString)'>
-							<button class="tech_md_" type="button">Show/edit file community-generated metadata</button>
+							<button class="tech_md_" type="button">Show/edit file user-generated metadata</button>
 							<div style="display:none;">
 									@fileusermetadata(f, collection.mutable.Map() ++ f.userMetadata, rdfExported)						
 							</div>
@@ -331,11 +331,11 @@
 					$("#fileUserMetadata_@(f.id.toString) > button").on('click',function(){
 						if($("#fileUserMetadata_@(f.id.toString) > div").attr('style') == 'display:none;'){
 							$("#fileUserMetadata_@(f.id.toString) > div").attr('style', 'display:block;margin-left:80px;');
-							$("#fileUserMetadata_@(f.id.toString) > button").get(0).innerHTML = "Hide file community-generated metadata";
+							$("#fileUserMetadata_@(f.id.toString) > button").get(0).innerHTML = "Hide file user-generated metadata";
 						}
 						else{
 							$("#fileUserMetadata_@(f.id.toString) > div").attr('style', 'display:none;');
-							$("#fileUserMetadata_@(f.id.toString) > button").get(0).innerHTML = "Show/edit file community-generated metadata";
+							$("#fileUserMetadata_@(f.id.toString) > button").get(0).innerHTML = "Show/edit file user-generated metadata";
 						}
 					});				
 					</script>
