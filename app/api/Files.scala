@@ -1264,7 +1264,7 @@ class Files @Inject()(
 	    }
 	  }
 	  
-	  @ApiOperation(value = "Get community-generated metadata of the resource described by the file",
+	  @ApiOperation(value = "Get user-generated metadata of the resource described by the file",
 		      notes = "",
 		      responseClass = "None", httpMethod = "GET")
 	  def getUserMetadataJSON(id: UUID) = SecuredAction(parse.anyContent, authorization=WithPermission(Permission.ShowFilesMetadata)) { request =>

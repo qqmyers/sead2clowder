@@ -1,5 +1,8 @@
 @(collections: List[models.Collection], prev: String, next: String, limit: Int)(implicit user: Option[securesocial.core.Identity])
 
+@import services.{DI, AppConfigurationService}
+@import securesocial.core.{SocialUser, IdentityId, AuthenticationMethod}
+
 @main("Collections") {
 <div class="page-header">
   <h1>Collections</h1>
@@ -25,28 +28,34 @@
 				</tr>
 			</thead>
 			<tbody>
-				@collections.map { collection =>
-					<tr>
-						<td><a href="@(routes.Collections.collection(collection.id))">@collection.name</a></td>
-						<td>@collection.created.format("MMM dd, yyyy")</td>
-						<td style="white-space:pre-line">@collection.description</td>
-						<td>
-							@if(!collection.thumbnail_id.isEmpty){<img src="@(routes.Files.thumbnail(UUID(collection.thumbnail_id.toString().substring(5,collection.thumbnail_id.toString().length-1))))" alt="Thumbnail of @(collection.name)" width="120">}
-							@if(collection.thumbnail_id.isEmpty){No thumbnail available}
-						</td>
-						<td class="requiresLogin">
-							@if(user.isDefined) {
-								@if(!collection.author.isDefined){
+				@defining(DI.injector.getInstance(classOf[AppConfigurationService])
+					.adminExists(user.getOrElse(new SocialUser(new IdentityId("anonymous", ""), "Anonymous", "User", "Anonymous User", None, None, AuthenticationMethod.UserPassword)).email.getOrElse(""))){userIsAdmin=>
+					@collections.map { collection =>
+						<tr>
+							<td><a href="@(routes.Collections.collection(collection.id))">@collection.name</a></td>
+							<td>@collection.created.format("MMM dd, yyyy")</td>
+							<td style="white-space:pre-line">@collection.description</td>
+							<td>
+								@if(!collection.thumbnail_id.isEmpty){<img src="@(routes.Files.thumbnail(UUID(collection.thumbnail_id.toString().substring(5,collection.thumbnail_id.toString().length-1))))" alt="Thumbnail of @(collection.name)" width="120">}
+								@if(collection.thumbnail_id.isEmpty){No thumbnail available}
+							</td>
+							<td class="requiresLogin">
+								@if(userIsAdmin){
 									<a href="#" onclick="removeCollection('@(collection.id.toString)',event)">Remove</a>
-								}
-								@if(collection.author.isDefined){
-									@if(user.get.identityId.userId.equals(collection.author.get.identityId.userId)){
+								}							
+								@if(user.isDefined && !userIsAdmin) {
+									@if(!collection.author.isDefined){
 										<a href="#" onclick="removeCollection('@(collection.id.toString)',event)">Remove</a>
 									}
-								}					
-							}
-						</td>
-					</tr>
+									@if(collection.author.isDefined){
+										@if(user.get.identityId.userId.equals(collection.author.get.identityId.userId)){
+											<a href="#" onclick="removeCollection('@(collection.id.toString)',event)">Remove</a>
+										}
+									}					
+								}
+							</td>
+						</tr>
+					}
 				}
 			</tbody>
 		</table>		

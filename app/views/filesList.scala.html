@@ -1,5 +1,8 @@
 @(files: List[models.File], prev: String, next: String, limit: Int)(implicit user: Option[securesocial.core.Identity])
 
+@import services.{DI, AppConfigurationService}
+@import securesocial.core.{SocialUser, IdentityId, AuthenticationMethod}
+
 @main("Files") {
 <div class="page-header">
   <h1>Files</h1>
@@ -19,23 +22,26 @@
 				</tr>
 			</thead>
 			<tbody>
-				@files.map { file =>
-					<tr>
-						<td><a href="@(routes.Files.file(file.id))">@file.filename</a></td>
-						<td>@(if(file.contentType != null) file.contentType else "N/A")</td>
-						<td>@file.uploadDate</td>
-						<td>
-							@if(!file.thumbnail_id.isEmpty){<img src="@(routes.Files.thumbnail(UUID(file.thumbnail_id.toString().substring(5,file.thumbnail_id.toString().length-1))))" alt="Thumbnail of @(file.filename)" width="120">}
-							@if(file.thumbnail_id.isEmpty){No thumbnail available}
-						</td>
-						<td class="requiresLogin">
-							@if(user.isDefined) {
-									@if(user.get.identityId.userId.equals(file.author.identityId.userId)){
-										<a href="#" onclick="removeFile('@(file.id)',event)">Remove</a>
-									}													
-							}
-						</td>						
-					</tr>
+			@defining(DI.injector.getInstance(classOf[AppConfigurationService])
+					.adminExists(user.getOrElse(new SocialUser(new IdentityId("anonymous", ""), "Anonymous", "User", "Anonymous User", None, None, AuthenticationMethod.UserPassword)).email.getOrElse(""))){userIsAdmin=>
+					@files.map { file =>
+						<tr>
+							<td><a href="@(routes.Files.file(file.id))">@file.filename</a></td>
+							<td>@(if(file.contentType != null) file.contentType else "N/A")</td>
+							<td>@file.uploadDate</td>
+							<td>
+								@if(!file.thumbnail_id.isEmpty){<img src="@(routes.Files.thumbnail(UUID(file.thumbnail_id.toString().substring(5,file.thumbnail_id.toString().length-1))))" alt="Thumbnail of @(file.filename)" width="120">}
+								@if(file.thumbnail_id.isEmpty){No thumbnail available}
+							</td>
+							<td class="requiresLogin">
+								@if(user.isDefined) {
+										@if(user.get.identityId.userId.equals(file.author.identityId.userId)){
+											<a href="#" onclick="removeFile('@(file.id)',event)">Remove</a>
+										}													
+								}
+							</td>						
+						</tr>
+					}
 				}
 			</tbody>
 		</table>

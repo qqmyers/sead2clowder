@@ -1,5 +1,8 @@
 @()(implicit user: Option[securesocial.core.Identity])
 
+@import services.{DI, AppConfigurationService}
+@import securesocial.core.{SocialUser, IdentityId, AuthenticationMethod}
+
 @main("Dataset user metadata search") {
 <div class="page-header">
   <h1>Dataset user metadata search</h1>
@@ -45,11 +48,13 @@
 <script language="javascript">
 	window["userDefined"] = false;
 	window["userId"] = "";
+	window["userIsAdmin"] = false;
 </script>
 @if(user.isDefined) {
 	<script language="javascript">
 		window["userDefined"] = true;
 		window["userId"] = "@user.get.identityId.userId";
+		window["userIsAdmin"] = @DI.injector.getInstance(classOf[AppConfigurationService]).adminExists(user.getOrElse(new SocialUser(new IdentityId("anonymous", ""), "Anonymous", "User", "Anonymous User", None, None, AuthenticationMethod.UserPassword)).email.getOrElse(""));
 	</script>
 }
 <script language="javascript">	
