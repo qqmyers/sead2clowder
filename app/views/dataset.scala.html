@@ -4,6 +4,8 @@
 @import helper._
 @import collection.JavaConverters._
 @import com.mongodb.casbah.Imports.DBObject
+@import services.{DI, AppConfigurationService}
+@import securesocial.core.{SocialUser, IdentityId, AuthenticationMethod}
 @implicitFieldConstructor = @{ FieldConstructor(twitterBootstrapInput.f) }
 
 	@printLevel(metadata: scala.collection.immutable.Map[String,Any]) = {		
@@ -77,6 +79,8 @@
 }
 
 @main("Dataset") {
+@defining(DI.injector.getInstance(classOf[AppConfigurationService])
+			.adminExists(user.getOrElse(new SocialUser(new IdentityId("anonymous", ""), "Anonymous", "User", "Anonymous User", None, None, AuthenticationMethod.UserPassword)).email.getOrElse(""))){userIsAdmin=>
 	<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/swfobject/2.2/swfobject.js"></script>
     <script>
     	var isPageLoaded = false;
@@ -700,7 +704,10 @@
 				@collectionsInside.map { collection =>
 					<tr><td><a href="@(routes.Collections.collection(collection.id))">@collection.name</a>&nbsp;&nbsp;&nbsp;&nbsp;</td>
 					<td class="requiresLogin requiresLoginCommunity">
-						@if(user.isDefined) {
+						@if(userIsAdmin){
+									<a href="#" style="font-style:italic;" onclick="removeCollection('@(collection.id)','@(collection.name)',event)">Remove</a>
+						}
+						@if(user.isDefined && !userIsAdmin) {
 									@if(!collection.author.isDefined){
 										<a href="#" style="font-style:italic;" onclick="removeCollection('@(collection.id)','@(collection.name)',event)">Remove</a>
 									}
@@ -720,7 +727,10 @@
 						<div class="input-group input-group-sm col-md-8"">
 							<select id="collectionAddSelect"  data-inputid="selectingInputCollections" data-errorid="doesNotExistErrorCollections">
 							@collectionsOutside.map { collection =>
-								@if(user.isDefined) {
+								@if(userIsAdmin){
+									<option value="@(collection.id)">@(collection.name)</option>
+								}
+								@if(user.isDefined && !userIsAdmin) {
 									@if(!collection.author.isDefined){
 										<option value="@(collection.id)">@(collection.name)</option>
 									}
@@ -969,7 +979,7 @@
 			     		$(".requiresLogin").css("display","none");
 			       </script>
 		      	 }
-		      	 @if(user.isDefined) {
+		      	 @if(user.isDefined && !userIsAdmin) {
 		      	 	@if(!user.get.identityId.userId.equals(dataset.author.identityId.userId)){
 			      	   <script language="javascript">
 				     		$(".requiresLogin:not(.requiresLoginCommunity)").css("display","none");
@@ -979,4 +989,5 @@
 			</div>
 		</div>
 	</div>
+}	
 }

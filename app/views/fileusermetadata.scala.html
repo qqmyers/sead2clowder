@@ -2,6 +2,8 @@
 
 @import com.mongodb.casbah.Imports.DBObject
 @import collection.JavaConverters._
+@import services.{DI, AppConfigurationService}
+@import securesocial.core.{SocialUser, IdentityId, AuthenticationMethod}
 
 <br/>
 <form class="form-inline">	
@@ -51,7 +53,7 @@
 			     		$("#generalUserMetadata_@(file.id.stringify) .rdfbtn").css("display","inline");
 			       </script>
 		      	}
-@if(user.isDefined) {
+@if(user.isDefined && !DI.injector.getInstance(classOf[AppConfigurationService]).adminExists(user.getOrElse(new SocialUser(new IdentityId("anonymous", ""), "Anonymous", "User", "Anonymous User", None, None, AuthenticationMethod.UserPassword)).email.getOrElse(""))) {
 			@if(!user.get.identityId.userId.equals(file.author.identityId.userId)){
 					<script language="javascript">
 			     		$("#generalUserMetadata_@(file.id.stringify) button").css("display","none");

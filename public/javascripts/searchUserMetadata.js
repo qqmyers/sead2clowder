@@ -386,7 +386,7 @@ $(function() {
 						        	var createdDateArray = respJSON[i].created.split(" ");
 						        	var createdDate = createdDateArray.slice(1,3).join(" ") + ", " + createdDateArray[5];
 						        	var removeCell = "";
-						        	if(window["userId"] == respJSON[i].authorId){
+						        	if(window["userIsAdmin"] || window["userId"] == respJSON[i].authorId){
 						        		removeCell = "<td><a href='#!' onclick='removeDataset(\"" + respJSON[i].id + "\",event)'>Remove</a></td>";
 						        	}
 						        	else if(window["userDefined"]){
@@ -409,7 +409,7 @@ $(function() {
 						        	//var createdDateArray = respJSON[i].created.split(" ");
 						        	//var createdDate = createdDateArray.slice(1,3).join(" ") + ", " + createdDateArray[5];
 						        	var removeCell = "";
-						        	if(window["userId"] == respJSON[i].authorId){
+						        	if(window["userIsAdmin"] || window["userId"] == respJSON[i].authorId){
 						        		removeCell = "<td><a href='#!' onclick='removeFile(\"" + respJSON[i].id + "\",event)'>Remove</a></td>";
 						        	}
 						        	else if(window["userDefined"]){

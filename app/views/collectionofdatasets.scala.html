@@ -1,5 +1,8 @@
 @(datasetsInCollection: List[models.Dataset], collection: models.Collection)(implicit user: Option[securesocial.core.Identity])
 
+@import services.{DI, AppConfigurationService}
+@import securesocial.core.{SocialUser, IdentityId, AuthenticationMethod}
+
 @main("Collection") {
 <div class="page-header">
   <h1>@collection.name</h1>
@@ -83,15 +86,18 @@
 	</div>
 </div>
 <script language="javascript">
-	@if(user.isDefined) {
-		@if(collection.author.isDefined){
-			@if(!(user.get.identityId.userId.equals(collection.author.get.identityId.userId))){
-				$(".requiresLogin").css("display","none");
-			}
-		}					
-	}
-	@if(!user.isDefined) {
-		$(".requiresLogin").css("display","none");
+	@defining(DI.injector.getInstance(classOf[AppConfigurationService])
+			.adminExists(user.getOrElse(new SocialUser(new IdentityId("anonymous", ""), "Anonymous", "User", "Anonymous User", None, None, AuthenticationMethod.UserPassword)).email.getOrElse(""))){userIsAdmin=>
+		@if(user.isDefined && !userIsAdmin) {
+			@if(collection.author.isDefined){
+				@if(!(user.get.identityId.userId.equals(collection.author.get.identityId.userId))){
+					$(".requiresLogin").css("display","none");
+				}
+			}					
+		}
+		@if(!user.isDefined) {
+			$(".requiresLogin").css("display","none");
+		}
 	}
 
 	var queryIp = "@api.routes.Datasets.listOutsideCollection(collection.id)";
