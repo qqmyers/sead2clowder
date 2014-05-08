@@ -1,7 +1,7 @@
 package services
 
-import play.api.{ Plugin, Logger, Application }
-import  play.api.Play.current
+import play.api.{Plugin, Logger, Application}
+import play.api.Play.current
 import java.io.File
 import org.apache.commons.io.FileUtils
 
@@ -11,14 +11,13 @@ import org.apache.commons.io.FileUtils
  * @author Constantinos Sophocleous
  *
  */
-class FileDumpService (application: Application) extends Plugin {
-  
+class FileDumpService(application: Application) extends Plugin {
+
   var fileDumpDir: Option[String] = None
   var fileDumpMoveDir: Option[String] = None
 
   override def onStart() {
     Logger.debug("Starting file dumper Plugin")
-    
     val fileSep = System.getProperty("file.separator")
 	var fileDumpDir = play.api.Play.configuration.getString("filedump.dir").getOrElse("")
 	if(!fileDumpDir.equals("")){
@@ -34,7 +33,7 @@ class FileDumpService (application: Application) extends Plugin {
 		}
 	}	
   }
-  
+
   override def onStop() {
     Logger.debug("Shutting down file dumper Plugin")
   }
@@ -42,7 +41,7 @@ class FileDumpService (application: Application) extends Plugin {
   override lazy val enabled = {
     !application.configuration.getString("filedumpservice").filter(_ == "disabled").isDefined
   }
-  
+
   def dump(fileDump: DumpOfFile) = {
     Logger.debug("Dumping file " + fileDump.fileName)
     fileDumpDir match {
@@ -66,13 +65,12 @@ class FileDumpService (application: Application) extends Plugin {
     	    }
           }
           case None => Logger.warn("Could not move dumped file to staging directory. No staging directory set.")
-        }
-        
+        }        
       }
       case None => Logger.warn("Could not dump file. No file dumping directory set.")
     }
   }
- 
+
 }
 
 case class DumpOfFile (
@@ -80,3 +78,4 @@ case class DumpOfFile (
     fileId: String,
     fileName: String
 )
+

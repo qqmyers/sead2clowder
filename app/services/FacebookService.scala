@@ -23,6 +23,8 @@ import play.api.libs.json.JsObject
 
 class FacebookService (application: Application) extends Plugin  {
   
+  val subscriberService: SubscriberService = DI.injector.getInstance(classOf[SubscriberService])
+  
   var appPort = play.api.Play.configuration.getString("https.port").getOrElse("")
   val httpProtocol = {
 					if(!appPort.equals("")){
@@ -62,9 +64,9 @@ class FacebookService (application: Application) extends Plugin  {
     val name = "Subscribe"
     val thisPlugin = this 
     
-    for(subscriber <- Subscriber.getAllExpiring){
+    for(subscriber <- subscriberService.getAllExpiring){
       this.sendFeedToSubscriberFacebook(subscriber.FBIdentifier.get,resubscribeAnnouncement,url,"",name,"")
-      Subscriber.remove(subscriber)
+      subscriberService.remove(subscriber.id)
     }
   }
   
@@ -104,7 +106,7 @@ class FacebookService (application: Application) extends Plugin  {
   
   def sendFeedToSubscriberFacebook(subscriberIdentifier : String, html: String, url: String, image: String, name: String, description: String): Boolean = {
 
-		Subscriber.getAuthToken(subscriberIdentifier) match{
+		subscriberService.getAuthToken(subscriberIdentifier) match{
 		  case Some(authToken) =>{
 		    val visibleName = play.Play.application().configuration().getString("fb.visibleName")
 		    val fbClient = new DefaultFacebookClient(authToken)

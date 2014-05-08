@@ -1,11 +1,10 @@
 package controllers
 
 import scala.collection.mutable.Map
-import com.mongodb.casbah.commons.MongoDBObject
 import jsonutils.JsonUtil
-import models.FileDAO
 import play.api.Logger
 import play.api.Routes
+
 import play.api.libs.concurrent.Execution.Implicits._
 import play.api.libs.iteratee._
 import play.api.libs.iteratee.Concurrent.Channel
@@ -16,24 +15,28 @@ import play.api.libs.json.Json
 import api.Sections
 import api.WithPermission
 import api.Permission
+
 import models.AppAppearance
+import javax.inject.{Singleton, Inject}
+import services.FileService
+import services.AppAppearanceService
 
 /**
  * Main application controller.
  * 
  * @author Luigi Marini
  */
-object Application extends SecuredController {
+@Singleton
+class Application  @Inject() (files: FileService, appAppearance: AppAppearanceService) extends SecuredController {
   
   /**
    * Main page.
-   */
+   */  
   def index = SecuredAction() { request =>
-  	implicit val user = request.user
-  	AppAppearance.getDefault.get.displayedName
-  	val latestFiles = FileDAO.find(MongoDBObject()).sort(MongoDBObject("uploadDate" -> -1)).limit(5).toList
-  	val appAppearance = AppAppearance.getDefault.get
-    Ok(views.html.index(latestFiles, appAppearance.displayedName, appAppearance.welcomeMessage))
+	implicit val user = request.user
+	val latestFiles = files.latest(5)
+	val appAppearanceGet = appAppearance.getDefault.get
+	Ok(views.html.index(latestFiles, appAppearanceGet.displayedName, appAppearanceGet.welcomeMessage))
   }
 
   //Global map to store dataset id and (enumerator, channel) pairs
@@ -65,7 +68,6 @@ object Application extends SecuredController {
     Ok("{test:1}").as(JSON)
   }
   
-    
   /**
    *  Javascript routing.
    */

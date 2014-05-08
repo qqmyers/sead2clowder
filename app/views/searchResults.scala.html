@@ -26,12 +26,12 @@
 		    @for(file <- files) {
 			  <div class="row elasticsearchResult" id="filediv_@file.id.toString">
 				<div class="col-md-2">
-					@if(!file.thumbnail_id.isEmpty){<img src="@(routes.Files.thumbnail(file.thumbnail_id.toString().substring(5,file.thumbnail_id.toString().length-1)))" alt="Thumbnail of @(file.filename)" width="120">}
+					@if(!file.thumbnail_id.isEmpty){<img src="@(routes.Files.thumbnail(UUID(file.thumbnail_id.toString().substring(5,file.thumbnail_id.toString().length-1))))" alt="Thumbnail of @(file.filename)" width="120">}
 				</div>
 				<div class="col-md-10">
 					<dl class="dl-horizontal">
 						<dt>Filename:</dt>
-						<dd><a href="@(routes.Files.file(file.id.toString))">@file.filename</a></dd>
+						<dd><a href="@(routes.Files.file(file.id))">@file.filename</a></dd>
 						<dt>Type:</dt>
 						<dd>@file.contentType</dd>
 						<dt>Uploaded on:</dt>
@@ -39,17 +39,17 @@
 						<dt>Dataset name(s):</dt>
 						<dd>
 							@for(currMapping <- mapdatasetIds.get(file.id.toString).get){
-								<a href="@(routes.Datasets.dataset(currMapping._1.trim))">@currMapping._2.trim</a><br/>
+								<a href="@(routes.Datasets.dataset(UUID(currMapping._1.trim)))">@currMapping._2.trim</a><br/>
 							}
 						</dd>
 					</dl>
 				</div>
 			</div>
+			</div>
 			<script>
 				$("#filediv_@file.id.toString br").last().remove();
 			</script>
 			}
-			</div>
 		}
 	@if(datasets.size!=0){
 			@if(files.size != 0 && datasets.size != 0 && collections.size != 0) {
@@ -63,18 +63,18 @@
 	    @for(dataset <- datasets) {
 		  <div class="row elasticsearchResult" id="datasetdiv_@dataset.id.toString">
 		    <div class="col-md-2">
-				@if(!dataset.thumbnail_id.isEmpty){<img src="@(routes.Files.thumbnail(dataset.thumbnail_id.toString().substring(5,dataset.thumbnail_id.toString().length-1)))" alt="Thumbnail of @(dataset.name)" width="120">}
+				@if(!dataset.thumbnail_id.isEmpty){<img src="@(routes.Files.thumbnail(UUID(dataset.thumbnail_id.toString().substring(5,dataset.thumbnail_id.toString().length-1))))" alt="Thumbnail of @(dataset.name)" width="120">}
 			</div>
 			<div class="col-md-10">
 				<dl class="dl-horizontal">
 					<dt> Name:</dt>
-					<dd><a href="@(routes.Datasets.dataset(dataset.id.toString))">@dataset.name</a></dd>
-					<dt>  Description:</dt>
+					<dd><a href="@(routes.Datasets.dataset(dataset.id))">@dataset.name</a></dd>
+					<dt>  Descriptions:</dt>
 					<dd> @dataset.description</dd>
 					<dt>Collection name(s):</dt>
 					<dd>
 						@for(currMapping <- mapcollectionIds.get(dataset.id.toString).get){
-							<a href="@(routes.Collections.collection(currMapping._1.trim))">@currMapping._2.trim</a><br/>
+							<a href="@(routes.Collections.collection(UUID(currMapping._1.trim)))">@currMapping._2.trim</a><br/>
 						}
 					</dd>
 				</dl>
@@ -99,12 +99,12 @@
 	    @for(collection <- collections) {
 		  <div class="row elasticsearchResult">
 		    <div class="col-md-2">  
-				@if(!collection.thumbnail_id.isEmpty){<img src="@(routes.Files.thumbnail(collection.thumbnail_id.toString().substring(5,collection.thumbnail_id.toString().length-1)))" alt="Thumbnail of @(collection.name)" width="120">}
+				@if(!collection.thumbnail_id.isEmpty){<img src="@(routes.Files.thumbnail(UUID(collection.thumbnail_id.toString().substring(5,collection.thumbnail_id.toString().length-1))))" alt="Thumbnail of @(collection.name)" width="120">}
 			</div>
 			<div class="col-md-10">
 				<dl class="dl-horizontal">
 					<dt> Name:</dt>
-					<dd><a href="@(routes.Collections.collection(collection.id.toString))">@collection.name</a></dd>
+					<dd><a href="@(routes.Collections.collection(collection.id))">@collection.name</a></dd>
 					<dt>  Description:</dt>
 					<dd> @collection.description</dd>
 				</dl>

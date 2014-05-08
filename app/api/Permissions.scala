@@ -5,6 +5,12 @@ import securesocial.core.Identity
 import play.api.mvc.WrappedRequest
 import play.api.mvc.Request
 import models.AppConfiguration
+import services.AppConfigurationService
+import models.UUID
+import services.FileService
+import services.DatasetService
+import services.CollectionService
+import play.api.Logger
 
  /**
   * A request that adds the User for the current call
@@ -34,12 +40,14 @@ object Permission extends Enumeration {
 		AddDatasetsMetadata,
 		ShowDatasetsMetadata,
 		ShowTags,
-		CreateTags,
-		DeleteTags,
+		CreateTagsDatasets,
+		DeleteTagsDatasets,
 		CreateComments,
 		CreateNotes,
 		AddSections,
 		GetSections,
+		CreateTagsSections,
+		DeleteTagsSections,
 		CreateFiles,
 		DeleteFiles,
 		ListFiles,
@@ -47,6 +55,8 @@ object Permission extends Enumeration {
 		ShowFilesMetadata,
 		ShowFile,
 		SearchFiles,
+		CreateTagsFiles,
+		DeleteTagsFiles,
 		CreateStreams,
 		AddDataPoints,
 		SearchStreams,
@@ -70,8 +80,18 @@ import api.Permission._
  * @author Rob Kooper
  */
 case class WithPermission(permission: Permission) extends Authorization {
+  
+  val appConfiguration: AppConfigurationService = services.DI.injector.getInstance(classOf[AppConfigurationService])
+  val files: FileService = services.DI.injector.getInstance(classOf[FileService])
+  val datasets: DatasetService = services.DI.injector.getInstance(classOf[DatasetService])
+  val collections: CollectionService = services.DI.injector.getInstance(classOf[CollectionService])
+  
+  def isAuthorized(user: Identity): Boolean = {
+    isAuthorized(user, None)
+  }
 
-	def isAuthorized(user: Identity): Boolean = {
+	def isAuthorized(user: Identity, resourceId: Option[UUID] = None): Boolean = {
+	  
 		// order is important
 		(user, permission) match {
 		  		  
@@ -94,22 +114,82 @@ case class WithPermission(permission: Permission) extends Authorization {
 		  case (_, SearchSensors)        => true
 		  case (_, ShowTags)        	 => true
 		  
-		  // FIXME: required by ShowDataset if preview uses original file
-		  // FIXME:  Needs to be here, as plugins called by browsers for previewers (Java, Acrobat, Quicktime for QTVR) cannot for now use cookies to authenticate as users.
 		  case (_, DownloadFiles)        => true
 		  
 		  // all other permissions require authenticated user
 		  case (null, _)                 => false
 		  case(_, Permission.Admin) =>{
 		    if(!user.email.isEmpty)
-		    	if(AppConfiguration.adminExists(user.email.get))
+		    	if(appConfiguration.adminExists(user.email.get))
 		    	  true
 		    	else
 		    	  false  
 		    else	  
 		    	false	  
 		  }
-		  case (_, _)                    => true
+		  //Only authors of a resource-or admins-can modify a particular resource from the browser
+		  case (_, requestedPermission)  =>{
+		    resourceId match{
+		      case Some(idOfResource) => {
+		        if(requestedPermission == CreateFiles || requestedPermission == DeleteFiles || requestedPermission == AddFilesMetadata){
+		          files.get(idOfResource) match{
+		            case Some(file)=>{
+		              if(file.author.identityId.userId.equals(user.identityId.userId))
+		                true
+		              else
+		                appConfiguration.adminExists(user.email.getOrElse("none"))
+		            }
+		            case _ =>{
+		              Logger.error("File requested to be accessed not found. Denying request.")
+		              false
+		            }
+		          }
+		        }
+		        else if(requestedPermission == CreateDatasets || requestedPermission == DeleteDatasets || requestedPermission == AddDatasetsMetadata){
+		          datasets.get(idOfResource) match{
+		            case Some(dataset)=>{
+		              if(dataset.author.identityId.userId.equals(user.identityId.userId))
+		                true
+		              else
+		                appConfiguration.adminExists(user.email.getOrElse("none"))
+		            }
+		            case _ =>{
+		              Logger.error("Dataset requested to be accessed not found. Denying request.")
+		              false
+		            }
+		          }
+		        }
+		        else if(requestedPermission == CreateCollections || requestedPermission == DeleteCollections){
+		          collections.get(idOfResource) match{
+		            case Some(collection)=>{
+		              collection.author match{
+		                case Some(collectionAuthor)=>{
+		                  if(collectionAuthor.identityId.userId.equals(user.identityId.userId))
+		                	  true
+		                  else
+		                	  appConfiguration.adminExists(user.email.getOrElse("none"))
+		                }
+		                //Anonymous collections are free-for-all
+		                case None=>{
+		                  Logger.info("Requested collection is anonymous, anyone can modify, granting modification request.")
+		                  true
+		                }
+		              }		              
+		            }
+		            case _ =>{
+		              Logger.error("Collection requested to be accessed not found. Denying request.")
+		              false
+		            }
+		          }
+		        }
+		        else{
+		          true
+		        }
+		      }
+		      case _ =>
+		      	true
+		    }
+		  }
 		}
 	}
 }

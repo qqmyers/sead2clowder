@@ -4,15 +4,20 @@ import play.api.Logger
 import play.api.libs.json.JsValue
 import play.api.libs.json.Json.toJson
 import play.api.Play.current
-import models.SocialUserDAO
 import models.Subscriber
 import javax.mail._
 import javax.mail.internet._
 import javax.activation._
 import services.FacebookService
 import services.MailerPlugin
+import services.SocialUserService
+import services.DI
+import services.SubscriberService
 
 object Subscribers extends ApiController {
+  
+  val socialUserService: SocialUserService = DI.injector.getInstance(classOf[SocialUserService])
+  val subscriberService: SubscriberService = DI.injector.getInstance(classOf[SubscriberService])
   
   var appPort = play.api.Play.configuration.getString("https.port").getOrElse("")
   val httpProtocol = {
@@ -29,15 +34,15 @@ object Subscribers extends ApiController {
       Logger.debug("Subscribing")
       
       (request.body \ "identifier").asOpt[String].map { identifier =>
-      	SocialUserDAO.findOneByIdentifier(identifier) match {
+      	socialUserService.findOneByIdentifier(identifier) match {
       	  case Some(user) => {
       	    var subscriberExisting : Option[Subscriber] = None
       	    var isEmail = true
         	try{
 		        	new InternetAddress(identifier).validate()
-		        	subscriberExisting = Subscriber.findOneByEmail(identifier)
+		        	subscriberExisting = subscriberService.findOneByEmail(identifier)
 		        }catch{case ex: AddressException => {
-		        	subscriberExisting = Subscriber.findOneByIdentifier(identifier, false)
+		        	subscriberExisting = subscriberService.findOneByIdentifier(identifier, false)
 		        	isEmail = false
 		    }} 
       	    
@@ -45,15 +50,13 @@ object Subscribers extends ApiController {
       	      case None => {
       	        if(isEmail){
 	      	        Logger.debug("Saving subscription with email " + identifier)
-	      	        // TODO create a service instead of calling salat directly
-			        Subscriber.save(Subscriber(name = user.firstName, surname =  user.lastName, email = Some(identifier), hashedPassword = user.passwordInfo.get.password))
+			        subscriberService.insert(Subscriber(name = user.firstName, surname =  user.lastName, email = Some(identifier), hashedPassword = user.passwordInfo.get.password))
 			        Ok("success")
 		        }
       	        else{
       	        	Logger.debug("Saving subscription with FB identifier " + identifier)
       	        	val newSubscriber = Subscriber(name = user.firstName, surname =  user.lastName, FBIdentifier = Some(identifier), hashedPassword = "")
-	      	        // TODO create a service instead of calling salat directly
-			        Subscriber.save(newSubscriber)
+			        subscriberService.insert(newSubscriber)
 			        
 			        //Redirect to FB oauth page to get user token if subscribed using FB
 			        val fbAppId = play.Play.application().configuration().getString("fb.appId")
@@ -84,16 +87,15 @@ object Subscribers extends ApiController {
         	var subscriberExisting : Option[Subscriber] = None
         	try{
 		        	new InternetAddress(identifier).validate()
-		        	subscriberExisting = Subscriber.findOneByEmail(identifier)
+		        	subscriberExisting = subscriberService.findOneByEmail(identifier)
 		        }catch{case ex: AddressException => {
-		        	subscriberExisting = Subscriber.findOneByIdentifier(identifier, false)
+		        	subscriberExisting = subscriberService.findOneByIdentifier(identifier, false)
 		    }} 
         
       	    subscriberExisting match {
       	      case Some(subscriber) => {
       	        Logger.debug("Cancelling subscription with identifier " + identifier)
-      	        // TODO create a service instead of calling salat directly
-		        Subscriber.remove(subscriber)
+		        subscriberService.remove(subscriber.id)
       	        Ok(toJson(Map("status" -> "success")))
       	      }
       	      case None => {

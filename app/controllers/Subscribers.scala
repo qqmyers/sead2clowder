@@ -24,8 +24,12 @@ import org.apache.http.client.methods.HttpGet
 import org.apache.http.util.EntityUtils
 import java.util.ArrayList
 import play.api.data.FormError
+import services.DI
+import services.SubscriberService
 
 object Subscribers extends SecuredController {
+  
+  val subscriberService: SubscriberService = DI.injector.getInstance(classOf[SubscriberService])
   
   var appPort = play.api.Play.configuration.getString("https.port").getOrElse("")
   val httpProtocol = {
@@ -55,13 +59,13 @@ object Subscribers extends SecuredController {
 	     			try{	     					
 	     					//If input is not an email address, validate by identifier in general.
 	     					new InternetAddress(inputIdentifier).validate()     				
-		     				if(!Subscriber.findOneByEmail(inputIdentifier).isDefined)
+		     				if(!subscriberService.findOneByEmail(inputIdentifier).isDefined)
 		     				  Valid
 		     				else
 		     				  Invalid(ValidationError("Subscription with this email exists already."))     				
 			        }catch{ case ex: AddressException => {
 				          try{
-				        	if(!Subscriber.findOneByIdentifier(inputIdentifier).isDefined)
+				        	if(!subscriberService.findOneByIdentifier(inputIdentifier).isDefined)
 				        	  Valid
 				        	else
 				        	  Invalid(ValidationError("Subscription with this identifier exists already."))	
@@ -77,7 +81,7 @@ object Subscribers extends SecuredController {
         }
         case false =>{
           email.verifying("Subscription with this email exists already.", fields => fields match {
-     		case inputEmail => !Subscriber.findOneByEmail(inputEmail).isDefined 
+     		case inputEmail => !subscriberService.findOneByEmail(inputEmail).isDefined 
           })
         }
       }},
@@ -124,13 +128,13 @@ object Subscribers extends SecuredController {
     var subscriberExisting : Option[Subscriber] = None
     try{
 		new InternetAddress(inputEmailPassword._1).validate()
-		subscriberExisting = Subscriber.findOneByEmail(inputEmailPassword._1)
+		subscriberExisting = subscriberService.findOneByEmail(inputEmailPassword._1)
     }catch{case ex: AddressException => {
       try{
-    	  subscriberExisting = Subscriber.findOneByIdentifier(inputEmailPassword._1)
+    	  subscriberExisting = subscriberService.findOneByIdentifier(inputEmailPassword._1)
       }catch{ case ex2: FacebookGraphException => {
         		//If could not translate id/username (ie if subscriber has left Facebook), try finding without translating
-    	  		subscriberExisting = Subscriber.findOneByIdentifier(inputEmailPassword._1, false)
+    	  		subscriberExisting = subscriberService.findOneByIdentifier(inputEmailPassword._1, false)
       }}
     }}
     
@@ -190,8 +194,7 @@ object Subscribers extends SecuredController {
 	      subscriber => {
 		        Logger.debug("Saving subscription with identifier " + subscriber.email.getOrElse(subscriber.FBIdentifier))
 		        		     
-			        // TODO create a service instead of calling salat directly
-		            Subscriber.save(subscriber)
+		            subscriberService.insert(subscriber)
 		            
 		            subscriber.email match{
 		            	case Some(email) => {
@@ -211,7 +214,7 @@ object Subscribers extends SecuredController {
   
   def getAuthToken(subscriberId: String, code: String) = SecuredAction(authorization=WithPermission(Permission.Public)) { implicit request =>
     
-    Subscriber.get(subscriberId) match{
+    subscriberService.get(subscriberId) match{
       case Some(subscriber) => {
         val fbAppId = play.Play.application().configuration().getString("fb.appId")
         val fbAppSecret = play.Play.application().configuration().getString("fb.appSecret")
@@ -223,7 +226,7 @@ object Subscribers extends SecuredController {
         if(tokenRequestResponse.getStatusLine().getStatusCode().toString.startsWith("4")){
           //subscriber refused to allow access to FB account
           Logger.error("Error authenticating user. User probably refused to allow access to FB account by the feeder app. Removing subscriber.")
-          Subscriber.remove(subscriber)
+          subscriberService.remove(subscriber.id)
           implicit val user = request.user
      
           BadRequest(views.html.newSubscriber(subscriptionForm.copy(errors = subscriptionForm.errors :+ new FormError("error.key", "Subscriber refused to authenticate with Facebook.")), true))
@@ -236,12 +239,12 @@ object Subscribers extends SecuredController {
         	if(current.plugin[FacebookService].get.getIfUserGrantedPermissions(authToken)){
         	  val expirationTime = tokenResponseString.substring(tokenResponseString.indexOf("&")+9).toInt
         
-        	  Subscriber.setAuthToken(subscriberId, authToken, expirationTime)
+        	  subscriberService.setAuthToken(subscriberId, authToken, expirationTime)
         	
         	  Redirect(routes.Application.index)
         	}else{ //user has not granted publish permission to the feed app
         	  Logger.error("Error authenticating user. User refused to grant publish permission to the feeder app. Removing subscriber.")
-        	  Subscriber.remove(subscriber)
+        	  subscriberService.remove(subscriber.id)
         	  implicit val user = request.user
         	  BadRequest(views.html.newSubscriber(subscriptionForm.copy(errors = subscriptionForm.errors :+ new FormError("error.key", "Subscriber refused to grant publish feeds permission.")), true))
         	}    	
@@ -274,20 +277,19 @@ object Subscribers extends SecuredController {
 		        var subscriberExisting : Option[Subscriber] = None
 		        try{
 		        	new InternetAddress(inputIdentifierPassword._1).validate()
-		        	subscriberExisting = Subscriber.findOneByEmail(inputIdentifierPassword._1)
+		        	subscriberExisting = subscriberService.findOneByEmail(inputIdentifierPassword._1)
 		        }catch{case ex: AddressException => {
 		        	try{
-		        		subscriberExisting = Subscriber.findOneByIdentifier(inputIdentifierPassword._1)
+		        		subscriberExisting = subscriberService.findOneByIdentifier(inputIdentifierPassword._1)
 		        	}catch{ case ex2: FacebookGraphException => {
 		        		//If could not translate id/username (ie if subscriber has left Facebook), try finding without translating
-		        		subscriberExisting = Subscriber.findOneByIdentifier(inputIdentifierPassword._1, false)
+		        		subscriberExisting = subscriberService.findOneByIdentifier(inputIdentifierPassword._1, false)
 		        	}}
 		        }} 
 		        
 		        subscriberExisting match{
 		          case Some(subscriber) => {
-		            // TODO create a service instead of calling salat directly
-		            Subscriber.remove(subscriber)
+		            subscriberService.remove(subscriber.id)
 		            // redirect to main page
 		            Redirect(routes.Application.index)
 		          }
@@ -302,17 +304,17 @@ object Subscribers extends SecuredController {
   
   def list = SecuredAction(authorization=WithPermission(Permission.Admin)) { implicit request =>
     implicit val user = request.user
-    Ok(views.html.subscriptions(Subscriber.findAll.toList))
+    Ok(views.html.subscriptions(subscriberService.findAll))
   }
   
   def makeNewsFeed = SecuredAction(authorization=WithPermission(Permission.Admin)) { implicit request =>
     implicit val user = request.user
-    Ok(views.html.makeNewsFeed(Subscriber.findAllHavingEmail, false))
+    Ok(views.html.makeNewsFeed(subscriberService.findAllHavingEmail, false))
   }
   
   def makeNewsFeedFB = SecuredAction(authorization=WithPermission(Permission.Admin)) { implicit request =>
     implicit val user = request.user
-    Ok(views.html.makeNewsFeed(Subscriber.findAllHavingFB, true))
+    Ok(views.html.makeNewsFeed(subscriberService.findAllHavingFB, true))
   }
   
    
