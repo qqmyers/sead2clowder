@@ -42,8 +42,8 @@ object Permission extends Enumeration {
 		ShowTags,
 		CreateTagsDatasets,
 		DeleteTagsDatasets,
-		CreateComments,
-		CreateNotes,
+		CreateNotesDatasets,
+		CreateComments,		
 		AddSections,
 		GetSections,
 		CreateTagsSections,
@@ -57,6 +57,7 @@ object Permission extends Enumeration {
 		SearchFiles,
 		CreateTagsFiles,
 		DeleteTagsFiles,
+		CreateNotesFiles,
 		CreateStreams,
 		AddDataPoints,
 		SearchStreams,
@@ -131,7 +132,7 @@ case class WithPermission(permission: Permission) extends Authorization {
 		  case (_, requestedPermission)  =>{
 		    resourceId match{
 		      case Some(idOfResource) => {
-		        if(requestedPermission == CreateFiles || requestedPermission == DeleteFiles || requestedPermission == AddFilesMetadata){
+		        if(requestedPermission == CreateFiles || requestedPermission == DeleteFiles || requestedPermission == AddFilesMetadata || requestedPermission == CreateNotesFiles){
 		          files.get(idOfResource) match{
 		            case Some(file)=>{
 		              if(file.author.identityId.userId.equals(user.identityId.userId))
@@ -145,7 +146,7 @@ case class WithPermission(permission: Permission) extends Authorization {
 		            }
 		          }
 		        }
-		        else if(requestedPermission == CreateDatasets || requestedPermission == DeleteDatasets || requestedPermission == AddDatasetsMetadata){
+		        else if(requestedPermission == CreateDatasets || requestedPermission == DeleteDatasets || requestedPermission == AddDatasetsMetadata || requestedPermission == CreateNotesDatasets){
 		          datasets.get(idOfResource) match{
 		            case Some(dataset)=>{
 		              if(dataset.author.identityId.userId.equals(user.identityId.userId))

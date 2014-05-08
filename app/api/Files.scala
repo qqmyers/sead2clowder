@@ -1421,7 +1421,7 @@ class Files @Inject()(
     }
   }
 
-  def setNotesHTML(id: UUID) = SecuredAction(authorization=WithPermission(Permission.CreateNotes))  { implicit request =>
+  def setNotesHTML(id: UUID) = SecuredAction(authorization=WithPermission(Permission.CreateNotesFiles))  { implicit request =>
 	  request.user match {
 	    case Some(identity) => {
 		    request.body.\("notesHTML").asOpt[String] match {

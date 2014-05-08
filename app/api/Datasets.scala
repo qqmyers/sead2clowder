@@ -857,7 +857,7 @@ class Datasets @Inject()(
   
   ////////////////////////////////
   
-  def setNotesHTML(id: UUID) = SecuredAction(authorization=WithPermission(Permission.CreateNotes))  { implicit request =>
+  def setNotesHTML(id: UUID) = SecuredAction(authorization=WithPermission(Permission.CreateNotesDatasets), resourceId = Some(id))  { implicit request =>
 	  request.user match {
 	    case Some(identity) => {
 		    request.body.\("notesHTML").asOpt[String] match {
