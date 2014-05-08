@@ -44,7 +44,8 @@ trait ApiController extends Controller {
             SecureSocial.currentUser(request) match { // calls from browser
               case Some(identity) => {
                 if (authorization.isInstanceOf[WithPermission]){
-                  if (authorization.asInstanceOf[WithPermission].isAuthorized(identity, resourceId))
+                  var authorPermission = authorization.asInstanceOf[WithPermission]
+                  if (WithPermission(authorPermission.permission,resourceId).isAuthorized(identity))
                 	  f(RequestWithUser(Some(identity), request))
                   else
                 	  Unauthorized("Not authorized")

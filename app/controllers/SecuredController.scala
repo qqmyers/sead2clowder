@@ -46,7 +46,8 @@ trait SecuredController extends Controller {
               case Some(identity) => {
                 if (BCrypt.checkpw(credentials(1), identity.passwordInfo.get.password)) {
                   if (authorization.isInstanceOf[WithPermission]){
-                    if (authorization.asInstanceOf[WithPermission].isAuthorized(identity, resourceId))
+                    var authorPermission = authorization.asInstanceOf[WithPermission]
+                    if (WithPermission(authorPermission.permission,resourceId).isAuthorized(identity))
                     	f(RequestWithUser(Some(identity), request))
                     else{
 	                    if(SecureSocial.currentUser.isDefined){  //User logged in but not authorized, so redirect to 'not authorized' page
@@ -80,7 +81,8 @@ trait SecuredController extends Controller {
             SecureSocial.currentUser(request) match { // calls from browser
               case Some(identity) => {
                 if (authorization.isInstanceOf[WithPermission]){
-                  if (authorization.asInstanceOf[WithPermission].isAuthorized(identity, resourceId))
+                  var authorPermission = authorization.asInstanceOf[WithPermission]
+                  if (WithPermission(authorPermission.permission,resourceId).isAuthorized(identity))
                 	  f(RequestWithUser(Some(identity), request))
                   else
                 		if(SecureSocial.currentUser.isDefined){  //User logged in but not authorized, so redirect to 'not authorized' page
