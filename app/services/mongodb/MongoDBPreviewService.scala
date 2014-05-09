@@ -118,6 +118,16 @@ class MongoDBPreviewService @Inject()(files: FileService, tiles: TileService) ex
       case None => return
     }
   }
+  
+  def deleteAnnotation(preview_id: UUID, annotation_id: UUID) {			///////////////////////
+    PreviewDAO.dao.findOneById(new ObjectId(preview_id.stringify)) match {
+      case Some(preview) => {
+        PreviewDAO.update(MongoDBObject("_id" -> new ObjectId(preview_id.stringify)), $pull("annotations" ->  MongoDBObject( "_id" -> new ObjectId(annotation_id.stringify))), false, false, WriteConcern.Safe)
+        return
+      }
+      case None => return
+    }
+  }
 
 
   def listAnnotations(preview_id: UUID): List[ThreeDAnnotation] = {

@@ -689,6 +689,7 @@ class Datasets @Inject()(
                  "p_main" -> pMain, "pv_route" -> pvRoute,
                  "pv_contenttype" -> pvContentType, "pv_length" -> pvLength.toString,
                  "pv_annotationsEditPath" -> api.routes.Previews.editAnnotation(UUID(pvId), originalFileId).toString,
+                 "pv_annotationsDeletePath" -> api.routes.Previews.deleteAnnotation(UUID(pvId), originalFileId).toString,
                  "pv_annotationsListPath" -> api.routes.Previews.listAnnotations(UUID(pvId)).toString,
                  "pv_annotationsAttachPath" -> api.routes.Previews.attachAnnotation(UUID(pvId), originalFileId).toString))
     else

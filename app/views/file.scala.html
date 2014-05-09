@@ -45,6 +45,7 @@
 			Configuration.annotationsEditPath = "@api.routes.Previews.editAnnotation(UUID(p._1), UUID(originalFileId))";
 			Configuration.annotationsListPath = "@api.routes.Previews.listAnnotations(UUID(p._1))";
 			Configuration.annotationsAttachPath = "@api.routes.Previews.attachAnnotation(UUID(p._1), UUID(originalFileId))";
+			Configuration.annotationsDeletePath = "@api.routes.Previews.deleteAnnotation(UUID(p._1), UUID(originalFileId))";
 			Configuration.wasPTM = "@(filename.endsWith(".ptm") || contentType.contains("ptmimages"))";
 			Configuration.calledFrom = "file";
 		}
@@ -382,6 +383,7 @@
     					Configuration.annotationsEditPath = pv.pv_annotationsEditPath;
     					Configuration.annotationsListPath = pv.pv_annotationsListPath;
     					Configuration.annotationsAttachPath = pv.pv_annotationsAttachPath;
+    					Configuration.annotationsDeletePath = pv.pv_annotationsDeletePath;
     					if("@file.filename".endsWith(".ptm") || "@file.contentType".indexOf("ptmimages") != -1)   					
     						Configuration.wasPTM = 'true';
     					else

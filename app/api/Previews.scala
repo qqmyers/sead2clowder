@@ -281,6 +281,30 @@ class Previews @Inject()(previews: PreviewService, tiles: TileService) extends A
           case None => BadRequest(toJson("Preview not found " + preview_id))
         }
     }
+  
+  def deleteAnnotation(preview_id: UUID, file_id: UUID) =
+    SecuredAction(parse.json, authorization = WithPermission(Permission.DeleteFiles), Some(file_id)) {
+      request =>
+        Logger.debug("thereq: " + request.body.toString)
+        val x_coord = (request.body \ "x_coord").asOpt[String].getOrElse("0.0")
+        val y_coord = (request.body \ "y_coord").asOpt[String].getOrElse("0.0")
+        val z_coord = (request.body \ "z_coord").asOpt[String].getOrElse("0.0")
+
+        previews.get(preview_id) match {
+          case Some(preview) => {
+            previews.findAnnotation(preview_id, x_coord, y_coord, z_coord) match {
+              case Some(annotation) => {
+                previews.deleteAnnotation(preview_id, annotation.id)
+                Ok(toJson(Map("status" -> "success")))
+              }
+              case None => Ok(toJson(Map("status" -> "success"))) //What the user sees locally must not change if an annotation is deleted after the user loads the dataset
+              //but before attempting to delete the selected annotation.
+              //BadRequest(toJson("Annotation for preview " + preview_id + " not found: " + x_coord + "," + y_coord + "," + z_coord))
+            }
+          }
+          case None => BadRequest(toJson("Preview not found " + preview_id))
+        }
+    }
 
   def listAnnotations(preview_id: UUID) =
     SecuredAction(parse.anyContent, authorization = WithPermission(Permission.ShowFile)) {
