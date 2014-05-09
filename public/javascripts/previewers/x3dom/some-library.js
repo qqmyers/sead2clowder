@@ -55,8 +55,12 @@ function clearConfigTabAnnotations(prNum){
         annotationEdit.className = annotationEdit.className + " btn";
         annotationEdit.setAttribute("onclick","editAnnotationDescription('" + prNum + "')");
         annotationEdit.innerHTML = 'Edit';
-        annotationEdit.setAttribute("style","margin-bottom: 5px;");
-        annotationEdit.setAttribute('data-annotation','true');
+        if(!window["authenticatedIndividualResource" + prNum])
+        	annotationEdit.setAttribute("style","margin-bottom: 5px; display: none;");
+        else
+        	annotationEdit.setAttribute("style","margin-bottom: 5px;");
+        annotationEdit.setAttribute('data-annotation','true');        
+        
         $("#annotFields"+prNum).append(annotationEdit);
         
         event.cancelBubble = true;
@@ -125,7 +129,7 @@ function clearConfigTabAnnotations(prNum){
   	  annotation['y_coord'] = "" + window["currentAnnotation" + prNum][1];
   	  annotation['z_coord'] = "" + window["currentAnnotation" + prNum][2];
   	  annotation['description'] = $("#annotFields"+prNum+ " > textarea[data-annotation]").get(0).value;
-  	  
+
   	  var request = $.ajax({
   	       type: 'POST',
   	       async:false,
@@ -740,8 +744,7 @@ function clearConfigTabAnnotations(prNum){
 	    			return;
 	    		}
 	    	}
-	    	
-	    	if(window["isShiftClicked" + prNum])
+	    	if(window["isShiftClicked" + prNum] && window["authenticatedIndividualResource" + prNum])
 	    		addAnnotation(event, prNum);
     	}
     }
@@ -861,6 +864,7 @@ function clearConfigTabAnnotations(prNum){
   window["annotTrackingDiff" + prNum] = 0.000;
   window["annotTrackingDiff2" + prNum] = 0.000;
   window["width" + prNum] = width;
+  window["authenticatedIndividualResource" + prNum] = Configuration.authenticatedIndividualResource;
   
   //Measuring vars
   window["isXClicked" + prNum] = false;
@@ -908,7 +912,7 @@ function clearConfigTabAnnotations(prNum){
 		  					+ "<tr><td>M</td><td>&nbsp;&nbsp;&nbsp;&nbsp;Change rendering (regular-vertices-wireframe)</td></tr>"
 		  					+ "<tr><td>D</td><td>&nbsp;&nbsp;&nbsp;&nbsp;Show/hide texture maps</td></tr>"
 		  					+ "<tr><td>Space</td><td>&nbsp;&nbsp;&nbsp;&nbsp;Show/hide model statistics</td></tr>"
-		  					+ "<tr><td>Shift + Left mouse button</td><td>&nbsp;&nbsp;&nbsp;&nbsp;Add annotation</td></tr>"
+		  					+ "<tr><td>Shift + Left mouse button</td><td>&nbsp;&nbsp;&nbsp;&nbsp;Add annotation (must be author)</td></tr>"
 		  					+ "<tr><td>Q</td><td>&nbsp;&nbsp;&nbsp;&nbsp;Toggle annotations visibility</td></tr>"
 		  					+ x3dMeasureInstructions
 		  					+ "<tr><td>J</td><td>&nbsp;&nbsp;&nbsp;&nbsp;Lighting on/off</td></tr>"
@@ -1025,7 +1029,7 @@ function clearConfigTabAnnotations(prNum){
 			  					+ "<tr><td>M&nbsp;&nbsp;&nbsp;&nbsp;</td><td>Change rendering (regular-vertices-wireframe)</td></tr>"
 			  					+ "<tr><td>D&nbsp;&nbsp;&nbsp;&nbsp;</td><td>Show/hide texture maps</td></tr>"
 			  					+ "<tr><td>Space&nbsp;&nbsp;&nbsp;&nbsp;</td><td>Show/hide model statistics</td></tr>"
-			  					+ "<tr><td>Shift + Left mouse button&nbsp;&nbsp;&nbsp;&nbsp;</td><td>Add annotation</td></tr>"
+			  					+ "<tr><td>Shift + Left mouse button&nbsp;&nbsp;&nbsp;&nbsp;</td><td>Add annotation (must be author)</td></tr>"
 			  					+ "<tr><td>Q&nbsp;&nbsp;&nbsp;&nbsp;</td><td>Toggle annotations visibility</td></tr>"
 			  					+ x3dMeasureInstructions
 			  					+ "<tr><td>J&nbsp;&nbsp;&nbsp;&nbsp;</td><td>Lighting on/off</td></tr>"

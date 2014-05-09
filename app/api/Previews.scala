@@ -239,8 +239,8 @@ class Previews @Inject()(previews: PreviewService, tiles: TileService) extends A
   /**
    * Add annotation to 3D model preview.
    */
-  def attachAnnotation(preview_id: UUID) =
-    SecuredAction(authorization = WithPermission(Permission.CreateFiles)) {
+  def attachAnnotation(preview_id: UUID, file_id: UUID) =
+    SecuredAction(parse.json, authorization = WithPermission(Permission.CreateFiles), Some(file_id)) {
       request =>
         val x_coord = (request.body \ "x_coord").asOpt[String].getOrElse("0.0")
         val y_coord = (request.body \ "y_coord").asOpt[String].getOrElse("0.0")
@@ -257,8 +257,8 @@ class Previews @Inject()(previews: PreviewService, tiles: TileService) extends A
         }
     }
 
-  def editAnnotation(preview_id: UUID) =
-    SecuredAction(authorization = WithPermission(Permission.CreateFiles)) {
+  def editAnnotation(preview_id: UUID, file_id: UUID) =
+    SecuredAction(parse.json, authorization = WithPermission(Permission.CreateFiles), Some(file_id)) {
       request =>
         Logger.debug("thereq: " + request.body.toString)
         val x_coord = (request.body \ "x_coord").asOpt[String].getOrElse("0.0")
