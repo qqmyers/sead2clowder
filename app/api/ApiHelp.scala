@@ -3,6 +3,7 @@ package api
 import play.api.mvc.Controller
 import play.api.libs.json.Json._
 import play.api.mvc.Action
+import play.api.Play.current
 
 /**
  * Documentation about API using swagger.
@@ -10,6 +11,17 @@ import play.api.mvc.Action
  * @author Luigi Marini
  */
 object ApiHelp extends Controller {
+  
+  var appPort = play.api.Play.configuration.getString("https.port").getOrElse("")
+  val httpProtocol = {
+					if(!appPort.equals("")){
+						"https://"
+					}
+					else{
+						appPort = play.api.Play.configuration.getString("http.port").getOrElse("")
+						"http://"
+					}
+		}
 
   /**
    * Used as entry point by swagger.
@@ -19,7 +31,7 @@ object ApiHelp extends Controller {
 		    {
 			  apiVersion: "0.1",
 			  swaggerVersion: "1.1",
-			  basePath: "http://localhost:9000/api",
+			  basePath: """ + httpProtocol + play.Play.application().configuration().getString("hostIp") + ":" + appPort + """/api",
 			  apis: [
 			    {
 			      path: "/datasets.json",

@@ -6,11 +6,11 @@
 	var width = 750;
 	var height = 550;
 		
-//	var s = document.createElement("script");
-//	s.type = "text/javascript";
-//	s.src = "http://ajax.googleapis.com/ajax/libs/swfobject/2.2/swfobject.js";
-//	console.log("Updating tab " + Configuration.tab);
-//	$(Configuration.tab).append(s);
+	var s = document.createElement("script");
+	s.type = "text/javascript";
+	s.src = "//ajax.googleapis.com/ajax/libs/swfobject/2.2/swfobject.js";
+	console.log("Updating tab " + Configuration.tab);
+	$(Configuration.tab).append(s);
 	$(Configuration.tab).append("<p>Right-click on image for help navigating.</p>");
 	
 	$(Configuration.tab).append(

@@ -20,9 +20,9 @@
 10009:services.MailerPlugin
 #10010:services.AdminsNotifierPlugin
 10011:securesocial.core.providers.FacebookProvider
-#10013:services.RDFExportService
+10013:services.RDFExportService
 #10014:services.FileMetadataAutodumpService
 #10015:services.DatasetsAutodumpService
 #10016:services.DatasetsMetadataAutodumpService
 10100:services.TempFilesPlugin
-#10101:services.RDFExporterPlugin
+10101:services.RDFExporterPlugin

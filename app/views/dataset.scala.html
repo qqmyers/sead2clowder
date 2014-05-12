@@ -90,7 +90,7 @@
 @defining(user.getOrElse(new SocialUser(new IdentityId("anonymous", ""), "Anonymous", "User", "Anonymous User", None, None, AuthenticationMethod.UserPassword))){userOrAnon=>
 @defining(DI.injector.getInstance(classOf[AppConfigurationService])
 			.adminExists(userOrAnon.email.getOrElse(""))){userIsAdmin=>
-	<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/swfobject/2.2/swfobject.js"></script>
+	<script type="text/javascript" src="//ajax.googleapis.com/ajax/libs/swfobject/2.2/swfobject.js"></script>
 	<script src="@routes.Assets.at("javascripts/tinymce/tinymce.min.js")" type="text/javascript"></script>
 	<script>
 		tinymce.init({selector:'.notesArea',
@@ -253,7 +253,7 @@
 				  </div>
 			  	</div>
 
-				<script src="http://popcornjs.org/code/dist/popcorn-complete.min.js" type="text/javascript"></script>
+				<script src="//popcornjs.org/code/dist/popcorn-complete.min.js" type="text/javascript"></script>
 				<script>
 				    document.addEventListener("DOMContentLoaded", function () {
 						if ($("#ourvideo").length>0) {				    
