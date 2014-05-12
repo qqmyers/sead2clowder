@@ -118,77 +118,85 @@ function clickTarget( e ){
     spectrum.plot(data);
 
   };
+  
+  window.onload=function(){
+	  setTimeout(function(){
+		  var prNum = window.frameElement.id.replace("multispectralIframe","");
+			var uploadDirsArrays = window.frameElement.contentWindow.parent.window["currentMultispectral" + prNum];
+			uploadDirsServer = window.frameElement.contentWindow.parent.window["multispectralServer" + prNum];
 
-window.onload=function(){
-	
-	var prNum = window.frameElement.id.replace("multispectralIframe","");
-	var uploadDirsArrays = window.frameElement.contentWindow.parent.window["currentMultispectral" + prNum];
-	uploadDirsServer = window.frameElement.contentWindow.parent.window["multispectralServer" + prNum];
+			var firstImage;
 
-	var firstImage;
-
-	var uploadDirsArray = uploadDirsArrays.join(",").split(",");
-	graphArray = new Array();
-	var graphArrayCounter = 0;
-	var maxWavelength = 0;
-	var minWavelength = 1000000;
-	var finalArray = new Array();
-	var finalArrayCounter = 0;
-	
-	for(var i = 0; i < uploadDirsArray.length; i = i+2){
-		//Add wavelength reflectance files references to the array of data to be graphed
-		if(uploadDirsArray[i+1].indexOf("wavelength ") == 0){
-			graphArray[graphArrayCounter] = new Array();
-			graphArray[graphArrayCounter][0] = uploadDirsArray[i];
-			var currWavelength = parseInt(uploadDirsArray[i+1].substring(11),10);
-			graphArray[graphArrayCounter][1] = currWavelength;
-			graphArrayCounter++;
+			var uploadDirsArray = uploadDirsArrays.join(",").split(",");
+			graphArray = new Array();
+			var graphArrayCounter = 0;
+			var maxWavelength = 0;
+			var minWavelength = 1000000;
+			var finalArray = new Array();
+			var finalArrayCounter = 0;
 			
-			if(currWavelength < minWavelength)
-				minWavelength = currWavelength;
-			else if(currWavelength > maxWavelength)
-				maxWavelength = currWavelength;
-		}
-		//Add the rest of the images to the image blender
-		else{
-			if(finalArrayCounter == 0)
-				firstImage = uploadDirsArray[i];
-			
-			finalArray[finalArrayCounter] = new Array();
-			finalArray[finalArrayCounter][0] = uploadDirsArray[i];
-			finalArray[finalArrayCounter][1] = uploadDirsArray[i+1];
-			finalArrayCounter++;
-		}
-	}
+			for(var i = 0; i < uploadDirsArray.length; i = i+2){
+				//Add wavelength reflectance files references to the array of data to be graphed
+				if(uploadDirsArray[i+1].indexOf("wavelength ") == 0){
+					graphArray[graphArrayCounter] = new Array();
+					graphArray[graphArrayCounter][0] = uploadDirsArray[i];
+					var currWavelength = parseInt(uploadDirsArray[i+1].substring(11),10);
+					graphArray[graphArrayCounter][1] = currWavelength;
+					graphArrayCounter++;
+					
+					if(currWavelength < minWavelength)
+						minWavelength = currWavelength;
+					else if(currWavelength > maxWavelength)
+						maxWavelength = currWavelength;
+				}
+				//Add the rest of the images to the image blender
+				else{
+					if(finalArrayCounter == 0)
+						firstImage = uploadDirsArray[i];
+					
+					finalArray[finalArrayCounter] = new Array();
+					finalArray[finalArrayCounter][0] = uploadDirsArray[i];
+					finalArray[finalArrayCounter][1] = uploadDirsArray[i+1];
+					finalArrayCounter++;
+				}
+			}
 
-	//Do nothing if no visible images, print out error message.
-	if(finalArrayCounter == 0){
-		document.getElementById("spectra").setAttribute("style","display:none;");				
-		var errorMsg = document.createElement('p');
-		errorMsg.innerHTML = "No visible images to display.";
-		errorMsg.setAttribute("style","color:black;");
-		document.getElementById("viewer").appendChild(errorMsg);
-		
-		window.frameElement.setAttribute("style","height:550px;");
-		
-		return;
-	}
+			//Do nothing if no visible images, print out error message.
+			if(finalArrayCounter == 0){
+				document.getElementById("spectra").setAttribute("style","display:none;");				
+				var errorMsg = document.createElement('p');
+				errorMsg.innerHTML = "No visible images to display.";
+				errorMsg.setAttribute("style","color:black;");
+				document.getElementById("viewer").appendChild(errorMsg);
+				
+				window.frameElement.setAttribute("style","height:550px;");
+				
+				return;
+			}
 
-	iipmooviewer = new IIPMooViewer( "viewer", {
-		image: firstImage,
-		server: uploadDirsServer,
-		click: clickTarget
-	      });
+			iipmooviewer = new IIPMooViewer( "viewer", {
+				image: firstImage,
+				server: uploadDirsServer,
+				click: clickTarget
+			      });
 
-	if(finalArrayCounter > 1)
-		iipmooviewer.blend(finalArray);
+			if(finalArrayCounter > 1)
+				iipmooviewer.blend(finalArray);
 
-	//Must have at least two different spectral reflectance images to have a meaning to draw a graph
-	if(graphArrayCounter >= 2){
-		// Create our spectral graph object
-	    spectrum = new Spectrum('spectra', minWavelength, maxWavelength, graphArray);
-	}
-};
+			//Must have at least two different spectral reflectance images to have a meaning to draw a graph
+			if(graphArrayCounter >= 2){
+				// Create our spectral graph object
+			    spectrum = new Spectrum('spectra', minWavelength, maxWavelength, graphArray);
+			}
+		  
+		  
+	  },250);
+  }
+
+// window.onload=function(){
+	
+	
+// };
 
 var s = document.createElement("link");
 s.type = "text/css";
