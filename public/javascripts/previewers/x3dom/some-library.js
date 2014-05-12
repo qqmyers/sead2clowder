@@ -56,9 +56,22 @@ function clearConfigTabAnnotations(prNum){
         annotationEdit.className = annotationEdit.className + " btn";
         annotationEdit.setAttribute("onclick","editAnnotationDescription('" + prNum + "')");
         annotationEdit.innerHTML = 'Edit';
-        annotationEdit.setAttribute("style","margin-bottom: 5px;");
-        annotationEdit.setAttribute('data-annotation','true');
+        if(!window["authenticatedIndividualResource" + prNum])
+        	annotationEdit.setAttribute("style","margin-bottom: 2%; display: none;");
+        else
+        	annotationEdit.setAttribute("style","margin-bottom: 2%;");
+        annotationEdit.setAttribute('data-annotation','true');        
+        
         $("#annotFields"+prNum).append(annotationEdit);
+        
+          var annotationDelete = document.createElement('button'); 	
+  		  annotationDelete.setAttribute('type','button');
+  		  annotationDelete.className = annotationDelete.className + " btn";
+  		  annotationDelete.setAttribute("onclick","deleteAnnotation('" + prNum + "')");
+  		  annotationDelete.innerHTML = 'Delete';
+  		  annotationDelete.setAttribute("style","margin-bottom: 2%; margin-left:2%;");
+  		  annotationDelete.setAttribute('data-annotation','true');
+		  $("#annotFields"+prNum).append(annotationDelete);
         
         event.cancelBubble = true;
         event.stopPropagation();
@@ -126,7 +139,7 @@ function clearConfigTabAnnotations(prNum){
   	  annotation['y_coord'] = "" + window["currentAnnotation" + prNum][1];
   	  annotation['z_coord'] = "" + window["currentAnnotation" + prNum][2];
   	  annotation['description'] = $("#annotFields"+prNum+ " > textarea[data-annotation]").get(0).value;
-  	  
+
   	  var request = $.ajax({
   	       type: 'POST',
   	       async:false,
@@ -162,9 +175,18 @@ function clearConfigTabAnnotations(prNum){
   		        newAnnotationEdit.className = newAnnotationEdit.className + " btn";
   		        newAnnotationEdit.setAttribute("onclick","editAnnotationDescription('" + prNum + "')");
   		        newAnnotationEdit.innerHTML = 'Edit';
-  		        newAnnotationEdit.setAttribute("style","margin-bottom: 5px;");
+  		        newAnnotationEdit.setAttribute("style","margin-bottom: 2%;");
   		        newAnnotationEdit.setAttribute('data-annotation','true');
-  		        $("#annotFields"+prNum).append(newAnnotationEdit);	   
+  		        $("#annotFields"+prNum).append(newAnnotationEdit);
+  		        
+  		      var annotationDelete = document.createElement('button'); 	
+  	  		  annotationDelete.setAttribute('type','button');
+  	  		  annotationDelete.className = annotationDelete.className + " btn";
+  	  		  annotationDelete.setAttribute("onclick","deleteAnnotation('" + prNum + "')");
+  	  		  annotationDelete.innerHTML = 'Delete';
+  	  		  annotationDelete.setAttribute("style","margin-bottom: 2%; margin-left:2%;");
+  	  		  annotationDelete.setAttribute('data-annotation','true');
+  			  $("#annotFields"+prNum).append(annotationDelete);
   		  	    		        
   			});
   		 
@@ -175,6 +197,39 @@ function clearConfigTabAnnotations(prNum){
   				);
   			alert("ERROR: " + errorThrown +". Annotation edit not submitted." );
   			});
+    }
+    
+    function deleteAnnotation(prNum){
+    	
+    	var annotation = {};
+    	annotation['x_coord'] = "" + window["currentAnnotation" + prNum][0];
+    	annotation['y_coord'] = "" + window["currentAnnotation" + prNum][1];
+    	annotation['z_coord'] = "" + window["currentAnnotation" + prNum][2];
+    	
+    	var request = $.ajax({
+   	       type: 'POST',
+   	       async:false,
+   	       url: window["annotationsDeletePath" + prNum],
+   	       data: JSON.stringify(annotation),
+   	       contentType: "application/json",
+   	     });    	
+    	request.done(function (response, textStatus, jqXHR){
+		        console.log("Response " + response);		        
+		        $("#x3dElement" + prNum + " > scene > transform[data-annotation][translation='" + window["currentAnnotation" + prNum][0] + "," + window["currentAnnotation" + prNum][1] + "," + window["currentAnnotation" + prNum][2] + "']").remove();
+
+		        clearConfigTabAnnotations(prNum);
+
+		        window["currentAnnotation" + prNum] = new Array(); 
+		        window["isCurrentSubmitted" + prNum] = true;		  	    		        
+			});
+    	request.fail(function (jqXHR, textStatus, errorThrown){
+  			console.error(
+  	 		"The following error occured: "+
+  	 		textStatus, errorThrown		            
+  				);
+  			alert("ERROR: " + errorThrown +". Annotation not deleted." );
+  			});
+
     }
     
     function cancelAnnotationEdit(prNum){
@@ -201,9 +256,18 @@ function clearConfigTabAnnotations(prNum){
         annotationEdit.className = annotationEdit.className + " btn";
         annotationEdit.setAttribute("onclick","editAnnotationDescription('" + prNum + "')");
         annotationEdit.innerHTML = 'Edit';
-        annotationEdit.setAttribute("style","margin-bottom: 5px;");
+        annotationEdit.setAttribute("style","margin-bottom: 2%;");
         annotationEdit.setAttribute('data-annotation','true');
-        $("#annotFields"+prNum).append(annotationEdit);	
+        $("#annotFields"+prNum).append(annotationEdit);
+        
+          var annotationDelete = document.createElement('button'); 	
+		  annotationDelete.setAttribute('type','button');
+		  annotationDelete.className = annotationDelete.className + " btn";
+		  annotationDelete.setAttribute("onclick","deleteAnnotation('" + prNum + "')");
+		  annotationDelete.innerHTML = 'Delete';
+		  annotationDelete.setAttribute("style","margin-bottom: 2%; margin-left:2%;");
+		  annotationDelete.setAttribute('data-annotation','true');
+		  $("#annotFields"+prNum).append(annotationDelete);
     }
     
     function editAnnotationDescription(prNum){
@@ -229,10 +293,9 @@ function clearConfigTabAnnotations(prNum){
   	  var editAnnotationSubmit = document.createElement('button'); 	
   	  editAnnotationSubmit.setAttribute('type','button');
   	  editAnnotationSubmit.className = editAnnotationSubmit.className + " btn";
-  	  editAnnotationSubmit.setAttribute('style','margin-right:10px;');
   	  editAnnotationSubmit.setAttribute("onclick","submitAnnotationEdit('" + prNum + "')");
   	  editAnnotationSubmit.innerHTML = 'OK';
-  	  editAnnotationSubmit.setAttribute("style","margin-bottom: 5px;");
+  	  editAnnotationSubmit.setAttribute("style","margin-bottom: 2%; margin-top: 1%;");
   	  editAnnotationSubmit.setAttribute('data-annotation','true');
   	  $("#annotFields"+prNum).append(editAnnotationSubmit);
   	  
@@ -241,7 +304,7 @@ function clearConfigTabAnnotations(prNum){
   	  editAnnotationCancel.className = editAnnotationCancel.className + " btn";
   	  editAnnotationCancel.setAttribute("onclick","cancelAnnotationEdit('" + prNum + "')");
   	  editAnnotationCancel.innerHTML = 'Cancel';
-  	  editAnnotationCancel.setAttribute("style","margin-bottom: 5px;");
+  	  editAnnotationCancel.setAttribute("style","margin-bottom: 2%; margin-left:2%; margin-top: 1%;");
   	  editAnnotationCancel.setAttribute('data-annotation','true');
   	  $("#annotFields"+prNum).append(editAnnotationCancel);
   	  
@@ -290,9 +353,19 @@ function clearConfigTabAnnotations(prNum){
   		  		  newAnnotationEdit.className = newAnnotationEdit.className + " btn";
   		  		  newAnnotationEdit.setAttribute("onclick","editAnnotationDescription('" + prNum + "')");
   		  		  newAnnotationEdit.innerHTML = 'Edit';
-  		  		  newAnnotationEdit.setAttribute("style","margin-bottom: 5px;");
+  		  		  newAnnotationEdit.setAttribute("style","margin-bottom: 2%;");
   		  		  newAnnotationEdit.setAttribute('data-annotation','true');
-  		  		  $("#annotFields"+prNum).append(newAnnotationEdit);	
+  		  		  $("#annotFields"+prNum).append(newAnnotationEdit);
+  		  		  
+  		  		  var newAnnotationDelete = document.createElement('button'); 	
+  		  		  newAnnotationDelete.setAttribute('type','button');
+  		  		  newAnnotationDelete.className = newAnnotationDelete.className + " btn";
+  		  		  newAnnotationDelete.setAttribute("onclick","deleteAnnotation('" + prNum + "')");
+  		  		  newAnnotationDelete.innerHTML = 'Delete';
+  		  		  newAnnotationDelete.setAttribute("style","margin-bottom: 2%; margin-left:2%;");
+  		  		  newAnnotationDelete.setAttribute('data-annotation','true');
+		  		  $("#annotFields"+prNum).append(newAnnotationDelete);
+  		  		  
   		  	    }else{
   		  	    	$("#x3dElement" + prNum + " > scene > transform[data-annotation][translation='" + window["currentAnnotation" + prNum][0] + "," + window["currentAnnotation" + prNum][1] + "," + window["currentAnnotation" + prNum][2] 
   		  	    	+ "'] > shape > appearance > material").get(0).setAttribute("diffuseColor", "mediumblue");
@@ -361,7 +434,7 @@ function clearConfigTabAnnotations(prNum){
     	newAnnotationSubmit.setAttribute('style','margin-right:10px;');
     	newAnnotationSubmit.setAttribute("onclick","submitAnnotation('" + prNum + "')");
     	newAnnotationSubmit.innerHTML = 'OK';
-    	newAnnotationSubmit.setAttribute("style","margin-bottom: 5px;");
+    	newAnnotationSubmit.setAttribute("style","margin-bottom: 2%; margin-top: 1%;");
     	newAnnotationSubmit.setAttribute('data-annotation','true');
     	$("#annotFields"+prNum).append(newAnnotationSubmit);
 
@@ -370,7 +443,7 @@ function clearConfigTabAnnotations(prNum){
     	newAnnotationCancel.className = newAnnotationCancel.className + " btn";
     	newAnnotationCancel.setAttribute("onclick","cancelNewAnnotation('" + prNum + "')");
     	newAnnotationCancel.innerHTML = 'Cancel annotation addition';
-    	newAnnotationCancel.setAttribute("style","margin-bottom: 5px;");
+    	newAnnotationCancel.setAttribute("style","margin-bottom: 2%; margin-left:2%; margin-top: 1%;");
     	newAnnotationCancel.setAttribute('data-annotation','true');
     	$("#annotFields"+prNum).append(newAnnotationCancel);
 
@@ -741,8 +814,7 @@ function clearConfigTabAnnotations(prNum){
 	    			return;
 	    		}
 	    	}
-	    	
-	    	if(window["isShiftClicked" + prNum])
+	    	if(window["isShiftClicked" + prNum] && window["authenticatedIndividualResource" + prNum])
 	    		addAnnotation(event, prNum);
     	}
     }
@@ -1079,9 +1151,11 @@ function clearConfigTabAnnotations(prNum){
   window["configsTab" + prNum] = Configuration.tab;
   window["annotationsEditPath" + prNum] = Configuration.annotationsEditPath;
   window["annotationsAttachPath" + prNum] = Configuration.annotationsAttachPath;
+  window["annotationsDeletePath" + prNum] = Configuration.annotationsDeletePath;
   window["annotTrackingDiff" + prNum] = 0.000;
   window["annotTrackingDiff2" + prNum] = 0.000;
   window["width" + prNum] = width;
+  window["authenticatedIndividualResource" + prNum] = Configuration.authenticatedIndividualResource;
   
   //Measuring vars
   window["isXClicked" + prNum] = false;
@@ -1145,7 +1219,7 @@ function clearConfigTabAnnotations(prNum){
 		  					+ "<tr><td>M</td><td>&nbsp;&nbsp;&nbsp;&nbsp;Change rendering (regular-vertices-wireframe)</td></tr>"
 		  					+ "<tr><td>D</td><td>&nbsp;&nbsp;&nbsp;&nbsp;Show/hide texture maps</td></tr>"
 		  					+ "<tr><td>Space</td><td>&nbsp;&nbsp;&nbsp;&nbsp;Show/hide model statistics</td></tr>"
-		  					+ "<tr><td>Shift + Left mouse button</td><td>&nbsp;&nbsp;&nbsp;&nbsp;Add annotation</td></tr>"
+		  					+ "<tr><td>Shift + Left mouse button</td><td>&nbsp;&nbsp;&nbsp;&nbsp;Add annotation (must be author)</td></tr>"
 		  					+ "<tr><td>Q</td><td>&nbsp;&nbsp;&nbsp;&nbsp;Toggle annotations visibility</td></tr>"
 		  					+ x3dMeasureInstructions
 		  					+ "<tr><td>J</td><td>&nbsp;&nbsp;&nbsp;&nbsp;Lighting on/off</td></tr>"
@@ -1364,7 +1438,7 @@ function clearConfigTabAnnotations(prNum){
 			  					+ "<tr><td>M&nbsp;&nbsp;&nbsp;&nbsp;</td><td>Change rendering (regular-vertices-wireframe)</td></tr>"
 			  					+ "<tr><td>D&nbsp;&nbsp;&nbsp;&nbsp;</td><td>Show/hide texture maps</td></tr>"
 			  					+ "<tr><td>Space&nbsp;&nbsp;&nbsp;&nbsp;</td><td>Show/hide model statistics</td></tr>"
-			  					+ "<tr><td>Shift + Left mouse button&nbsp;&nbsp;&nbsp;&nbsp;</td><td>Add annotation</td></tr>"
+			  					+ "<tr><td>Shift + Left mouse button&nbsp;&nbsp;&nbsp;&nbsp;</td><td>Add annotation (must be author)</td></tr>"
 			  					+ "<tr><td>Q&nbsp;&nbsp;&nbsp;&nbsp;</td><td>Toggle annotations visibility</td></tr>"
 			  					+ x3dMeasureInstructions
 			  					+ "<tr><td>J&nbsp;&nbsp;&nbsp;&nbsp;</td><td>Lighting on/off</td></tr>"

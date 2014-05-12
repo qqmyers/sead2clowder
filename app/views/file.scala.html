@@ -31,7 +31,7 @@
 		}
 	} 
 
-@showPreview(id: String, p: (java.lang.String, String, String, String, java.lang.String, String, Long), filename: String, contentType: String) = {
+@showPreview(id: String, p: (java.lang.String, String, String, String, java.lang.String, String, Long), filename: String, contentType: String, originalFileId: String) = {
 	<script>
 		Configuration.tab = "#previewer_@id";
 		Configuration.url = "@p._5";
@@ -42,9 +42,10 @@
 			Configuration.fileSize = @p._7;			
 		}
 		else if("@p._2" === "X3d"){							
-			Configuration.annotationsEditPath = "@api.routes.Previews.editAnnotation(UUID(p._1)))";
+			Configuration.annotationsEditPath = "@api.routes.Previews.editAnnotation(UUID(p._1), UUID(originalFileId))";
 			Configuration.annotationsListPath = "@api.routes.Previews.listAnnotations(UUID(p._1))";
-			Configuration.annotationsAttachPath = "@api.routes.Previews.attachAnnotation(UUID(p._1))";
+			Configuration.annotationsAttachPath = "@api.routes.Previews.attachAnnotation(UUID(p._1), UUID(originalFileId))";
+			Configuration.annotationsDeletePath = "@api.routes.Previews.deleteAnnotation(UUID(p._1), UUID(originalFileId))";
 			Configuration.wasPTM = "@(filename.endsWith(".ptm") || contentType.contains("ptmimages"))";
 			Configuration.calledFrom = "file";
 		}
@@ -62,9 +63,9 @@
 
 
 @main("File") {
+@defining(user.getOrElse(new SocialUser(new IdentityId("anonymous", ""), "Anonymous", "User", "Anonymous User", None, None, AuthenticationMethod.UserPassword))){userOrAnon=>
 @defining(DI.injector.getInstance(classOf[AppConfigurationService])
-			.adminExists(user.getOrElse(new SocialUser(new IdentityId("anonymous", ""), "Anonymous", "User", "Anonymous User", None, None, AuthenticationMethod.UserPassword)).email.getOrElse(""))){userIsAdmin=>
-
+			.adminExists(userOrAnon.email.getOrElse(""))){userIsAdmin=>
 	<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/swfobject/2.2/swfobject.js"></script>
 	<script src="@routes.Assets.at("javascripts/previews.js")" type="text/javascript"></script>
 	<script src="@routes.Assets.at("javascripts/tinymce/tinymce.min.js")" type="text/javascript"></script>
@@ -92,6 +93,7 @@
     	var Configuration = {};
     	Configuration.id  = "@file.id";
 		Configuration.authenticated = @user.isDefined;
+		Configuration.authenticatedIndividualResource = @(userIsAdmin || userOrAnon.identityId.userId.equals(file.author.identityId.userId));
 		Configuration.ptmAppletPath = "@(routes.Assets.at("plugins") + "/" + "envlib.jar")";
 		Configuration.expressInstallPath = "@(routes.Assets.at("plugins") + "/" + "expressInstall.swf")";
 		Configuration.iipZoomPath = "@(routes.Assets.at("plugins") + "/" + "IIPZoom.swf")";
@@ -141,7 +143,7 @@
 							<div class="tab-content"  id="previewsContent_@(f.id.toString)">
 								@for(i <- pvs.indices) {
 							  		<div class="tab-pane previewDiv" id="previewer_@(f.id.toString)_@i" data-previewId="@(pvs(i)._1)" data-previewerId="@(pvs(i)._2)"></div>
-							  		@showPreview(f.id.toString + "_" + i, pvs(i), f.filename, f.contentType)
+							  		@showPreview(f.id.toString + "_" + i, pvs(i), f.filename, f.contentType, f.id.toString)
 
 								}
 					  			<script type="text/javascript">
@@ -408,6 +410,7 @@
     					Configuration.annotationsEditPath = pv.pv_annotationsEditPath;
     					Configuration.annotationsListPath = pv.pv_annotationsListPath;
     					Configuration.annotationsAttachPath = pv.pv_annotationsAttachPath;
+    					Configuration.annotationsDeletePath = pv.pv_annotationsDeletePath;
     					if("@file.filename".endsWith(".ptm") || "@file.contentType".indexOf("ptmimages") != -1)   					
     						Configuration.wasPTM = 'true';
     					else
@@ -689,5 +692,6 @@
 	       		</script>
        }
      	 }
+}
 }
 }

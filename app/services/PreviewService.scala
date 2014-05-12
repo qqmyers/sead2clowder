@@ -40,6 +40,7 @@ trait PreviewService {
 
   def updateAnnotation(preview_id: UUID, annotation_id: UUID, description: String)
 
+  def deleteAnnotation(preview_id: UUID, annotation_id: UUID)
 
   def listAnnotations(preview_id: UUID): List[ThreeDAnnotation]
 

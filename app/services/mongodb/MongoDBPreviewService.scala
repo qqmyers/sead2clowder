@@ -112,11 +112,21 @@ class MongoDBPreviewService @Inject()(files: FileService, tiles: TileService) ex
       case Some(preview) => {
         //var newAnnotations = List.empty[ThreeDAnnotation]
         for (annotation <- preview.annotations) {
-          if (annotation.id.toString().equals(annotation_id)) {
+          if (annotation.id.toString.equals(annotation_id.toString)) {
             PreviewDAO.update(MongoDBObject("_id" -> new ObjectId(preview_id.stringify), "annotations._id" -> new ObjectId(annotation.id.stringify)), $set("annotations.$.description" -> description), false, false, WriteConcern.Safe)
             return
           }
         }
+        return
+      }
+      case None => return
+    }
+  }
+  
+  def deleteAnnotation(preview_id: UUID, annotation_id: UUID) {			///////////////////////
+    PreviewDAO.dao.findOneById(new ObjectId(preview_id.stringify)) match {
+      case Some(preview) => {
+        PreviewDAO.update(MongoDBObject("_id" -> new ObjectId(preview_id.stringify)), $pull("annotations" ->  MongoDBObject( "_id" -> new ObjectId(annotation_id.stringify))), false, false, WriteConcern.Safe)
         return
       }
       case None => return
