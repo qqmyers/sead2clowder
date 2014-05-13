@@ -119,8 +119,7 @@ function clickTarget( e ){
 
   };
   
-  window.onload=function(){
-	  setTimeout(function(){
+	function prepareSpectre(){
 		  var prNum = window.frameElement.id.replace("multispectralIframe","");
 			var uploadDirsArrays = window.frameElement.contentWindow.parent.window["currentMultispectral" + prNum];
 			uploadDirsServer = window.frameElement.contentWindow.parent.window["multispectralServer" + prNum];
@@ -190,13 +189,18 @@ function clickTarget( e ){
 			}
 		  
 		  
-	  },250);
-  }
+	  }
 
-// window.onload=function(){
+window.onload=function(){
+	//Use a small, undetectable timeout when in Firefox, as to avoid some race condition stopping the spectre graph from showing up correctly
+	if(navigator.userAgent.toLowerCase().indexOf("mozilla") >= 0)
+		setTimeout(function(){
+			prepareSpectre();
+		},65);
+	else
+		prepareSpectre();
 	
-	
-// };
+};
 
 var s = document.createElement("link");
 s.type = "text/css";
