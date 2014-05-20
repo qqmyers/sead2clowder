@@ -26,7 +26,7 @@
 		    @for(file <- files) {
 			  <div class="row elasticsearchResult" id="filediv_@file.id.toString">
 				<div class="col-md-2">
-					@if(!file.thumbnail_id.isEmpty){<img src="@(routes.Files.thumbnail(UUID(file.thumbnail_id.toString().substring(5,file.thumbnail_id.toString().length-1))))" alt="Thumbnail of @(file.filename)" width="120">}
+					@if(!file.thumbnail_id.isEmpty){<img src="@(routes.Files.thumbnail(UUID(file.thumbnail_id.toString().substring(5,file.thumbnail_id.toString().length-1))))" alt="Thumbnail of @(file.filename)" width="120" style="margin-bottom:20%;">}
 				</div>
 				<div class="col-md-10">
 					<dl class="dl-horizontal">
