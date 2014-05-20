@@ -1,4 +1,4 @@
-@(query: String, files: Array[models.File], datasets: Array[models.Dataset], collections: Array[models.Collection], mapdatasetIds:scala.collection.mutable.HashMap[String,scala.collection.mutable.ListBuffer[(String, String)]], mapcollectionIds:scala.collection.mutable.HashMap[String,scala.collection.mutable.ListBuffer[(String, String)]])
+@(query: String, files: Array[models.File], datasets: Array[models.Dataset], collections: Array[models.Collection], mapdatasetIds:scala.collection.mutable.HashMap[String,scala.collection.mutable.ListBuffer[(String, String)]], mapcollectionIds:scala.collection.mutable.HashMap[String,scala.collection.mutable.ListBuffer[(String, String)]])(implicit user: Option[securesocial.core.Identity])
 
 @import scala.collection.mutable.ListBuffer
 
@@ -45,11 +45,11 @@
 					</dl>
 				</div>
 			</div>
-			</div>
 			<script>
 				$("#filediv_@file.id.toString br").last().remove();
 			</script>
 			}
+			</div>
 		}
 	@if(datasets.size!=0){
 			@if(files.size != 0 && datasets.size != 0 && collections.size != 0) {
@@ -63,7 +63,7 @@
 	    @for(dataset <- datasets) {
 		  <div class="row elasticsearchResult" id="datasetdiv_@dataset.id.toString">
 		    <div class="col-md-2">
-				@if(!dataset.thumbnail_id.isEmpty){<img src="@(routes.Files.thumbnail(UUID(dataset.thumbnail_id.toString().substring(5,dataset.thumbnail_id.toString().length-1))))" alt="Thumbnail of @(dataset.name)" width="120">}
+				@if(!dataset.thumbnail_id.isEmpty){<img src="@(routes.Files.thumbnail(UUID(dataset.thumbnail_id.toString().substring(5,dataset.thumbnail_id.toString().length-1))))" alt="Thumbnail of @(dataset.name)" width="120" style="margin-bottom:20%;">}
 			</div>
 			<div class="col-md-10">
 				<dl class="dl-horizontal">
@@ -99,7 +99,7 @@
 	    @for(collection <- collections) {
 		  <div class="row elasticsearchResult">
 		    <div class="col-md-2">  
-				@if(!collection.thumbnail_id.isEmpty){<img src="@(routes.Files.thumbnail(UUID(collection.thumbnail_id.toString().substring(5,collection.thumbnail_id.toString().length-1))))" alt="Thumbnail of @(collection.name)" width="120">}
+				@if(!collection.thumbnail_id.isEmpty){<img src="@(routes.Files.thumbnail(UUID(collection.thumbnail_id.toString().substring(5,collection.thumbnail_id.toString().length-1))))" alt="Thumbnail of @(collection.name)" width="120" style="margin-bottom:30%;">}
 			</div>
 			<div class="col-md-10">
 				<dl class="dl-horizontal">

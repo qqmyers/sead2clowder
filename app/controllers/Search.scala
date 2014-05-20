@@ -35,6 +35,7 @@ class Search @Inject() (
    * Search results.
    */
   def search(query: String) = SecuredAction(authorization=WithPermission(Permission.SearchDatasets)) { implicit request =>
+    implicit val user = request.user
     current.plugin[ElasticsearchPlugin] match {
       case Some(plugin) => {
         Logger.debug("Searching for: " + query)
@@ -130,7 +131,7 @@ class Search @Inject() (
                     }
                   }
                 }
- 
+
                 Ok(views.html.searchResults(query, listOfFiles.toArray, listOfdatasets.toArray, listOfcollections.toArray, mapdatasetIds, mapcollectionIds))
               }
             }
