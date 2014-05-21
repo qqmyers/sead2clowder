@@ -1,4 +1,4 @@
 { "name" : "Video (popcorn player)",
   "main" : "popcorn.js",
-  "contentType" : ["video/mp4"]
+  "contentType" : []
   }
