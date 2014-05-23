@@ -156,6 +156,8 @@ class MongoDBPreviewService @Inject()(files: FileService, tiles: TileService) ex
         Charset.forName("UTF-8")))
       entity.addPart("file", new StringBody(p.iipImage.get, "text/plain",
         Charset.forName("UTF-8")))
+      entity.addPart("id", new StringBody(p.file_id.get.stringify, "text/plain",
+        Charset.forName("UTF-8")))
       httpPost.setEntity(entity)
       val imageUploadResponse = httpclient.execute(httpPost)
       Logger.info(imageUploadResponse.getStatusLine().toString())
@@ -218,6 +220,8 @@ class MongoDBPreviewService @Inject()(files: FileService, tiles: TileService) ex
 				                Charset.forName( "UTF-8" )))
 				      entity.addPart("file", new StringBody(iipImage, "text/plain",
 				                Charset.forName( "UTF-8" )))
+				      entity.addPart("id", new StringBody(p.file_id.get.stringify, "text/plain",
+				    		    Charset.forName("UTF-8")))
 				      httpPost.setEntity(entity)
 				      val imageDeletionResponse = httpclient.execute(httpPost)
 				      Logger.info(imageDeletionResponse.getStatusLine().toString())
