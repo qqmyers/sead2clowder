@@ -164,6 +164,8 @@ object PreviewDAO extends ModelCompanion[Preview, ObjectId] {
                 Charset.forName( "UTF-8" )))
       entity.addPart("file", new StringBody(p.iipImage.get, "text/plain",
                 Charset.forName( "UTF-8" )))
+      entity.addPart("id", new StringBody(p.file_id.get, "text/plain",
+    		  	Charset.forName("UTF-8")))
       httpPost.setEntity(entity)
       val imageDeletionResponse = httpclient.execute(httpPost)
       Logger.info(imageDeletionResponse.getStatusLine().toString())
@@ -226,6 +228,8 @@ object PreviewDAO extends ModelCompanion[Preview, ObjectId] {
 				                Charset.forName( "UTF-8" )))
 				      entity.addPart("file", new StringBody(iipImage, "text/plain",
 				                Charset.forName( "UTF-8" )))
+				      entity.addPart("id", new StringBody(p.file_id.get, "text/plain",
+				    		  	Charset.forName("UTF-8")))
 				      httpPost.setEntity(entity)
 				      val imageDeletionResponse = httpclient.execute(httpPost)
 				      Logger.info(imageDeletionResponse.getStatusLine().toString())
