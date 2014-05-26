@@ -70,10 +70,41 @@ class FacebookService (application: Application) extends Plugin  {
     }
   }
   
+  def getIfExistsInGraph(id: String): Boolean = {
+    FBClient match{
+      case Some(fbClient) => {
+        try{
+        		fbClient.fetchObject(id, classOf[User])
+        		
+        		//Dummy default return
+        		true
+        }catch{ case ex: FacebookGraphException => {
+        	val exceptionMsg = ex.toString.toLowerCase()
+        	//If id found to exist (but be global), then the user exists in the graph
+        	if(exceptionMsg.contains("global id") && exceptionMsg.contains("not allowed"))
+        	  true
+        	//If username found to exist in graph (though not queryable due to Graph 2.0 restrictions), then the user exists in the graph  
+        	else if(exceptionMsg.contains("cannot query") && exceptionMsg.contains("username"))  
+        	  true	
+        	else
+        	  false
+          }}
+      	}
+      case None => {
+        Logger.error("Could not validate user in FB graph. No active Facebook client.")
+        throw new Exception("Could not validate user in FB graph. No active Facebook client.")
+      }
+    }
+  }
+  
   def getUsernameById(id: String): String = {
     FBClient match{
-      case Some(fbClient) => {        
-        	val fbObject = fbClient.fetchObject(id, classOf[User])
+      case Some(fbClient) => {
+        try{
+        		fbClient.fetchObject(id, classOf[User])
+        }catch{case ex: Exception =>{Logger.debug(ex.toString()); ""}}
+        
+        	val fbObject = fbClient.fetchObject(id, classOf[User])        	
         	//exception thrown from fetchObject if user does not exist
         	try{
         		val theUsername = fbObject.getUsername()
@@ -95,7 +126,9 @@ class FacebookService (application: Application) extends Plugin  {
   def getIdByUsername(username: String): String = {    
     FBClient match{
       case Some(fbClient) => {
+        try{
         fbClient.fetchObject(username, classOf[User]).getId()
+        }catch{case ex: Exception =>{Logger.debug(ex.toString()); ""}}
       }
       case None => {
         Logger.warn("Could not get user's id by username. No active Facebook client.")
@@ -147,16 +180,24 @@ class FacebookService (application: Application) extends Plugin  {
     		try{ 
     			val httpclient = new DefaultHttpClient()
     			val httpGet = new HttpGet("https://graph.facebook.com/me/permissions?access_token="+authToken)
-    			val ermissionsRequestResponse = httpclient.execute(httpGet)   
+    			val ermissionsRequestResponse = httpclient.execute(httpGet)
     			val responseJSON = play.api.libs.json.Json.parse(EntityUtils.toString(ermissionsRequestResponse.getEntity()))
-    			((responseJSON \ "data").validate[List[JsObject]].get(0)   \ "publish_stream").asOpt[Int].map{ permission =>    			  
-    			  permission match{
-    			    case 1 => true
-    			    case _ => false
+    			
+    			val permissionsList = (responseJSON \ "data").validate[List[JsObject]]
+    			var i = 0
+    			for(i <- 0 to permissionsList.asOpt.get.size-1){
+    			  val currPermission = permissionsList.get(i)
+    			  if((currPermission\"permission").asOpt[String].get == "publish_actions"){
+    			    if((currPermission\"status").asOpt[String].get == "granted"){
+    			      return true
+    			    }
+    			    else{
+    			      return false
+    			    }
     			  }
-    			}.getOrElse {
-    				false
-    			} 
+    			}
+    			return false
+    			
 		    }catch{ case ex: Exception => {
 		    	Logger.error(ex.toString())
         		Logger.error("Could not get permissions. Assuming failed authentication.")

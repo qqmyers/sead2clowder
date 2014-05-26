@@ -3,6 +3,8 @@ package services
 import models.Subscriber
 import models.UUID
 
+case class FBNotFoundException(msg:String) extends Exception(msg)
+
 trait SubscriberService {
   
   def findOneByEmail(email: String): Option[Subscriber]
@@ -13,7 +15,7 @@ trait SubscriberService {
   
    def findAll(): List[Subscriber]
   
-  def findOneByIdentifier(identifier: String, translateIdUsername: Boolean = true): Option[Subscriber]
+  def findOneByIdentifier(identifier: String, findIfExistsInGraph: Boolean = true): Option[Subscriber]
   
   def setAuthToken(id: String, token: String, expirationOffset: Int)
   

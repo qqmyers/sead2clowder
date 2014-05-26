@@ -62,7 +62,7 @@ object Subscribers extends ApiController {
 			        val fbAppId = play.Play.application().configuration().getString("fb.appId")
 			        val hostIp = play.Play.application().configuration().getString("hostIp")
 			        
-			        Ok("https://www.facebook.com/dialog/oauth?client_id="+fbAppId+"&redirect_uri="+httpProtocol+hostIp+":"+appPort+controllers.routes.Subscribers.getAuthToken(newSubscriber.id.toString)+"&scope=publish_stream")
+			        Ok("https://www.facebook.com/dialog/oauth?client_id="+fbAppId+"&redirect_uri="+httpProtocol+hostIp+":"+appPort+controllers.routes.Subscribers.getAuthToken(newSubscriber.id.toString)+"&scope=publish_actions")
       	        }		        		        
       	      }
       	      case Some(subscriber) => {
