@@ -1199,9 +1199,14 @@ function clearConfigTabAnnotations(prNum){
 	else
       window["x3dOffset" + prNum] = 248;	
 	  x3dMeasureInstructions = "";
-  }  
-  if(Configuration.calledFrom == "dataset")
-	  window["x3dOffset2" + prNum] = 100;
+  }
+  
+  if(Configuration.calledFrom == "dataset"){
+	  if(navigator.userAgent.indexOf("hrome") == -1)
+		  window["x3dOffset2" + prNum] = 100;
+	  else
+		  window["x3dOffset2" + prNum] = 95;
+  }	  
   else if(Configuration.calledFrom == "file")
 	  window["x3dOffset2" + prNum] = 200;
   else if(Configuration.calledFrom == "3d_dataset")
@@ -1229,7 +1234,7 @@ function clearConfigTabAnnotations(prNum){
 		  					+ "<tr><td></td><td>&nbsp;&nbsp;&nbsp;&nbsp;</td></tr>"
 		  					+ "</table>");
   
-  var inner = "<x3d id='x3dElement" + prNum + "' showStat='false' showLog='true' height='" + height + "px' width='" + width + "px' x='0px' y='0px' style=' position:absolute;top:" + ($(Configuration.tab).offset().top + window["x3dOffset" + prNum] - window["x3dOffset2" + prNum]) + "px;' >"; 
+  var inner = "<x3d id='x3dElement" + prNum + "' showStat='false' showLog='false' height='" + height + "px' width='" + width + "px' x='0px' y='0px' style=' position:absolute;top:" + ($(Configuration.tab).offset().top + window["x3dOffset" + prNum] - window["x3dOffset2" + prNum]) + "px;' >"; 
   window["oldx3dposition" + prNum] = $(Configuration.tab).offset().top;
   window["thisPreview" + prNum] = $(Configuration.tab); 
   //setInterval(function(){updatex3dPosition(prNum);},50);
