@@ -970,8 +970,12 @@ function clearConfigTabAnnotations(prNum){
       window["x3dOffset" + prNum] = 248;	
 	  x3dMeasureInstructions = "";
   }  
-  if(Configuration.calledFrom == "dataset")
-	  window["x3dOffset2" + prNum] = 100;
+  if(Configuration.calledFrom == "dataset"){
+	  if(navigator.userAgent.indexOf("hrome") == -1)
+		  window["x3dOffset2" + prNum] = 100;
+	  else
+		  window["x3dOffset2" + prNum] = 95;
+  }
   else if(Configuration.calledFrom == "file")
 	  window["x3dOffset2" + prNum] = 200;
   
