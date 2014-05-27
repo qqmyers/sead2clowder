@@ -24,6 +24,7 @@ import org.apache.http.client.methods.HttpGet
 import org.apache.http.util.EntityUtils
 import java.util.ArrayList
 import play.api.data.FormError
+import models.FBNotFoundException
 
 object Subscribers extends SecuredController {
   
@@ -65,7 +66,7 @@ object Subscribers extends SecuredController {
 				        	  Valid
 				        	else
 				        	  Invalid(ValidationError("Subscription with this identifier exists already."))	
-				          }catch{ case exFB: FacebookGraphException => {
+				          }catch{ case exFB: FBNotFoundException => {
 	     						Invalid(ValidationError("FB user not found."))
 	     					}     				
 				          }
@@ -126,12 +127,7 @@ object Subscribers extends SecuredController {
 		new InternetAddress(inputEmailPassword._1).validate()
 		subscriberExisting = Subscriber.findOneByEmail(inputEmailPassword._1)
     }catch{case ex: AddressException => {
-      try{
-    	  subscriberExisting = Subscriber.findOneByIdentifier(inputEmailPassword._1)
-      }catch{ case ex2: FacebookGraphException => {
-        		//If could not translate id/username (ie if subscriber has left Facebook), try finding without translating
-    	  		subscriberExisting = Subscriber.findOneByIdentifier(inputEmailPassword._1, false)
-      }}
+      subscriberExisting = Subscriber.findOneByIdentifier(inputEmailPassword._1, false)
     }}
     
     subscriberExisting match{
@@ -202,7 +198,7 @@ object Subscribers extends SecuredController {
 		            	  //Redirect to FB oauth page to get user token if subscribed using FB
 		            	  val fbAppId = play.Play.application().configuration().getString("fb.appId")
 		            	  val hostIp = play.Play.application().configuration().getString("hostIp")
-		            	  Redirect("https://www.facebook.com/dialog/oauth?client_id="+fbAppId+"&redirect_uri="+httpProtocol+hostIp+":"+appPort+routes.Subscribers.getAuthToken(subscriber.id.toString)+"&scope=publish_stream")		            	  
+		            	  Redirect("https://www.facebook.com/dialog/oauth?client_id="+fbAppId+"&redirect_uri="+httpProtocol+hostIp+":"+appPort+routes.Subscribers.getAuthToken(subscriber.id.toString)+"&scope=publish_actions")		            	  
 		            	}
 		        	}		        
 			      } 
@@ -276,12 +272,7 @@ object Subscribers extends SecuredController {
 		        	new InternetAddress(inputIdentifierPassword._1).validate()
 		        	subscriberExisting = Subscriber.findOneByEmail(inputIdentifierPassword._1)
 		        }catch{case ex: AddressException => {
-		        	try{
-		        		subscriberExisting = Subscriber.findOneByIdentifier(inputIdentifierPassword._1)
-		        	}catch{ case ex2: FacebookGraphException => {
-		        		//If could not translate id/username (ie if subscriber has left Facebook), try finding without translating
-		        		subscriberExisting = Subscriber.findOneByIdentifier(inputIdentifierPassword._1, false)
-		        	}}
+		        	subscriberExisting = Subscriber.findOneByIdentifier(inputIdentifierPassword._1, false)
 		        }} 
 		        
 		        subscriberExisting match{

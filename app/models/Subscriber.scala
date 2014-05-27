@@ -21,6 +21,7 @@ case class Subscriber (
   expirationTime: Option[Date] = None
 )
 
+case class FBNotFoundException(msg:String) extends Exception(msg)
 
 object Subscriber extends ModelCompanion[Subscriber, ObjectId] {
 
@@ -42,24 +43,21 @@ object Subscriber extends ModelCompanion[Subscriber, ObjectId] {
     dao.find(MongoDBObject("FBIdentifier" -> MongoDBObject("$ne" ->  None))).toList
   }
   
-  def findOneByIdentifier(identifier: String, translateIdUsername: Boolean = true): Option[Subscriber] = {
+  def findOneByIdentifier(identifier: String, findIfExistsInGraph: Boolean = true): Option[Subscriber] = {
+        
+    if(current.plugin[FacebookService].isDefined && findIfExistsInGraph){
+	    if(!current.plugin[FacebookService].get.getIfExistsInGraph(identifier))
+	      throw new FBNotFoundException("FB user not found.")
+    }
     
     var searchList = List(MongoDBObject("FBIdentifier" -> identifier))
         
-    if(!(identifier forall Character.isDigit)){
-      //Non-numeric, so input must be email or FB username. However, search by associated FB profile ID as well if plugin available to translate and translation is required.
+    //If non-numeric, input could be email.
+    if(!(identifier forall Character.isDigit)){      
       searchList = searchList :+ MongoDBObject("email" -> identifier)
-      if(current.plugin[FacebookService].isDefined && translateIdUsername){
-    	searchList = searchList :+ MongoDBObject("FBIdentifier" -> current.plugin[FacebookService].get.getIdByUsername(identifier))
-      }
     }
-    else{
-      //Numeric, so input must be FB profile ID. However, search by associated FB username as well if plugin available to translate and translation is required.
-      if(current.plugin[FacebookService].isDefined && translateIdUsername){
-    	searchList = searchList :+ MongoDBObject("FBIdentifier" -> current.plugin[FacebookService].get.getUsernameById(identifier))
-      } 
-    }
-    dao.findOne(MongoDBObject("$or" -> searchList))    
+
+    dao.findOne(MongoDBObject("$or" -> searchList))
   }
   
   def setAuthToken(id: String, token: String, expirationOffset: Int){
