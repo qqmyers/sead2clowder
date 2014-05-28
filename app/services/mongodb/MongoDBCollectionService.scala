@@ -69,8 +69,8 @@ class MongoDBCollectionService @Inject() (datasets: DatasetService)  extends Col
       order = MongoDBObject("created" -> 1)
       val sinceDate = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS").parse(date)
       Logger.info("Before " + sinceDate)
-      var collectionList = Collection.find("created" $gt sinceDate).sort(order).limit(limit + 1).toList.reverse
-      collectionList = collectionList.filter(_ != collectionList.last)
+      var collectionList = Collection.find("created" $gt sinceDate).sort(order).limit(limit).toList.reverse
+      //collectionList = collectionList.filter(_ != collectionList.last)
       collectionList
     }
   }

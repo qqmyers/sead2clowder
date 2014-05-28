@@ -102,14 +102,14 @@ class MongoDBFileService @Inject() (
       order = MongoDBObject("uploadDate" -> 1)
       val sinceDate = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS").parse(date)
       Logger.info("Before " + sinceDate)
-      var fileList = FileDAO.find($and("isIntermediate" $ne true, "uploadDate" $gt sinceDate)).sort(order).limit(limit + 1).toList.reverse
-      fileList = fileList.filter(_ != fileList.last)
+      var fileList = FileDAO.find($and("isIntermediate" $ne true, "uploadDate" $gt sinceDate)).sort(order).limit(limit).toList.reverse
+      //fileList = fileList.filter(_ != fileList.last)
       fileList
     }
   }
 
   def latest(): Option[File] = {
-    val results = FileDAO.find(MongoDBObject()).sort(MongoDBObject("created" -> -1)).limit(1).toList
+    val results = FileDAO.find(MongoDBObject()).sort(MongoDBObject("uploadDate" -> -1)).limit(1).toList
     if (results.size > 0)
       Some(results(0))
     else
@@ -121,7 +121,7 @@ class MongoDBFileService @Inject() (
   }
 
   def first(): Option[File] = {
-    val results = FileDAO.find(MongoDBObject()).sort(MongoDBObject("created" -> 1)).limit(1).toList
+    val results = FileDAO.find(MongoDBObject()).sort(MongoDBObject("uploadDate" -> 1)).limit(1).toList
     if (results.size > 0)
       Some(results(0))
     else
