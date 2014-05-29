@@ -494,7 +494,7 @@
     					for(var i = 0; i < respJSON.length; i++){
     						if($("#filePrevContainer_"+respJSON[i].id).length == 0){
     							var fileId = respJSON[i].id;
-    							$("#bottomDatasetTabbable").before("<div class='row' id='filePrevContainer_"+fileId+"' data-previewsCount='0' data-isAuthenticated='"+((@userIsAdmin) || ("@userOrAnon.identityId.userId") == respJSON[i].authorId)+"' data-filename='"+respJSON[i].filename+"'>"
+    							$("#bottomDatasetTabbable").before("<div class='row' style='position:relative;left:2%;' id='filePrevContainer_"+fileId+"' data-previewsCount='0' data-isAuthenticated='"+((@userIsAdmin) || ("@userOrAnon.identityId.userId") == respJSON[i].authorId)+"' data-filename='"+respJSON[i].filename+"'>"
     													+"<div class='span12'><div class='tabbable'><ul class='nav nav-pills' id='myTab_"+fileId+"'></ul>"
     													+"<div class='tab-content' id='previewsContent_"+fileId+"'></div></div></div></div>");
     							$('#myTab_'+fileId).attr('style', 'display:none;');
