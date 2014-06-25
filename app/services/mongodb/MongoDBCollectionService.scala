@@ -98,8 +98,8 @@ class MongoDBCollectionService @Inject() (datasets: DatasetService)  extends Col
       None
   }
 
-  def insert(collection: Collection) {
-    Collection.save(collection)
+  def insert(collection: Collection): Option[String] = {
+    Collection.insert(collection).map(_.toString)
   }
 
   /**
