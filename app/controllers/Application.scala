@@ -5,6 +5,8 @@ import models.AppAppearance
 import javax.inject.{Singleton, Inject}
 import services.FileService
 import services.AppAppearanceService
+import api.WithPermission
+import api.Permission
 
 /**
  * Main application controller.
@@ -17,7 +19,7 @@ class Application  @Inject() (files: FileService, appAppearance: AppAppearanceSe
   /**
    * Main page.
    */  
-  def index = SecuredAction() { request =>
+  def index = SecuredAction(authorization = WithPermission(Permission.PublicOpen)) { request =>
 	implicit val user = request.user
 	val latestFiles = files.latest(5)
 	val appAppearanceGet = appAppearance.getDefault.get

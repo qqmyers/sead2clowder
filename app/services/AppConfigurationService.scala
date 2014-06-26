@@ -24,4 +24,6 @@ trait AppConfigurationService {
   def removeAdmin(adminEmail: String)
   
   def adminExists(adminEmail: String): Boolean
+  
+  def setViewNoLoggedIn(viewNoLoggedIn: Boolean)
 }
