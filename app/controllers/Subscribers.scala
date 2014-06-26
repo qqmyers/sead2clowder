@@ -147,7 +147,7 @@ object Subscribers extends SecuredController {
     }    
   }
   
-   def subscribe() = SecuredAction(authorization=WithPermission(Permission.Public)) { implicit request =>
+   def subscribe() = SecuredAction(authorization=WithPermission(Permission.PublicOpen)) { implicit request =>
     //in case it is called from admin add subscription screen 
     implicit val user = request.user
     if(current.plugin[FacebookService].isDefined)
@@ -164,7 +164,7 @@ object Subscribers extends SecuredController {
     	Ok(views.html.newSubscriber(subscriptionForm, false)) 
   }
   
-  def unsubscribe()  = SecuredAction(authorization=WithPermission(Permission.Public)) { implicit request =>
+  def unsubscribe()  = SecuredAction(authorization=WithPermission(Permission.PublicOpen)) { implicit request =>
     if(current.plugin[FacebookService].isDefined)
     	Ok(views.html.removeSubscriber(unsubscriptionForm, true))
     else
@@ -174,7 +174,7 @@ object Subscribers extends SecuredController {
   /**
    * Create subscription.
    */
-  def submit() = SecuredAction(authorization=WithPermission(Permission.Public)) { implicit request =>
+  def submit() = SecuredAction(authorization=WithPermission(Permission.PublicOpen)) { implicit request =>
     implicit val user = request.user
         subscriptionForm.bindFromRequest.fold(
           errors => {
@@ -208,7 +208,7 @@ object Subscribers extends SecuredController {
 	)
   }
   
-  def getAuthToken(subscriberId: String, code: String) = SecuredAction(authorization=WithPermission(Permission.Public)) { implicit request =>
+  def getAuthToken(subscriberId: String, code: String) = SecuredAction(authorization=WithPermission(Permission.PublicOpen)) { implicit request =>
     
     subscriberService.get(subscriberId) match{
       case Some(subscriber) => {
@@ -253,7 +253,7 @@ object Subscribers extends SecuredController {
     }        
   } 
   
-  def removeSubscription() = SecuredAction(authorization=WithPermission(Permission.Public)) { implicit request =>
+  def removeSubscription() = SecuredAction(authorization=WithPermission(Permission.PublicOpen)) { implicit request =>
     implicit val user = request.user
     
         unsubscriptionForm.bindFromRequest.fold(
