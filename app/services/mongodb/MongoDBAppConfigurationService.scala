@@ -52,6 +52,10 @@ class MongoDBAppConfigurationService extends AppConfigurationService {
 		  !AppConfiguration.findOne(MongoDBObject("admins" -> adminEmail)).isEmpty
   }
   
+  def setViewNoLoggedIn(viewNoLoggedIn: Boolean) = {
+	  AppConfiguration.update(MongoDBObject("name" -> "default"), $set("viewNoLoggedIn" ->  viewNoLoggedIn), false, false, WriteConcern.Safe)
+  }
+  
 }
 
 object AppConfiguration extends ModelCompanion[AppConfiguration, ObjectId] {

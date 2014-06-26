@@ -1,4 +1,4 @@
-@(theme: Int, appAppearance: models.AppAppearance)(implicit user: Option[securesocial.core.Identity])
+@(theme: Int, appAppearance: models.AppAppearance, appConfiguration: AppConfiguration)(implicit user: Option[securesocial.core.Identity])
 @main("Administration") {
 	<div class="page-header">
 		<h1>Administration</h1>
@@ -28,6 +28,32 @@
 			</form>			
 		</div>
 	</div>
+	
+	<legend>Select whether viewing resources and other non-modifying functionality is available to users not logged in</legend>
+	<div class="row">
+		<div class="col-md-2">
+			<form role="form-horizontal">
+			  <div class="form-group">
+			  	<input id="viewOut_noView" name="viewOut" value="false"  
+			  		@if(!appConfiguration.viewNoLoggedIn){
+			  			checked=""
+			  		}
+			  	type="radio">
+			  	<label style="top: 0%; left: 0%; margin-right: 0%;" for="viewOut_noView">Not enabled</label>
+			  	<br />
+			  	<input id="viewOut_view" name="viewOut" value="true"  
+			  		@if(appConfiguration.viewNoLoggedIn){
+			  			checked=""
+			  		}
+			  	type="radio">
+			  	<label style="top: 0%; left: 0%; margin-right: 0%;" for="viewOut_view">Enabled</label>
+			  	<br />
+			  	<button class="btn btn-default" onclick="return submitViewOut();">Submit</button>
+			  </div>
+			</form>
+		</div>
+	</div>
+	
 	<script language="javascript">
 		function submitAppearance(){
 			var displayName = $("#displayNameField").val().trim();
@@ -59,6 +85,25 @@
 			});						
 			return false;			
 		}
+		
+		function submitViewOut(){
+			var request = $.ajax({
+				url:  "@api.routes.Admin.setViewNoLoggedIn",
+				data: JSON.stringify({ viewNoLoggedIn: document.getElementById('viewOut_view').checked}),
+				type: "POST",
+				contentType: "application/json",
+	     	});
+			request.done(function (response, textStatus, jqXHR){ 
+				console.log("Response: " + response);
+				alert("Done");
+			});
+			request.fail(function (jqXHR, textStatus, errorThrown){
+				console.error("The following error occured: " + textStatus, errorThrown);
+				alert("The viewing permissions settings were not updated due to : " + errorThrown);
+			});						
+			return false;
+		}
+		
 	</script>
 	
 	<legend>Create an Index</legend>

@@ -24,7 +24,8 @@ case class RequestWithUser[A](user: Option[Identity], request: Request[A]) exten
  */
 object Permission extends Enumeration {
 	type Permission = Value
-	val Public,					// Page is public accessible, i.e. no login needed 
+	val Public,					// Page is public accessible if set so by the admin, i.e. no login needed
+		PublicOpen,				//Page always accessible
 		Admin,
 		Subscribe,
 		Unsubscribe,
@@ -89,30 +90,32 @@ case class WithPermission(permission: Permission, resourceId: Option[UUID] = Non
   
 
 	def isAuthorized(user: Identity): Boolean = {
+    
+	  	val externalViewingEnabled = appConfiguration.getDefault.get.viewNoLoggedIn
 	  
 		// order is important
 		(user, permission) match {
 		  		  
-		  // anybody can list/show
-		  case (_, Public)               => true
-		  case (_, ListCollections)      => true
-		  case (_, ShowCollection)       => true
-		  case (_, ListDatasets)         => true
-		  case (_, ShowDataset)          => true
-		  case (_, SearchDatasets)       => true
-		  case (_, SearchFiles)	         => true
-		  case (_, GetSections)          => true
-		  case (_, ListFiles)            => true
-		  case (_, ShowFile)             => true
-		  case (_, ShowFilesMetadata)    => true
-		  case (_, ShowDatasetsMetadata) => true
-		  case (_, SearchStreams)        => true
-		  case (_, ListSensors)          => true
-		  case (_, GetSensors)           => true
-		  case (_, SearchSensors)        => true
-		  case (_, ShowTags)        	 => true
-		  
-		  case (_, DownloadFiles)        => true
+		  // anybody can list/show if admin decides so (or else must be logged in), 'open public' pages always
+	  	  case (theUser, PublicOpen)           => true
+		  case (theUser, Public)         	   => (externalViewingEnabled || theUser != null)		  
+		  case (theUser, ListCollections)      => (externalViewingEnabled || theUser != null)
+		  case (theUser, ShowCollection)       => (externalViewingEnabled || theUser != null)
+		  case (theUser, ListDatasets)         => (externalViewingEnabled || theUser != null)
+		  case (theUser, ShowDataset)          => (externalViewingEnabled || theUser != null)
+		  case (theUser, SearchDatasets)       => (externalViewingEnabled || theUser != null)
+		  case (theUser, SearchFiles)	       => (externalViewingEnabled || theUser != null)
+		  case (theUser, GetSections)          => (externalViewingEnabled || theUser != null)
+		  case (theUser, ListFiles)            => (externalViewingEnabled || theUser != null)
+		  case (theUser, ShowFile)             => (externalViewingEnabled || theUser != null)
+		  case (theUser, ShowFilesMetadata)    => (externalViewingEnabled || theUser != null)
+		  case (theUser, ShowDatasetsMetadata) => (externalViewingEnabled || theUser != null)
+		  case (theUser, SearchStreams)        => (externalViewingEnabled || theUser != null)
+		  case (theUser, ListSensors)          => (externalViewingEnabled || theUser != null)
+		  case (theUser, GetSensors)           => (externalViewingEnabled || theUser != null)
+		  case (theUser, SearchSensors)        => (externalViewingEnabled || theUser != null)
+		  case (theUser, ShowTags)        	   => (externalViewingEnabled || theUser != null)
+		  case (theUser, DownloadFiles)        => (externalViewingEnabled || theUser != null)
 		  
 		  // all other permissions require authenticated user
 		  case (null, _)                 => false

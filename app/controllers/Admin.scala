@@ -46,8 +46,9 @@ class Admin @Inject() (appConfiguration: AppConfigurationService, appAppearance:
     val themeId = themes.indexOf(getTheme)
     Logger.debug("Theme id " + themeId)
     val appAppearanceGet = appAppearance.getDefault.get
+    val appConfigGet = appConfiguration.getDefault.get
     implicit val user = request.user
-    Ok(views.html.admin(themeId, appAppearanceGet))
+    Ok(views.html.admin(themeId, appAppearanceGet, appConfigGet))
   }
 
   def reindexFiles = SecuredAction(parse.json, authorization = WithPermission(Permission.AddIndex)) { request =>

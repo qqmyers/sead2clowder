@@ -3,6 +3,8 @@ package api
 import play.api.Logger
 import play.api.Play.current
 import models.{UUID, Collection}
+import play.api.Logger
+import play.api.libs.json.JsValue
 import play.api.libs.json.Json.toJson
 import play.api.libs.json.JsValue
 import javax.inject.{ Singleton, Inject }
@@ -14,7 +16,7 @@ import services.AdminsNotifierPlugin
 import scala.util.{Try, Success, Failure}
 import com.wordnik.swagger.annotations.Api
 import com.wordnik.swagger.annotations.ApiOperation
-
+import java.util.Date
 
 /**
  * Manipulate collections.
@@ -25,6 +27,27 @@ import com.wordnik.swagger.annotations.ApiOperation
 @Singleton
 class Collections @Inject() (datasets: DatasetService, collections: CollectionService) extends ApiController {
   
+
+  @ApiOperation(value = "Create a collection",
+      notes = "",
+      responseClass = "None", httpMethod = "POST")
+  def createCollection() = SecuredAction(authorization=WithPermission(Permission.CreateCollections)) {
+    request =>
+      Logger.debug("Creating new collection")
+      (request.body \ "name").asOpt[String].map {
+        name =>
+          (request.body \ "description").asOpt[String].map {
+            description =>
+              val c = Collection(name = name, description = description, created = new Date())
+              collections.insert(c) match {
+                case Some(id) => {
+                 Ok(toJson(Map("id" -> id)))
+                }
+                case None => Ok(toJson(Map("status" -> "error")))
+              }
+          }.getOrElse(BadRequest(toJson("Missing parameter [description]")))
+      }.getOrElse(BadRequest(toJson("Missing parameter [name]")))
+  }
 
   @ApiOperation(value = "Add dataset to collection",
       notes = "",

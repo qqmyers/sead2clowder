@@ -1,6 +1,6 @@
 (function ($, Configuration) {
   console.log("video previewer for " + Configuration.id);
-    
+
   var height = 400;  
   var width = 750;
   

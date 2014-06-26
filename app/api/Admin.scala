@@ -68,6 +68,20 @@ object Admin extends Controller with ApiController {
     }  
   }
   
+
+  def setViewNoLoggedIn = SecuredAction(parse.json, authorization=WithPermission(Permission.Admin)) { request =>
+    (request.body \ "viewNoLoggedIn").asOpt[Boolean] match {
+      case Some(viewNoLoggedIn) =>{
+        appConfiguration.setViewNoLoggedIn(viewNoLoggedIn)
+        Ok(toJson(Map("status" -> "success")))        
+      }
+      case None =>{
+        Logger.error("Missing parameter [viewNoLoggedIn].")
+    	BadRequest(toJson("Missing parameter [viewNoLoggedIn]"))
+      }
+    }
+    
+  }
   
 
 }
