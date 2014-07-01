@@ -43,6 +43,7 @@ class ProdModule extends AbstractModule {
     bind(classOf[RdfSPARQLService]).to(classOf[FourStoreRdfSPARQLService])
     bind(classOf[ThumbnailService]).to(classOf[MongoDBThumbnailService])
     bind(classOf[TileService]).to(classOf[MongoDBTileService])
+    bind(classOf[UserAccessRightsService]).to(classOf[MongoDBUserAccessRightsService])
   }
 }
 
@@ -67,5 +68,6 @@ class DevModule extends AbstractModule {
     bind(classOf[RdfSPARQLService]).to(classOf[FourStoreRdfSPARQLService])
     bind(classOf[ThumbnailService]).to(classOf[MongoDBThumbnailService])
     bind(classOf[TileService]).to(classOf[MongoDBTileService])
+    bind(classOf[UserAccessRightsService]).to(classOf[MongoDBUserAccessRightsService])
   }
 }
