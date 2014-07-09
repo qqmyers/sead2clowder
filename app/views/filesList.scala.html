@@ -36,7 +36,7 @@
 							<td class="requiresLogin">
 								@if(user.isDefined) {
 										@if(user.get.identityId.userId.equals(file.author.identityId.userId)){
-											<a href="#" onclick="removeFile('@(file.id)',event)">Remove</a>
+											<a href="#!" onclick="removeFile('@(file.id)',event)">Remove</a>
 										}													
 								}
 							</td>						

@@ -1,0 +1,152 @@
+@(resourceType: String, resourceId: String)(implicit user: Option[securesocial.core.Identity])
+
+@import services.{DI, UserAccessRightsService} 
+
+@defining(DI.injector.getInstance(classOf[UserAccessRightsService])){accessRightsServiceInner=>
+<form class="form-inline">
+	<table class="table" id="usersTable">
+	     <tbody>
+	     	<tr>
+	     		<th style="width: 37%">
+	     			Full name
+	     		</th>
+	     		<th style="width: 37%">
+	     			Email
+	     		</th>
+	     		<th style="width: 16%">
+	     			Access level
+	     		</th>
+	     		<th style="width: 10%">
+	     		</th>
+	     	</tr>
+		    @for(userPermission <- accessRightsServiceInner.getAllRightsForResource(resourceId, resourceType)) {
+		     @if(!(userPermission._1.equals(user.get.fullName) && userPermission._2.equals(user.get.email.getOrElse("")))){
+		      <tr>
+				<td>@userPermission._1</td>
+				<td>@userPermission._2</td>
+				<td>
+					<select onChange="setPermission('@userPermission._1','@userPermission._2','@resourceType','@resourceId', this.value, 'resetValue', resetValue, this)" onfocus="this.oldvalue = this.value;">
+						<option value="view" @if(userPermission._3.equals("view")){selected="true"}>View</option>
+						<option value="modify" @if(userPermission._3.equals("modify")){selected="true"}>Modify</option>
+						<option value="administrate" @if(userPermission._3.equals("administrate")){selected="true"}>Administrate</option>
+					</select>
+				</td>
+				<td><a href="#!" onclick="handleRemoval('@userPermission._1','@userPermission._2',this);">Remove</a></td>			
+			  </tr>
+			 }
+			}
+			<tr>
+				<td>
+					<input type="text" style="width: 95%" id="adminInputName">					
+				</td>
+				<td>
+					<input type="text" style="width: 95%" id="adminInputEmail">					
+				</td>
+				<td>
+					<select id="adminInputRights">
+						<option value="view" selected="true">View</option>
+						<option value="modify">Modify</option>
+						<option value="administrate">Administrate</option>
+					</select>					
+				</td>
+				<td><a href="#!" onclick="handleAddition($('#adminInputName').val().trim(), $('#adminInputEmail').val().trim(), $('#adminInputRights').val());">Add</a></td>
+			</tr>
+		</tbody>
+	</table>
+	
+
+</form>
+<script src="@routes.Assets.at("javascripts/manageAccessRights.js")" type="text/javascript"></script>
+<script>
+	var allRowsUsers = $("#usersTable > tbody > tr");
+	allRowsUsers.each(function() {
+		var dataCells = $(this).find("td");
+		if(dataCells.length > 0){
+			if($(this).find("#adminInputName").length == 0){
+				$(this).find("select").val($(this).find("option[selected='true']").val());
+			}
+			else{
+				$(this).find("select").val("view");
+				$(this).find("#adminInputName").val("");
+				$(this).find("#adminInputEmail").val("");
+			}
+		}
+	});
+</script>
+	<script>
+
+	
+	
+		function handleRemoval(fullName, email, theElement){
+			setPermission(fullName, email, "@resourceType", "@resourceId", "noaccess", "removeElem", removeElem, theElement); 			
+		}
+		
+		function removeElem(theElement){
+			$(theElement).parent().parent().remove();
+		}
+		
+		function resetValue(theElement){
+			theElement.value = theElement.oldvalue;
+		}
+		
+		function handleAddition(fullName, email, accessRights){
+			if(fullName == "@(user.get.fullName)" && email == "@(user.get.email.getOrElse(""))"){
+				alert("Cannot add self");
+				return;
+			}
+			
+			var wasAlready = false;
+			var allRows = $("#usersTable > tbody > tr");
+			var entryPos = allRows.length-1;
+			var posFound = false;
+			allRows.each(function() {
+				var dataCells = $(this).find("td");
+				if(dataCells.length > 0 && $(this).find("#adminInputName").length == 0){
+					if(dataCells.get(0).innerHTML == fullName && dataCells.get(1).innerHTML == email){
+						alert("User already exists in the rights list.");
+						wasAlready = true;
+						return false;
+					}
+					
+					if(!posFound){
+						if(dataCells.get(0).innerHTML > fullName || (dataCells.get(0).innerHTML == fullName && dataCells.get(1).innerHTML > email)){
+							posFound = true;
+							entryPos = allRows.index($(this));
+						}
+					}					
+				}
+			});			
+			if(wasAlready)
+				return;
+			
+			setPermission(fullName,email,'@resourceType','@resourceId', accessRights, "addNewRow", addNewRow, entryPos);
+	
+		}
+		
+		function addNewRow(fullName, email, accessRights, entryPos){
+			var newRow = document.createElement('tr');
+			newRow.innerHTML = "<td>"+fullName+"</td><td>"+email+"</td>";
+			
+			var newSelect = document.createElement('select');
+			newSelect.innerHTML = "<option value='view'>View</option><option value='modify'>Modify</option><option value='administrate'>Administrate</option>";
+			newSelect.setAttribute("onfocus", "this.oldvalue = this.value;");
+			newSelect.setAttribute("onchange", "setPermission('"+fullName+"','"+email+"','@resourceType','@resourceId', this.value, 'resetValue', resetValue, this)");
+			var newTd = document.createElement('td');
+			newTd.appendChild(newSelect);
+			newRow.appendChild(newTd);
+			
+			newRow.innerHTML = newRow.innerHTML + "<td><a href='#!' onclick='handleRemoval(&quot;"+fullName+"&quot;,&quot;"+email+"&quot;,this);'>Remove</a></td>";
+			
+			$("#usersTable > tbody > tr:nth-child(" + (entryPos) + ")").after(newRow);
+			$("#usersTable > tbody > tr:nth-child(" + (entryPos+1) + ") > td:nth-child(3) > select > option[value='"+accessRights+"']").attr('selected','selected');
+
+			$("#adminInputName").val("");
+			$("#adminInputEmail").val("");
+			$("#adminInputRights").val("view");
+		}
+		
+		
+		
+		
+	</script>
+}

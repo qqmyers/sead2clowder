@@ -37,7 +37,7 @@ $(document).ready(function () {
 		  <div class="post-box col-lg-3 col-md-3 col-sm-3">
 		  <div class="panel panel-default">
 
-              <div class="pull-right"><a href="#" title="Bookmark" class="pull-right bookmark-link">
+              <div class="pull-right"><a href="#!" title="Bookmark" class="pull-right bookmark-link">
                   <span class="glyphicon glyphicon-bookmark bookmark"></span>
               </a></div>
 
@@ -106,11 +106,11 @@ $(document).ready(function () {
 							</td>
 							<td class="requiresLogin">
 								@if(userIsAdmin){
-									<a href="#" onclick="removeDataset('@(dataset.id.toString)',event)">Remove</a>
+									<a href="#!" onclick="removeDataset('@(dataset.id.toString)',event)">Remove</a>
 								}
 								@if(user.isDefined && !userIsAdmin) {
 										@if(user.get.identityId.userId.equals(dataset.author.identityId.userId)){
-											<a href="#" onclick="removeDataset('@(dataset.id.toString)',event)">Remove</a>
+											<a href="#!" onclick="removeDataset('@(dataset.id.toString)',event)">Remove</a>
 										}													
 								}
 							</td>						
