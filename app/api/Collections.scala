@@ -10,6 +10,7 @@ import javax.inject.{ Singleton, Inject }
 import services.DatasetService
 import services.CollectionService
 import services.AdminsNotifierPlugin
+import services.UserAccessRightsService
 import scala.util.{Try, Success, Failure}
 import com.wordnik.swagger.annotations.Api
 import com.wordnik.swagger.annotations.ApiOperation
@@ -22,7 +23,7 @@ import java.util.Date
  */
 @Api(value = "/collections", listingPath = "/api-docs.json/collections", description = "Collections are groupings of datasets")
 @Singleton
-class Collections @Inject() (datasets: DatasetService, collections: CollectionService) extends ApiController {
+class Collections @Inject() (datasets: DatasetService, collections: CollectionService, accessRights: UserAccessRightsService) extends ApiController {
 
 
   @ApiOperation(value = "Create a collection",
@@ -35,7 +36,8 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
         name =>
           (request.body \ "description").asOpt[String].map {
             description =>
-              val c = Collection(name = name, description = description, created = new Date())
+              val c = Collection(name = name, description = description, created = new Date(), author = request.user, isPublic = Some(request.user.get.fullName.equals("Anonymous User")))
+              accessRights.addPermissionLevel(request.user.get, c.id.stringify, "collection", "administrate")
               collections.insert(c) match {
                 case Some(id) => {
                  Ok(toJson(Map("id" -> id)))
@@ -76,6 +78,7 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
   def removeCollection(collectionId: UUID) = SecuredAction(parse.anyContent,
                        authorization=WithPermission(Permission.DeleteCollections), resourceId = Some(collectionId)) { request =>
     collections.delete(collectionId)
+    accessRights.removeResourceRightsForAll(collectionId.stringify, "collection")
     Ok(toJson(Map("status" -> "success")))
   }
 

@@ -46,6 +46,7 @@ class Datasets @Inject()(
   comments: CommentService,
   previews: PreviewService,
   extractions: ExtractionService,
+  accessRights: UserAccessRightsService,
   rdfsparql: RdfSPARQLService) extends ApiController {
 
   /**
@@ -64,7 +65,7 @@ class Datasets @Inject()(
    * List all datasets outside a collection.
    */
   def listOutsideCollection(collectionId: UUID) = SecuredAction(parse.anyContent,
-    authorization = WithPermission(Permission.ListDatasets)) {
+    authorization = WithPermission(Permission.ShowCollection), resourceId = Some(collectionId)) {
     request =>
 
       collections.get(collectionId) match {
@@ -94,7 +95,8 @@ class Datasets @Inject()(
       	    (request.body \ "file_id").asOpt[String].map { file_id =>
       	      files.get(UUID(file_id)) match {
       	        case Some(file) =>
-      	           val d = Dataset(name=name,description=description, created=new Date(), files=List(file), author=request.user.get)
+      	           val d = Dataset(name=name,description=description, created=new Date(), files=List(file), author=request.user.get, isPublic = Some(request.user.get.fullName.equals("Anonymous User")))
+      	           accessRights.addPermissionLevel(request.user.get, d.id.stringify, "dataset", "administrate")
 		      	   datasets.insert(d) match {
 		      	     case Some(id) => {
                        files.index(UUID(file_id))
@@ -244,7 +246,7 @@ class Datasets @Inject()(
   //////////////////
 
   @ApiOperation(value = "List all datasets in a collection", notes = "Returns list of datasets and descriptions.", responseClass = "None", httpMethod = "GET")
-  def listInCollection(collectionId: UUID) = SecuredAction(parse.anyContent, authorization = WithPermission(Permission.ShowCollection)) {
+  def listInCollection(collectionId: UUID) = SecuredAction(parse.anyContent, authorization = WithPermission(Permission.ShowCollection), resourceId = Some(collectionId)) {
     request =>
       collections.get(collectionId) match {
         case Some(collection) => {
@@ -298,7 +300,7 @@ class Datasets @Inject()(
   @ApiOperation(value = "List files in dataset",
       notes = "Datasets and descriptions.",
       responseClass = "None", httpMethod = "GET")
-  def datasetFilesList(id: UUID) = SecuredAction(parse.anyContent, authorization = WithPermission(Permission.ShowDataset)) {
+  def datasetFilesList(id: UUID) = SecuredAction(parse.anyContent, authorization = WithPermission(Permission.ShowDataset), resourceId = Some(id)) {
     request =>
       datasets.get(id) match {
         case Some(dataset) => {
@@ -321,7 +323,7 @@ class Datasets @Inject()(
    * One returned field is "tags", containing a list of string values.
    */
   @ApiOperation(value = "Get the tags associated with this dataset", notes = "Returns a JSON object of multiple fields", responseClass = "None", httpMethod = "GET")
-  def getTags(id: UUID) = SecuredAction(parse.anyContent, authorization = WithPermission(Permission.ShowFile)) {
+  def getTags(id: UUID) = SecuredAction(parse.anyContent, authorization = WithPermission(Permission.ShowDataset)) {
     implicit request =>
       Logger.info(s"Getting tags for dataset with id  $id.")
       /* Found in testing: given an invalid ObjectId, a runtime exception
@@ -699,7 +701,7 @@ class Datasets @Inject()(
   @ApiOperation(value = "Get dataset previews",
       notes = "Return the currently existing previews of the selected dataset (full description, including paths to preview files, previewer names etc).",
       responseClass = "None", httpMethod = "GET")
-  def getPreviews(id: UUID) = SecuredAction(parse.anyContent, authorization = WithPermission(Permission.ShowDataset)) {
+  def getPreviews(id: UUID) = SecuredAction(parse.anyContent, authorization = WithPermission(Permission.ShowDataset), resourceId = Some(id)) {
     request =>
       datasets.get(id) match {
         case Some(dataset) => {
@@ -740,6 +742,7 @@ class Datasets @Inject()(
             case _ => Logger.debug("userdfSPARQLStore not enabled")
           }
           datasets.removeDataset(id)
+          accessRights.removeResourceRightsForAll(id.stringify, "dataset")
           Ok(toJson(Map("status" -> "success")))
           current.plugin[AdminsNotifierPlugin].foreach{_.sendAdminsNotification("Dataset","removed",dataset.id.stringify, dataset.name)}
           Ok(toJson(Map("status"->"success")))
@@ -751,7 +754,7 @@ class Datasets @Inject()(
   @ApiOperation(value = "Get the user-generated metadata of the selected dataset in an RDF file",
       notes = "",
       responseClass = "None", httpMethod = "GET")
-  def getRDFUserMetadata(id: UUID, mappingNumber: String="1") = SecuredAction(parse.anyContent, authorization=WithPermission(Permission.ShowDatasetsMetadata)) {implicit request =>
+  def getRDFUserMetadata(id: UUID, mappingNumber: String="1") = SecuredAction(parse.anyContent, authorization=WithPermission(Permission.ShowDatasetsMetadata), resourceId = Some(id)) {implicit request =>
     
     current.plugin[RDFExportService].isDefined match{
       case true => {
@@ -798,7 +801,7 @@ class Datasets @Inject()(
   @ApiOperation(value = "Get URLs of dataset's RDF metadata exports",
       notes = "URLs of metadata exported as RDF from XML files contained in the dataset, as well as the URL used to export the dataset's user-generated metadata as RDF.",
       responseClass = "None", httpMethod = "GET")
-  def getRDFURLsForDataset(id: UUID) = SecuredAction(parse.anyContent, authorization=WithPermission(Permission.ShowDatasetsMetadata)) { request =>
+  def getRDFURLsForDataset(id: UUID) = SecuredAction(parse.anyContent, authorization=WithPermission(Permission.ShowDatasetsMetadata), resourceId = Some(id)) { request =>
 
     current.plugin[RDFExportService].isDefined match{
       case true =>{
@@ -818,7 +821,7 @@ class Datasets @Inject()(
   @ApiOperation(value = "Get technical metadata of the dataset",
       notes = "",
       responseClass = "None", httpMethod = "GET")
-  def getTechnicalMetadataJSON(id: UUID) = SecuredAction(parse.anyContent, authorization = WithPermission(Permission.ShowDatasetsMetadata)) {
+  def getTechnicalMetadataJSON(id: UUID) = SecuredAction(parse.anyContent, authorization = WithPermission(Permission.ShowDatasetsMetadata), resourceId = Some(id)) {
     request =>
       datasets.get(id) match {
         case Some(dataset) => Ok(datasets.getTechnicalMetadataJSON(id))
@@ -826,7 +829,7 @@ class Datasets @Inject()(
       }
   }
 
-  def getXMLMetadataJSON(id: UUID) = SecuredAction(parse.anyContent, authorization=WithPermission(Permission.ShowDatasetsMetadata)) { request =>
+  def getXMLMetadataJSON(id: UUID) = SecuredAction(parse.anyContent, authorization=WithPermission(Permission.ShowDatasetsMetadata), resourceId = Some(id)) { request =>
     datasets.get(id)  match {
       case Some(dataset) => {
         Ok(datasets.getXMLMetadataJSON(id))
@@ -834,7 +837,7 @@ class Datasets @Inject()(
       case None => {Logger.error("Error finding dataset" + id); InternalServerError}      
     }
   }
-  def getUserMetadataJSON(id: UUID) = SecuredAction(parse.anyContent, authorization=WithPermission(Permission.ShowDatasetsMetadata)) { request =>
+  def getUserMetadataJSON(id: UUID) = SecuredAction(parse.anyContent, authorization=WithPermission(Permission.ShowDatasetsMetadata), resourceId = Some(id)) { request =>
     datasets.get(id)  match {
       case Some(dataset) => {
         Ok(datasets.getUserMetadataJSON(id))

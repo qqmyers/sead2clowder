@@ -141,7 +141,7 @@ class MongoDBFileService @Inject() (
   /**
    * Save blob.
    */
-  def save(inputStream: InputStream, filename: String, contentType: Option[String], author: Identity, showPreviews: String = "DatasetLevel"): Option[File] = {
+  def save(inputStream: InputStream, filename: String, contentType: Option[String], author: Identity, showPreviews: String = "DatasetLevel", isPublic: Boolean = false): Option[File] = {
     val files = current.plugin[MongoSalatPlugin] match {
       case None    => throw new RuntimeException("No MongoSalatPlugin");
       case Some(x) =>  x.gridFS("uploads")

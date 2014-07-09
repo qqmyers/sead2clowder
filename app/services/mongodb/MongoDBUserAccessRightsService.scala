@@ -132,6 +132,127 @@ class MongoDBUserAccessRightsService extends UserAccessRightsService {
     
   }
   
+  def setPermissionLevel(user: Identity, resourceId: String, resourceType: String, permissionType: String)  {
+    if(permissionType.equals("view")){
+      removePermissionLevel(user, resourceId, resourceType, "modify")
+      addPermissionLevel(user, resourceId, resourceType, "view")
+    }else if(permissionType.equals("modify")){
+      removePermissionLevel(user, resourceId, resourceType, "administrate")
+      addPermissionLevel(user, resourceId, resourceType, "modify")
+    }else if(permissionType.equals("administrate")){
+      addPermissionLevel(user, resourceId, resourceType, "administrate")
+    }else if(permissionType.equals("noaccess")){
+      removePermissionLevel(user, resourceId, resourceType, "view")
+    }
+    else
+    	  Logger.error("Unknown permission level")  
+  }
+  
+  def removeResourceRightsForAll(resourceId: String, resourceType: String) {
+        
+    if(resourceType.equals("file")){
+	     UserPermissions.update(MongoDBObject(), $pull("filesViewOnly" -> resourceId), false, false, WriteConcern.Safe)
+	     UserPermissions.update(MongoDBObject(), $pull("filesViewModify" -> resourceId), false, false, WriteConcern.Safe)
+	     UserPermissions.update(MongoDBObject(), $pull("filesAdministrate" -> resourceId), false, false, WriteConcern.Safe)
+    }else if(resourceType.equals("dataset")){
+    	UserPermissions.update(MongoDBObject(), $pull("datasetsViewOnly" -> resourceId), false, false, WriteConcern.Safe)
+    	UserPermissions.update(MongoDBObject(), $pull("datasetsViewModify" -> resourceId), false, false, WriteConcern.Safe)
+    	UserPermissions.update(MongoDBObject(), $pull("datasetsAdministrate" -> resourceId), false, false, WriteConcern.Safe)
+    }else if(resourceType.equals("collection")){
+    	UserPermissions.update(MongoDBObject(), $pull("collectionsViewOnly" -> resourceId), false, false, WriteConcern.Safe)
+    	UserPermissions.update(MongoDBObject(), $pull("collectionsViewModify" -> resourceId), false, false, WriteConcern.Safe)
+    	UserPermissions.update(MongoDBObject(), $pull("collectionsAdministrate" -> resourceId), false, false, WriteConcern.Safe)
+    }
+    else{
+      Logger.error("Unknown resource type")
+      return
+    }
+    
+  }
+  
+  def getAllRightsForResource(resourceId: String, resourceType: String): List[(String,String,String)] = {
+    
+    var allUsers: List[(String,String,String)] = List.empty 
+    
+    val usersWithAdminRights = UserPermissions.find(MongoDBObject((resourceType+"sAdministrate") -> resourceId)).toList
+    for(singleUser <- usersWithAdminRights){
+      allUsers = allUsers :+ (singleUser.name, singleUser.email, "administrate")
+    }
+    val usersWithModifyRights = UserPermissions.find(MongoDBObject((resourceType+"sViewModify") -> resourceId)).toList
+    for(singleUser <- usersWithModifyRights){
+      allUsers = allUsers :+ (singleUser.name, singleUser.email, "modify")
+    }
+    val usersWithViewRights = UserPermissions.find(MongoDBObject((resourceType+"sViewOnly") -> resourceId)).toList
+    for(singleUser <- usersWithViewRights){
+      allUsers = allUsers :+ (singleUser.name, singleUser.email, "view")
+    }
+    
+    var allUsersNoDuplicates: List[(String,String,String)] = List.empty
+    var previousUser = ("","","")
+    for(singleUser <- allUsers.sorted){
+      if(!(singleUser._1.equals(previousUser._1) && singleUser._2.equals(previousUser._2))){
+        allUsersNoDuplicates = allUsersNoDuplicates :+ singleUser
+        previousUser = singleUser
+      }
+    }
+    
+    allUsersNoDuplicates
+    
+  }
+  
+  
+  def checkForPermission(user: Identity, resourceId: String, resourceType: String, permissionType: String): Boolean = {
+    var searchList = List(MongoDBObject("email" -> user.email.getOrElse("")))
+    searchList = searchList :+ MongoDBObject("name" -> user.fullName)
+    if(resourceType.equals("file")){
+      if(permissionType.equals("view")){
+        searchList = searchList :+ MongoDBObject("filesViewOnly" -> resourceId)
+      }else if(permissionType.equals("modify")){
+        searchList = searchList :+ MongoDBObject("filesViewModify" -> resourceId)
+      }else if(permissionType.equals("administrate")){
+        searchList = searchList :+ MongoDBObject("filesAdministrate" -> resourceId)
+      }else{
+    	  Logger.error("Unknown permission type")
+    	  throw new Exception("Unknown permission type")
+      }     
+    }else if(resourceType.equals("dataset")){
+      if(permissionType.equals("view")){
+        searchList = searchList :+ MongoDBObject("datasetsViewOnly" -> resourceId)
+      }else if(permissionType.equals("modify")){
+        searchList = searchList :+ MongoDBObject("datasetsViewModify" -> resourceId)
+      }else if(permissionType.equals("administrate")){
+        searchList = searchList :+ MongoDBObject("datasetsAdministrate" -> resourceId)
+      }else{
+    	  Logger.error("Unknown permission type")
+    	  throw new Exception("Unknown permission type")
+      } 
+    }else if(resourceType.equals("collection")){
+      if(permissionType.equals("view")){
+        searchList = searchList :+ MongoDBObject("collectionsViewOnly" -> resourceId)
+      }else if(permissionType.equals("modify")){
+        searchList = searchList :+ MongoDBObject("collectionsViewModify" -> resourceId)
+      }else if(permissionType.equals("administrate")){
+        searchList = searchList :+ MongoDBObject("collectionsAdministrate" -> resourceId)
+      }else{
+    	  Logger.error("Unknown permission type")
+    	  throw new Exception("Unknown permission type")
+      } 
+    }
+    else{
+      Logger.error("Unknown resource type")
+      throw new Exception("Unknown resource type")
+    }
+    
+    UserPermissions.findOne(MongoDBObject("$and" -> searchList)).isDefined
+  }
+  
+   
+  def findByEmailAndFullName(email: String, fullName: String): Option[Identity] = {
+    Logger.trace("Searching for user " + email + " " + fullName)
+    SocialUserDAO.findOne(MongoDBObject("email"->email, "fullName"->fullName))
+  }
+  
+  
 }
 
 object UserPermissions extends ModelCompanion[UserPermissions, ObjectId] {

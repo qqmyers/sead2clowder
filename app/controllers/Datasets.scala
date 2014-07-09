@@ -31,6 +31,7 @@ class Datasets @Inject()(
   comments: CommentService,
   sections: SectionService,
   extractions: ExtractionService,
+  accessRights: UserAccessRightsService,
   sparql: RdfSPARQLService) extends SecuredController {
 
   object ActivityFound extends Exception {}
@@ -99,9 +100,9 @@ class Datasets @Inject()(
 
 
   /**
-   * Dataset.
+   * Dataset.	
    */
-  def dataset(id: UUID) = SecuredAction(authorization = WithPermission(Permission.ShowDataset)) {
+  def dataset(id: UUID) = SecuredAction(authorization = WithPermission(Permission.ShowDataset), resourceId = Some(id)) {
 	    implicit request =>
 	      implicit val user = request.user
 	      Previewers.findPreviewers.foreach(p => Logger.info("Previewer found " + p.id))
@@ -237,7 +238,8 @@ class Datasets @Inject()(
 					    file match {
 					      case Some(f) => {
 					        					        
-					        val id = f.id	                	                
+					        val id = f.id
+					        accessRights.addPermissionLevel(request.user.get, id.stringify, "file", "administrate")
 			                if(showPreviews.equals("FileLevel"))
 			                	flags = flags + "+filelevelshowpreviews"
 			                else if(showPreviews.equals("None"))
@@ -282,7 +284,8 @@ class Datasets @Inject()(
 					        }
 					        
 					        // add file to dataset 
-					        val dt = dataset.copy(files = List(f), author=identity)					        
+					        val dt = dataset.copy(files = List(f), author=identity)
+					        accessRights.addPermissionLevel(request.user.get, dt.id.stringify, "dataset", "administrate")
 					        // TODO create a service instead of calling salat directly
 				            datasets.update(dt)				            
 				            
@@ -374,7 +377,7 @@ class Datasets @Inject()(
 		          
 				  val dt = dataset.copy(files = List(theFileGet), author=identity, thumbnail_id=thisFileThumbnailString)
 				  datasets.update(dt)
-			      
+			      accessRights.addPermissionLevel(request.user.get, dt.id.stringify, "dataset", "administrate")
 		          if(!theFileGet.xmlMetadata.isEmpty){
 		            val xmlToJSON = files.getXMLMetadataJSON(UUID(fileId))
 		            datasets.addXMLMetadata(dt.id, UUID(fileId), xmlToJSON)

@@ -64,12 +64,13 @@ class Files @Inject()(
   previews: PreviewService,
   threeD: ThreeDService,
   sqarql: RdfSPARQLService,
+  accessRights: UserAccessRightsService,
   thumbnails: ThumbnailService) extends ApiController {
 
   @ApiOperation(value = "Retrieve physical file object metadata",
       notes = "Get metadata of the file object (not the resource it describes) as JSON. For example, size of file, date created, content type, filename.",
       responseClass = "None", httpMethod = "GET")
-  def get(id: UUID) = SecuredAction(parse.anyContent, authorization = WithPermission(Permission.ShowFile)) {
+  def get(id: UUID) = SecuredAction(parse.anyContent, authorization = WithPermission(Permission.ShowFile), resourceId = Some(id)) {
     implicit request =>
       Logger.info("GET file with id " + id)
       files.get(id) match {
@@ -106,7 +107,7 @@ class Files @Inject()(
       notes = "Can use Chunked transfer encoding if the HTTP header RANGE is set.",
       responseClass = "None", httpMethod = "GET")
   def download(id: UUID) =
-    SecuredAction(parse.anyContent, authorization = WithPermission(Permission.DownloadFiles)) {
+    SecuredAction(parse.anyContent, authorization = WithPermission(Permission.DownloadFiles), resourceId = Some(id)) {
       request =>
 
         files.getBytes(id) match {
@@ -156,7 +157,7 @@ class Files @Inject()(
    *
    */
   def downloadquery(id: UUID) =
-    SecuredAction(parse.anyContent, authorization = WithPermission(Permission.DownloadFiles)) {
+    SecuredAction(parse.anyContent, authorization = WithPermission(Permission.DownloadFiles), resourceId = Some(id)) {
       request =>
         queries.get(id) match {
           case Some((inputStream, filename, contentType, contentLength)) => {
@@ -256,12 +257,13 @@ class Files @Inject()(
 	             }
 	         }
 
-	        val file = files.save(new FileInputStream(f.ref.file), nameOfFile, f.contentType, realUser, showPreviews)
+	        val file = files.save(new FileInputStream(f.ref.file), nameOfFile, f.contentType, realUser, showPreviews, realUser.fullName.equals("Anonymous User")) 
 	        val uploadedFile = f
 	        file match {
 	          case Some(f) => {
 	            	            
-	            val id = f.id
+	            val id = f.id	            
+	            accessRights.addPermissionLevel(realUser, id.stringify, "file", "administrate")	            
 	            if(showPreviews.equals("FileLevel"))
 	            	flags = flags + "+filelevelshowpreviews"
 	            else if(showPreviews.equals("None"))
@@ -422,7 +424,7 @@ class Files @Inject()(
                case None => {}
              }
          }          
-          val file = files.save(new FileInputStream(f.ref.file), nameOfFile, f.contentType, realUser, showPreviews)
+          val file = files.save(new FileInputStream(f.ref.file), nameOfFile, f.contentType, realUser, showPreviews, realUser.fullName.equals("Anonymous User"))
           val uploadedFile = f         
           
           // submit file for extraction
@@ -430,6 +432,7 @@ class Files @Inject()(
             case Some(f) => {
                             
               val id = f.id.toString
+              accessRights.addPermissionLevel(realUser, id, "file", "administrate")
               if(showPreviews.equals("FileLevel"))
 	            flags = flags + "+filelevelshowpreviews"
 	          else if(showPreviews.equals("None"))
@@ -666,7 +669,7 @@ class Files @Inject()(
   @ApiOperation(value = "Get the user-generated metadata of the selected file in an RDF file",
 	      notes = "",
 	      responseClass = "None", httpMethod = "GET")
-  def getRDFUserMetadata(id: UUID, mappingNumber: String="1") = SecuredAction(parse.anyContent, authorization=WithPermission(Permission.ShowFilesMetadata)) {implicit request =>  
+  def getRDFUserMetadata(id: UUID, mappingNumber: String="1") = SecuredAction(parse.anyContent, authorization=WithPermission(Permission.ShowFilesMetadata), resourceId = Some(id)) {implicit request =>  
    current.plugin[RDFExportService].isDefined match{
     case true => {
       current.plugin[RDFExportService].get.getRDFUserMetadataFile(id.stringify, mappingNumber) match{
@@ -712,7 +715,7 @@ class Files @Inject()(
   @ApiOperation(value = "Get URLs of file's RDF metadata exports.",
 	      notes = "URLs of metadata files exported from XML (if the file was an XML metadata file) as well as the URL used to export the file's user-generated metadata as RDF.",
 	      responseClass = "None", httpMethod = "GET")
-  def getRDFURLsForFile(id: UUID) = SecuredAction(parse.anyContent, authorization=WithPermission(Permission.ShowFilesMetadata)) { request =>
+  def getRDFURLsForFile(id: UUID) = SecuredAction(parse.anyContent, authorization=WithPermission(Permission.ShowFilesMetadata), resourceId = Some(id)) { request =>
     current.plugin[RDFExportService].isDefined match{
       case true =>{
 	    current.plugin[RDFExportService].get.getRDFURLsForFile(id.stringify)  match {
@@ -775,7 +778,7 @@ class Files @Inject()(
   @ApiOperation(value = "List file previews",
       notes = "Return the currently existing previews' basic characteristics (id, filename, content type) of the selected file.",
       responseClass = "None", httpMethod = "GET")
-  def filePreviewsList(id: UUID) = SecuredAction(parse.anyContent, authorization = WithPermission(Permission.ShowFile)) {
+  def filePreviewsList(id: UUID) = SecuredAction(parse.anyContent, authorization = WithPermission(Permission.ShowFile), resourceId = Some(id)) {
     request =>
       files.get(id) match {
         case Some(file) => {
@@ -886,7 +889,7 @@ class Files @Inject()(
    * Find geometry file for given 3D file and geometry filename.
    */
   def getGeometry(three_d_file_id: UUID, filename: String) =
-    SecuredAction(parse.anyContent, authorization = WithPermission(Permission.ShowFile)) {
+    SecuredAction(parse.anyContent, authorization = WithPermission(Permission.ShowFile), resourceId = Some(three_d_file_id)) {
       request =>
         threeD.findGeometry(three_d_file_id, filename) match {
           case Some(geometry) => {
@@ -940,7 +943,7 @@ class Files @Inject()(
    * Find texture file for given 3D file and texture filename.
    */
   def getTexture(three_d_file_id: UUID, filename: String) =
-    SecuredAction(parse.anyContent, authorization = WithPermission(Permission.ShowFile)) {
+    SecuredAction(parse.anyContent, authorization = WithPermission(Permission.ShowFile), resourceId = Some(three_d_file_id)) {
       request =>
         threeD.findTexture(three_d_file_id, filename) match {
           case Some(texture) => {
@@ -1200,7 +1203,7 @@ class Files @Inject()(
   @ApiOperation(value = "Get file previews",
       notes = "Return the currently existing previews of the selected file (full description, including paths to preview files, previewer names etc).",
       responseClass = "None", httpMethod = "GET")
-  def getPreviews(id: UUID) = SecuredAction(parse.anyContent, authorization = WithPermission(Permission.ShowFile)) {
+  def getPreviews(id: UUID) = SecuredAction(parse.anyContent, authorization = WithPermission(Permission.ShowFile), resourceId = Some(id)) {
 	    request =>
 	      files.get(id) match {
 	        case Some(file) => {
@@ -1235,7 +1238,7 @@ class Files @Inject()(
       @ApiOperation(value = "Get metadata of the resource described by the file that were input as XML",
 	      notes = "",
 	      responseClass = "None", httpMethod = "GET")
-	  def getXMLMetadataJSON(id: UUID) = SecuredAction(parse.anyContent, authorization=WithPermission(Permission.ShowFilesMetadata)) { request =>
+	  def getXMLMetadataJSON(id: UUID) = SecuredAction(parse.anyContent, authorization=WithPermission(Permission.ShowFilesMetadata), resourceId = Some(id)) { request =>
 	    files.get(id)  match {
 	      case Some(file) => {
 	        Ok(files.getXMLMetadataJSON(id))
@@ -1247,7 +1250,7 @@ class Files @Inject()(
 	  @ApiOperation(value = "Get user-generated metadata of the resource described by the file",
 		      notes = "",
 		      responseClass = "None", httpMethod = "GET")
-	  def getUserMetadataJSON(id: UUID) = SecuredAction(parse.anyContent, authorization=WithPermission(Permission.ShowFilesMetadata)) { request =>
+	  def getUserMetadataJSON(id: UUID) = SecuredAction(parse.anyContent, authorization=WithPermission(Permission.ShowFilesMetadata), resourceId = Some(id)) { request =>
 	   files.get(id)  match {
 	      case Some(file) => {
 	        Ok(files.getUserMetadataJSON(id))
@@ -1259,7 +1262,7 @@ class Files @Inject()(
 	  @ApiOperation(value = "Get technical metadata of the resource described by the file",
 		      notes = "",
 		      responseClass = "None", httpMethod = "GET")
-	  def getTechnicalMetadataJSON(id: UUID) = SecuredAction(parse.anyContent, authorization = WithPermission(Permission.ShowFilesMetadata)) {
+	  def getTechnicalMetadataJSON(id: UUID) = SecuredAction(parse.anyContent, authorization = WithPermission(Permission.ShowFilesMetadata), resourceId = Some(id)) {
 	    request =>
 	      files.get(id) match {
 	        case Some(file) => {
@@ -1279,7 +1282,7 @@ class Files @Inject()(
 	    files.get(id)  match {
 	      case Some(file) => {
 	        files.removeFile(id)
-	        
+	        accessRights.removeResourceRightsForAll(id.stringify, "file")
 	        Logger.debug(file.filename)
 
 	        //remove file from RDF triple store if triple store is used

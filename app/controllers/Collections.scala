@@ -12,14 +12,14 @@ import play.api.libs.json.Json.toJson
 import api.WithPermission
 import api.Permission
 import javax.inject.{ Singleton, Inject }
-import services.{ DatasetService, CollectionService }
+import services.{ DatasetService, CollectionService, UserAccessRightsService}
 import services.AdminsNotifierPlugin
 import play.api.Play.current
 
 object ThumbnailFound extends Exception {}
 
 @Singleton
-class Collections @Inject()(datasets: DatasetService, collections: CollectionService) extends SecuredController {
+class Collections @Inject()(datasets: DatasetService, collections: CollectionService, accessRights: UserAccessRightsService) extends SecuredController {
 
   /**
    * New dataset form.
@@ -102,6 +102,7 @@ class Collections @Inject()(datasets: DatasetService, collections: CollectionSer
 	        errors => BadRequest(views.html.newCollection(errors)),
 	        collection => {
 	          Logger.debug("Saving collection " + collection.name)
+	          accessRights.addPermissionLevel(request.user.get, collection.id.stringify, "collection", "administrate")
 	          collections.insert(Collection(id = collection.id, name = collection.name, description = collection.description, created = collection.created, author = Some(identity)))
 	                    
 	          // redirect to collection page
@@ -117,7 +118,7 @@ class Collections @Inject()(datasets: DatasetService, collections: CollectionSer
   /**
    * Collection.
    */
-  def collection(id: UUID) = SecuredAction(authorization = WithPermission(Permission.ShowCollection)) {
+  def collection(id: UUID) = SecuredAction(authorization = WithPermission(Permission.ShowCollection), resourceId = Some(id)) {
     implicit request =>
       Logger.debug(s"Showing collection $id")
       implicit val user = request.user

@@ -32,6 +32,7 @@ class Files @Inject() (
   previews: PreviewService,
   threeD: ThreeDService,
   sparql: RdfSPARQLService,
+  accessRights: UserAccessRightsService,
   thumbnails: ThumbnailService) extends SecuredController {
 
   /**
@@ -46,7 +47,7 @@ class Files @Inject() (
   /**
    * File info.
    */
-  def file(id: UUID) = SecuredAction(authorization = WithPermission(Permission.ShowFile)) { implicit request =>
+  def file(id: UUID) = SecuredAction(authorization = WithPermission(Permission.ShowFile), resourceId = Some(id)) { implicit request =>
     implicit val user = request.user
     Logger.info("GET file with id " + id)
     files.get(id) match {
@@ -183,7 +184,7 @@ class Files @Inject() (
 	//        Thread.sleep(1000)
 	        file match {
 	          case Some(f) => {
-
+	        	accessRights.addPermissionLevel(request.user.get, f.id.stringify, "file", "administrate")  
 	            if(showPreviews.equals("FileLevel"))
 	                	flags = flags + "+filelevelshowpreviews"
 	            else if(showPreviews.equals("None"))
@@ -278,7 +279,7 @@ class Files @Inject() (
   /**
    * Download file using http://en.wikipedia.org/wiki/Chunked_transfer_encoding
    */
-  def download(id: UUID) = SecuredAction(authorization = WithPermission(Permission.DownloadFiles)) { request =>
+  def download(id: UUID) = SecuredAction(authorization = WithPermission(Permission.DownloadFiles), resourceId = Some(id)) { request =>
     files.getBytes(id) match {
       case Some((inputStream, filename, contentType, contentLength)) => {
         request.headers.get(RANGE) match {
@@ -389,7 +390,7 @@ class Files @Inject() (
         val uploadedFile = f
         file match {
           case Some(f) => {
-                        
+             accessRights.addPermissionLevel(request.user.get, f.id.stringify, "file", "administrate")           
              var fileType = f.contentType
 			    if(fileType.contains("/zip") || fileType.contains("/x-zip") || nameOfFile.toLowerCase().endsWith(".zip")){
 			          fileType = FilesUtils.getMainFileTypeOfZipFile(uploadedFile.ref.file, nameOfFile, "file")			          
@@ -491,7 +492,7 @@ class Files @Inject() (
         
         file match {
           case Some(f) => {
-                       
+            accessRights.addPermissionLevel(request.user.get, f.id.stringify, "file", "administrate")           
             var fileType = f.contentType
 			    if(fileType.contains("/zip") || fileType.contains("/x-zip") || nameOfFile.toLowerCase().endsWith(".zip")){
 			          fileType = FilesUtils.getMainFileTypeOfZipFile(uploadedFile.ref.file, nameOfFile, "file")			          
@@ -592,7 +593,7 @@ class Files @Inject() (
         val uploadedFile = f
         file match {
           case Some(f) => {
-                       
+             accessRights.addPermissionLevel(request.user.get, f.id.stringify, "file", "administrate")          
              var fileType = f.contentType
 			    if(fileType.contains("/zip") || fileType.contains("/x-zip") || nameOfFile.toLowerCase().endsWith(".zip")){
 			          fileType = FilesUtils.getMainFileTypeOfZipFile(uploadedFile.ref.file, nameOfFile, "file")			          
@@ -694,7 +695,7 @@ class Files @Inject() (
 				  // submit file for extraction			
 				  file match {
 				  case Some(f) => {
-				    				    
+				    accessRights.addPermissionLevel(request.user.get, f.id.stringify, "file", "administrate")				    
 	                if(showPreviews.equals("FileLevel"))
 	                	flags = flags + "+filelevelshowpreviews"
 	                else if(showPreviews.equals("None"))
