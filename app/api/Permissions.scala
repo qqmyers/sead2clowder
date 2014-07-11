@@ -186,15 +186,19 @@ case class WithPermission(permission: Permission, resourceId: Option[UUID] = Non
 				              //Anonymous resource	
 				              else if(file.author.fullName.equals("Anonymous User"))
 				                true
-				              //User is the author of the resource
-				              else if(file.author.identityId.userId.equals(user.identityId.userId))
-				                true
-				              //User has permission to view the resource  
-				              else if(accessRights.checkForPermission(user, idOfResource.stringify, "file", "view"))
-				                true
-				              //Finally, is the user admin?  
+				              else if(user != null){  
+					              //User is the author of the resource
+					              if(file.author.identityId.userId.equals(user.identityId.userId))
+					                true
+					              //User has permission to view the resource  
+					              else if(accessRights.checkForPermission(user, idOfResource.stringify, "file", "view"))
+					                true
+					              //Finally, is the user admin?  
+					              else
+					                appConfiguration.adminExists(user.email.getOrElse("none"))
+				              }
 				              else
-				                appConfiguration.adminExists(user.email.getOrElse("none"))
+				                false
 				            }
 				            case _ =>{
 				              Logger.error("File requested to be accessed not found. Denying request.")
@@ -214,12 +218,16 @@ case class WithPermission(permission: Permission, resourceId: Option[UUID] = Non
 				            	true
 				              else if(dataset.author.fullName.equals("Anonymous User"))
 				                true
-				              else if(dataset.author.identityId.userId.equals(user.identityId.userId))
-				                true
-				              else if(accessRights.checkForPermission(user, idOfResource.stringify, "dataset", "view"))
-				                true
+				              else if(user != null){  
+					              if(dataset.author.identityId.userId.equals(user.identityId.userId))
+					                true
+					              else if(accessRights.checkForPermission(user, idOfResource.stringify, "dataset", "view"))
+					                true
+					              else
+					                appConfiguration.adminExists(user.email.getOrElse("none"))
+				              }
 				              else
-				                appConfiguration.adminExists(user.email.getOrElse("none"))
+				                false
 				            }
 				            case _ =>{
 				              Logger.error("Dataset requested to be accessed not found. Denying request.")
@@ -240,13 +248,17 @@ case class WithPermission(permission: Permission, resourceId: Option[UUID] = Non
 				                  if(collection.isPublic.getOrElse(false))
 				                	  true
 				                  else if(collectionAuthor.fullName.equals("Anonymous User"))
-				                	  true 	  
-				                  if(collectionAuthor.identityId.userId.equals(user.identityId.userId))
 				                	  true
-				                  else if(accessRights.checkForPermission(user, idOfResource.stringify, "collection", "view"))
-				                	  true  
+				                  else if(user != null){  
+					                  if(collectionAuthor.identityId.userId.equals(user.identityId.userId))
+					                	  true
+					                  else if(accessRights.checkForPermission(user, idOfResource.stringify, "collection", "view"))
+					                	  true  
+					                  else
+					                	  appConfiguration.adminExists(user.email.getOrElse("none"))
+				                  }
 				                  else
-				                	  appConfiguration.adminExists(user.email.getOrElse("none"))
+				                    false
 				                }
 				                //Anonymous collections are free-for-all
 				                case None=>{
