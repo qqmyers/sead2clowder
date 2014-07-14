@@ -15,11 +15,14 @@ import javax.inject.{ Singleton, Inject }
 import services.{ DatasetService, CollectionService, UserAccessRightsService}
 import services.AdminsNotifierPlugin
 import play.api.Play.current
+import securesocial.core.Identity
+import services.AppConfigurationService
+import models.UserPermissions
 
 object ThumbnailFound extends Exception {}
 
 @Singleton
-class Collections @Inject()(datasets: DatasetService, collections: CollectionService, accessRights: UserAccessRightsService) extends SecuredController {
+class Collections @Inject()(datasets: DatasetService, collections: CollectionService, accessRights: UserAccessRightsService, appConfiguration: AppConfigurationService) extends SecuredController {
 
   /**
    * New dataset form.
@@ -132,4 +135,9 @@ class Collections @Inject()(datasets: DatasetService, collections: CollectionSer
         }
       }
   }
+  
+  
+  
+  
+  
 }

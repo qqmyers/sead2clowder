@@ -3,8 +3,9 @@ package services
 import models.UserPermissions
 import securesocial.core.Identity
 
-trait UserAccessRightsService {
 
+trait UserAccessRightsService {
+  
   /**
    * Initialize user access rights.
    */

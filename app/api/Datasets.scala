@@ -29,6 +29,7 @@ import play.api.libs.json.JsString
 import scala.Some
 import models.File
 import play.api.Play.configuration
+import securesocial.core.Identity
 
 /**
  * Dataset API.
@@ -47,7 +48,8 @@ class Datasets @Inject()(
   previews: PreviewService,
   extractions: ExtractionService,
   accessRights: UserAccessRightsService,
-  rdfsparql: RdfSPARQLService) extends ApiController {
+  rdfsparql: RdfSPARQLService,
+  appConfiguration: AppConfigurationService) extends ApiController {
 
   /**
    * List all datasets.
@@ -304,16 +306,94 @@ class Datasets @Inject()(
     request =>
       datasets.get(id) match {
         case Some(dataset) => {
-          val list = for (f <- dataset.files) yield jsonFile(f)
+          var list: List[JsValue] = List.empty
+          request.user match{
+	        case Some(theUser)=>{
+	        	val rightsForUser = accessRights.get(theUser)
+	        	list = for (f <- dataset.files if(checkAccessForFileUsingRightsList(f, request.user , "view", rightsForUser))) yield jsonFile(f, request.user, rightsForUser)
+	        }
+	        case None=>{
+	          list = for (f <- dataset.files if(checkAccessForFile(f, request.user, "view"))) yield jsonFile(f, request.user)
+	        }
+	      }  
+            
           Ok(toJson(list))
         }
         case None => Logger.error("Error getting dataset" + id); InternalServerError
       }
   }
 
-  def jsonFile(file: File): JsValue = {
+  def jsonFile(file: File, user: Option[Identity] = None, rightsForUser: Option[UserPermissions] = None): JsValue = {
+    var userRequested = "None"
+    var userCanEdit = false  
+    user match{
+        case Some(theUser)=>{
+          userRequested = theUser.fullName
+          userCanEdit = checkAccessForFileUsingRightsList(file, user, "modify", rightsForUser)
+        }
+        case None=>{
+          userRequested = "None"
+          userCanEdit = checkAccessForFile(file, user, "modify")
+        }
+      }  
+    
     toJson(Map("id" -> file.id.toString, "filename" -> file.filename, "contentType" -> file.contentType,
-               "date-created" -> file.uploadDate.toString(), "size" -> file.length.toString, "authorId" -> file.author.identityId.userId))
+               "date-created" -> file.uploadDate.toString(), "size" -> file.length.toString, "authorId" -> file.author.identityId.userId,
+               "usercanedit" -> userCanEdit.toString, "userThatRequested" -> userRequested))
+  }
+  
+  def checkAccessForFile(file: File, user: Option[Identity], permissionType: String): Boolean = {
+    if(permissionType.equals("view") && (file.isPublic.getOrElse(false) || file.author.fullName.equals("Anonymous User") || appConfiguration.getDefault.get.viewNoLoggedIn)){
+      true
+    }
+    else{
+      user match{
+        case Some(theUser)=>{
+          theUser.fullName.equals("Anonymous User") || appConfiguration.adminExists(theUser.email.getOrElse("")) || file.author.identityId.userId.equals(theUser.identityId.userId) || accessRights.checkForPermission(theUser, file.id.stringify, "file", permissionType)
+        }
+        case None=>{
+          false
+        }
+      }
+    }
+  }
+  
+  def checkAccessForFileUsingRightsList(file: File, user: Option[Identity], permissionType: String, rightsForUser: Option[UserPermissions]): Boolean = {
+    if(permissionType.equals("view") && (file.isPublic.getOrElse(false) || file.author.fullName.equals("Anonymous User") || appConfiguration.getDefault.get.viewNoLoggedIn)){
+      true
+    }
+    else{
+      user match{
+        case Some(theUser)=>{
+          val canAccessWithoutRightsList = theUser.fullName.equals("Anonymous User") || appConfiguration.adminExists(theUser.email.getOrElse("")) || file.author.identityId.userId.equals(theUser.identityId.userId)
+          rightsForUser match{
+	        case Some(userRights)=>{
+	        	if(canAccessWithoutRightsList)
+	        	  true
+	        	else{
+	        	  if(permissionType.equals("view")){
+			        userRights.filesViewOnly.contains(file.id.stringify)
+			      }else if(permissionType.equals("modify")){
+			        userRights.filesViewModify.contains(file.id.stringify)
+			      }else if(permissionType.equals("administrate")){
+			        userRights.filesAdministrate.contains(file.id.stringify)
+			      }
+			      else{
+			        Logger.error("Unknown permission type")
+			        false
+			      }
+	        	}
+	        }
+	        case None=>{
+	          canAccessWithoutRightsList
+	        }
+	      }
+        }
+        case None=>{
+          false
+        }
+      }
+    }
   }
 
   // ---------- Tags related code starts ------------------

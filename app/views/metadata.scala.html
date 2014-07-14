@@ -2,7 +2,7 @@
 
 @import com.mongodb.casbah.Imports.DBObject
 @import collection.JavaConverters._
-@import services.{DI, AppConfigurationService}
+@import services.{DI, AppConfigurationService, UserAccessRightsService}
 @import securesocial.core.{SocialUser, IdentityId, AuthenticationMethod}
 
 <form class="form-inline">	
@@ -89,9 +89,11 @@
 		      	}
 @if(user.isDefined && !DI.injector.getInstance(classOf[AppConfigurationService]).adminExists(user.getOrElse(new SocialUser(new IdentityId("anonymous", ""), "Anonymous", "User", "Anonymous User", None, None, AuthenticationMethod.UserPassword)).email.getOrElse(""))) {
 			@if(!user.get.identityId.userId.equals(dataset.author.identityId.userId)){
+				@if(!DI.injector.getInstance(classOf[UserAccessRightsService]).checkForPermission(user.get, dataset.id.stringify, "dataset", "modify")){
 					<script language="javascript">
 			     		$("#generalUserMetadata_@(dataset.id.stringify) button").css("display","none");
 			     		$("#generalUserMetadata_@(dataset.id.stringify) .rdfbtn").css("display","inline");
 			       </script>
+			     }  
 			}													
 		} 

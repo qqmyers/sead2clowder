@@ -16,6 +16,7 @@ import javax.inject.Inject
 import scala.Some
 import services.ExtractorMessage
 import api.WithPermission
+import securesocial.core.Identity
 
 
 /**
@@ -32,7 +33,8 @@ class Datasets @Inject()(
   sections: SectionService,
   extractions: ExtractionService,
   accessRights: UserAccessRightsService,
-  sparql: RdfSPARQLService) extends SecuredController {
+  sparql: RdfSPARQLService,
+  appConfiguration: AppConfigurationService) extends SecuredController {
 
   object ActivityFound extends Exception {}
 
@@ -98,6 +100,59 @@ class Datasets @Inject()(
 	      Ok(views.html.datasetList(datasetList, prev, next, limit))
 	  }
 
+  def checkAccessForFile(file: File, user: Option[Identity], permissionType: String): Boolean = {
+    if(permissionType.equals("view") && (file.isPublic.getOrElse(false) || file.author.fullName.equals("Anonymous User") || appConfiguration.getDefault.get.viewNoLoggedIn)){
+      true
+    }
+    else{
+      user match{
+        case Some(theUser)=>{
+          appConfiguration.adminExists(theUser.email.getOrElse("")) || file.author.identityId.userId.equals(theUser.identityId.userId) || accessRights.checkForPermission(theUser, file.id.stringify, "file", permissionType)
+        }
+        case None=>{
+          false
+        }
+      }
+    }
+  }
+  
+  def checkAccessForFileUsingRightsList(file: File, user: Option[Identity], permissionType: String, rightsForUser: Option[UserPermissions]): Boolean = {
+    if(permissionType.equals("view") && (file.isPublic.getOrElse(false) || file.author.fullName.equals("Anonymous User") || appConfiguration.getDefault.get.viewNoLoggedIn)){
+      true
+    }
+    else{
+      user match{
+        case Some(theUser)=>{
+          val canAccessWithoutRightsList =  appConfiguration.adminExists(theUser.email.getOrElse("")) || file.author.identityId.userId.equals(theUser.identityId.userId)
+          rightsForUser match{
+	        case Some(userRights)=>{
+	        	if(canAccessWithoutRightsList)
+	        	  true
+	        	else{
+	        	  if(permissionType.equals("view")){
+			        userRights.filesViewOnly.contains(file.id.stringify)
+			      }else if(permissionType.equals("modify")){
+			        userRights.filesViewModify.contains(file.id.stringify)
+			      }else if(permissionType.equals("administrate")){
+			        userRights.filesAdministrate.contains(file.id.stringify)
+			      }
+			      else{
+			        Logger.error("Unknown permission type")
+			        false
+			      }
+	        	}
+	        }
+	        case None=>{
+	          canAccessWithoutRightsList
+	        }
+	      }
+        }
+        case None=>{
+          false
+        }
+      }
+    }
+  }
 
   /**
    * Dataset.	
@@ -108,8 +163,26 @@ class Datasets @Inject()(
 	      Previewers.findPreviewers.foreach(p => Logger.info("Previewer found " + p.id))
 	      datasets.get(id) match {
 	        case Some(dataset) => {
-	          val filesInDataset = dataset.files.map(f => files.get(f.id).get)
-
+	          var filesInDataset: List[File] = List.empty
+	          var rightsForUser: Option[models.UserPermissions] = None
+	          
+	          user match{
+		        case Some(theUser)=>{
+		            rightsForUser = accessRights.get(theUser)
+		        	for(checkedFile <- dataset.files.map(f => files.get(f.id).get)){
+			            if(checkAccessForFileUsingRightsList(checkedFile, user, "view", rightsForUser))
+			              filesInDataset :+ checkedFile
+			        }
+		        }
+		        case None=>{
+		          for(checkedFile <- dataset.files.map(f => files.get(f.id).get)){
+		            if(checkAccessForFile(checkedFile, user, "view"))
+		              filesInDataset :+ checkedFile
+		          }
+		        }
+		      }
+	          
+	          
 	          //Search whether dataset is currently being processed by extractor(s)
 	          var isActivity = false
 	          try {
@@ -148,9 +221,20 @@ class Datasets @Inject()(
 	          val userMetadata = datasets.getUserMetadata(id)
 	          Logger.debug("User metadata: " + userMetadata.toString)
 
-	          val collectionsOutside = collections.listOutsideDataset(id).sortBy(_.name)
-	          val collectionsInside = collections.listInsideDataset(id).sortBy(_.name)
-	          val filesOutside = files.listOutsideDataset(id).sortBy(_.filename)
+	          var collectionsOutside = collections.listOutsideDataset(id).sortBy(_.name)
+	          var collectionsInside = collections.listInsideDataset(id).sortBy(_.name)
+	          
+	          var filesOutside: List[models.File] = List.empty
+	          user match{
+		        case Some(theUser)=>{
+		            filesOutside = for(checkedFile <- files.listOutsideDataset(id).sortBy(_.filename); if(checkAccessForFileUsingRightsList(checkedFile, user, "view", rightsForUser))) yield checkedFile
+		            collectionsOutside = for(checkedCollection <- collections.listOutsideDataset(id).sortBy(_.name); if(checkAccessForCollectionUsingRightsList(checkedCollection, user, "modify", rightsForUser))) yield checkedCollection
+		        }
+		        case None=>{
+		          filesOutside = for(checkedFile <- files.listOutsideDataset(id).sortBy(_.filename); if(checkAccessForFile(checkedFile, user, "view"))) yield checkedFile
+		          collectionsOutside = for(checkedCollection <- collections.listOutsideDataset(id).sortBy(_.name); if(checkAccessForCollection(checkedCollection, user, "modify"))) yield checkedCollection
+		        }
+		      }
 
 	          var commentsByDataset = comments.findCommentsByDatasetId(id)
 	          filesInDataset.map {
@@ -164,7 +248,7 @@ class Datasets @Inject()(
 
 	          val isRDFExportEnabled = current.plugin[RDFExportService].isDefined
 
-	          Ok(views.html.dataset(datasetWithFiles, commentsByDataset, previews, metadata, userMetadata, isActivity, collectionsOutside, collectionsInside, filesOutside, isRDFExportEnabled))
+	          Ok(views.html.dataset(datasetWithFiles, commentsByDataset, previews, metadata, userMetadata, isActivity, collectionsOutside, collectionsInside, filesOutside, isRDFExportEnabled, rightsForUser))
 	        }
 	        case None => {
 	          Logger.error("Error getting dataset" + id); InternalServerError
@@ -433,5 +517,86 @@ class Datasets @Inject()(
     implicit request =>
       implicit val user = request.user
       Ok(views.html.generalMetadataSearch())
+  }
+  
+  
+  def checkAccessForCollection(collection: Collection, user: Option[Identity], permissionType: String): Boolean = {
+    var isAuthorless = true
+    collection.author match{
+      case Some(author)=>{
+        isAuthorless = collection.author.get.fullName.equals("Anonymous User")
+      }
+      case None=>{}
+    }
+    
+    if(permissionType.equals("view") && (collection.isPublic.getOrElse(false) || isAuthorless || appConfiguration.getDefault.get.viewNoLoggedIn)){
+      true
+    }
+    else{
+      user match{
+        case Some(theUser)=>{
+          var userIsAuthor = false
+          if(!isAuthorless){
+            userIsAuthor = collection.author.get.identityId.userId.equals(theUser.identityId.userId)
+          }
+          
+          appConfiguration.adminExists(theUser.email.getOrElse("")) || userIsAuthor || accessRights.checkForPermission(theUser, collection.id.stringify, "collection", permissionType)
+        }
+        case None=>{
+          false
+        }
+      }
+    }
+  }
+  
+  def checkAccessForCollectionUsingRightsList(collection: Collection, user: Option[Identity], permissionType: String, rightsForUser: Option[UserPermissions]): Boolean = {
+    var isAuthorless = true
+    collection.author match{
+      case Some(author)=>{
+        isAuthorless = collection.author.get.fullName.equals("Anonymous User")
+      }
+      case None=>{}
+    }
+    
+    if(permissionType.equals("view") && (collection.isPublic.getOrElse(false) || isAuthorless || appConfiguration.getDefault.get.viewNoLoggedIn)){
+      true
+    }
+    else{
+      user match{
+        case Some(theUser)=>{
+          var userIsAuthor = false
+          if(!isAuthorless){
+            userIsAuthor = collection.author.get.identityId.userId.equals(theUser.identityId.userId)
+          }
+          
+          val canAccessWithoutRightsList =  appConfiguration.adminExists(theUser.email.getOrElse("")) || userIsAuthor
+          rightsForUser match{
+	        case Some(userRights)=>{
+	        	if(canAccessWithoutRightsList)
+	        	  true
+	        	else{
+	        	  if(permissionType.equals("view")){
+			        userRights.collectionsViewOnly.contains(collection.id.stringify)
+			      }else if(permissionType.equals("modify")){
+			        userRights.collectionsViewModify.contains(collection.id.stringify)
+			      }else if(permissionType.equals("administrate")){
+			        userRights.collectionsAdministrate.contains(collection.id.stringify)
+			      }
+			      else{
+			        Logger.error("Unknown permission type")
+			        false
+			      }
+	        	}
+	        }
+	        case None=>{
+	          canAccessWithoutRightsList
+	        }
+	      }
+        }
+        case None=>{
+          false
+        }
+      }
+    }
   }
 }
