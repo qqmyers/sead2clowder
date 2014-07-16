@@ -1,6 +1,7 @@
-@(collections: List[models.Collection], prev: String, next: String, limit: Int)(implicit user: Option[securesocial.core.Identity])
+@(collections: List[models.Collection], prev: String, next: String, limit: Int, rightsForUser: Option[models.UserPermissions])(implicit user: Option[securesocial.core.Identity])
 
 @import services.{DI, AppConfigurationService}
+@import controllers.Collections
 @import securesocial.core.{SocialUser, IdentityId, AuthenticationMethod}
 
 @main("Collections") {
@@ -28,8 +29,6 @@
 				</tr>
 			</thead>
 			<tbody>
-				@defining(DI.injector.getInstance(classOf[AppConfigurationService])
-					.adminExists(user.getOrElse(new SocialUser(new IdentityId("anonymous", ""), "Anonymous", "User", "Anonymous User", None, None, AuthenticationMethod.UserPassword)).email.getOrElse(""))){userIsAdmin=>
 					@collections.map { collection =>
 						<tr>
 							<td><a href="@(routes.Collections.collection(collection.id))">@collection.name</a></td>
@@ -40,23 +39,12 @@
 								@if(collection.thumbnail_id.isEmpty){No thumbnail available}
 							</td>
 							<td class="requiresLogin">
-								@if(userIsAdmin){
+								@if(services.DI.injector.getInstance(classOf[controllers.Collections]).checkAccessForCollectionUsingRightsList(collection, user, "modify", rightsForUser)){
 									<a href="#!" onclick="removeCollection('@(collection.id.toString)',event)">Remove</a>
-								}							
-								@if(user.isDefined && !userIsAdmin) {
-									@if(!collection.author.isDefined){
-										<a href="#!" onclick="removeCollection('@(collection.id.toString)',event)">Remove</a>
-									}
-									@if(collection.author.isDefined){
-										@if(user.get.identityId.userId.equals(collection.author.get.identityId.userId)){
-											<a href="#!" onclick="removeCollection('@(collection.id.toString)',event)">Remove</a>
-										}
-									}					
 								}
 							</td>
 						</tr>
 					}
-				}
 			</tbody>
 		</table>		
 		<ul class="pager">

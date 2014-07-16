@@ -13,12 +13,15 @@ import javax.inject.{Singleton, Inject}
 import scala.util.Failure
 import scala.Some
 import scala.util.Success
-
 import com.novus.salat.dao.{ModelCompanion, SalatDAO}
 import com.mongodb.casbah.Imports._
+
 import MongoContext.context
 import play.api.Play.current
 import services.AdminsNotifierPlugin
+import securesocial.core.Identity
+import services.AppConfigurationService
+import services.UserAccessRightsService
 
 
 /**
@@ -28,7 +31,7 @@ import services.AdminsNotifierPlugin
  *
  */
 @Singleton
-class MongoDBCollectionService @Inject() (datasets: DatasetService)  extends CollectionService {
+class MongoDBCollectionService @Inject() (datasets: DatasetService, appConfiguration: AppConfigurationService, accessRights: UserAccessRightsService)  extends CollectionService {
   /**
    * List all collections in the system.
    */
@@ -47,32 +50,138 @@ class MongoDBCollectionService @Inject() (datasets: DatasetService)  extends Col
   /**
    * List collections after a specified date.
    */
-  def listCollectionsAfter(date: String, limit: Int): List[Collection] = {
+  def listCollectionsAfter(date: String, limit: Int, user:Option[Identity] = None): List[Collection] = {
     val order = MongoDBObject("created" -> -1)
-    if (date == "") {
-      Collection.findAll.sort(order).limit(limit).toList
-    } else {
-      val sinceDate = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss").parse(date)
-      Logger.info("After " + sinceDate)
-      Collection.find("created" $lt sinceDate).sort(order).limit(limit).toList
+    val externalViewingEnabled = appConfiguration.getDefault.get.viewNoLoggedIn
+    var haveAdmin = false
+    user match{
+      case Some(user)=>{
+        haveAdmin = appConfiguration.adminExists(user.email.getOrElse("none"))
+      }
+      case None=>{}
     }
+    
+    if(externalViewingEnabled || haveAdmin){
+	      if (date == "") {
+	    	  Collection.findAll.sort(order).limit(limit).toList
+	      } else {
+		      val sinceDate = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss").parse(date)
+		      Logger.info("After " + sinceDate)
+		      Collection.find("created" $lt sinceDate).sort(order).limit(limit).toList
+	    }
+    }
+    else{   
+        if (date == "") {
+            user match{
+              case Some(user)=>{
+                var idsAllowedForUser: List[String] = List.empty
+                var rightsOfUser = accessRights.get(user)
+                rightsOfUser match{
+                  case Some(someRightsOfUser)=>{
+                    idsAllowedForUser = someRightsOfUser.collectionsViewOnly
+                  }
+                  case None=>{}
+                }              
+                Collection.find($or("author"->MongoDBObject("$exists" -> false),"isPublic"->true,"author.fullName"->"Anonymous User","author.identityId.userId"->user.identityId.userId,"_id"->MongoDBObject("$in"->idsAllowedForUser)   )  ).sort(order).limit(limit).toList
+              }
+              case None=>{
+                Collection.find($or("author"->MongoDBObject("$exists" -> false),"isPublic"->true,"author.fullName"->"Anonymous User")).sort(order).limit(limit).toList
+              }
+            }	    	  
+	      } else {
+		      val sinceDate = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss").parse(date)
+		      Logger.info("After " + sinceDate)
+		      
+		      user match{
+              case Some(user)=>{
+                var idsAllowedForUser: List[String] = List.empty
+                var rightsOfUser = accessRights.get(user)
+                rightsOfUser match{
+                  case Some(someRightsOfUser)=>{
+                    idsAllowedForUser = someRightsOfUser.collectionsViewOnly
+                  }
+                  case None=>{}
+                }              
+                Collection.find($and("created" $lt sinceDate,$or("author"->MongoDBObject("$exists" -> false),"isPublic"->true,"author.fullName"->"Anonymous User","author.identityId.userId"->user.identityId.userId,"_id"->MongoDBObject("$in"->idsAllowedForUser))  )  ).sort(order).limit(limit).toList
+              }
+              case None=>{
+                Collection.find($and("created" $lt sinceDate,$or("author"->MongoDBObject("$exists" -> false),"isPublic"->true,"author.fullName"->"Anonymous User"))).sort(order).limit(limit).toList
+              }
+            }
+	    }
+    }
+ 
   }
 
   /**
    * List collections before a specified date.
    */
-  def listCollectionsBefore(date: String, limit: Int): List[Collection] = {
+  def listCollectionsBefore(date: String, limit: Int, user:Option[Identity] = None): List[Collection] = {
     var order = MongoDBObject("created" -> -1)
-    if (date == "") {
-      Collection.findAll.sort(order).limit(limit).toList
-    } else {
-      order = MongoDBObject("created" -> 1)
-      val sinceDate = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss").parse(date)
-      Logger.info("Before " + sinceDate)
-      var collectionList = Collection.find("created" $gt sinceDate).sort(order).limit(limit).toList.reverse
-      //collectionList = collectionList.filter(_ != collectionList.last)
-      collectionList
+    val externalViewingEnabled = appConfiguration.getDefault.get.viewNoLoggedIn
+    var haveAdmin = false
+    user match{
+      case Some(user)=>{
+        haveAdmin = appConfiguration.adminExists(user.email.getOrElse("none"))
+      }
+      case None=>{}
     }
+    
+    if(externalViewingEnabled || haveAdmin){
+	     if (date == "") {
+	    	 Collection.findAll.sort(order).limit(limit).toList
+	    } else {
+	      order = MongoDBObject("created" -> 1)
+	      val sinceDate = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss").parse(date)
+	      Logger.info("Before " + sinceDate)
+	      var collectionList = Collection.find("created" $gt sinceDate).sort(order).limit(limit).toList.reverse
+	      //collectionList = collectionList.filter(_ != collectionList.last)
+	      collectionList
+	    }
+    }
+    else{
+    		if (date == "") {
+	            user match{
+	              case Some(user)=>{
+	                var idsAllowedForUser: List[String] = List.empty
+	                var rightsOfUser = accessRights.get(user)
+	                rightsOfUser match{
+	                  case Some(someRightsOfUser)=>{
+	                    idsAllowedForUser = someRightsOfUser.collectionsViewOnly
+	                  }
+	                  case None=>{}
+	                }              
+	                Collection.find($or("author"->MongoDBObject("$exists" -> false),"isPublic"->true,"author.fullName"->"Anonymous User","author.identityId.userId"->user.identityId.userId,"_id"->MongoDBObject("$in"->idsAllowedForUser)   )  ).sort(order).limit(limit).toList
+	              }
+	              case None=>{
+	                Collection.find($or("author"->MongoDBObject("$exists" -> false),"isPublic"->true,"author.fullName"->"Anonymous User")).sort(order).limit(limit).toList
+	              }
+	            }	    	  
+	      } else {
+	    	  order = MongoDBObject("created" -> 1)
+	    	  val sinceDate = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss").parse(date)
+	    	  Logger.info("Before " + sinceDate)
+		      
+		      user match{
+              case Some(user)=>{
+                var idsAllowedForUser: List[String] = List.empty
+                var rightsOfUser = accessRights.get(user)
+                rightsOfUser match{
+                  case Some(someRightsOfUser)=>{
+                    idsAllowedForUser = someRightsOfUser.collectionsViewOnly
+                  }
+                  case None=>{}
+                }              
+                Collection.find($and("created" $gt sinceDate,$or("author"->MongoDBObject("$exists" -> false),"isPublic"->true,"author.fullName"->"Anonymous User","author.identityId.userId"->user.identityId.userId,"_id"->MongoDBObject("$in"->idsAllowedForUser))  )  ).sort(order).limit(limit).toList.reverse
+              }
+              case None=>{
+                Collection.find($and("created" $gt sinceDate,$or("author"->MongoDBObject("$exists" -> false),"isPublic"->true,"author.fullName"->"Anonymous User"))).sort(order).limit(limit).toList.reverse
+              }
+            }
+	    }
+    }
+    
+    
   }
 
   /**
@@ -82,16 +191,78 @@ class MongoDBCollectionService @Inject() (datasets: DatasetService)  extends Col
     Collection.findOneById(new ObjectId(id.stringify))
   }
 
-  def latest(): Option[Collection] = {
-    val results = Collection.find(MongoDBObject()).sort(MongoDBObject("created" -> -1)).limit(1).toList
+  def latest(user:Option[Identity] = None): Option[Collection] = {
+    val externalViewingEnabled = appConfiguration.getDefault.get.viewNoLoggedIn
+    var haveAdmin = false
+    user match{
+      case Some(user)=>{
+        haveAdmin = appConfiguration.adminExists(user.email.getOrElse("none"))
+      }
+      case None=>{}
+    }
+    var results: List[Collection] = List.empty
+    val order = MongoDBObject("created" -> -1)
+    if(externalViewingEnabled || haveAdmin){
+      results = Collection.find(MongoDBObject()).sort(order).limit(1).toList
+    }else{
+	            user match{
+	              case Some(user)=>{
+	                var idsAllowedForUser: List[String] = List.empty
+	                var rightsOfUser = accessRights.get(user)
+	                rightsOfUser match{
+	                  case Some(someRightsOfUser)=>{
+	                    idsAllowedForUser = someRightsOfUser.collectionsViewOnly
+	                  }
+	                  case None=>{}
+	                }              
+	                Collection.find($or("author"->MongoDBObject("$exists" -> false),"isPublic"->true,"author.fullName"->"Anonymous User","author.identityId.userId"->user.identityId.userId,"_id"->MongoDBObject("$in"->idsAllowedForUser)   )  ).sort(order).limit(1).toList
+	              }
+	              case None=>{
+	                results = Collection.find($or("author"->MongoDBObject("$exists" -> false),"isPublic"->true,"author.fullName"->"Anonymous User")).sort(order).limit(1).toList
+	              }
+	            }	    	  
+    }
+    
+    
     if (results.size > 0)
       Some(results(0))
     else
       None
   }
 
-  def first(): Option[Collection] = {
-    val results = Collection.find(MongoDBObject()).sort(MongoDBObject("created" -> 1)).limit(1).toList
+  def first(user:Option[Identity] = None): Option[Collection] = {
+    val externalViewingEnabled = appConfiguration.getDefault.get.viewNoLoggedIn
+    var haveAdmin = false
+    user match{
+      case Some(user)=>{
+        haveAdmin = appConfiguration.adminExists(user.email.getOrElse("none"))
+      }
+      case None=>{}
+    }
+    var results: List[Collection] = List.empty
+    val order = MongoDBObject("created" -> 1)
+    if(externalViewingEnabled || haveAdmin){
+      results = Collection.find(MongoDBObject()).sort(order).limit(1).toList
+    }else{
+	            user match{
+	              case Some(user)=>{
+	                var idsAllowedForUser: List[String] = List.empty
+	                var rightsOfUser = accessRights.get(user)
+	                rightsOfUser match{
+	                  case Some(someRightsOfUser)=>{
+	                    idsAllowedForUser = someRightsOfUser.collectionsViewOnly
+	                  }
+	                  case None=>{}
+	                }              
+	                Collection.find($or("author"->MongoDBObject("$exists" -> false),"isPublic"->true,"author.fullName"->"Anonymous User","author.identityId.userId"->user.identityId.userId,"_id"->MongoDBObject("$in"->idsAllowedForUser)   )  ).sort(order).limit(1).toList
+	              }
+	              case None=>{
+	                results = Collection.find($or("author"->MongoDBObject("$exists" -> false),"isPublic"->true,"author.fullName"->"Anonymous User")).sort(order).limit(1).toList
+	              }
+	            }	    	  
+    }
+    
+    
     if (results.size > 0)
       Some(results(0))
     else

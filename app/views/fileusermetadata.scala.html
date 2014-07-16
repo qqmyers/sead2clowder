@@ -1,7 +1,8 @@
-@(file: models.File, userMetadata: scala.collection.mutable.Map[String,Any], rdfExported: Boolean, userIsAuthorizedModify: Boolean = false)(implicit user: Option[securesocial.core.Identity]) 
+@(file: models.File, userMetadata: scala.collection.mutable.Map[String,Any], rdfExported: Boolean, rightsForUser: Option[models.UserPermissions])(implicit user: Option[securesocial.core.Identity]) 
 
 @import com.mongodb.casbah.Imports.DBObject
 @import collection.JavaConverters._
+@import controllers.Files
 @import services.{DI, AppConfigurationService, UserAccessRightsService}
 @import securesocial.core.{SocialUser, IdentityId, AuthenticationMethod}
 
@@ -53,13 +54,11 @@
 			     		$("#generalUserMetadata_@(file.id.stringify) .rdfbtn").css("display","inline");
 			       </script>
 		      	}
-@if(user.isDefined && !DI.injector.getInstance(classOf[AppConfigurationService]).adminExists(user.getOrElse(new SocialUser(new IdentityId("anonymous", ""), "Anonymous", "User", "Anonymous User", None, None, AuthenticationMethod.UserPassword)).email.getOrElse(""))) {
-			@if(!user.get.identityId.userId.equals(file.author.identityId.userId)){
-				@if(!DI.injector.getInstance(classOf[UserAccessRightsService]).checkForPermission(user.get, file.id.stringify, "file", "modify")){
+
+				@if(!services.DI.injector.getInstance(classOf[controllers.Files]).checkAccessForFileUsingRightsList(file, user, "modify", rightsForUser)){
 					<script language="javascript">
 			     		$("#generalUserMetadata_@(file.id.stringify) button").css("display","none");
 			     		$("#generalUserMetadata_@(file.id.stringify) .rdfbtn").css("display","inline");
 			       </script>
 			    }   
-			}													
-		}
+

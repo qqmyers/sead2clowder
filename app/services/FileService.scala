@@ -33,12 +33,12 @@ trait FileService {
   /**
    * List files after a specified date.
    */
-  def listFilesAfter(date: String, limit: Int): List[File]
+  def listFilesAfter(date: String, limit: Int, user:Option[Identity] = None): List[File]
   
   /**
    * List files before a specified date.
    */
-  def listFilesBefore(date: String, limit: Int): List[File]
+  def listFilesBefore(date: String, limit: Int, user:Option[Identity] = None): List[File]
   
   /**
    * Get file metadata.
@@ -48,7 +48,7 @@ trait FileService {
   /**
    * Lastest file in chronological order.
    */
-  def latest(): Option[File]
+  def latest(user:Option[Identity] = None): Option[File]
 
   /**
    * Lastest x files in chronological order.
@@ -58,7 +58,7 @@ trait FileService {
   /**
    * First file in chronological order.
    */
-  def first(): Option[File]
+  def first(user:Option[Identity] = None): Option[File]
   
   /**
    * Store file metadata.

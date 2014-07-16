@@ -1,6 +1,7 @@
-@(files: List[models.File], prev: String, next: String, limit: Int)(implicit user: Option[securesocial.core.Identity])
+@(files: List[models.File], prev: String, next: String, limit: Int, rightsForUser: Option[models.UserPermissions])(implicit user: Option[securesocial.core.Identity])
 
 @import services.{DI, AppConfigurationService}
+@import controllers.Files
 @import securesocial.core.{SocialUser, IdentityId, AuthenticationMethod}
 
 @main("Files") {
@@ -22,8 +23,6 @@
 				</tr>
 			</thead>
 			<tbody>
-			@defining(DI.injector.getInstance(classOf[AppConfigurationService])
-					.adminExists(user.getOrElse(new SocialUser(new IdentityId("anonymous", ""), "Anonymous", "User", "Anonymous User", None, None, AuthenticationMethod.UserPassword)).email.getOrElse(""))){userIsAdmin=>
 					@files.map { file =>
 						<tr>
 							<td><a href="@(routes.Files.file(file.id))">@file.filename</a></td>
@@ -34,17 +33,14 @@
 								@if(file.thumbnail_id.isEmpty){No thumbnail available}
 							</td>
 							<td class="requiresLogin">
-								@if(user.isDefined) {
-										@if(user.get.identityId.userId.equals(file.author.identityId.userId)){
+										@if(services.DI.injector.getInstance(classOf[controllers.Files]).checkAccessForFileUsingRightsList(file, user, "modify", rightsForUser)){
 											<a href="#!" onclick="removeFile('@(file.id)',event)">Remove</a>
 										}													
-								}
 							</td>						
 						</tr>
 					}
-				}
 			</tbody>
-		</table>
+		</table> 
 		<ul class="pager">
 			@if(prev != "") {
   			<li class="previous"><a href="@(routes.Files.list("b", prev, limit))">Previous</a></li>

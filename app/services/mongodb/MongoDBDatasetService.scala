@@ -27,6 +27,7 @@ import com.novus.salat.dao.{ModelCompanion, SalatDAO}
 import MongoContext.context
 import play.api.Play.current
 import java.util.Date
+import securesocial.core.Identity
 
 /**
  * Use Mongodb to store datasets.
@@ -39,7 +40,9 @@ class MongoDBDatasetService @Inject() (
   collections: CollectionService,
   files: FileService,
   comments: CommentService,
-  sparql: RdfSPARQLService) extends DatasetService {
+  sparql: RdfSPARQLService,
+  appConfiguration: AppConfigurationService,
+  accessRights: UserAccessRightsService) extends DatasetService {
 
   object MustBreak extends Exception {}
 
@@ -57,36 +60,143 @@ class MongoDBDatasetService @Inject() (
     val order = MongoDBObject("created"-> -1)
     Dataset.findAll.sort(order).toList
   }
+  
+  
 
   /**
    * List datasets after a specified date.
    */
-  def listDatasetsAfter(date: String, limit: Int): List[Dataset] = {
-    val order = MongoDBObject("created"-> -1)
-    if (date == "") {
-      Dataset.findAll.sort(order).limit(limit).toList
-    } else {
-      val sinceDate = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss").parse(date)
-      Logger.info("After " + sinceDate)
-      Dataset.find("created" $lt sinceDate).sort(order).limit(limit).toList
+  def listDatasetsAfter(date: String, limit: Int, user:Option[Identity] = None): List[Dataset] = {
+    val order = MongoDBObject("created" -> -1)
+    val externalViewingEnabled = appConfiguration.getDefault.get.viewNoLoggedIn
+    var haveAdmin = false
+    user match{
+      case Some(user)=>{
+        haveAdmin = appConfiguration.adminExists(user.email.getOrElse("none"))
+      }
+      case None=>{}
     }
+    
+    if(externalViewingEnabled || haveAdmin){
+	      if (date == "") {
+	    	  Dataset.findAll.sort(order).limit(limit).toList
+	      } else {
+		      val sinceDate = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss").parse(date)
+		      Logger.info("After " + sinceDate)
+		      Dataset.find("created" $lt sinceDate).sort(order).limit(limit).toList
+	    }
+    }
+    else{   
+        if (date == "") {
+            user match{
+              case Some(user)=>{
+                var idsAllowedForUser: List[String] = List.empty
+                var rightsOfUser = accessRights.get(user)
+                rightsOfUser match{
+                  case Some(someRightsOfUser)=>{
+                    idsAllowedForUser = someRightsOfUser.datasetsViewOnly
+                  }
+                  case None=>{}
+                }              
+                Dataset.find($or("isPublic"->true,"author.fullName"->"Anonymous User","author.identityId.userId"->user.identityId.userId,"_id"->MongoDBObject("$in"->idsAllowedForUser)   )  ).sort(order).limit(limit).toList
+              }
+              case None=>{
+                Dataset.find($or("isPublic"->true,"author.fullName"->"Anonymous User")).sort(order).limit(limit).toList
+              }
+            }	    	  
+	      } else {
+		      val sinceDate = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss").parse(date)
+		      Logger.info("After " + sinceDate)
+		      
+		      user match{
+              case Some(user)=>{
+                var idsAllowedForUser: List[String] = List.empty
+                var rightsOfUser = accessRights.get(user)
+                rightsOfUser match{
+                  case Some(someRightsOfUser)=>{
+                    idsAllowedForUser = someRightsOfUser.datasetsViewOnly
+                  }
+                  case None=>{}
+                }              
+                Dataset.find($and("created" $lt sinceDate,$or("isPublic"->true,"author.fullName"->"Anonymous User","author.identityId.userId"->user.identityId.userId,"_id"->MongoDBObject("$in"->idsAllowedForUser))  )  ).sort(order).limit(limit).toList
+              }
+              case None=>{
+                Dataset.find($and("created" $lt sinceDate,$or("isPublic"->true,"author.fullName"->"Anonymous User"))).sort(order).limit(limit).toList
+              }
+            }
+	    }
+    }
+ 
   }
 
   /**
    * List datasets before a specified date.
    */
-  def listDatasetsBefore(date: String, limit: Int): List[Dataset] = {
-    var order = MongoDBObject("created"-> -1)
-    if (date == "") {
-      Dataset.findAll.sort(order).limit(limit).toList
-    } else {
-      order = MongoDBObject("created"-> 1)
-      val sinceDate = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss").parse(date)
-      Logger.info("Before " + sinceDate)
-      var datasetList = Dataset.find("created" $gt sinceDate).sort(order).limit(limit).toList.reverse
-      //datasetList = datasetList.filter(_ != datasetList.last)
-      datasetList
+  def listDatasetsBefore(date: String, limit: Int, user:Option[Identity] = None): List[Dataset] = {
+    var order = MongoDBObject("created" -> -1)
+    val externalViewingEnabled = appConfiguration.getDefault.get.viewNoLoggedIn
+    var haveAdmin = false
+    user match{
+      case Some(user)=>{
+        haveAdmin = appConfiguration.adminExists(user.email.getOrElse("none"))
+      }
+      case None=>{}
     }
+    
+    if(externalViewingEnabled || haveAdmin){
+	     if (date == "") {
+	    	 Dataset.findAll.sort(order).limit(limit).toList
+	    } else {
+	      order = MongoDBObject("created" -> 1)
+	      val sinceDate = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss").parse(date)
+	      Logger.info("Before " + sinceDate)
+	      var datasetList = Dataset.find("created" $gt sinceDate).sort(order).limit(limit).toList.reverse
+	      datasetList
+	    }
+    }
+    else{
+    		if (date == "") {
+	            user match{
+	              case Some(user)=>{
+	                var idsAllowedForUser: List[String] = List.empty
+	                var rightsOfUser = accessRights.get(user)
+	                rightsOfUser match{
+	                  case Some(someRightsOfUser)=>{
+	                    idsAllowedForUser = someRightsOfUser.datasetsViewOnly
+	                  }
+	                  case None=>{}
+	                }              
+	                Dataset.find($or("isPublic"->true,"author.fullName"->"Anonymous User","author.identityId.userId"->user.identityId.userId,"_id"->MongoDBObject("$in"->idsAllowedForUser)   )  ).sort(order).limit(limit).toList
+	              }
+	              case None=>{
+	                Dataset.find($or("isPublic"->true,"author.fullName"->"Anonymous User")).sort(order).limit(limit).toList
+	              }
+	            }	    	  
+	      } else {
+	    	  order = MongoDBObject("created" -> 1)
+	    	  val sinceDate = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss").parse(date)
+	    	  Logger.info("Before " + sinceDate)
+		      
+		      user match{
+              case Some(user)=>{
+                var idsAllowedForUser: List[String] = List.empty
+                var rightsOfUser = accessRights.get(user)
+                rightsOfUser match{
+                  case Some(someRightsOfUser)=>{
+                    idsAllowedForUser = someRightsOfUser.datasetsViewOnly
+                  }
+                  case None=>{}
+                }              
+                Dataset.find($and("created" $gt sinceDate,$or("isPublic"->true,"author.fullName"->"Anonymous User","author.identityId.userId"->user.identityId.userId,"_id"->MongoDBObject("$in"->idsAllowedForUser))  )  ).sort(order).limit(limit).toList.reverse
+              }
+              case None=>{
+                Dataset.find($and("created" $gt sinceDate,$or("isPublic"->true,"author.fullName"->"Anonymous User"))).sort(order).limit(limit).toList.reverse
+              }
+            }
+	    }
+    }
+    
+    
   }
 
   /**
@@ -121,16 +231,79 @@ class MongoDBDatasetService @Inject() (
     Dataset.findOneById(new ObjectId(id.stringify))
   }
 
-  def latest(): Option[Dataset] = {
-    val results = Dataset.find(MongoDBObject()).sort(MongoDBObject("created" -> -1)).limit(1).toList
+
+  def latest(user:Option[Identity] = None): Option[Dataset] = {
+    val externalViewingEnabled = appConfiguration.getDefault.get.viewNoLoggedIn
+    var haveAdmin = false
+    user match{
+      case Some(user)=>{
+        haveAdmin = appConfiguration.adminExists(user.email.getOrElse("none"))
+      }
+      case None=>{}
+    }
+    var results: List[Dataset] = List.empty
+    val order = MongoDBObject("created" -> -1)
+    if(externalViewingEnabled || haveAdmin){
+      results = Dataset.find(MongoDBObject()).sort(order).limit(1).toList
+    }else{
+	            user match{
+	              case Some(user)=>{
+	                var idsAllowedForUser: List[String] = List.empty
+	                var rightsOfUser = accessRights.get(user)
+	                rightsOfUser match{
+	                  case Some(someRightsOfUser)=>{
+	                    idsAllowedForUser = someRightsOfUser.datasetsViewOnly
+	                  }
+	                  case None=>{}
+	                }              
+	                Dataset.find($or("isPublic"->true,"author.fullName"->"Anonymous User","author.identityId.userId"->user.identityId.userId,"_id"->MongoDBObject("$in"->idsAllowedForUser)   )  ).sort(order).limit(1).toList
+	              }
+	              case None=>{
+	                results = Dataset.find($or("isPublic"->true,"author.fullName"->"Anonymous User")).sort(order).limit(1).toList
+	              }
+	            }	    	  
+    }
+    
+    
     if (results.size > 0)
       Some(results(0))
     else
       None
   }
 
-  def first(): Option[Dataset] = {
-    val results = Dataset.find(MongoDBObject()).sort(MongoDBObject("created" -> 1)).limit(1).toList
+  def first(user:Option[Identity] = None): Option[Dataset] = {
+    val externalViewingEnabled = appConfiguration.getDefault.get.viewNoLoggedIn
+    var haveAdmin = false
+    user match{
+      case Some(user)=>{
+        haveAdmin = appConfiguration.adminExists(user.email.getOrElse("none"))
+      }
+      case None=>{}
+    }
+    var results: List[Dataset] = List.empty
+    val order = MongoDBObject("created" -> 1)
+    if(externalViewingEnabled || haveAdmin){
+      results = Dataset.find(MongoDBObject()).sort(order).limit(1).toList
+    }else{
+	            user match{
+	              case Some(user)=>{
+	                var idsAllowedForUser: List[String] = List.empty
+	                var rightsOfUser = accessRights.get(user)
+	                rightsOfUser match{
+	                  case Some(someRightsOfUser)=>{
+	                    idsAllowedForUser = someRightsOfUser.datasetsViewOnly
+	                  }
+	                  case None=>{}
+	                }              
+	                Dataset.find($or("isPublic"->true,"author.fullName"->"Anonymous User","author.identityId.userId"->user.identityId.userId,"_id"->MongoDBObject("$in"->idsAllowedForUser)   )  ).sort(order).limit(1).toList
+	              }
+	              case None=>{
+	                results = Dataset.find($or("isPublic"->true,"author.fullName"->"Anonymous User")).sort(order).limit(1).toList
+	              }
+	            }	    	  
+    }
+    
+    
     if (results.size > 0)
       Some(results(0))
     else

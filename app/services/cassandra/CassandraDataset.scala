@@ -6,6 +6,7 @@ import play.api.libs.json.{JsNull, JsValue}
 import com.mongodb.casbah.commons.MongoDBObject
 import com.mongodb.casbah.Imports._
 import models.File
+import securesocial.core.Identity
 
 /**
  * Store datasets in Cassandra.
@@ -31,14 +32,14 @@ class CassandraDataset extends DatasetService {
   /**
    * List datasets after a specified date.
    */
-  def listDatasetsAfter(date: String, limit: Int): List[Dataset] = {
+  def listDatasetsAfter(date: String, limit: Int, user:Option[Identity] = None): List[Dataset] = {
     List.empty[Dataset]
   }
   
   /**
    * List datasets before a specified date.
    */
-  def listDatasetsBefore(date: String, limit: Int): List[Dataset] = {
+  def listDatasetsBefore(date: String, limit: Int, user:Option[Identity] = None): List[Dataset] = {
     List.empty[Dataset]
   }
   
@@ -52,12 +53,12 @@ class CassandraDataset extends DatasetService {
   /**
    * Lastest dataset in chronological order.
    */
-  def latest(): Option[Dataset] = None
+  def latest(user:Option[Identity] = None): Option[Dataset] = None
 
   /**
    * First dataset in chronological order.
    */
-  def first(): Option[Dataset] = None
+  def first(user:Option[Identity] = None): Option[Dataset] = None
 
   def insert(dataset: Dataset): Option[String] = None
 

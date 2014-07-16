@@ -63,22 +63,31 @@ class Datasets @Inject()(
   def list(when: String, date: String, limit: Int) = SecuredAction(authorization = WithPermission(Permission.ListDatasets)) {
 	    implicit request =>
 	      implicit val user = request.user
+	      var rightsForUser: Option[models.UserPermissions] = None
+	      user match{
+			        case Some(theUser)=>{
+			            rightsForUser = accessRights.get(theUser)
+			        }
+			        case None=>{
+			        }
+	      }
+	      
 	      var direction = "b"
 	      if (when != "") direction = when
 	      val formatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS")
 	      var prev, next = ""
 	      var datasetList = List.empty[models.Dataset]
 	      if (direction == "b") {
-	        datasetList = datasets.listDatasetsBefore(date, limit)
+	        datasetList = datasets.listDatasetsBefore(date, limit, user)
 	      } else if (direction == "a") {
-	        datasetList = datasets.listDatasetsAfter(date, limit)
+	        datasetList = datasets.listDatasetsAfter(date, limit, user)
 	      } else {
 	        badRequest
 	      }
 	      // latest object
-	      val latest = datasets.latest()
+	      val latest = datasets.latest(user)
 	      // first object
-	      val first = datasets.first()
+	      val first = datasets.first(user)
 	      var firstPage = false
 	      var lastPage = false
 	      if (latest.size == 1) {
@@ -97,62 +106,10 @@ class Datasets @Inject()(
 	          next = formatter.format(datasetList.last.created)
 	        }
 	      }
-	      Ok(views.html.datasetList(datasetList, prev, next, limit))
+	      Ok(views.html.datasetList(datasetList, prev, next, limit, rightsForUser))
 	  }
 
-  def checkAccessForFile(file: File, user: Option[Identity], permissionType: String): Boolean = {
-    if(permissionType.equals("view") && (file.isPublic.getOrElse(false) || file.author.fullName.equals("Anonymous User") || appConfiguration.getDefault.get.viewNoLoggedIn)){
-      true
-    }
-    else{
-      user match{
-        case Some(theUser)=>{
-          appConfiguration.adminExists(theUser.email.getOrElse("")) || file.author.identityId.userId.equals(theUser.identityId.userId) || accessRights.checkForPermission(theUser, file.id.stringify, "file", permissionType)
-        }
-        case None=>{
-          false
-        }
-      }
-    }
-  }
   
-  def checkAccessForFileUsingRightsList(file: File, user: Option[Identity], permissionType: String, rightsForUser: Option[UserPermissions]): Boolean = {
-    if(permissionType.equals("view") && (file.isPublic.getOrElse(false) || file.author.fullName.equals("Anonymous User") || appConfiguration.getDefault.get.viewNoLoggedIn)){
-      true
-    }
-    else{
-      user match{
-        case Some(theUser)=>{
-          val canAccessWithoutRightsList =  appConfiguration.adminExists(theUser.email.getOrElse("")) || file.author.identityId.userId.equals(theUser.identityId.userId)
-          rightsForUser match{
-	        case Some(userRights)=>{
-	        	if(canAccessWithoutRightsList)
-	        	  true
-	        	else{
-	        	  if(permissionType.equals("view")){
-			        userRights.filesViewOnly.contains(file.id.stringify)
-			      }else if(permissionType.equals("modify")){
-			        userRights.filesViewModify.contains(file.id.stringify)
-			      }else if(permissionType.equals("administrate")){
-			        userRights.filesAdministrate.contains(file.id.stringify)
-			      }
-			      else{
-			        Logger.error("Unknown permission type")
-			        false
-			      }
-	        	}
-	        }
-	        case None=>{
-	          canAccessWithoutRightsList
-	        }
-	      }
-        }
-        case None=>{
-          false
-        }
-      }
-    }
-  }
 
   /**
    * Dataset.	
@@ -160,6 +117,7 @@ class Datasets @Inject()(
   def dataset(id: UUID) = SecuredAction(authorization = WithPermission(Permission.ShowDataset), resourceId = Some(id)) {
 	    implicit request =>
 	      implicit val user = request.user
+	      val filesChecker = services.DI.injector.getInstance(classOf[controllers.Files]) 
 	      Previewers.findPreviewers.foreach(p => Logger.info("Previewer found " + p.id))
 	      datasets.get(id) match {
 	        case Some(dataset) => {
@@ -170,13 +128,13 @@ class Datasets @Inject()(
 		        case Some(theUser)=>{
 		            rightsForUser = accessRights.get(theUser)
 		        	for(checkedFile <- dataset.files.map(f => files.get(f.id).get)){
-			            if(checkAccessForFileUsingRightsList(checkedFile, user, "view", rightsForUser))
+			            if(filesChecker.checkAccessForFileUsingRightsList(checkedFile, user, "view", rightsForUser))
 			              filesInDataset :+ checkedFile
 			        }
 		        }
 		        case None=>{
 		          for(checkedFile <- dataset.files.map(f => files.get(f.id).get)){
-		            if(checkAccessForFile(checkedFile, user, "view"))
+		            if(filesChecker.checkAccessForFile(checkedFile, user, "view"))
 		              filesInDataset :+ checkedFile
 		          }
 		        }
@@ -221,18 +179,21 @@ class Datasets @Inject()(
 	          val userMetadata = datasets.getUserMetadata(id)
 	          Logger.debug("User metadata: " + userMetadata.toString)
 
-	          var collectionsOutside = collections.listOutsideDataset(id).sortBy(_.name)
-	          var collectionsInside = collections.listInsideDataset(id).sortBy(_.name)
+	          var collectionsOutside: List[models.Collection]  = List.empty
+	          var collectionsInside: List[models.Collection]  = List.empty
 	          
 	          var filesOutside: List[models.File] = List.empty
+	          var collectionsChecker = services.DI.injector.getInstance(classOf[controllers.Collections])
 	          user match{
 		        case Some(theUser)=>{
-		            filesOutside = for(checkedFile <- files.listOutsideDataset(id).sortBy(_.filename); if(checkAccessForFileUsingRightsList(checkedFile, user, "view", rightsForUser))) yield checkedFile
-		            collectionsOutside = for(checkedCollection <- collections.listOutsideDataset(id).sortBy(_.name); if(checkAccessForCollectionUsingRightsList(checkedCollection, user, "modify", rightsForUser))) yield checkedCollection
+		            filesOutside = for(checkedFile <- files.listOutsideDataset(id).sortBy(_.filename); if(filesChecker.checkAccessForFileUsingRightsList(checkedFile, user, "view", rightsForUser))) yield checkedFile
+		            collectionsOutside = for(checkedCollection <- collections.listOutsideDataset(id).sortBy(_.name); if(collectionsChecker.checkAccessForCollectionUsingRightsList(checkedCollection, user, "modify", rightsForUser))) yield checkedCollection
+		            collectionsInside = for(checkedCollection <- collections.listInsideDataset(id).sortBy(_.name); if(collectionsChecker.checkAccessForCollectionUsingRightsList(checkedCollection, user, "modify", rightsForUser))) yield checkedCollection
 		        }
 		        case None=>{
-		          filesOutside = for(checkedFile <- files.listOutsideDataset(id).sortBy(_.filename); if(checkAccessForFile(checkedFile, user, "view"))) yield checkedFile
-		          collectionsOutside = for(checkedCollection <- collections.listOutsideDataset(id).sortBy(_.name); if(checkAccessForCollection(checkedCollection, user, "modify"))) yield checkedCollection
+		          filesOutside = for(checkedFile <- files.listOutsideDataset(id).sortBy(_.filename); if(filesChecker.checkAccessForFile(checkedFile, user, "view"))) yield checkedFile
+		          collectionsOutside = for(checkedCollection <- collections.listOutsideDataset(id).sortBy(_.name); if(collectionsChecker.checkAccessForCollection(checkedCollection, user, "modify"))) yield checkedCollection
+		          collectionsInside = for(checkedCollection <- collections.listInsideDataset(id).sortBy(_.name); if(collectionsChecker.checkAccessForCollection(checkedCollection, user, "modify"))) yield checkedCollection
 		        }
 		      }
 
@@ -520,27 +481,15 @@ class Datasets @Inject()(
   }
   
   
-  def checkAccessForCollection(collection: Collection, user: Option[Identity], permissionType: String): Boolean = {
-    var isAuthorless = true
-    collection.author match{
-      case Some(author)=>{
-        isAuthorless = collection.author.get.fullName.equals("Anonymous User")
-      }
-      case None=>{}
-    }
-    
-    if(permissionType.equals("view") && (collection.isPublic.getOrElse(false) || isAuthorless || appConfiguration.getDefault.get.viewNoLoggedIn)){
+  
+  def checkAccessForDataset(dataset: models.Dataset, user: Option[Identity], permissionType: String): Boolean = {
+    if(permissionType.equals("view") && (dataset.isPublic.getOrElse(false) || dataset.author.fullName.equals("Anonymous User") || appConfiguration.getDefault.get.viewNoLoggedIn)){
       true
     }
     else{
       user match{
         case Some(theUser)=>{
-          var userIsAuthor = false
-          if(!isAuthorless){
-            userIsAuthor = collection.author.get.identityId.userId.equals(theUser.identityId.userId)
-          }
-          
-          appConfiguration.adminExists(theUser.email.getOrElse("")) || userIsAuthor || accessRights.checkForPermission(theUser, collection.id.stringify, "collection", permissionType)
+          appConfiguration.adminExists(theUser.email.getOrElse("")) || dataset.author.identityId.userId.equals(theUser.identityId.userId) || accessRights.checkForPermission(theUser, dataset.id.stringify, "dataset", permissionType)
         }
         case None=>{
           false
@@ -549,38 +498,25 @@ class Datasets @Inject()(
     }
   }
   
-  def checkAccessForCollectionUsingRightsList(collection: Collection, user: Option[Identity], permissionType: String, rightsForUser: Option[UserPermissions]): Boolean = {
-    var isAuthorless = true
-    collection.author match{
-      case Some(author)=>{
-        isAuthorless = collection.author.get.fullName.equals("Anonymous User")
-      }
-      case None=>{}
-    }
-    
-    if(permissionType.equals("view") && (collection.isPublic.getOrElse(false) || isAuthorless || appConfiguration.getDefault.get.viewNoLoggedIn)){
+  def checkAccessForDatasetUsingRightsList(dataset: models.Dataset, user: Option[Identity], permissionType: String, rightsForUser: Option[UserPermissions]): Boolean = {
+    if(permissionType.equals("view") && (dataset.isPublic.getOrElse(false) || dataset.author.fullName.equals("Anonymous User") || appConfiguration.getDefault.get.viewNoLoggedIn)){
       true
     }
     else{
       user match{
         case Some(theUser)=>{
-          var userIsAuthor = false
-          if(!isAuthorless){
-            userIsAuthor = collection.author.get.identityId.userId.equals(theUser.identityId.userId)
-          }
-          
-          val canAccessWithoutRightsList =  appConfiguration.adminExists(theUser.email.getOrElse("")) || userIsAuthor
+          val canAccessWithoutRightsList =  appConfiguration.adminExists(theUser.email.getOrElse("")) || dataset.author.identityId.userId.equals(theUser.identityId.userId)
           rightsForUser match{
 	        case Some(userRights)=>{
 	        	if(canAccessWithoutRightsList)
 	        	  true
 	        	else{
 	        	  if(permissionType.equals("view")){
-			        userRights.collectionsViewOnly.contains(collection.id.stringify)
+			        userRights.datasetsViewOnly.contains(dataset.id.stringify)
 			      }else if(permissionType.equals("modify")){
-			        userRights.collectionsViewModify.contains(collection.id.stringify)
+			        userRights.datasetsViewModify.contains(dataset.id.stringify)
 			      }else if(permissionType.equals("administrate")){
-			        userRights.collectionsAdministrate.contains(collection.id.stringify)
+			        userRights.datasetsAdministrate.contains(dataset.id.stringify)
 			      }
 			      else{
 			        Logger.error("Unknown permission type")
@@ -599,4 +535,5 @@ class Datasets @Inject()(
       }
     }
   }
+  
 }

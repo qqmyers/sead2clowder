@@ -16,6 +16,8 @@ import fileutils.FilesUtils
 import api.WithPermission
 import api.Permission
 import javax.inject.Inject
+import securesocial.core.Identity
+import models.UserPermissions
 
 /**
  * Manage files.
@@ -33,7 +35,8 @@ class Files @Inject() (
   threeD: ThreeDService,
   sparql: RdfSPARQLService,
   accessRights: UserAccessRightsService,
-  thumbnails: ThumbnailService) extends SecuredController {
+  thumbnails: ThumbnailService,
+  appConfiguration: AppConfigurationService) extends SecuredController {
 
   /**
    * Upload form.
@@ -52,6 +55,15 @@ class Files @Inject() (
     Logger.info("GET file with id " + id)
     files.get(id) match {
       case Some(file) => {
+        var rightsForUser: Option[models.UserPermissions] = None
+        user match{
+		        case Some(theUser)=>{
+		            rightsForUser = accessRights.get(theUser)
+		        }
+		        case None=>{
+		        }
+		}
+        
         val previewsFromDB = previews.findByFileId(file.id)
         val previewers = Previewers.findPreviewers
         val previewsWithPreviewer = {
@@ -89,12 +101,24 @@ class Files @Inject() (
         }
         commentsByFile = commentsByFile.sortBy(_.posted)
         
-        var fileDataset = datasets.findByFileId(file.id).sortBy(_.name)
-        var datasetsOutside = datasets.findNotContainingFile(file.id).sortBy(_.name)
+        var fileDataset: List[models.Dataset] = List.empty
+        var datasetsOutside: List[models.Dataset] = List.empty
+        
+        var datasetsChecker = services.DI.injector.getInstance(classOf[controllers.Datasets])
+        		user match{
+	        		case Some(theUser)=>{
+	        					fileDataset = for(checkedDataset <- datasets.findByFileId(file.id).sortBy(_.name); if(datasetsChecker.checkAccessForDatasetUsingRightsList(checkedDataset, user, "view", rightsForUser))) yield checkedDataset
+	        					datasetsOutside = for(checkedDataset <- datasets.findNotContainingFile(file.id).sortBy(_.name); if(datasetsChecker.checkAccessForDatasetUsingRightsList(checkedDataset, user, "modify", rightsForUser))) yield checkedDataset
+	        		}
+	        		case None=>{
+	        					fileDataset = for(checkedDataset <- datasets.findByFileId(file.id).sortBy(_.name); if(datasetsChecker.checkAccessForDataset(checkedDataset, user, "view"))) yield checkedDataset
+	        					datasetsOutside = for(checkedDataset <- datasets.findNotContainingFile(file.id).sortBy(_.name); if(datasetsChecker.checkAccessForDataset(checkedDataset, user, "modify"))) yield checkedDataset
+	        		}
+        		}
         
         val isRDFExportEnabled = current.plugin[RDFExportService].isDefined
         
-        Ok(views.html.file(file, id.stringify, commentsByFile, previewsWithPreviewer, sectionsWithPreviews, isActivity, fileDataset, datasetsOutside, userMetadata, isRDFExportEnabled))
+        Ok(views.html.file(file, id.stringify, commentsByFile, previewsWithPreviewer, sectionsWithPreviews, isActivity, fileDataset, datasetsOutside, userMetadata, isRDFExportEnabled, rightsForUser))
       }
       case None => {
         val error_str = "The file with id " + id + " is not found."
@@ -109,6 +133,15 @@ class Files @Inject() (
    */
   def list(when: String, date: String, limit: Int) = SecuredAction(authorization = WithPermission(Permission.ListFiles)) { implicit request =>
     implicit val user = request.user
+    var rightsForUser: Option[models.UserPermissions] = None
+	      user match{
+			        case Some(theUser)=>{
+			            rightsForUser = accessRights.get(theUser)
+			        }
+			        case None=>{
+			        }
+	      }
+    
     var direction = "b"
     if (when != "") direction = when
     val formatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS")
@@ -116,16 +149,16 @@ class Files @Inject() (
     var next = ""
     var fileList = List.empty[models.File]
     if (direction == "b") {
-      fileList = files.listFilesBefore(date, limit)
+      fileList = files.listFilesBefore(date, limit, user)
     } else if (direction == "a") {
-      fileList = files.listFilesAfter(date, limit)
+      fileList = files.listFilesAfter(date, limit, user)
     } else {
       badRequest
     }
     // latest object
-    val latest = files.latest()
+    val latest = files.latest(user)
     // first object
-    val first = files.first()
+    val first = files.first(user)
     var firstPage = false
     var lastPage = false
     if (latest.size == 1) {
@@ -143,7 +176,7 @@ class Files @Inject() (
         next = formatter.format(fileList.last.uploadDate)
       }
     }
-    Ok(views.html.filesList(fileList, prev, next, limit))
+    Ok(views.html.filesList(fileList, prev, next, limit, rightsForUser))
   }
 
   /**
@@ -805,6 +838,63 @@ class Files @Inject() (
     implicit val user = request.user
   	Ok(views.html.fileGeneralMetadataSearch()) 
   }
+  
+  
+  def checkAccessForFile(file: models.File, user: Option[Identity], permissionType: String): Boolean = {
+    if(permissionType.equals("view") && (file.isPublic.getOrElse(false) || file.author.fullName.equals("Anonymous User") || appConfiguration.getDefault.get.viewNoLoggedIn)){
+      true
+    }
+    else{
+      user match{
+        case Some(theUser)=>{
+          appConfiguration.adminExists(theUser.email.getOrElse("")) || file.author.identityId.userId.equals(theUser.identityId.userId) || accessRights.checkForPermission(theUser, file.id.stringify, "file", permissionType)
+        }
+        case None=>{
+          false
+        }
+      }
+    }
+  }
+  
+  def checkAccessForFileUsingRightsList(file: models.File, user: Option[Identity], permissionType: String, rightsForUser: Option[UserPermissions]): Boolean = {
+    if(permissionType.equals("view") && (file.isPublic.getOrElse(false) || file.author.fullName.equals("Anonymous User") || appConfiguration.getDefault.get.viewNoLoggedIn)){
+      true
+    }
+    else{
+      user match{
+        case Some(theUser)=>{
+          val canAccessWithoutRightsList =  appConfiguration.adminExists(theUser.email.getOrElse("")) || file.author.identityId.userId.equals(theUser.identityId.userId)
+          Logger.debug("Access without rights for file "+file.id.stringify+": "+ canAccessWithoutRightsList)
+          rightsForUser match{
+	        case Some(userRights)=>{
+	        	if(canAccessWithoutRightsList)
+	        	  true
+	        	else{
+	        	  if(permissionType.equals("view")){
+			        userRights.filesViewOnly.contains(file.id.stringify)
+			      }else if(permissionType.equals("modify")){
+			        userRights.filesViewModify.contains(file.id.stringify)
+			      }else if(permissionType.equals("administrate")){
+			        userRights.filesAdministrate.contains(file.id.stringify)
+			      }
+			      else{
+			        Logger.error("Unknown permission type")
+			        false
+			      }
+	        	}
+	        }
+	        case None=>{
+	          canAccessWithoutRightsList
+	        }
+	      }
+        }
+        case None=>{
+          false
+        }
+      }
+    }
+  }
+  
 
   ///////////////////////////////////
   //

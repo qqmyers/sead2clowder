@@ -46,6 +46,8 @@ import play.api.libs.json.JsObject
 import play.api.Play.configuration
 import com.wordnik.swagger.annotations.{ApiOperation, Api}
 
+import securesocial.core.Identity
+
 /**
  * Json API for files.
  *
@@ -65,7 +67,8 @@ class Files @Inject()(
   threeD: ThreeDService,
   sqarql: RdfSPARQLService,
   accessRights: UserAccessRightsService,
-  thumbnails: ThumbnailService) extends ApiController {
+  thumbnails: ThumbnailService,
+  appConfiguration: AppConfigurationService) extends ApiController {
 
   @ApiOperation(value = "Retrieve physical file object metadata",
       notes = "Get metadata of the file object (not the resource it describes) as JSON. For example, size of file, date created, content type, filename.",
@@ -755,13 +758,26 @@ class Files @Inject()(
     		"authorId" -> file.author.identityId.userId))
   }
 
-  def jsonFileWithThumbnail(file: File): JsValue = {
+  def jsonFileWithThumbnail(file: File, user: Option[Identity] = None, rightsForUser: Option[UserPermissions] = None): JsValue = {
+    var userRequested = "None"
+    var userCanEdit = false
     var fileThumbnail = "None"
     if (!file.thumbnail_id.isEmpty)
       fileThumbnail = file.thumbnail_id.toString().substring(5, file.thumbnail_id.toString().length - 1)
+      
+    user match{
+        case Some(theUser)=>{
+          userRequested = theUser.fullName
+          userCanEdit = checkAccessForFileUsingRightsList(file, user, "modify", rightsForUser)
+        }
+        case None=>{
+          userRequested = "None"
+          userCanEdit = checkAccessForFile(file, user, "modify")
+        }
+      }
 
     toJson(Map("id" -> file.id.toString, "filename" -> file.filename, "contentType" -> file.contentType, "dateCreated" -> file.uploadDate.toString(), "thumbnail" -> fileThumbnail,
-    		"authorId" -> file.author.identityId.userId))
+    		"authorId" -> file.author.identityId.userId, "usercanedit" -> userCanEdit.toString, "userThatRequested" -> userRequested   ))
   }
 
   def toDBObject(fields: Seq[(String, JsValue)]): DBObject = {
@@ -1321,8 +1337,18 @@ class Files @Inject()(
       //searchQuery = searchQuery.reverse
 
       Logger.debug("Search completed. Returning files list.")
+      
+      var list: List[JsValue] = List.empty
+      request.user match{
+	        case Some(theUser)=>{
+	        	val rightsForUser = accessRights.get(theUser)
+	        	list = for (file <- searchQuery; if(checkAccessForFileUsingRightsList(file, request.user , "view", rightsForUser))) yield jsonFileWithThumbnail(file, request.user, rightsForUser)
+	        }
+	        case None=>{
+	          list = for (file <- searchQuery; if(checkAccessForFile(file, request.user , "view"))) yield jsonFileWithThumbnail(file, request.user)
+	        }
+	 }
 
-      val list = for (file <- searchQuery) yield jsonFileWithThumbnail(file)
       Logger.debug("thelist: " + toJson(list))
       Ok(toJson(list))
   }
@@ -1344,8 +1370,18 @@ class Files @Inject()(
       //searchQuery = searchQuery.reverse
 
       Logger.debug("Search completed. Returning files list.")
+      
+      var list: List[JsValue] = List.empty
+      request.user match{
+	        case Some(theUser)=>{
+	        	val rightsForUser = accessRights.get(theUser)
+	        	list = for (file <- searchQuery; if(checkAccessForFileUsingRightsList(file, request.user , "view", rightsForUser))) yield jsonFileWithThumbnail(file, request.user, rightsForUser)
+	        }
+	        case None=>{
+	          list = for (file <- searchQuery; if(checkAccessForFile(file, request.user , "view"))) yield jsonFileWithThumbnail(file, request.user)
+	        }
+	 }
 
-      val list = for (file <- searchQuery) yield jsonFileWithThumbnail(file)
       Logger.debug("thelist: " + toJson(list))
       Ok(toJson(list))
   }
@@ -1397,6 +1433,65 @@ class Files @Inject()(
       case None => Logger.error("File not found: " + id)
     }
   }
+  
+  
+  
+  def checkAccessForFile(file: File, user: Option[Identity], permissionType: String): Boolean = {
+    if(permissionType.equals("view") && (file.isPublic.getOrElse(false) || file.author.fullName.equals("Anonymous User") || appConfiguration.getDefault.get.viewNoLoggedIn)){
+      true
+    }
+    else{
+      user match{
+        case Some(theUser)=>{
+          theUser.fullName.equals("Anonymous User") || appConfiguration.adminExists(theUser.email.getOrElse("")) || file.author.identityId.userId.equals(theUser.identityId.userId) || accessRights.checkForPermission(theUser, file.id.stringify, "file", permissionType)
+        }
+        case None=>{
+          false
+        }
+      }
+    }
+  }
+  
+  def checkAccessForFileUsingRightsList(file: File, user: Option[Identity], permissionType: String, rightsForUser: Option[UserPermissions]): Boolean = {
+    if(permissionType.equals("view") && (file.isPublic.getOrElse(false) || file.author.fullName.equals("Anonymous User") || appConfiguration.getDefault.get.viewNoLoggedIn)){
+      true
+    }
+    else{
+      user match{
+        case Some(theUser)=>{
+          val canAccessWithoutRightsList = theUser.fullName.equals("Anonymous User") || appConfiguration.adminExists(theUser.email.getOrElse("")) || file.author.identityId.userId.equals(theUser.identityId.userId)
+          rightsForUser match{
+	        case Some(userRights)=>{
+	        	if(canAccessWithoutRightsList)
+	        	  true
+	        	else{
+	        	  if(permissionType.equals("view")){
+			        userRights.filesViewOnly.contains(file.id.stringify)
+			      }else if(permissionType.equals("modify")){
+			        userRights.filesViewModify.contains(file.id.stringify)
+			      }else if(permissionType.equals("administrate")){
+			        userRights.filesAdministrate.contains(file.id.stringify)
+			      }
+			      else{
+			        Logger.error("Unknown permission type")
+			        false
+			      }
+	        	}
+	        }
+	        case None=>{
+	          canAccessWithoutRightsList
+	        }
+	      }
+        }
+        case None=>{
+          false
+        }
+      }
+    }
+  }
+  
+  
+  
 }
 
 object MustBreak extends Exception {}
