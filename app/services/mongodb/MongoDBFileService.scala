@@ -572,7 +572,7 @@ class MongoDBFileService @Inject() (
     FileDAO.dao.collection.findOneByID(new ObjectId(id.stringify)) match {
       case Some(x) => {
     	Logger.debug("FileDAO keySets==="+x.keySet().toString())
-    	Logger.debug("Class Name: "+x.getClass().getName()+ "   x=  "+x.toString())
+    	//Logger.debug("Class Name: "+x.getClass().getName()+ "   x=  "+x.toString())
         
     	x.getAs[DBObject]("metadata")match {
     	    case None => {
@@ -580,7 +580,7 @@ class MongoDBFileService @Inject() (
             Logger.debug("  ")
             Logger.debug("No metadata field found")
             
-            Logger.debug("Class Name: "+x.getClass().getName()+ "   x=  "+x.toString())
+            //Logger.debug("Class Name: "+x.getClass().getName()+ "   x=  "+x.toString())
            // Json.obj("Message"->("No metadata for file "+id))
            // Json.obj(""->"")
             null
@@ -591,7 +591,7 @@ class MongoDBFileService @Inject() (
            
             val returnedMetadata = com.mongodb.util.JSON.serialize(x.getAs[DBObject]("metadata").get)
             
-            Logger.debug("retmd: " + returnedMetadata)
+            //Logger.debug("retmd: " + returnedMetadata)
 
             val retmd =Json.toJson(returnedMetadata)
             //Logger.debug("Contains Keys versus descriptors: " + map.containsKey("versus_descriptors"))
@@ -602,9 +602,11 @@ class MongoDBFileService @Inject() (
              val listd = Json.parse(returnedMetadata) \ ("versus_descriptors")
              listd
             }
-            else
+            else{
               //Json.obj(""->"")
+              Logger.debug("--no versus_descriptors found--")
               null
+            }
            
           }
         }
