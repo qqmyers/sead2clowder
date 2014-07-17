@@ -39,6 +39,35 @@ function setPermission(fullName, email, resourceType, resourceId, permissionType
 	
 }
 
+function setIsPublic(isPublic, resourceType, resourceId){
+	var setOrder={};
+	setOrder['isPublic'] = isPublic;
+	setOrder['resourceId'] = resourceId;
+	
+	var request = $.ajax({
+	       type: 'POST',
+	       url: window.location.protocol + "//" + window.location.hostname + (window.location.port ? ':' + window.location.port: '')+"/api/"+resourceType+"s/setIsPublic",
+	       data: JSON.stringify(setOrder),
+	       contentType: "application/json"
+	     });
+	request.done(function (response, textStatus, jqXHR){
+        console.log("Response " + response);        
+        if(response.indexOf("Done") >= 0){
+        	alert("Done");
+        }
+    });
+	request.fail(function (jqXHR, textStatus, errorThrown){
+		console.error(
+    		"The following error occured: "+
+    		textStatus, errorThrown		            
+			);
+		alert("ERROR: " + errorThrown +"." );
+		$("#privatePublic").prop('checked', !isPublic);
+	
+	});
+	
+}
+
 function capitaliseFirstLetter(string)
 {
     return string.charAt(0).toUpperCase() + string.slice(1);

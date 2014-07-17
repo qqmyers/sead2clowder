@@ -557,7 +557,7 @@
 			    </div>
 			    	@if(services.DI.injector.getInstance(classOf[controllers.Datasets]).checkAccessForDatasetUsingRightsList(dataset, user, "administrate", rightsForUser)){
 			    		<div class="tab-pane" id="tab4">	
-			      			@setResourceAccessRights("dataset", dataset.id.stringify)
+			      			@setResourceAccessRights("dataset", dataset.id.stringify, dataset.isPublic.getOrElse(false))
 			    		</div>
 			    	}		    
 			  </div>
@@ -607,12 +607,15 @@
 				 		  <div class="form-group">
 						    <label for="exampleInputFile">New File</label>
 						    <input type="file" id="query" name="File">
-						    <p class="help-block">The file will be uploaded and added to this dataset.</p>
-								    	Show file preview(s)
+						    <p class="help-block"><label>The file will be uploaded and added to this dataset.</label></p>
+								    	<label for="exampleShowPreviews">Show file preview(s)</label>
 		          						<br/>				
-		          						<input type="radio" name="datasetLevel" value="DatasetLevel" checked> Everywhere<br>
-										<input type="radio" name="datasetLevel" value="FileLevel"> On file page<br>
-										<input type="radio" name="datasetLevel" value="None"> Nowhere
+		          						<input type="radio" name="datasetLevel" value="DatasetLevel" checked><label> Everywhere</label><br>
+										<input type="radio" name="datasetLevel" value="FileLevel"><label> On file page</label><br>
+										<input type="radio" name="datasetLevel" value="None"><label> Nowhere</label><br>
+							<br>			
+							<input id="filePrivatePublic" name="filePrivatePublic" value="true" type="checkbox">
+							<label for="filePrivatePublic">File is public</label>
 						  </div>
 				        </div>
 				        <div class="modal-footer">

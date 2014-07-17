@@ -627,7 +627,7 @@
 										data-parent="#accordionAccessRights" href="#collapseAccessRights">Administrate</a>
 								</div>
 								<div id="collapseAccessRights" class="accordion-body in collapse">
-							      	@setResourceAccessRights("file", file.id.stringify)
+							      	@setResourceAccessRights("file", file.id.stringify, file.isPublic.getOrElse(false))
 								</div>
 							</div>
 						</div>

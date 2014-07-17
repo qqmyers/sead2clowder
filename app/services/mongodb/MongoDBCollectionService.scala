@@ -446,6 +446,10 @@ class MongoDBCollectionService @Inject() (datasets: DatasetService, appConfigura
 	    case None =>
     }  
   }
+  
+  def setIsPublic(collectionId: UUID, isPublic: Boolean){
+    Collection.update(MongoDBObject("_id" -> new ObjectId(collectionId.stringify)), $set("isPublic" -> isPublic), false, false, WriteConcern.Safe)
+  }
 }
 
 object Collection extends ModelCompanion[Collection, ObjectId] {

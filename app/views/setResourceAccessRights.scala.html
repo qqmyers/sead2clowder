@@ -1,4 +1,4 @@
-@(resourceType: String, resourceId: String)(implicit user: Option[securesocial.core.Identity])
+@(resourceType: String, resourceId: String, isPublic: Boolean = false)(implicit user: Option[securesocial.core.Identity])
 
 @import services.{DI, UserAccessRightsService} 
 
@@ -53,7 +53,8 @@
 			</tr>
 		</tbody>
 	</table>
-	
+	<input id="privatePublic" name="privatePublic" value="true" type="checkbox" @if(isPublic){checked="checked"}>
+	<label>Is public</label>
 
 </form>
 <script src="@routes.Assets.at("javascripts/manageAccessRights.js")" type="text/javascript"></script>
@@ -74,7 +75,9 @@
 	});
 </script>
 	<script>
-
+	$('#privatePublic').change(function() {
+			setIsPublic($(this).is(":checked"), "@resourceType", "@resourceId");
+		});
 	
 	
 		function handleRemoval(fullName, email, theElement){

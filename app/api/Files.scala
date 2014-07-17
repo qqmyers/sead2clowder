@@ -241,7 +241,7 @@ class Files @Inject()(
   @ApiOperation(value = "Upload file",
       notes = "Upload the attached file using multipart form enconding. Returns file id as JSON object. ID can be used to work on the file using the API. Uploaded file can be an XML metadata file.",
       responseClass = "None", httpMethod = "POST")
-  def upload(showPreviews: String = "DatasetLevel", originalZipFile: String = "") = SecuredAction(parse.multipartFormData, authorization = WithPermission(Permission.CreateFiles)) {
+  def upload(showPreviews: String = "DatasetLevel", originalZipFile: String = "", fileIsPublic: String = "false") = SecuredAction(parse.multipartFormData, authorization = WithPermission(Permission.CreateFiles)) {
     implicit request =>
       request.user match {
         case Some(user) => {
@@ -269,8 +269,9 @@ class Files @Inject()(
 	               case None => {}
 	             }
 	         }
+	        
 
-	        val file = files.save(new FileInputStream(f.ref.file), nameOfFile, f.contentType, realUser, showPreviews, realUser.fullName.equals("Anonymous User")) 
+	        val file = files.save(new FileInputStream(f.ref.file), nameOfFile, f.contentType, realUser, showPreviews, realUser.fullName.equals("Anonymous User")||fileIsPublic.toLowerCase.equals("true")) 
 	        val uploadedFile = f
 	        file match {
 	          case Some(f) => {
@@ -408,7 +409,7 @@ class Files @Inject()(
   @ApiOperation(value = "Upload a file to a specific dataset",
       notes = "Uploads the file, then links it with the dataset. Returns file id as JSON object. ID can be used to work on the file using the API. Uploaded file can be an XML metadata file to be added to the dataset.",
       responseClass = "None", httpMethod = "POST")
-  def uploadToDataset(dataset_id: UUID, showPreviews: String="DatasetLevel", originalZipFile: String = "") = SecuredAction(parse.multipartFormData, authorization=WithPermission(Permission.CreateDatasets), Some(dataset_id)) { implicit request =>
+  def uploadToDataset(dataset_id: UUID, showPreviews: String="DatasetLevel", originalZipFile: String = "", fileIsPublic: String = "false") = SecuredAction(parse.multipartFormData, authorization=WithPermission(Permission.CreateDatasets), Some(dataset_id)) { implicit request =>
     request.user match {
      case Some(user) => {
       datasets.get(dataset_id) match {
@@ -437,7 +438,7 @@ class Files @Inject()(
                case None => {}
              }
          }          
-          val file = files.save(new FileInputStream(f.ref.file), nameOfFile, f.contentType, realUser, showPreviews, realUser.fullName.equals("Anonymous User"))
+          val file = files.save(new FileInputStream(f.ref.file), nameOfFile, f.contentType, realUser, showPreviews, realUser.fullName.equals("Anonymous User")||fileIsPublic.toLowerCase.equals("true"))
           val uploadedFile = f         
           
           // submit file for extraction
@@ -1394,6 +1395,31 @@ class Files @Inject()(
 
       Logger.debug("thelist: " + toJson(list))
       Ok(toJson(list))
+  }
+  
+  @ApiOperation(value = "Set whether a file is open for public viewing.",
+      notes = "",
+      responseClass = "None", httpMethod = "POST")
+  def setIsPublic() = SecuredAction(authorization = WithPermission(Permission.AdministrateFiles)) {
+    request =>
+      (request.body \ "resourceId").asOpt[String].map { fileId =>
+        	(request.body \ "isPublic").asOpt[Boolean].map { isPublic =>
+        	  files.get(UUID(fileId))match{
+        	    case Some(file)=>{
+        	      files.setIsPublic(UUID(fileId), isPublic)
+        	      Ok("Done")
+        	    }
+        	    case None=>{
+        	      Logger.error("Error getting file with id " + fileId)
+                  Ok("No file with supplied id exists.")
+        	    }
+        	  } 
+	       }.getOrElse {
+	    	   BadRequest(toJson("Missing parameter [isPublic]"))
+	       }
+      }.getOrElse {
+    	   BadRequest(toJson("Missing parameter [resourceId]"))
+       }
   }
 
 

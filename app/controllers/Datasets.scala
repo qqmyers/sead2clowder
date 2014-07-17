@@ -53,7 +53,18 @@ class Datasets @Inject()(
   def newDataset() = SecuredAction(authorization = WithPermission(Permission.CreateDatasets)) {
     implicit request =>
       implicit val user = request.user
-      val filesList = for (file <- files.listFiles.sortBy(_.filename)) yield (file.id.toString(), file.filename)
+      val filesChecker = services.DI.injector.getInstance(classOf[controllers.Files])
+      var filesList: List[(String, String)] = List.empty          
+	          user match{
+		        case Some(theUser)=>{
+		            val rightsForUser = accessRights.get(theUser)
+		            filesList = for (file <- files.listFiles.sortBy(_.filename); if filesChecker.checkAccessForFileUsingRightsList(file, user, "view", rightsForUser)) yield (file.id.toString(), file.filename)
+		        }
+		        case None=>{
+		          filesList = for (file <- files.listFiles.sortBy(_.filename); if filesChecker.checkAccessForFile(file, user, "view")) yield (file.id.toString(), file.filename)
+		        }
+		      }
+      
       Ok(views.html.newDataset(datasetForm, filesList)).flashing("error" -> "Please select ONE file (upload new or existing)")
   }
 
@@ -274,7 +285,12 @@ class Datasets @Inject()(
 				        // store file
 	            	    Logger.info("Adding file" + identity)
 	            	    val showPreviews = request.body.asFormUrlEncoded.get("datasetLevel").get(0)
-	            	    val file = files.save(new FileInputStream(f.ref.file), nameOfFile, f.contentType, identity, showPreviews)
+	            	    var isFilePublicOption = request.body.asFormUrlEncoded.get("filePrivatePublic")
+				        if(!isFilePublicOption.isDefined)
+				          isFilePublicOption = Some(List("false"))	        
+				        val isFilePublic = isFilePublicOption.get(0).toBoolean
+	            	    
+	            	    val file = files.save(new FileInputStream(f.ref.file), nameOfFile, f.contentType, identity, showPreviews, isFilePublic)
 					    Logger.debug("Uploaded file id is " + file.get.id)
 					    Logger.debug("Uploaded file type is " + f.contentType)
 					    
@@ -327,8 +343,14 @@ class Datasets @Inject()(
 						        //current.plugin[ElasticsearchPlugin].foreach{_.index("data", "file", id, List(("filename",nameOfFile), ("contentType", f.contentType)))}
 					        }
 					        
-					        // add file to dataset 
-					        val dt = dataset.copy(files = List(f), author=identity)
+					        
+					    	var isDatasetPublicOption = request.body.asFormUrlEncoded.get("datasetPrivatePublic")
+					        if(!isDatasetPublicOption.isDefined)
+					          isDatasetPublicOption = Some(List("false"))	        
+					        val isDatasetPublic = isDatasetPublicOption.get(0).toBoolean
+					    	
+					        // add file to dataset
+					        val dt = dataset.copy(files = List(f), author=identity, isPublic=Some(isDatasetPublic))
 					        accessRights.addPermissionLevel(request.user.get, dt.id.stringify, "dataset", "administrate")
 					        // TODO create a service instead of calling salat directly
 				            datasets.update(dt)				            
@@ -419,7 +441,8 @@ class Datasets @Inject()(
 		          if(!thisFileThumbnail.isEmpty)
 		            thisFileThumbnailString = Some(thisFileThumbnail.get)
 		          
-				  val dt = dataset.copy(files = List(theFileGet), author=identity, thumbnail_id=thisFileThumbnailString)
+		          val isDatasetPublic = request.body.asFormUrlEncoded.get("datasetPrivatePublic").get(0).toBoolean
+				  val dt = dataset.copy(files = List(theFileGet), author=identity, thumbnail_id=thisFileThumbnailString, isPublic=Some(isDatasetPublic))
 				  datasets.update(dt)
 			      accessRights.addPermissionLevel(request.user.get, dt.id.stringify, "dataset", "administrate")
 		          if(!theFileGet.xmlMetadata.isEmpty){

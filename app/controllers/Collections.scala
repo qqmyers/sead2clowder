@@ -105,7 +105,7 @@ class Collections @Inject()(datasets: DatasetService, collections: CollectionSer
   /**
    * Create collection.
    */
-  def submit() = SecuredAction(authorization = WithPermission(Permission.CreateCollections)) {
+  def submit() = SecuredAction(parse.multipartFormData, authorization = WithPermission(Permission.CreateCollections)) {
     implicit request =>
       implicit val user = request.user
       user match {
@@ -116,7 +116,12 @@ class Collections @Inject()(datasets: DatasetService, collections: CollectionSer
 	        collection => {
 	          Logger.debug("Saving collection " + collection.name)
 	          accessRights.addPermissionLevel(request.user.get, collection.id.stringify, "collection", "administrate")
-	          collections.insert(Collection(id = collection.id, name = collection.name, description = collection.description, created = collection.created, author = Some(identity)))
+	          var isPublicOption = request.body.asFormUrlEncoded.get("collectionPrivatePublic")
+		        if(!isPublicOption.isDefined)
+		          isPublicOption = Some(List("false"))	        
+		        val isPublic = isPublicOption.get(0).toBoolean
+	          
+	          collections.insert(Collection(id = collection.id, name = collection.name, description = collection.description, created = collection.created, author = Some(identity), isPublic=Some(isPublic) ))
 	                    
 	          // redirect to collection page
 	          Redirect(routes.Collections.collection(collection.id))

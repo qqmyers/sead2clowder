@@ -138,10 +138,11 @@ POST	/api/files/:three_d_file_id/geometries/:geometry_id		@api.Files.attachGeome
 POST	/api/files/:three_d_file_id/3dTextures/:texture_id		@api.Files.attachTexture(three_d_file_id: UUID,texture_id: UUID)
 POST	/api/files/:file_id/thumbnails/:thumbnail_id			@api.Files.attachThumbnail(file_id: UUID,thumbnail_id: UUID)
 GET     /api/files                        						@api.Files.list
-POST    /api/files                        						@api.Files.upload(showPreviews: String ?= "DatasetLevel", originalZipFile: String ?= "")
+POST    /api/files                        						@api.Files.upload(showPreviews: String ?= "DatasetLevel", originalZipFile: String ?= "", fileIsPublic: String ?= "false")
 POST	/api/files/searchusermetadata							@api.Files.searchFilesUserMetadata
 POST	/api/files/searchmetadata								@api.Files.searchFilesGeneralMetadata
-POST    /api/uploadToDataset/:id                        		@api.Files.uploadToDataset(id: UUID, String ?= "DatasetLevel", originalZipFile: String ?= "")
+POST	/api/files/setIsPublic									@api.Files.setIsPublic
+POST    /api/uploadToDataset/:id                        		@api.Files.uploadToDataset(id: UUID, String ?= "DatasetLevel", originalZipFile: String ?= "", fileIsPublic: String ?= "false")
 
 POST	/api/files/uploadIntermediate/:idAndFlags				@api.Files.uploadIntermediate(idAndFlags)
 
@@ -182,6 +183,7 @@ POST    /api/setViewNoLoggedIn                                  api.Admin.setVie
 
 POST    /api/collections                                        @api.Collections.createCollection()
 GET		/api/collections/list														@api.Collections.listCollections
+POST	/api/collections/setIsPublic												@api.Collections.setIsPublic
 POST	/api/collections/:coll_id/datasets/:ds_id									@api.Collections.attachDataset(coll_id: UUID, ds_id: UUID)
 POST	/api/collections/:coll_id/datasetsRemove/:ds_id/:ignoreNotFound				@api.Collections.removeDataset(coll_id: UUID, ds_id: UUID,ignoreNotFound)
 POST	/api/collections/:coll_id/remove											@api.Collections.removeCollection(coll_id: UUID)
@@ -191,6 +193,7 @@ GET    	/api/datasets					  							@api.Datasets.list
 POST    /api/datasets                                           	@api.Datasets.createDataset
 POST	/api/datasets/searchusermetadata							@api.Datasets.searchDatasetsUserMetadata
 POST	/api/datasets/searchmetadata								@api.Datasets.searchDatasetsGeneralMetadata
+POST	/api/datasets/setIsPublic									@api.Datasets.setIsPublic
 
 
 GET		/api/datasets/listOutsideCollection/:coll_id				@api.Datasets.listOutsideCollection(coll_id: UUID)

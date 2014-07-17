@@ -171,4 +171,6 @@ trait DatasetService {
   def newThumbnail(datasetId: UUID)
 
   def update(dataset: Dataset)
+  
+  def setIsPublic(datasetId: UUID, isPublic: Boolean)
 }

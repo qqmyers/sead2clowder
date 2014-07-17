@@ -329,6 +329,7 @@ class MongoDBFileService @Inject() (
     mongoFile.contentType = ct
     mongoFile.put("showPreviews", showPreviews)
     mongoFile.put("author", SocialUserDAO.toDBObject(author))
+    mongoFile.put("isPublic", Some(isPublic))
     mongoFile.save
     val oid = mongoFile.getAs[ObjectId]("_id").get
 
@@ -992,6 +993,10 @@ class MongoDBFileService @Inject() (
   def updateThumbnail(fileId: UUID, thumbnailId: UUID) {
     FileDAO.update(MongoDBObject("_id" -> new ObjectId(fileId.stringify)),
       $set("thumbnail_id" -> thumbnailId.stringify), false, false, WriteConcern.Safe)
+  }
+  
+  def setIsPublic(fileId: UUID, isPublic: Boolean){
+    FileDAO.update(MongoDBObject("_id" -> new ObjectId(fileId.stringify)), $set("isPublic" -> isPublic), false, false, WriteConcern.Safe)
   }
 
 }

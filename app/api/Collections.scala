@@ -39,7 +39,13 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
         name =>
           (request.body \ "description").asOpt[String].map {
             description =>
-              val c = Collection(name = name, description = description, created = new Date(), author = request.user, isPublic = Some(request.user.get.fullName.equals("Anonymous User")))
+              var isPublic = false
+              (request.body \ "isPublic").asOpt[Boolean].map {
+                inputIsPublic=>
+                  isPublic = inputIsPublic
+              }.getOrElse{}
+              
+              val c = Collection(name = name, description = description, created = new Date(), author = request.user, isPublic = Some(request.user.get.fullName.equals("Anonymous User")||isPublic))
               accessRights.addPermissionLevel(request.user.get, c.id.stringify, "collection", "administrate")
               collections.insert(c) match {
                 case Some(id) => {
@@ -110,6 +116,31 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
   def jsonCollection(collection: Collection): JsValue = {
     toJson(Map("id" -> collection.id.toString, "name" -> collection.name, "description" -> collection.description,
                "created" -> collection.created.toString))
+  }
+  
+  @ApiOperation(value = "Set whether a collection is open for public viewing.",
+      notes = "",
+      responseClass = "None", httpMethod = "POST")
+  def setIsPublic() = SecuredAction(authorization = WithPermission(Permission.AdministrateCollections)) {
+    request =>
+      (request.body \ "resourceId").asOpt[String].map { collectionId =>
+        	(request.body \ "isPublic").asOpt[Boolean].map { isPublic =>
+        	  collections.get(UUID(collectionId))match{
+        	    case Some(collection)=>{
+        	      collections.setIsPublic(UUID(collectionId), isPublic)
+        	      Ok("Done")
+        	    }
+        	    case None=>{
+        	      Logger.error("Error getting collection with id " + collectionId)
+                  Ok("No collection with supplied id exists.")
+        	    }
+        	  } 
+	       }.getOrElse {
+	    	   BadRequest(toJson("Missing parameter [isPublic]"))
+	       }
+      }.getOrElse {
+    	   BadRequest(toJson("Missing parameter [resourceId]"))
+       }
   }
   
   def checkAccessForCollection(collection: Collection, user: Option[Identity], permissionType: String): Boolean = {

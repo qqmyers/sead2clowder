@@ -131,7 +131,13 @@ class Datasets @Inject()(
       	    (request.body \ "file_id").asOpt[String].map { file_id =>
       	      files.get(UUID(file_id)) match {
       	        case Some(file) =>
-      	           val d = Dataset(name=name,description=description, created=new Date(), files=List(file), author=request.user.get, isPublic = Some(request.user.get.fullName.equals("Anonymous User")))
+      	           var isPublic = false
+	              (request.body \ "isPublic").asOpt[Boolean].map {
+	                inputIsPublic=>
+	                  isPublic = inputIsPublic
+	              }.getOrElse{}
+      	          
+      	           val d = Dataset(name=name,description=description, created=new Date(), files=List(file), author=request.user.get, isPublic = Some(request.user.get.fullName.equals("Anonymous User")||isPublic ))
       	           accessRights.addPermissionLevel(request.user.get, d.id.stringify, "dataset", "administrate")
 		      	   datasets.insert(d) match {
 		      	     case Some(id) => {
@@ -167,6 +173,31 @@ class Datasets @Inject()(
     }.getOrElse {
       BadRequest(toJson("Missing parameter [name]"))
     }
+  }
+  
+  @ApiOperation(value = "Set whether a dataset is open for public viewing.",
+      notes = "",
+      responseClass = "None", httpMethod = "POST")
+  def setIsPublic() = SecuredAction(authorization = WithPermission(Permission.AdministrateDatasets)) {
+    request =>
+      (request.body \ "resourceId").asOpt[String].map { datasetId =>
+        	(request.body \ "isPublic").asOpt[Boolean].map { isPublic =>
+        	  datasets.get(UUID(datasetId))match{
+        	    case Some(dataset)=>{
+        	      datasets.setIsPublic(UUID(datasetId), isPublic)
+        	      Ok("Done")
+        	    }
+        	    case None=>{
+        	      Logger.error("Error getting dataset with id " + datasetId)
+                  Ok("No dataset with supplied id exists.")
+        	    }
+        	  } 
+	       }.getOrElse {
+	    	   BadRequest(toJson("Missing parameter [isPublic]"))
+	       }
+      }.getOrElse {
+    	   BadRequest(toJson("Missing parameter [resourceId]"))
+       }
   }
 
   @ApiOperation(value = "Attach existing file to dataset",
@@ -938,6 +969,7 @@ class Datasets @Inject()(
       case None => {Logger.error("Error finding dataset" + id); InternalServerError}      
     }
   }
+  
   
   
   

@@ -210,9 +210,13 @@ class Files @Inject() (
 	        Logger.debug("Uploading file " + nameOfFile)
 
 	        var showPreviews = request.body.asFormUrlEncoded.get("datasetLevel").get(0)
+	        var isPublicOption = request.body.asFormUrlEncoded.get("filePrivatePublic")
+	        if(!isPublicOption.isDefined)
+	          isPublicOption = Some(List("false"))	        
+	        val isPublic = isPublicOption.get(0).toBoolean
 
 	        // store file       
-	        val file = files.save(new FileInputStream(f.ref.file), nameOfFile, f.contentType, identity, showPreviews)
+	        val file = files.save(new FileInputStream(f.ref.file), nameOfFile, f.contentType, identity, showPreviews, isPublic)
 	        val uploadedFile = f
 	//        Thread.sleep(1000)
 	        file match {
@@ -721,8 +725,13 @@ class Files @Inject() (
 			    
 				  Logger.debug("Uploading file " + nameOfFile)
 				  val showPreviews = request.body.asFormUrlEncoded.get("datasetLevel").get(0)
+				  var isPublicOption = request.body.asFormUrlEncoded.get("filePrivatePublic")
+		        if(!isPublicOption.isDefined)
+		          isPublicOption = Some(List("false"))	        
+		        val isPublic = isPublicOption.get(0).toBoolean
+				  
 				  // store file
-				  val file = files.save(new FileInputStream(f.ref.file), nameOfFile,f.contentType, identity, showPreviews)
+				  val file = files.save(new FileInputStream(f.ref.file), nameOfFile,f.contentType, identity, showPreviews, isPublic)
 				  val uploadedFile = f
 				  
 				  // submit file for extraction			

@@ -93,5 +93,7 @@ trait CollectionService {
    * Set new thumbnail.
    */
   def createThumbnail(collectionId: UUID)
+  
+  def setIsPublic(fileId: UUID, isPublic: Boolean)
 
 }

@@ -92,7 +92,7 @@
 			    		<button id="administrateBtn" class="btn btn-default requiresLogin" type="button">Administrate</button>
 			    	
 			    		<div id="adminDiv" style="display:none;">	
-			      			@setResourceAccessRights("collection", collection.id.stringify)
+			      			@setResourceAccessRights("collection", collection.id.stringify, collection.isPublic.getOrElse(false))
 			    		</div>
 			    		<script>
 				    		$('body').on('click','#administrateBtn',function(e){

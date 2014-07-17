@@ -977,6 +977,10 @@ class MongoDBDatasetService @Inject() (
       case None =>
     }
   }
+  
+  def setIsPublic(datasetId: UUID, isPublic: Boolean){
+    Dataset.update(MongoDBObject("_id" -> new ObjectId(datasetId.stringify)), $set("isPublic" -> isPublic), false, false, WriteConcern.Safe)
+  }
 
   def index(id: UUID) {
     Dataset.findOneById(new ObjectId(id.stringify)) match {

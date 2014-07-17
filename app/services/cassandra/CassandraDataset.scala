@@ -169,5 +169,6 @@ class CassandraDataset extends DatasetService {
 
   def update(dataset: Dataset) {}
 
+  def setIsPublic(datasetId: UUID, isPublic: Boolean){}
 
 }
