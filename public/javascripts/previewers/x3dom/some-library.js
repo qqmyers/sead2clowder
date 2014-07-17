@@ -847,7 +847,7 @@ function clearConfigTabAnnotations(prNum){
     
     function updatex3dPosition(prNum){
     	if(window["oldx3dposition" + prNum] != window["thisPreview" + prNum].offset().top){
-    		$("#x3dElement" + prNum).attr("style", "position:absolute;top:" + (window["thisPreview" + prNum].offset().top + window["x3dOffset" + prNum] - 760 - window["x3dOffset2" + prNum]) + "px;");
+    		$("#x3dElement" + prNum).attr("style", "position:absolute;top:" + (window["thisPreview" + prNum].offset().top + window["x3dOffset" + prNum] - 80 - window["x3dOffset2" + prNum]) + "px;");
     		window["oldx3dposition" + prNum] = window["thisPreview" + prNum].offset().top;
     	}
     }

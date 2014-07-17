@@ -864,7 +864,6 @@ class Files @Inject() (
       user match{
         case Some(theUser)=>{
           val canAccessWithoutRightsList =  appConfiguration.adminExists(theUser.email.getOrElse("")) || file.author.identityId.userId.equals(theUser.identityId.userId)
-          Logger.debug("Access without rights for file "+file.id.stringify+": "+ canAccessWithoutRightsList)
           rightsForUser match{
 	        case Some(userRights)=>{
 	        	if(canAccessWithoutRightsList)

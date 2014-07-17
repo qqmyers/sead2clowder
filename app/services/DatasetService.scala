@@ -72,7 +72,7 @@ trait DatasetService {
   /**
    * Get JSON representation.
    */
-  def toJSON(dataset: Dataset): JsValue
+  def toJSON(dataset: Dataset, user: Option[Identity] = None, rightsForUser: Option[UserPermissions] = None): JsValue
 
   /**
    * Check if dataset belongs to a collection.

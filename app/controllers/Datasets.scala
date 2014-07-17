@@ -129,17 +129,16 @@ class Datasets @Inject()(
 		            rightsForUser = accessRights.get(theUser)
 		        	for(checkedFile <- dataset.files.map(f => files.get(f.id).get)){
 			            if(filesChecker.checkAccessForFileUsingRightsList(checkedFile, user, "view", rightsForUser))
-			              filesInDataset :+ checkedFile
+			              filesInDataset = filesInDataset :+ checkedFile
 			        }
 		        }
 		        case None=>{
 		          for(checkedFile <- dataset.files.map(f => files.get(f.id).get)){
 		            if(filesChecker.checkAccessForFile(checkedFile, user, "view"))
-		              filesInDataset :+ checkedFile
+		              filesInDataset = filesInDataset :+ checkedFile
 		          }
 		        }
 		      }
-	          
 	          
 	          //Search whether dataset is currently being processed by extractor(s)
 	          var isActivity = false

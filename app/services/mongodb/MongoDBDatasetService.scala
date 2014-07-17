@@ -81,7 +81,7 @@ class MongoDBDatasetService @Inject() (
 	      if (date == "") {
 	    	  Dataset.findAll.sort(order).limit(limit).toList
 	      } else {
-		      val sinceDate = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss").parse(date)
+		      val sinceDate = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS").parse(date)
 		      Logger.info("After " + sinceDate)
 		      Dataset.find("created" $lt sinceDate).sort(order).limit(limit).toList
 	    }
@@ -90,11 +90,11 @@ class MongoDBDatasetService @Inject() (
         if (date == "") {
             user match{
               case Some(user)=>{
-                var idsAllowedForUser: List[String] = List.empty
+                var idsAllowedForUser: List[org.bson.types.ObjectId] = List.empty
                 var rightsOfUser = accessRights.get(user)
                 rightsOfUser match{
                   case Some(someRightsOfUser)=>{
-                    idsAllowedForUser = someRightsOfUser.datasetsViewOnly
+                    idsAllowedForUser = for(idAllowed <- someRightsOfUser.datasetsViewOnly) yield (new ObjectId(idAllowed))
                   }
                   case None=>{}
                 }              
@@ -105,16 +105,16 @@ class MongoDBDatasetService @Inject() (
               }
             }	    	  
 	      } else {
-		      val sinceDate = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss").parse(date)
+		      val sinceDate = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS").parse(date)
 		      Logger.info("After " + sinceDate)
 		      
 		      user match{
               case Some(user)=>{
-                var idsAllowedForUser: List[String] = List.empty
+                var idsAllowedForUser: List[org.bson.types.ObjectId] = List.empty
                 var rightsOfUser = accessRights.get(user)
                 rightsOfUser match{
                   case Some(someRightsOfUser)=>{
-                    idsAllowedForUser = someRightsOfUser.datasetsViewOnly
+                    idsAllowedForUser = for(idAllowed <- someRightsOfUser.datasetsViewOnly) yield (new ObjectId(idAllowed))
                   }
                   case None=>{}
                 }              
@@ -148,7 +148,7 @@ class MongoDBDatasetService @Inject() (
 	    	 Dataset.findAll.sort(order).limit(limit).toList
 	    } else {
 	      order = MongoDBObject("created" -> 1)
-	      val sinceDate = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss").parse(date)
+	      val sinceDate = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS").parse(date)
 	      Logger.info("Before " + sinceDate)
 	      var datasetList = Dataset.find("created" $gt sinceDate).sort(order).limit(limit).toList.reverse
 	      datasetList
@@ -158,11 +158,11 @@ class MongoDBDatasetService @Inject() (
     		if (date == "") {
 	            user match{
 	              case Some(user)=>{
-	                var idsAllowedForUser: List[String] = List.empty
+	                var idsAllowedForUser: List[org.bson.types.ObjectId] = List.empty
 	                var rightsOfUser = accessRights.get(user)
 	                rightsOfUser match{
 	                  case Some(someRightsOfUser)=>{
-	                    idsAllowedForUser = someRightsOfUser.datasetsViewOnly
+	                    idsAllowedForUser = for(idAllowed <- someRightsOfUser.datasetsViewOnly) yield (new ObjectId(idAllowed))
 	                  }
 	                  case None=>{}
 	                }              
@@ -174,16 +174,16 @@ class MongoDBDatasetService @Inject() (
 	            }	    	  
 	      } else {
 	    	  order = MongoDBObject("created" -> 1)
-	    	  val sinceDate = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss").parse(date)
+	    	  val sinceDate = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS").parse(date)
 	    	  Logger.info("Before " + sinceDate)
 		      
 		      user match{
               case Some(user)=>{
-                var idsAllowedForUser: List[String] = List.empty
+                var idsAllowedForUser: List[org.bson.types.ObjectId] = List.empty
                 var rightsOfUser = accessRights.get(user)
                 rightsOfUser match{
                   case Some(someRightsOfUser)=>{
-                    idsAllowedForUser = someRightsOfUser.datasetsViewOnly
+                    idsAllowedForUser = for(idAllowed <- someRightsOfUser.datasetsViewOnly) yield (new ObjectId(idAllowed))
                   }
                   case None=>{}
                 }              
@@ -248,15 +248,15 @@ class MongoDBDatasetService @Inject() (
     }else{
 	            user match{
 	              case Some(user)=>{
-	                var idsAllowedForUser: List[String] = List.empty
+	                var idsAllowedForUser: List[org.bson.types.ObjectId] = List.empty
 	                var rightsOfUser = accessRights.get(user)
 	                rightsOfUser match{
 	                  case Some(someRightsOfUser)=>{
-	                    idsAllowedForUser = someRightsOfUser.datasetsViewOnly
+	                    idsAllowedForUser = for(idAllowed <- someRightsOfUser.datasetsViewOnly) yield (new ObjectId(idAllowed))
 	                  }
 	                  case None=>{}
 	                }              
-	                Dataset.find($or("isPublic"->true,"author.fullName"->"Anonymous User","author.identityId.userId"->user.identityId.userId,"_id"->MongoDBObject("$in"->idsAllowedForUser)   )  ).sort(order).limit(1).toList
+	                results = Dataset.find($or("isPublic"->true,"author.fullName"->"Anonymous User","author.identityId.userId"->user.identityId.userId,"_id"->MongoDBObject("$in"->idsAllowedForUser)   )  ).sort(order).limit(1).toList
 	              }
 	              case None=>{
 	                results = Dataset.find($or("isPublic"->true,"author.fullName"->"Anonymous User")).sort(order).limit(1).toList
@@ -287,15 +287,15 @@ class MongoDBDatasetService @Inject() (
     }else{
 	            user match{
 	              case Some(user)=>{
-	                var idsAllowedForUser: List[String] = List.empty
+	                var idsAllowedForUser: List[org.bson.types.ObjectId] = List.empty
 	                var rightsOfUser = accessRights.get(user)
 	                rightsOfUser match{
 	                  case Some(someRightsOfUser)=>{
-	                    idsAllowedForUser = someRightsOfUser.datasetsViewOnly
+	                    idsAllowedForUser = for(idAllowed <- someRightsOfUser.datasetsViewOnly) yield (new ObjectId(idAllowed))
 	                  }
 	                  case None=>{}
 	                }              
-	                Dataset.find($or("isPublic"->true,"author.fullName"->"Anonymous User","author.identityId.userId"->user.identityId.userId,"_id"->MongoDBObject("$in"->idsAllowedForUser)   )  ).sort(order).limit(1).toList
+	                results = Dataset.find($or("isPublic"->true,"author.fullName"->"Anonymous User","author.identityId.userId"->user.identityId.userId,"_id"->MongoDBObject("$in"->idsAllowedForUser)   )  ).sort(order).limit(1).toList
 	              }
 	              case None=>{
 	                results = Dataset.find($or("isPublic"->true,"author.fullName"->"Anonymous User")).sort(order).limit(1).toList
@@ -464,13 +464,27 @@ class MongoDBDatasetService @Inject() (
     return xmlFile
   }
 
-  def toJSON(dataset: Dataset): JsValue = {
-    var datasetThumbnail = "None"
+  def toJSON(dataset: Dataset, user: Option[Identity] = None, rightsForUser: Option[UserPermissions] = None): JsValue = {
+    var userRequested = "None"
+    var userCanEdit = false
+    val checker = services.DI.injector.getInstance(classOf[controllers.Datasets])
+    var datasetThumbnail = "None"    
     if(!dataset.thumbnail_id.isEmpty)
       datasetThumbnail = dataset.thumbnail_id.toString().substring(5,dataset.thumbnail_id.toString().length-1)
+      
+    user match{
+        case Some(theUser)=>{
+          userRequested = theUser.fullName
+          userCanEdit = checker.checkAccessForDatasetUsingRightsList(dataset, user, "modify", rightsForUser)
+        }
+        case None=>{
+          userRequested = "None"
+          userCanEdit = checker.checkAccessForDataset(dataset, user, "modify")
+        }
+      }
 
     toJson(Map("id" -> dataset.id.toString, "datasetname" -> dataset.name, "description" -> dataset.description,
-      "created" -> dataset.created.toString, "thumbnail" -> datasetThumbnail, "authorId" -> dataset.author.identityId.userId))
+      "created" -> dataset.created.toString, "thumbnail" -> datasetThumbnail, "authorId" -> dataset.author.identityId.userId, "usercanedit" -> userCanEdit.toString, "userThatRequested" -> userRequested  ))
   }
 
   def isInCollection(datasetId: UUID, collectionId: UUID): Boolean = {

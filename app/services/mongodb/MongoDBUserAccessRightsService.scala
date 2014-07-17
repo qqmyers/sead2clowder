@@ -149,19 +149,21 @@ class MongoDBUserAccessRightsService extends UserAccessRightsService {
   }
   
   def removeResourceRightsForAll(resourceId: String, resourceType: String) {
+    
+    Logger.debug("Removing rights for "+resourceId)
         
     if(resourceType.equals("file")){
-	     UserPermissions.update(MongoDBObject(), $pull("filesViewOnly" -> resourceId), false, false, WriteConcern.Safe)
-	     UserPermissions.update(MongoDBObject(), $pull("filesViewModify" -> resourceId), false, false, WriteConcern.Safe)
-	     UserPermissions.update(MongoDBObject(), $pull("filesAdministrate" -> resourceId), false, false, WriteConcern.Safe)
+	     UserPermissions.update(MongoDBObject(), $pull("filesViewOnly" -> resourceId), false, true, WriteConcern.Safe)
+	     UserPermissions.update(MongoDBObject(), $pull("filesViewModify" -> resourceId), false, true, WriteConcern.Safe)
+	     UserPermissions.update(MongoDBObject(), $pull("filesAdministrate" -> resourceId), false, true, WriteConcern.Safe)
     }else if(resourceType.equals("dataset")){
-    	UserPermissions.update(MongoDBObject(), $pull("datasetsViewOnly" -> resourceId), false, false, WriteConcern.Safe)
-    	UserPermissions.update(MongoDBObject(), $pull("datasetsViewModify" -> resourceId), false, false, WriteConcern.Safe)
-    	UserPermissions.update(MongoDBObject(), $pull("datasetsAdministrate" -> resourceId), false, false, WriteConcern.Safe)
+    	UserPermissions.update(MongoDBObject(), $pull("datasetsViewOnly" -> resourceId), false, true, WriteConcern.Safe)
+    	UserPermissions.update(MongoDBObject(), $pull("datasetsViewModify" -> resourceId), false, true, WriteConcern.Safe)
+    	UserPermissions.update(MongoDBObject(), $pull("datasetsAdministrate" -> resourceId), false, true, WriteConcern.Safe)
     }else if(resourceType.equals("collection")){
-    	UserPermissions.update(MongoDBObject(), $pull("collectionsViewOnly" -> resourceId), false, false, WriteConcern.Safe)
-    	UserPermissions.update(MongoDBObject(), $pull("collectionsViewModify" -> resourceId), false, false, WriteConcern.Safe)
-    	UserPermissions.update(MongoDBObject(), $pull("collectionsAdministrate" -> resourceId), false, false, WriteConcern.Safe)
+    	UserPermissions.update(MongoDBObject(), $pull("collectionsViewOnly" -> resourceId), false, true, WriteConcern.Safe)
+    	UserPermissions.update(MongoDBObject(), $pull("collectionsViewModify" -> resourceId), false, true, WriteConcern.Safe)
+    	UserPermissions.update(MongoDBObject(), $pull("collectionsAdministrate" -> resourceId), false, true, WriteConcern.Safe)
     }
     else{
       Logger.error("Unknown resource type")

@@ -662,8 +662,18 @@ class Datasets @Inject()(
       //searchQuery = searchQuery.reverse
 
       Logger.debug("Search completed. Returning datasets list.")
+      
+      var list: List[JsValue] = List.empty
+      request.user match{
+	        case Some(theUser)=>{
+	        	val rightsForUser = accessRights.get(theUser)
+	        	list = for (dataset <- searchQuery; if(checkAccessForDatasetUsingRightsList(dataset, request.user , "view", rightsForUser))) yield datasets.toJSON(dataset, request.user, rightsForUser)
+	        }
+	        case None=>{
+	          list = for (dataset <- searchQuery; if(checkAccessForDataset(dataset, request.user , "view"))) yield datasets.toJSON(dataset, request.user)
+	        }
+	 }
 
-      val list = for (dataset <- searchQuery) yield datasets.toJSON(dataset)
       Logger.debug("thelist: " + toJson(list))
       Ok(toJson(list))
   }
@@ -684,8 +694,18 @@ class Datasets @Inject()(
       //searchQuery = searchQuery.reverse
 
       Logger.debug("Search completed. Returning datasets list.")
+      
+      var list: List[JsValue] = List.empty
+      request.user match{
+	        case Some(theUser)=>{
+	        	val rightsForUser = accessRights.get(theUser)
+	        	list = for (dataset <- searchQuery; if(checkAccessForDatasetUsingRightsList(dataset, request.user , "view", rightsForUser))) yield datasets.toJSON(dataset, request.user, rightsForUser)
+	        }
+	        case None=>{
+	          list = for (dataset <- searchQuery; if(checkAccessForDataset(dataset, request.user , "view"))) yield datasets.toJSON(dataset, request.user)
+	        }
+	 }
 
-      val list = for (dataset <- searchQuery) yield datasets.toJSON(dataset)
       Logger.debug("thelist: " + toJson(list))
       Ok(toJson(list))
   }

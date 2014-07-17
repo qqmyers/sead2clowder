@@ -151,7 +151,7 @@ class Collections @Inject()(datasets: DatasetService, collections: CollectionSer
 		        }
           }
           
-          Ok(views.html.collectionofdatasets(datasets.listInsideCollection(id), collection, rightsForUser))
+          Ok(views.html.collectionofdatasets(datasetsInCollection, collection, rightsForUser))
         }
         case None => {
           Logger.error("Error getting collection " + id); BadRequest("Collection not found")

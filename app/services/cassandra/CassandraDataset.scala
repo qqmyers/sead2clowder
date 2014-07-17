@@ -7,6 +7,7 @@ import com.mongodb.casbah.commons.MongoDBObject
 import com.mongodb.casbah.Imports._
 import models.File
 import securesocial.core.Identity
+import models.UserPermissions
 
 /**
  * Store datasets in Cassandra.
@@ -80,7 +81,7 @@ class CassandraDataset extends DatasetService {
     None
   }
 
-  def toJSON(dataset: Dataset): JsValue = {
+  def toJSON(dataset: Dataset, user: Option[Identity] = None, rightsForUser: Option[UserPermissions] = None): JsValue = {
     JsNull
   }
 

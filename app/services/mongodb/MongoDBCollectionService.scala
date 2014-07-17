@@ -65,7 +65,7 @@ class MongoDBCollectionService @Inject() (datasets: DatasetService, appConfigura
 	      if (date == "") {
 	    	  Collection.findAll.sort(order).limit(limit).toList
 	      } else {
-		      val sinceDate = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss").parse(date)
+		      val sinceDate = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS").parse(date)
 		      Logger.info("After " + sinceDate)
 		      Collection.find("created" $lt sinceDate).sort(order).limit(limit).toList
 	    }
@@ -74,11 +74,11 @@ class MongoDBCollectionService @Inject() (datasets: DatasetService, appConfigura
         if (date == "") {
             user match{
               case Some(user)=>{
-                var idsAllowedForUser: List[String] = List.empty
+                var idsAllowedForUser: List[org.bson.types.ObjectId] = List.empty
                 var rightsOfUser = accessRights.get(user)
                 rightsOfUser match{
                   case Some(someRightsOfUser)=>{
-                    idsAllowedForUser = someRightsOfUser.collectionsViewOnly
+                    idsAllowedForUser = for(idAllowed <- someRightsOfUser.collectionsViewOnly) yield (new ObjectId(idAllowed))
                   }
                   case None=>{}
                 }              
@@ -89,16 +89,16 @@ class MongoDBCollectionService @Inject() (datasets: DatasetService, appConfigura
               }
             }	    	  
 	      } else {
-		      val sinceDate = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss").parse(date)
+		      val sinceDate = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS").parse(date)
 		      Logger.info("After " + sinceDate)
 		      
 		      user match{
               case Some(user)=>{
-                var idsAllowedForUser: List[String] = List.empty
+                var idsAllowedForUser: List[org.bson.types.ObjectId] = List.empty
                 var rightsOfUser = accessRights.get(user)
                 rightsOfUser match{
                   case Some(someRightsOfUser)=>{
-                    idsAllowedForUser = someRightsOfUser.collectionsViewOnly
+                    idsAllowedForUser = for(idAllowed <- someRightsOfUser.collectionsViewOnly) yield (new ObjectId(idAllowed))
                   }
                   case None=>{}
                 }              
@@ -132,7 +132,7 @@ class MongoDBCollectionService @Inject() (datasets: DatasetService, appConfigura
 	    	 Collection.findAll.sort(order).limit(limit).toList
 	    } else {
 	      order = MongoDBObject("created" -> 1)
-	      val sinceDate = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss").parse(date)
+	      val sinceDate = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS").parse(date)
 	      Logger.info("Before " + sinceDate)
 	      var collectionList = Collection.find("created" $gt sinceDate).sort(order).limit(limit).toList.reverse
 	      //collectionList = collectionList.filter(_ != collectionList.last)
@@ -143,11 +143,11 @@ class MongoDBCollectionService @Inject() (datasets: DatasetService, appConfigura
     		if (date == "") {
 	            user match{
 	              case Some(user)=>{
-	                var idsAllowedForUser: List[String] = List.empty
+	                var idsAllowedForUser: List[org.bson.types.ObjectId] = List.empty
 	                var rightsOfUser = accessRights.get(user)
 	                rightsOfUser match{
 	                  case Some(someRightsOfUser)=>{
-	                    idsAllowedForUser = someRightsOfUser.collectionsViewOnly
+	                    idsAllowedForUser = for(idAllowed <- someRightsOfUser.collectionsViewOnly) yield (new ObjectId(idAllowed))
 	                  }
 	                  case None=>{}
 	                }              
@@ -159,16 +159,16 @@ class MongoDBCollectionService @Inject() (datasets: DatasetService, appConfigura
 	            }	    	  
 	      } else {
 	    	  order = MongoDBObject("created" -> 1)
-	    	  val sinceDate = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss").parse(date)
+	    	  val sinceDate = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS").parse(date)
 	    	  Logger.info("Before " + sinceDate)
 		      
 		      user match{
               case Some(user)=>{
-                var idsAllowedForUser: List[String] = List.empty
+                var idsAllowedForUser: List[org.bson.types.ObjectId] = List.empty
                 var rightsOfUser = accessRights.get(user)
                 rightsOfUser match{
                   case Some(someRightsOfUser)=>{
-                    idsAllowedForUser = someRightsOfUser.collectionsViewOnly
+                    idsAllowedForUser = for(idAllowed <- someRightsOfUser.collectionsViewOnly) yield (new ObjectId(idAllowed))
                   }
                   case None=>{}
                 }              
@@ -207,15 +207,15 @@ class MongoDBCollectionService @Inject() (datasets: DatasetService, appConfigura
     }else{
 	            user match{
 	              case Some(user)=>{
-	                var idsAllowedForUser: List[String] = List.empty
+	                var idsAllowedForUser: List[org.bson.types.ObjectId] = List.empty
 	                var rightsOfUser = accessRights.get(user)
 	                rightsOfUser match{
 	                  case Some(someRightsOfUser)=>{
-	                    idsAllowedForUser = someRightsOfUser.collectionsViewOnly
+	                    idsAllowedForUser = for(idAllowed <- someRightsOfUser.collectionsViewOnly) yield (new ObjectId(idAllowed))
 	                  }
 	                  case None=>{}
 	                }              
-	                Collection.find($or("author"->MongoDBObject("$exists" -> false),"isPublic"->true,"author.fullName"->"Anonymous User","author.identityId.userId"->user.identityId.userId,"_id"->MongoDBObject("$in"->idsAllowedForUser)   )  ).sort(order).limit(1).toList
+	                results = Collection.find($or("author"->MongoDBObject("$exists" -> false),"isPublic"->true,"author.fullName"->"Anonymous User","author.identityId.userId"->user.identityId.userId,"_id"->MongoDBObject("$in"->idsAllowedForUser)   )  ).sort(order).limit(1).toList
 	              }
 	              case None=>{
 	                results = Collection.find($or("author"->MongoDBObject("$exists" -> false),"isPublic"->true,"author.fullName"->"Anonymous User")).sort(order).limit(1).toList
@@ -246,15 +246,15 @@ class MongoDBCollectionService @Inject() (datasets: DatasetService, appConfigura
     }else{
 	            user match{
 	              case Some(user)=>{
-	                var idsAllowedForUser: List[String] = List.empty
+	                var idsAllowedForUser: List[org.bson.types.ObjectId] = List.empty
 	                var rightsOfUser = accessRights.get(user)
 	                rightsOfUser match{
 	                  case Some(someRightsOfUser)=>{
-	                    idsAllowedForUser = someRightsOfUser.collectionsViewOnly
+	                    idsAllowedForUser = for(idAllowed <- someRightsOfUser.collectionsViewOnly) yield (new ObjectId(idAllowed))
 	                  }
 	                  case None=>{}
 	                }              
-	                Collection.find($or("author"->MongoDBObject("$exists" -> false),"isPublic"->true,"author.fullName"->"Anonymous User","author.identityId.userId"->user.identityId.userId,"_id"->MongoDBObject("$in"->idsAllowedForUser)   )  ).sort(order).limit(1).toList
+	                results = Collection.find($or("author"->MongoDBObject("$exists" -> false),"isPublic"->true,"author.fullName"->"Anonymous User","author.identityId.userId"->user.identityId.userId,"_id"->MongoDBObject("$in"->idsAllowedForUser)   )  ).sort(order).limit(1).toList
 	              }
 	              case None=>{
 	                results = Collection.find($or("author"->MongoDBObject("$exists" -> false),"isPublic"->true,"author.fullName"->"Anonymous User")).sort(order).limit(1).toList
