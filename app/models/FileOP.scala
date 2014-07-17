@@ -16,6 +16,7 @@ object FileOP {
   val files:FileService=DI.injector.getInstance(classOf[FileService])
   
   def extractTags(file: models.File) = {
+    Logger.info("extracting tags---")
     val tags = file.tags
     // Transform the tag list into a list of ["extractor_id" or "userId", "values"] items,
     // where "values" are the list of tag name values.
@@ -49,6 +50,7 @@ object FileOP {
    * 
    */
   def extractPreviews(id: UUID) = {
+    Logger.info("extracting previews")
     val previews1 =previews.findByFileId(id);
     // Transform the preview list into a list of ["extractor_id", "values"] items,
     // where "values" are the preview properties, such as "preview_id", "url", and "contentType".
@@ -76,6 +78,7 @@ object FileOP {
    */
   
   def extractVersusDescriptors(id:UUID): JsValue= {
+    Logger.info("extracting versus descriptors")
     val vDes=files.getVersusMetadata(id)
     if(vDes==null){
       Logger.info("no versus metadata")

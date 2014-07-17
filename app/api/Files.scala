@@ -1273,11 +1273,12 @@ class Files @Inject()(
     if (UUID.isValid(id.stringify)) {
      files.get(id) match {
         case Some(file) =>
+          Logger.info("File found and extracting metadata")
           val jtags = FileOP.extractTags(file)
           val jpreviews = FileOP.extractPreviews(id)
           val vdescriptors=FileOP.extractVersusDescriptors(id)
-          Logger.debug("jtags: " + jtags.toString)
-          Logger.debug("jpreviews: " + jpreviews.toString)
+          Logger.info("jtags: " + jtags.toString)
+          Logger.info("jpreviews: " + jpreviews.toString)
           Ok(Json.obj("file_id" -> id.toString, "filename" -> file.filename, "tags" -> jtags, "previews" -> jpreviews,"versus descriptors"->vdescriptors))
         case None => {
           val error_str = "The file with id " + id + " is not found." 
