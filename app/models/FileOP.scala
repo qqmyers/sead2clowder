@@ -78,11 +78,14 @@ object FileOP {
   def extractVersusDescriptors(id:UUID): JsValue= {
     val vDes=files.getVersusMetadata(id)
     if(vDes==null){
+      Logger.info("no versus metadata")
        Json.arr()
     }else{
+      Logger.info("versus_descriptors")
       vDes
     }
          
   }
-
+  
+  
 }

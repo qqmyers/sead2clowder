@@ -260,12 +260,12 @@ class Files @Inject()(
   def addVersusMetadata(id: UUID) =
     SecuredAction(authorization = WithPermission(Permission.AddFilesMetadata)) { request =>
 
-     Logger.debug("INSIDE ADDVersusMetadata=: "+id.toString )
+     Logger.debug("-----Inside addVersusMetadata=: "+id.toString )
       files.get(id) match {
         case Some(file) => {
-          Logger.debug("******ADD Versus Metadata:*****")
+          Logger.info("******add Versus Metadata:*****")
           val list = request.body \ ("versus_descriptors")
-                    
+          Logger.info("[api/Files]---versus_desriptors received from Versus---\n")  
           files.addVersusMetadata(id, list)
           
           Ok("Added Versus Descriptor")
@@ -275,7 +275,7 @@ class Files @Inject()(
           NotFound
         }
       }
-
+    
     }
  
   /**
