@@ -11,10 +11,13 @@ import services.DatasetService
 import services.CollectionService
 import services.AdminsNotifierPlugin
 import services.UserAccessRightsService
+import services.AppConfigurationService
 import scala.util.{Try, Success, Failure}
 import com.wordnik.swagger.annotations.Api
 import com.wordnik.swagger.annotations.ApiOperation
 import java.util.Date
+import securesocial.core.Identity
+import models.UserPermissions
 
 /**
  * Manipulate collections.
@@ -23,7 +26,7 @@ import java.util.Date
  */
 @Api(value = "/collections", listingPath = "/api-docs.json/collections", description = "Collections are groupings of datasets")
 @Singleton
-class Collections @Inject() (datasets: DatasetService, collections: CollectionService, accessRights: UserAccessRightsService) extends ApiController {
+class Collections @Inject() (datasets: DatasetService, collections: CollectionService, accessRights: UserAccessRightsService, appConfiguration: AppConfigurationService) extends ApiController {
 
 
   @ApiOperation(value = "Create a collection",
@@ -87,7 +90,20 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
       responseClass = "None", httpMethod = "GET")
   def listCollections() = SecuredAction(parse.anyContent,
                                         authorization=WithPermission(Permission.ListCollections)) { request =>
-    val list = for (collection <- collections.listCollections()) yield jsonCollection(collection)
+     
+     var list: List[play.api.libs.json.JsValue] = List.empty                                    
+     implicit val user = request.user
+      var rightsForUser: Option[models.UserPermissions] = None
+      user match{
+		        case Some(theUser)=>{
+		            rightsForUser = accessRights.get(theUser)
+		            list = for (collection <- collections.listCollections() if(checkAccessForCollectionUsingRightsList(collection, request.user , "view", rightsForUser))) yield jsonCollection(collection)
+		        }
+		        case None=>{
+		           list = for (collection <- collections.listCollections() if(checkAccessForCollection(collection, request.user, "view"))) yield jsonCollection(collection)
+		        }
+      }
+
     Ok(toJson(list))
   }
   
@@ -95,4 +111,88 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
     toJson(Map("id" -> collection.id.toString, "name" -> collection.name, "description" -> collection.description,
                "created" -> collection.created.toString))
   }
+  
+  def checkAccessForCollection(collection: Collection, user: Option[Identity], permissionType: String): Boolean = {
+    var isAuthorless = true
+    collection.author match{
+      case Some(author)=>{
+        isAuthorless = collection.author.get.fullName.equals("Anonymous User")
+      }
+      case None=>{}
+    }
+    
+    if(permissionType.equals("view") && (collection.isPublic.getOrElse(false) || isAuthorless || appConfiguration.getDefault.get.viewNoLoggedIn)){
+      true
+    }
+    else{
+      user match{
+        case Some(theUser)=>{
+          var userIsAuthor = false
+          if(!isAuthorless){
+            userIsAuthor = collection.author.get.identityId.userId.equals(theUser.identityId.userId)
+          }
+          
+          theUser.fullName.equals("Anonymous User") || appConfiguration.adminExists(theUser.email.getOrElse("")) || userIsAuthor || accessRights.checkForPermission(theUser, collection.id.stringify, "collection", permissionType)
+        }
+        case None=>{
+          false
+        }
+      }
+    }
+  }
+  
+  def checkAccessForCollectionUsingRightsList(collection: Collection, user: Option[Identity], permissionType: String, rightsForUser: Option[UserPermissions]): Boolean = {
+    var isAuthorless = true
+    collection.author match{
+      case Some(author)=>{
+        isAuthorless = collection.author.get.fullName.equals("Anonymous User")
+      }
+      case None=>{}
+    }
+    
+    if(permissionType.equals("view") && (collection.isPublic.getOrElse(false) || isAuthorless || appConfiguration.getDefault.get.viewNoLoggedIn)){
+      true
+    }
+    else{
+      user match{
+        case Some(theUser)=>{
+          var userIsAuthor = false
+          if(!isAuthorless){
+            userIsAuthor = collection.author.get.identityId.userId.equals(theUser.identityId.userId)
+          }
+          
+          val canAccessWithoutRightsList = theUser.fullName.equals("Anonymous User") || appConfiguration.adminExists(theUser.email.getOrElse("")) || userIsAuthor
+          rightsForUser match{
+	        case Some(userRights)=>{
+	        	if(canAccessWithoutRightsList)
+	        	  true
+	        	else{
+	        	  if(permissionType.equals("view")){
+			        userRights.collectionsViewOnly.contains(collection.id.stringify)
+			      }else if(permissionType.equals("modify")){
+			        userRights.collectionsViewModify.contains(collection.id.stringify)
+			      }else if(permissionType.equals("administrate")){
+			        userRights.collectionsAdministrate.contains(collection.id.stringify)
+			      }
+			      else{
+			        Logger.error("Unknown permission type")
+			        false
+			      }
+	        	}
+	        }
+	        case None=>{
+	          canAccessWithoutRightsList
+	        }
+	      }
+        }
+        case None=>{
+          false
+        }
+      }
+    }
+  }
+  
+  
+  
+  
 }

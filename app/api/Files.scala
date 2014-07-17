@@ -90,7 +90,17 @@ class Files @Inject()(
   @ApiOperation(value = "List all files", notes = "Returns list of files and descriptions.", responseClass = "None", httpMethod = "GET")
   def list = SecuredAction(parse.anyContent, authorization = WithPermission(Permission.ListFiles)) {
     request =>
-      val list = for (f <- files.listFiles()) yield jsonFile(f)
+      var list: List[JsValue] = List.empty
+      request.user match{
+	        case Some(theUser)=>{
+	        	val rightsForUser = accessRights.get(theUser)
+	        	list = for (f <- files.listFiles() if(checkAccessForFileUsingRightsList(f, request.user , "view", rightsForUser))) yield jsonFile(f)
+	        }
+	        case None=>{
+	          list = for (f <- files.listFiles() if(checkAccessForFile(f, request.user , "view"))) yield jsonFile(f)
+	        }
+	      }
+
       Ok(toJson(list))
   }
 

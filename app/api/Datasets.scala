@@ -59,7 +59,17 @@ class Datasets @Inject()(
       responseClass = "None", httpMethod = "GET")
   def list = SecuredAction(parse.anyContent, authorization = WithPermission(Permission.ListDatasets)) {
     request =>
-      val list = datasets.listDatasets.map(datasets.toJSON(_))
+      var list: List[JsValue] = List.empty
+      request.user match{
+	        case Some(theUser)=>{
+	        	val rightsForUser = accessRights.get(theUser)
+	        	list = (for (d <- datasets.listDatasets if(checkAccessForDatasetUsingRightsList(d, request.user , "view", rightsForUser))) yield d).map(datasets.toJSON(_))
+	        }
+	        case None=>{
+	          list = (for (d <- datasets.listDatasets if(checkAccessForDataset(d, request.user , "view"))) yield d).map(datasets.toJSON(_))
+	        }
+	      }
+
       Ok(toJson(list))
   }
 
@@ -276,8 +286,17 @@ class Datasets @Inject()(
     request =>
       collections.get(collectionId) match {
         case Some(collection) => {
-          val list = for (dataset <- datasets.listInsideCollection(collectionId)) yield datasets.toJSON(dataset)
-          Ok(toJson(list))
+        	request.user match{
+		        case Some(theUser)=>{
+		            val rightsForUser = accessRights.get(theUser)
+		            val list = for (dataset <- datasets.listInsideCollection(collectionId); if (checkAccessForDatasetUsingRightsList(dataset, request.user, "view", rightsForUser) )) yield datasets.toJSON(dataset)
+		            Ok(toJson(list))
+		        }
+		        case None=>{
+		        	val list = for (dataset <- datasets.listInsideCollection(collectionId); if (checkAccessForDataset(dataset, request.user, "view") )) yield datasets.toJSON(dataset)
+		            Ok(toJson(list))
+		        }
+          }
         }
         case None => Logger.error("Error getting collection" + collectionId); InternalServerError
       }
