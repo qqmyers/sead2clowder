@@ -22,7 +22,15 @@ import securesocial.core.Identity
 @Singleton
 class MongoDBUserAccessRightsService extends UserAccessRightsService {
 
-  def initRights(userPermissions: UserPermissions): Option[String] = {  
+  def initRights(userPermissions: UserPermissions): Option[String] = {
+
+    UserPermissions.findOne($and("email" -> userPermissions.email, "name" -> userPermissions.name)) match{
+      case Some(alreadyIn)=>{
+        UserPermissions.removeById(new ObjectId(alreadyIn.id.stringify))
+      }
+      case _=>{}
+    }
+    
     UserPermissions.insert(userPermissions).map(_.toString) 
   }
   

@@ -178,26 +178,22 @@ class Datasets @Inject()(
   @ApiOperation(value = "Set whether a dataset is open for public viewing.",
       notes = "",
       responseClass = "None", httpMethod = "POST")
-  def setIsPublic() = SecuredAction(authorization = WithPermission(Permission.AdministrateDatasets)) {
+  def setIsPublic(id: UUID) = SecuredAction(authorization = WithPermission(Permission.AdministrateDatasets), resourceId = Some(id)) {
     request =>
-      (request.body \ "resourceId").asOpt[String].map { datasetId =>
         	(request.body \ "isPublic").asOpt[Boolean].map { isPublic =>
-        	  datasets.get(UUID(datasetId))match{
+        	  datasets.get(id)match{
         	    case Some(dataset)=>{
-        	      datasets.setIsPublic(UUID(datasetId), isPublic)
+        	      datasets.setIsPublic(id, isPublic)
         	      Ok("Done")
         	    }
         	    case None=>{
-        	      Logger.error("Error getting dataset with id " + datasetId)
+        	      Logger.error("Error getting dataset with id " + id.stringify)
                   Ok("No dataset with supplied id exists.")
         	    }
         	  } 
 	       }.getOrElse {
 	    	   BadRequest(toJson("Missing parameter [isPublic]"))
 	       }
-      }.getOrElse {
-    	   BadRequest(toJson("Missing parameter [resourceId]"))
-       }
   }
 
   @ApiOperation(value = "Attach existing file to dataset",
@@ -766,7 +762,7 @@ class Datasets @Inject()(
   @ApiOperation(value = "Is being processed",
       notes = "Return whether a dataset is currently being processed by a preprocessor.",
       responseClass = "None", httpMethod = "GET")
-  def isBeingProcessed(id: UUID) = SecuredAction(parse.anyContent, authorization = WithPermission(Permission.ShowDataset)) {
+  def isBeingProcessed(id: UUID) = SecuredAction(parse.anyContent, authorization = WithPermission(Permission.ShowDataset), resourceId = Some(id)) {
     request =>
       datasets.get(id) match {
         case Some(dataset) => {

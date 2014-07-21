@@ -3,7 +3,6 @@ function setPermission(fullName, email, resourceType, resourceId, permissionType
 	var setOrder = {};
 	setOrder['userFullName'] = fullName;
 	setOrder['userEmail'] = email;
-	setOrder['resourceId'] = resourceId;
 	setOrder['newPermissionLevel'] = permissionType;
 	
 	var subdocsToSet = "";
@@ -16,7 +15,7 @@ function setPermission(fullName, email, resourceType, resourceId, permissionType
 	
 	var request = $.ajax({
 	       type: 'POST',
-	       url: window.location.protocol + "//" + window.location.hostname + (window.location.port ? ':' + window.location.port: '')+"/api/users/modifyRightsTo"+capitaliseFirstLetter(resourceType)+subdocsToSet,
+	       url: window.location.protocol + "//" + window.location.hostname + (window.location.port ? ':' + window.location.port: '')+"/api/users/modifyRightsTo"+capitaliseFirstLetter(resourceType)+subdocsToSet+"/"+resourceId,
 	       data: JSON.stringify(setOrder),
 	       contentType: "application/json"
 	     });
@@ -56,11 +55,10 @@ function setPermission(fullName, email, resourceType, resourceId, permissionType
 function setIsPublic(isPublic, resourceType, resourceId){
 	var setOrder={};
 	setOrder['isPublic'] = isPublic;
-	setOrder['resourceId'] = resourceId;
-	
+
 	var request = $.ajax({
 	       type: 'POST',
-	       url: window.location.protocol + "//" + window.location.hostname + (window.location.port ? ':' + window.location.port: '')+"/api/"+resourceType+"s/setIsPublic",
+	       url: window.location.protocol + "//" + window.location.hostname + (window.location.port ? ':' + window.location.port: '')+"/api/"+resourceType+"s/setIsPublic"+"/"+resourceId,
 	       data: JSON.stringify(setOrder),
 	       contentType: "application/json"
 	     });

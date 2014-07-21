@@ -105,7 +105,7 @@ class Files @Inject()(
   }
 
   def downloadByDatasetAndFilename(datasetId: UUID, filename: String, preview_id: UUID) =
-    SecuredAction(parse.anyContent, authorization = WithPermission(Permission.DownloadFiles)) {
+    SecuredAction(parse.anyContent, authorization = WithPermission(Permission.DownloadFiles), resourceId = datasets.getFileId(datasetId, filename)) {
       request =>
         datasets.getFileId(datasetId, filename) match {
           case Some(id) => Redirect(routes.Files.download(id))
@@ -1400,26 +1400,22 @@ class Files @Inject()(
   @ApiOperation(value = "Set whether a file is open for public viewing.",
       notes = "",
       responseClass = "None", httpMethod = "POST")
-  def setIsPublic() = SecuredAction(authorization = WithPermission(Permission.AdministrateFiles)) {
+  def setIsPublic(id: UUID) = SecuredAction(authorization = WithPermission(Permission.AdministrateFiles), resourceId = Some(id)) {
     request =>
-      (request.body \ "resourceId").asOpt[String].map { fileId =>
         	(request.body \ "isPublic").asOpt[Boolean].map { isPublic =>
-        	  files.get(UUID(fileId))match{
+        	  files.get(id)match{
         	    case Some(file)=>{
-        	      files.setIsPublic(UUID(fileId), isPublic)
+        	      files.setIsPublic(id, isPublic)
         	      Ok("Done")
         	    }
         	    case None=>{
-        	      Logger.error("Error getting file with id " + fileId)
+        	      Logger.error("Error getting file with id " + id.stringify)
                   Ok("No file with supplied id exists.")
         	    }
         	  } 
 	       }.getOrElse {
 	    	   BadRequest(toJson("Missing parameter [isPublic]"))
 	       }
-      }.getOrElse {
-    	   BadRequest(toJson("Missing parameter [resourceId]"))
-       }
   }
 
 

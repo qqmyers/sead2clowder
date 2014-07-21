@@ -130,11 +130,11 @@ GET     /api-docs.json/collections        controllers.ApiHelpController.getResou
 # Rest API
 
 POST	/api/users/initRights									@api.Users.initRights
-POST	/api/users/modifyRightsToFile							@api.Users.modifyRightsToFile
-POST	/api/users/modifyRightsToDataset						@api.Users.modifyRightsToDataset
-POST	/api/users/modifyRightsToCollection						@api.Users.modifyRightsToCollection
-POST	/api/users/modifyRightsToDatasetFiles					@api.Users.modifyRightsToDatasetFiles
-POST	/api/users/modifyRightsToCollectionDatasets				@api.Users.modifyRightsToCollectionDatasets
+POST	/api/users/modifyRightsToFile/:id						@api.Users.modifyRightsToFile(id: UUID)
+POST	/api/users/modifyRightsToDataset/:id					@api.Users.modifyRightsToDataset(id: UUID)
+POST	/api/users/modifyRightsToCollection/:id					@api.Users.modifyRightsToCollection(id: UUID)
+POST	/api/users/modifyRightsToDatasetFiles/:id				@api.Users.modifyRightsToDatasetFiles(id: UUID)
+POST	/api/users/modifyRightsToCollectionDatasets/:id			@api.Users.modifyRightsToCollectionDatasets(id: UUID)
 
 POST	/api/files/:three_d_file_id/geometries/:geometry_id		@api.Files.attachGeometry(three_d_file_id: UUID,geometry_id: UUID)
 POST	/api/files/:three_d_file_id/3dTextures/:texture_id		@api.Files.attachTexture(three_d_file_id: UUID,texture_id: UUID)
@@ -143,7 +143,7 @@ GET     /api/files                        						@api.Files.list
 POST    /api/files                        						@api.Files.upload(showPreviews: String ?= "DatasetLevel", originalZipFile: String ?= "", fileIsPublic: String ?= "false")
 POST	/api/files/searchusermetadata							@api.Files.searchFilesUserMetadata
 POST	/api/files/searchmetadata								@api.Files.searchFilesGeneralMetadata
-POST	/api/files/setIsPublic									@api.Files.setIsPublic
+POST	/api/files/setIsPublic/:id								@api.Files.setIsPublic(id:UUID)
 POST    /api/uploadToDataset/:id                        		@api.Files.uploadToDataset(id: UUID, String ?= "DatasetLevel", originalZipFile: String ?= "", fileIsPublic: String ?= "false")
 
 POST	/api/files/uploadIntermediate/:idAndFlags				@api.Files.uploadIntermediate(idAndFlags)
@@ -185,7 +185,7 @@ POST    /api/setViewNoLoggedIn                                  api.Admin.setVie
 
 POST    /api/collections                                        @api.Collections.createCollection()
 GET		/api/collections/list														@api.Collections.listCollections
-POST	/api/collections/setIsPublic												@api.Collections.setIsPublic
+POST	/api/collections/setIsPublic/:id											@api.Collections.setIsPublic(id: UUID)
 POST	/api/collections/:coll_id/datasets/:ds_id									@api.Collections.attachDataset(coll_id: UUID, ds_id: UUID)
 POST	/api/collections/:coll_id/datasetsRemove/:ds_id/:ignoreNotFound				@api.Collections.removeDataset(coll_id: UUID, ds_id: UUID,ignoreNotFound)
 POST	/api/collections/:coll_id/remove											@api.Collections.removeCollection(coll_id: UUID)
@@ -195,7 +195,7 @@ GET    	/api/datasets					  							@api.Datasets.list
 POST    /api/datasets                                           	@api.Datasets.createDataset
 POST	/api/datasets/searchusermetadata							@api.Datasets.searchDatasetsUserMetadata
 POST	/api/datasets/searchmetadata								@api.Datasets.searchDatasetsGeneralMetadata
-POST	/api/datasets/setIsPublic									@api.Datasets.setIsPublic
+POST	/api/datasets/setIsPublic/:id								@api.Datasets.setIsPublic(id: UUID)
 
 
 GET		/api/datasets/listOutsideCollection/:coll_id				@api.Datasets.listOutsideCollection(coll_id: UUID)

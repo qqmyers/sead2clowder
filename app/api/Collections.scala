@@ -121,26 +121,22 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
   @ApiOperation(value = "Set whether a collection is open for public viewing.",
       notes = "",
       responseClass = "None", httpMethod = "POST")
-  def setIsPublic() = SecuredAction(authorization = WithPermission(Permission.AdministrateCollections)) {
+  def setIsPublic(id: UUID) = SecuredAction(authorization = WithPermission(Permission.AdministrateCollections), resourceId = Some(id)) {
     request =>
-      (request.body \ "resourceId").asOpt[String].map { collectionId =>
         	(request.body \ "isPublic").asOpt[Boolean].map { isPublic =>
-        	  collections.get(UUID(collectionId))match{
+        	  collections.get(id)match{
         	    case Some(collection)=>{
-        	      collections.setIsPublic(UUID(collectionId), isPublic)
+        	      collections.setIsPublic(id, isPublic)
         	      Ok("Done")
         	    }
         	    case None=>{
-        	      Logger.error("Error getting collection with id " + collectionId)
+        	      Logger.error("Error getting collection with id " + id.stringify)
                   Ok("No collection with supplied id exists.")
         	    }
         	  } 
 	       }.getOrElse {
 	    	   BadRequest(toJson("Missing parameter [isPublic]"))
 	       }
-      }.getOrElse {
-    	   BadRequest(toJson("Missing parameter [resourceId]"))
-       }
   }
   
   def checkAccessForCollection(collection: Collection, user: Option[Identity], permissionType: String): Boolean = {
