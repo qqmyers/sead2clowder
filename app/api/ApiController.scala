@@ -43,15 +43,20 @@ trait ApiController extends Controller {
           case None => {
             SecureSocial.currentUser(request) match { // calls from browser
               case Some(identity) => {
-                if (authorization.isInstanceOf[WithPermission]){
-                  var authorPermission = authorization.asInstanceOf[WithPermission]
-                  if (WithPermission(authorPermission.permission,resourceId).isAuthorized(identity))
-                	  f(RequestWithUser(Some(identity), request))
-                  else
-                	  Unauthorized("Not authorized")
+                if(identity.fullName.equals("Anonymous User")){
+                  Unauthorized("Not authorized")
                 }
-                else
-                	Unauthorized("Not authorized")
+                else{
+                	if (authorization.isInstanceOf[WithPermission]){
+	                  var authorPermission = authorization.asInstanceOf[WithPermission]
+	                  if (WithPermission(authorPermission.permission,resourceId).isAuthorized(identity))
+	                	  f(RequestWithUser(Some(identity), request))
+	                  else
+	                	  Unauthorized("Not authorized")
+	                }
+	                else
+	                	Unauthorized("Not authorized")
+                }
               }
               case None => {
                 if (authorization.isAuthorized(null))
