@@ -133,6 +133,8 @@ POST	/api/users/initRights									@api.Users.initRights
 POST	/api/users/modifyRightsToFile							@api.Users.modifyRightsToFile
 POST	/api/users/modifyRightsToDataset						@api.Users.modifyRightsToDataset
 POST	/api/users/modifyRightsToCollection						@api.Users.modifyRightsToCollection
+POST	/api/users/modifyRightsToDatasetFiles					@api.Users.modifyRightsToDatasetFiles
+POST	/api/users/modifyRightsToCollectionDatasets				@api.Users.modifyRightsToCollectionDatasets
 
 POST	/api/files/:three_d_file_id/geometries/:geometry_id		@api.Files.attachGeometry(three_d_file_id: UUID,geometry_id: UUID)
 POST	/api/files/:three_d_file_id/3dTextures/:texture_id		@api.Files.attachTexture(three_d_file_id: UUID,texture_id: UUID)

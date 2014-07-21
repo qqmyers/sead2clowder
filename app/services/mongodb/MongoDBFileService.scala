@@ -588,6 +588,14 @@ class MongoDBFileService @Inject() (
     }
     return false
   }
+  
+  def isInDatasetByFileId(fileId: String, dataset: Dataset): Boolean = {
+    for(dsFile <- dataset.files){
+      if(dsFile.id == fileId)
+        return true
+    }
+    return false
+  }
 
   //Not used yet
   def getMetadata(id: UUID): scala.collection.immutable.Map[String,Any] = {

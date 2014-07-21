@@ -80,6 +80,8 @@ trait FileService {
   def modifyRDFUserMetadata(id: UUID, mappingNumber: String="1")
 
   def isInDataset(file: File, dataset: Dataset): Boolean
+  
+  def isInDatasetByFileId(fileId: String, dataset: Dataset): Boolean
 
   def removeTags(id: UUID, userIdStr: Option[String], eid: Option[String], tags: List[String])
 

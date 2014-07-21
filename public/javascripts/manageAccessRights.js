@@ -1,4 +1,4 @@
-function setPermission(fullName, email, resourceType, resourceId, permissionType, callbackName, callback, cbParam1){
+function setPermission(fullName, email, resourceType, resourceId, permissionType, callbackName, callback, cbParam1, toSubresources){
 	
 	var setOrder = {};
 	setOrder['userFullName'] = fullName;
@@ -6,9 +6,17 @@ function setPermission(fullName, email, resourceType, resourceId, permissionType
 	setOrder['resourceId'] = resourceId;
 	setOrder['newPermissionLevel'] = permissionType;
 	
+	var subdocsToSet = "";
+	if(toSubresources){
+		if(resourceType == "dataset")
+			subdocsToSet = "Files";
+		else
+			subdocsToSet = "Datasets";
+	}
+	
 	var request = $.ajax({
 	       type: 'POST',
-	       url: window.location.protocol + "//" + window.location.hostname + (window.location.port ? ':' + window.location.port: '')+"/api/users/modifyRightsTo"+capitaliseFirstLetter(resourceType),
+	       url: window.location.protocol + "//" + window.location.hostname + (window.location.port ? ':' + window.location.port: '')+"/api/users/modifyRightsTo"+capitaliseFirstLetter(resourceType)+subdocsToSet,
 	       data: JSON.stringify(setOrder),
 	       contentType: "application/json"
 	     });
@@ -16,22 +24,28 @@ function setPermission(fullName, email, resourceType, resourceId, permissionType
 	request.done(function (response, textStatus, jqXHR){
         console.log("Response " + response);        
         alert(response);
-        if(response.indexOf("set to chosen level.") >= 0){
+        if(response.indexOf("set to chosen level") >= 0){
         	if(callbackName == "addNewRow"){
         		callback(fullName, email, permissionType, cbParam1);
         	}
         	else if(callbackName == "removeElem"){
         		callback(cbParam1);
         	}
+        	else if(callbackName == "removeElemTrySubdocs"){
+        		callback(cbParam1, fullName, email);
+        	}
         }
     });
 	request.fail(function (jqXHR, textStatus, errorThrown){
 		console.error(
     		"The following error occured: "+
-    		textStatus, errorThrown		            
+    		textStatus, errorThrown, jqXHR		            
 			);
 		alert("ERROR: " + errorThrown +"." );
 		if(callbackName == "resetValue"){
+    		callback(cbParam1);
+    	}
+		else if(callbackName == "subdocsRemovalErrorInfo"){
     		callback(cbParam1);
     	}
 	

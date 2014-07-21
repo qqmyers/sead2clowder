@@ -381,7 +381,7 @@ class Datasets @Inject()(
       datasets.get(id) match {
         case Some(dataset) => {
           var list: List[JsValue] = List.empty
-          val filesChecker = services.DI.injector.getInstance(classOf[controllers.Files])
+          val filesChecker = services.DI.injector.getInstance(classOf[api.Files])
           request.user match{
 	        case Some(theUser)=>{
 	        	val rightsForUser = accessRights.get(theUser)
@@ -401,7 +401,7 @@ class Datasets @Inject()(
   def jsonFile(file: File, user: Option[Identity] = None, rightsForUser: Option[UserPermissions] = None): JsValue = {
     var userRequested = "None"
     var userCanEdit = false
-    val filesChecker = services.DI.injector.getInstance(classOf[controllers.Files])
+    val filesChecker = services.DI.injector.getInstance(classOf[api.Files])
     user match{
         case Some(theUser)=>{
           userRequested = theUser.fullName

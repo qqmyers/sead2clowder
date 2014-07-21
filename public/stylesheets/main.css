@@ -391,3 +391,11 @@ textarea, input[type='text'], input[type='password']{
   text-overflow: ellipsis;
 }
 
+.adminResourceBtn{
+	padding: 0px 0px !important; 
+}
+
+.adminResourceRemoveFromSubdoc{
+	display:inline;
+}
+

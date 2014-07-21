@@ -467,7 +467,7 @@ class MongoDBDatasetService @Inject() (
   def toJSON(dataset: Dataset, user: Option[Identity] = None, rightsForUser: Option[UserPermissions] = None): JsValue = {
     var userRequested = "None"
     var userCanEdit = false
-    val checker = services.DI.injector.getInstance(classOf[controllers.Datasets])
+    val checker = services.DI.injector.getInstance(classOf[api.Datasets])
     var datasetThumbnail = "None"    
     if(!dataset.thumbnail_id.isEmpty)
       datasetThumbnail = dataset.thumbnail_id.toString().substring(5,dataset.thumbnail_id.toString().length-1)
