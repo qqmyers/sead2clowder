@@ -42,7 +42,7 @@ class Previews @Inject()(previews: PreviewService, tiles: TileService, accessRig
 	    			if(preview.file_id.isDefined){
 	    				files.get(preview.file_id.get)match{
 		    				case Some(file)=>{
-		    					filesChecker.checkAccessForFileUsingRightsList(file, request.user , requestedRight, rightsForUser)
+		    					filesChecker.checkAccessForFileUsingRightsList(file, user , requestedRight, rightsForUser)
 		    				}
 		    				case None=>{
 		    					false
@@ -52,7 +52,7 @@ class Previews @Inject()(previews: PreviewService, tiles: TileService, accessRig
 	    			else if(preview.dataset_id.isDefined){
 	    				datasets.get(preview.dataset_id.get)match{
 		    				case Some(dataset)=>{
-		    					datasetsChecker.checkAccessForDatasetUsingRightsList(dataset, request.user , requestedRight, rightsForUser)
+		    					datasetsChecker.checkAccessForDatasetUsingRightsList(dataset, user , requestedRight, rightsForUser)
 		    				}
 		    				case None=>{
 		    					false
@@ -66,7 +66,7 @@ class Previews @Inject()(previews: PreviewService, tiles: TileService, accessRig
 	    			if(preview.file_id.isDefined){
 	    				files.get(preview.file_id.get)match{
 		    				case Some(file)=>{
-		    					filesChecker.checkAccessForFile(file, request.user , requestedRight)
+		    					filesChecker.checkAccessForFile(file, user , requestedRight)
 		    				}
 		    				case None=>{
 		    					false
@@ -76,7 +76,7 @@ class Previews @Inject()(previews: PreviewService, tiles: TileService, accessRig
 	    			else if(preview.dataset_id.isDefined){
 	    				datasets.get(preview.dataset_id.get)match{
 		    				case Some(dataset)=>{
-		    					datasetsChecker.checkAccessForDataset(dataset, request.user , requestedRight)
+		    					datasetsChecker.checkAccessForDataset(dataset, user , requestedRight)
 		    				}
 		    				case None=>{
 		    					false
