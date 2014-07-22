@@ -1,6 +1,6 @@
 package api
 
-import services.{RdfSPARQLService, DatasetService, FileService, CollectionService, ElasticsearchPlugin}
+import services.{RdfSPARQLService, DatasetService, FileService, CollectionService, ElasticsearchPlugin, UserAccessRightsService}
 import play.Logger
 import scala.collection.mutable.ListBuffer
 import scala.collection.JavaConversions.mapAsScalaMap
@@ -12,7 +12,7 @@ import play.api.Play.configuration
 import models.UUID
 
 @Singleton
-class Search @Inject() (files: FileService, datasets: DatasetService, collections: CollectionService, sparql: RdfSPARQLService)  extends ApiController {
+class Search @Inject() (files: FileService, datasets: DatasetService, collections: CollectionService, sparql: RdfSPARQLService, accessRights: UserAccessRightsService)  extends ApiController {
   /**
    * Search results.
    */
@@ -26,7 +26,7 @@ class Search @Inject() (files: FileService, datasets: DatasetService, collection
         var collectionsFound = ListBuffer.empty[models.Collection]
 
         if (query != "") {
-          
+
           val result = current.plugin[ElasticsearchPlugin].map { _.search("data", query.replaceAll("([:/\\\\])", "\\\\$1"))}
           
           result match {
@@ -81,19 +81,45 @@ class Search @Inject() (files: FileService, datasets: DatasetService, collection
             }
         }
         
-        val filesJson = toJson(for(currFile <- filesFound.toList) yield {
-          currFile.id.stringify
-        } )
-        val datasetsJson = toJson(for(currDataset <- datasetsFound.toList) yield {
-          currDataset.id.stringify
-        } )
-        val collectionsJson = toJson(for(currCollection <- collectionsFound.toList) yield {
-          currCollection.id.stringify
-        } )
-        
-        val fullJSON = toJson(Map[String,JsValue]("files" -> filesJson, "datasets" -> datasetsJson, "collections" -> collectionsJson))
-        
-        Ok(fullJSON)
+          val filesChecker = services.DI.injector.getInstance(classOf[api.Files])
+          val datasetsChecker = services.DI.injector.getInstance(classOf[api.Datasets])
+          val collectionsChecker = services.DI.injector.getInstance(classOf[api.Collections])
+          
+          request.user match{
+	        case Some(theUser)=>{
+	        	val rightsForUser = accessRights.get(theUser)
+	        	val filesJson = toJson(for(currFile <- filesFound.toList if(filesChecker.checkAccessForFileUsingRightsList(currFile, request.user , "view", rightsForUser))) yield {
+		          currFile.id.stringify
+		        } )
+		        val datasetsJson = toJson(for(currDataset <- datasetsFound.toList if(datasetsChecker.checkAccessForDatasetUsingRightsList(currDataset, request.user , "view", rightsForUser))) yield {
+		          currDataset.id.stringify
+		        } )
+		        val collectionsJson = toJson(for(currCollection <- collectionsFound.toList if(collectionsChecker.checkAccessForCollectionUsingRightsList(currCollection, request.user , "view", rightsForUser))) yield {
+		          currCollection.id.stringify
+		        } )
+		        
+		        val fullJSON = toJson(Map[String,JsValue]("files" -> filesJson, "datasets" -> datasetsJson, "collections" -> collectionsJson))
+		        
+		        Ok(fullJSON)
+	        	
+	        }
+	        case None=>{
+	        	val filesJson = toJson(for(currFile <- filesFound.toList if(filesChecker.checkAccessForFile(currFile, request.user, "view"))) yield {
+		          currFile.id.stringify
+		        } )
+		        val datasetsJson = toJson(for(currDataset <- datasetsFound.toList if(datasetsChecker.checkAccessForDataset(currDataset, request.user, "view"))) yield {
+		          currDataset.id.stringify
+		        } )
+		        val collectionsJson = toJson(for(currCollection <- collectionsFound.toList if(collectionsChecker.checkAccessForCollection(currCollection, request.user, "view"))) yield {
+		          currCollection.id.stringify
+		        } )
+		        
+		        val fullJSON = toJson(Map[String,JsValue]("files" -> filesJson, "datasets" -> datasetsJson, "collections" -> collectionsJson))
+		        
+		        Ok(fullJSON)
+	        }
+	      } 
+ 
       }
      case None => {
        Logger.debug("Search plugin not enabled")

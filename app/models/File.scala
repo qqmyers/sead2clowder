@@ -28,6 +28,7 @@ case class File(
 	userMetadata: Map[String, Any] = Map.empty,
 	xmlMetadata: Map[String, Any] = Map.empty,
 	userMetadataWasModified: Option[Boolean] = None,
-	notesHTML: Option[String] = None 
+	notesHTML: Option[String] = None,
+    isPublic: Option[Boolean] = Some(false) 
 )
 

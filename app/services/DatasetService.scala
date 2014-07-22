@@ -4,6 +4,7 @@ import models._
 import play.api.libs.json.JsValue
 import com.mongodb.casbah.Imports._
 import models.File
+import securesocial.core.Identity
 
 /**
  * Generic dataset service.
@@ -26,12 +27,12 @@ trait DatasetService {
   /**
    * List datasets after a specified date.
    */
-  def listDatasetsAfter(date: String, limit: Int): List[Dataset]
+  def listDatasetsAfter(date: String, limit: Int, user:Option[Identity] = None): List[Dataset]
   
   /**
    * List datasets before a specified date.
    */
-  def listDatasetsBefore(date: String, limit: Int): List[Dataset]
+  def listDatasetsBefore(date: String, limit: Int, user:Option[Identity] = None): List[Dataset]
   
   /**
    * Get dataset.
@@ -46,12 +47,12 @@ trait DatasetService {
   /**
    * Lastest dataset in chronological order.
    */
-  def latest(): Option[Dataset]
+  def latest(user:Option[Identity] = None): Option[Dataset]
 
   /**
    * First dataset in chronological order.
    */
-  def first(): Option[Dataset]
+  def first(user:Option[Identity] = None): Option[Dataset]
   
   /**
    * 
@@ -71,7 +72,7 @@ trait DatasetService {
   /**
    * Get JSON representation.
    */
-  def toJSON(dataset: Dataset): JsValue
+  def toJSON(dataset: Dataset, user: Option[Identity] = None, rightsForUser: Option[UserPermissions] = None): JsValue
 
   /**
    * Check if dataset belongs to a collection.
@@ -177,4 +178,7 @@ trait DatasetService {
   def update(dataset: Dataset)
   
   def setNotesHTML(id: UUID, notesHTML: String)
+
+  def setIsPublic(datasetId: UUID, isPublic: Boolean)
 }
+

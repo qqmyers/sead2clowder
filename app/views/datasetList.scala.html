@@ -1,6 +1,7 @@
-@(datasets: List[models.Dataset], prev: String, next: String, limit: Int)(implicit user: Option[securesocial.core.Identity])
+@(datasets: List[models.Dataset], prev: String, next: String, limit: Int, rightsForUser: Option[models.UserPermissions])(implicit user: Option[securesocial.core.Identity])
 
 @import services.{DI, AppConfigurationService}
+@import controllers.Datasets
 @import securesocial.core.{SocialUser, IdentityId, AuthenticationMethod}
 
 @main("Datasets") {
@@ -93,8 +94,6 @@ $(document).ready(function () {
 				</tr>
 			</thead>
 			<tbody>
-			@defining(DI.injector.getInstance(classOf[AppConfigurationService])
-					.adminExists(user.getOrElse(new SocialUser(new IdentityId("anonymous", ""), "Anonymous", "User", "Anonymous User", None, None, AuthenticationMethod.UserPassword)).email.getOrElse(""))){userIsAdmin=>
 					@datasets.map { dataset =>
 						<tr>
 							<td><a href="@(routes.Datasets.dataset(dataset.id))">@dataset.name</a></td>
@@ -105,18 +104,12 @@ $(document).ready(function () {
 								@if(dataset.thumbnail_id.isEmpty){No thumbnail available}
 							</td>
 							<td class="requiresLogin">
-								@if(userIsAdmin){
-									<a href="#" onclick="removeDataset('@(dataset.id.toString)',event)">Remove</a>
-								}
-								@if(user.isDefined && !userIsAdmin) {
-										@if(user.get.identityId.userId.equals(dataset.author.identityId.userId)){
-											<a href="#" onclick="removeDataset('@(dataset.id.toString)',event)">Remove</a>
-										}													
+								@if(services.DI.injector.getInstance(classOf[controllers.Datasets]).checkAccessForDatasetUsingRightsList(dataset, user, "modify", rightsForUser)){
+									<a href="#!" onclick="removeDataset('@(dataset.id.toString)',event)">Remove</a>
 								}
 							</td>						
 						</tr>
 					}
-				}
 			</tbody>
 		</table>
 		<ul class="pager">

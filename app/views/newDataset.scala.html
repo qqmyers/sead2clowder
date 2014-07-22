@@ -30,10 +30,16 @@
 	      @inputText(myForm("name"), '_label -> "Name")
 	      @textarea(myForm("description"), '_label -> "Description")
 	    </fieldset>
+	    <fieldset id="datasetPrivatePublicFieldSet" style="margin-bottom: 1%;">
+	      @checkbox(field = myForm("datasetPrivatePublic"),'_label -> "Dataset is public")
+	    </fieldset>
 	    <fieldset  id="fileUploadField">
 	      @inputFile(myForm("file"), '_label -> "Upload file")
 	    </fieldset>
 	    <button id="uploadCLearBtn" style="position: relative;  margin-top:10px; margin-bottom:10px;" onclick="clearUpload();return false;">Clear</button>
+	    <fieldset id="filePrivatePublicFieldSet" style="margin-bottom: 1%;">
+	      @checkbox(field = myForm("filePrivatePublic"),'_label -> "File is public")
+	    </fieldset>
 	    <fieldset>
 	      @select(
   			myForm("existingFile"),
@@ -63,5 +69,13 @@
   		$('#datasetLevel label').css('top', '0px');
   		$('#datasetLevel label').css('left', '0px');
   		$('#datasetLevel label').css('margin-right', '10px');
+  		
+  		$('#filePrivatePublicFieldSet label').css('top', '20px');
+  		$('#filePrivatePublicFieldSet label').css('left', '2%');
+  		$('#filePrivatePublicFieldSet label').css('position', 'relative');
+  		
+  		$('#datasetPrivatePublicFieldSet label').css('top', '20px');
+  		$('#datasetPrivatePublicFieldSet label').css('left', '2%');
+  		$('#datasetPrivatePublicFieldSet label').css('position', 'relative');
   </script> 
 }

@@ -130,6 +130,8 @@ object Users extends Controller {
     else NotFound(views.html.defaultpages.notFound.render(request, None))
   }
   
+
+  
   private def createToken(email: String, isSignUp: Boolean): (String, Token) = {
     val uuid = UUID.randomUUID().toString
     val now = DateTime.now
@@ -148,7 +150,7 @@ object Users extends Controller {
     import com.typesafe.plugin._
     import scala.concurrent.duration._
     import play.api.libs.concurrent.Execution.Implicits._
-
+    
     if ( Logger.isDebugEnabled ) {
       Logger.debug("Sending registration email to %s".format(recipient))
       Logger.debug("Registration mail = [%s]".format(body))

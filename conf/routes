@@ -3,9 +3,9 @@
 # ~~~~
 
 # Home page
-GET      /                                @controllers.Application.index
+GET      /                                                                   @controllers.Application.index
 
-GET     /ws/:datasetId                    @controllers.Application.webSocket(datasetId)
+GET     /ws/:datasetId                    									 @controllers.Application.webSocket(datasetId)
 
 # Map static resources from the /public folder to the /assets URL path
 #GET      /documentation/api/*testFile                                        controllers.Assets.at(path="/public/docs/api", testFile)
@@ -49,7 +49,7 @@ GET     /datasets/new                     @controllers.Datasets.newDataset
 GET     /datasets/metadataSearch          @controllers.Datasets.metadataSearch
 GET     /datasets/generalMetadataSearch   @controllers.Datasets.generalMetadataSearch
 GET		/datasets/:id					  @controllers.Datasets.dataset(id: UUID)
-GET		/3d_datasets/:id				  @controllers.Datasets.datasetThreeDim(id)
+GET     /3d_datasets/:id                  @controllers.Datasets.datasetThreeDim(id)
 GET     /datasets_by_section/:id          @controllers.Datasets.datasetBySection(id: UUID)
 POST    /dataset/submit                   @controllers.Datasets.submit
 
@@ -61,7 +61,7 @@ GET      /collection/:id                                                     @co
 
 # Tags
 GET     /tags/search                      @controllers.Tags.search(tag)
-GET     /tags/cloud                       @controllers.Tags.tagCloud
+GET     /tags/cloud                       @controllers.Tags.tagCloud 
 
 # Authentication
 GET      /loginTest                                                          controllers.Authentication.login
@@ -81,8 +81,7 @@ GET      /files/:id/similar                                                  @co
 GET      /queries/:id/similar                                                @controllers.Search.findSimilar(id: UUID)
 
 # Previewers
-GET      /previewers/list                                                    controllers.Previewers.list	
-
+GET      /previewers/list                                                    controllers.Previewers.list
 
 # test json
 GET      /test                                                               @controllers.Application.testJson
@@ -93,8 +92,6 @@ GET		/newsletters/unsubscribe			controllers.Subscribers.unsubscribe
 POST	/newsletters/submit					controllers.Subscribers.submit
 POST	/newsletters/removeSubscription		controllers.Subscribers.removeSubscription
 GET     /indexSubscribedFB/:subscriberId    controllers.Subscribers.getAuthToken(subscriberId, code: String ?= "") 
-
-
 
 ## SecureSocial ##
 
@@ -134,16 +131,16 @@ GET		/admin/listAdmins			@controllers.Admin.listAdmins
 POST    /admin/submitNew 			@controllers.Admin.submitNew
 POST    /admin/createIndex  		@controllers.Admin.createIndex
 POST  	 /admin/index/:id/build     @controllers.Admin.buildIndex(id:String)
-GET		 /admin/dataDumps			@controllers.Admin.viewDumpers
+GET      /admin/dataDumps           @controllers.Admin.viewDumpers 
 DELETE   /admin/index/:id/delete    @controllers.Admin.deleteIndex(id:String)
 DELETE 	/admin/index/deleteAll		@controllers.Admin.deleteAllIndexes
 
-GET     /admin/extractions          @controllers.Extractors.listAllExtractions
-GET     /admin/subscribers          controllers.Subscribers.list
-POST    /admin/theme                @controllers.Admin.setTheme
-GET		/admin/makeNewsFeed			controllers.Subscribers.makeNewsFeed
-GET     /admin/makeNewsFeedFB       controllers.Subscribers.makeNewsFeedFB 
-GET		/admin/addSubscriber		controllers.Subscribers.addSubscriber
+GET     /admin/extractions                                                   @controllers.Extractors.listAllExtractions
+GET     /admin/subscribers          										 controllers.Subscribers.list
+POST    /admin/theme                                                         @controllers.Admin.setTheme
+GET		/admin/makeNewsFeed													 controllers.Subscribers.makeNewsFeed
+GET     /admin/makeNewsFeedFB       										 controllers.Subscribers.makeNewsFeedFB 
+GET		/admin/addSubscriber												 controllers.Subscribers.addSubscriber
 
 # Javascript Endpoints
 GET      /javascriptRoutes                                                   @controllers.Application.javascriptRoutes
@@ -155,14 +152,23 @@ GET     /api-docs.json/files              controllers.ApiHelpController.getResou
 GET     /api-docs.json/collections        controllers.ApiHelpController.getResource(path = "/api-docs.json/collections")
 
 # Rest API
+
+POST	/api/users/initRights									@api.Users.initRights
+POST	/api/users/modifyRightsToFile/:id						@api.Users.modifyRightsToFile(id: UUID)
+POST	/api/users/modifyRightsToDataset/:id					@api.Users.modifyRightsToDataset(id: UUID)
+POST	/api/users/modifyRightsToCollection/:id					@api.Users.modifyRightsToCollection(id: UUID)
+POST	/api/users/modifyRightsToDatasetFiles/:id				@api.Users.modifyRightsToDatasetFiles(id: UUID)
+POST	/api/users/modifyRightsToCollectionDatasets/:id			@api.Users.modifyRightsToCollectionDatasets(id: UUID)
+
 POST	/api/files/:three_d_file_id/geometries/:geometry_id		@api.Files.attachGeometry(three_d_file_id: UUID,geometry_id: UUID)
 POST	/api/files/:three_d_file_id/3dTextures/:texture_id		@api.Files.attachTexture(three_d_file_id: UUID,texture_id: UUID)
 POST	/api/files/:file_id/thumbnails/:thumbnail_id			@api.Files.attachThumbnail(file_id: UUID,thumbnail_id: UUID)
 GET     /api/files                        						@api.Files.list
-POST    /api/files                        						@api.Files.upload(showPreviews: String ?= "DatasetLevel", originalZipFile: String ?= "")
+POST    /api/files                        						@api.Files.upload(showPreviews: String ?= "DatasetLevel", originalZipFile: String ?= "", fileIsPublic: String ?= "false")
 POST	/api/files/searchusermetadata							@api.Files.searchFilesUserMetadata
 POST	/api/files/searchmetadata								@api.Files.searchFilesGeneralMetadata
-POST    /api/uploadToDataset/:id                        		@api.Files.uploadToDataset(id: UUID, String ?= "DatasetLevel", originalZipFile: String ?= "")
+POST	/api/files/setIsPublic/:id								@api.Files.setIsPublic(id:UUID)
+POST    /api/uploadToDataset/:id                        		@api.Files.uploadToDataset(id: UUID, String ?= "DatasetLevel", originalZipFile: String ?= "", fileIsPublic: String ?= "false")
 
 POST	/api/files/uploadIntermediate/:idAndFlags				@api.Files.uploadIntermediate(idAndFlags)
 
@@ -205,8 +211,10 @@ POST	/api/dumpFilesMd										@api.Files.dumpFilesMetadata
 POST	/api/dumpDatasetsMd										@api.Datasets.dumpDatasetsMetadata
 POST	/api/dumpDatasetGroupings								@api.Datasets.dumpDatasetGroupings
 
+
 POST    /api/collections                                        @api.Collections.createCollection()
 GET		/api/collections/list														@api.Collections.listCollections
+POST	/api/collections/setIsPublic/:id											@api.Collections.setIsPublic(id: UUID)
 POST	/api/collections/:coll_id/datasets/:ds_id									@api.Collections.attachDataset(coll_id: UUID, ds_id: UUID)
 POST	/api/collections/:coll_id/datasetsRemove/:ds_id/:ignoreNotFound				@api.Collections.removeDataset(coll_id: UUID, ds_id: UUID,ignoreNotFound)
 POST	/api/collections/:coll_id/remove											@api.Collections.removeCollection(coll_id: UUID)
@@ -216,6 +224,9 @@ GET    	/api/datasets					  							@api.Datasets.list
 POST    /api/datasets                                           	@api.Datasets.createDataset
 POST	/api/datasets/searchusermetadata							@api.Datasets.searchDatasetsUserMetadata
 POST	/api/datasets/searchmetadata								@api.Datasets.searchDatasetsGeneralMetadata
+POST	/api/datasets/setIsPublic/:id								@api.Datasets.setIsPublic(id: UUID)
+
+
 GET		/api/datasets/listOutsideCollection/:coll_id				@api.Datasets.listOutsideCollection(coll_id: UUID)
 POST	/api/datasets/:ds_id/filesRemove/:file_id/:ignoreNotFound	@api.Datasets.detachFile(ds_id: UUID,file_id: UUID,ignoreNotFound)
 GET		/api/datasets/getRDFURLsForDataset/:id						@api.Datasets.getRDFURLsForDataset(id: UUID)
@@ -243,8 +254,8 @@ POST	/api/datasets/:ds_id/files/:file_id							@api.Datasets.attachExistingFile(
 GET 	/api/datasets/:id				 							@api.Datasets.datasetFilesList(id: UUID)
 
 
-GET     /api/previews/:preview_id/textures/dataset/:datasetid/json					@api.Previews.downloadPreview(preview_id: UUID, datasetid: UUID)
-GET     /api/previews/:preview_id/textures/dataset/:dataset_id//:filename			@api.Files.downloadByDatasetAndFilename(dataset_id: UUID, filename, preview_id: UUID)
+#GET     /api/previews/:preview_id/textures/dataset/:datasetid/json					@api.Previews.downloadPreview(preview_id: UUID, datasetid: UUID)      INSECURE!
+#GET     /api/previews/:preview_id/textures/dataset/:dataset_id//:filename			@api.Files.downloadByDatasetAndFilename(dataset_id: UUID, filename, preview_id: UUID) INSECURE!
 GET		/api/previews/:dzi_id_dir/:level/:filename									@api.Previews.getTile(dzi_id_dir, level, filename)
 POST    /api/previews/:dzi_id/tiles/:tile_id/:level     							@api.Previews.attachTile(dzi_id: UUID, tile_id: UUID, level)
 POST    /api/previews/:id/metadata        											@api.Previews.uploadMetadata(id: UUID)
@@ -315,4 +326,3 @@ POST	/api/sparqlquery				  @api.Search.querySPARQL
 POST	/api/newsletters/submitLoggedIn					api.Subscribers.submitLoggedIn
 POST	/api/newsletters/removeSubscriptionLoggedIn		api.Subscribers.removeSubscriptionLoggedIn
 POST	/api/newsletters/sendFeed						api.Subscribers.sendFeed
-

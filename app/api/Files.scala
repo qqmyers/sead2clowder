@@ -52,6 +52,8 @@ import play.api.libs.json.JsObject
 import play.api.Play.configuration
 import com.wordnik.swagger.annotations.{ApiOperation, Api}
 
+import securesocial.core.Identity
+
 /**
  * Json API for files.
  *
@@ -70,12 +72,14 @@ class Files @Inject()(
   previews: PreviewService,
   threeD: ThreeDService,
   sqarql: RdfSPARQLService,
-  thumbnails: ThumbnailService) extends ApiController {
+  accessRights: UserAccessRightsService,
+  thumbnails: ThumbnailService,
+  appConfiguration: AppConfigurationService) extends ApiController {
 
   @ApiOperation(value = "Retrieve physical file object metadata",
       notes = "Get metadata of the file object (not the resource it describes) as JSON. For example, size of file, date created, content type, filename.",
       responseClass = "None", httpMethod = "GET")
-  def get(id: UUID) = SecuredAction(parse.anyContent, authorization = WithPermission(Permission.ShowFile)) {
+  def get(id: UUID) = SecuredAction(parse.anyContent, authorization = WithPermission(Permission.ShowFile), resourceId = Some(id)) {
     implicit request =>
       Logger.info("GET file with id " + id)
       files.get(id) match {
@@ -93,13 +97,23 @@ class Files @Inject()(
   @ApiOperation(value = "List all files", notes = "Returns list of files and descriptions.", responseClass = "None", httpMethod = "GET")
   def list = SecuredAction(parse.anyContent, authorization = WithPermission(Permission.ListFiles)) {
     request =>
-      val list = for (f <- files.listFiles()) yield jsonFile(f)
+      var list: List[JsValue] = List.empty
+      request.user match{
+	        case Some(theUser)=>{
+	        	val rightsForUser = accessRights.get(theUser)
+	        	list = for (f <- files.listFiles() if(checkAccessForFileUsingRightsList(f, request.user , "view", rightsForUser))) yield jsonFile(f)
+	        }
+	        case None=>{
+	          list = for (f <- files.listFiles() if(checkAccessForFile(f, request.user , "view"))) yield jsonFile(f)
+	        }
+	      }
+
       Ok(toJson(list))
     }
   
 
   def downloadByDatasetAndFilename(datasetId: UUID, filename: String, preview_id: UUID) =
-    SecuredAction(parse.anyContent, authorization = WithPermission(Permission.DownloadFiles)) {
+    SecuredAction(parse.anyContent, authorization = WithPermission(Permission.DownloadFiles), resourceId = datasets.getFileId(datasetId, filename)) {
       request =>
         datasets.getFileId(datasetId, filename) match {
           case Some(id) => Redirect(routes.Files.download(id))
@@ -114,7 +128,7 @@ class Files @Inject()(
       notes = "Can use Chunked transfer encoding if the HTTP header RANGE is set.",
       responseClass = "None", httpMethod = "GET")
   def download(id: UUID) =
-    SecuredAction(parse.anyContent, authorization = WithPermission(Permission.DownloadFiles)) {
+    SecuredAction(parse.anyContent, authorization = WithPermission(Permission.DownloadFiles), resourceId = Some(id)) {
       request =>
 
         files.getBytes(id) match {
@@ -164,7 +178,7 @@ class Files @Inject()(
    *
    */
   def downloadquery(id: UUID) =
-    SecuredAction(parse.anyContent, authorization = WithPermission(Permission.DownloadFiles)) {
+    SecuredAction(parse.anyContent, authorization = WithPermission(Permission.DownloadFiles), resourceId = Some(id)) {
       request =>
         queries.get(id) match {
           case Some((inputStream, filename, contentType, contentLength)) => {
@@ -235,7 +249,7 @@ class Files @Inject()(
   @ApiOperation(value = "Upload file",
       notes = "Upload the attached file using multipart form enconding. Returns file id as JSON object. ID can be used to work on the file using the API. Uploaded file can be an XML metadata file.",
       responseClass = "None", httpMethod = "POST")
-  def upload(showPreviews: String = "DatasetLevel", originalZipFile: String = "") = SecuredAction(parse.multipartFormData, authorization = WithPermission(Permission.CreateFiles)) {
+  def upload(showPreviews: String = "DatasetLevel", originalZipFile: String = "", fileIsPublic: String = "false") = SecuredAction(parse.multipartFormData, authorization = WithPermission(Permission.CreateFiles)) {
     implicit request =>
       request.user match {
         case Some(user) => {
@@ -263,16 +277,17 @@ class Files @Inject()(
 	               case None => {}
 	             }
 	         }
-
+	        
 	        var realUserName = realUser.fullName
 
-	        val file = files.save(new FileInputStream(f.ref.file), nameOfFile, f.contentType, realUser, showPreviews)
+	        val file = files.save(new FileInputStream(f.ref.file), nameOfFile, f.contentType, realUser, showPreviews, realUser.fullName.equals("Anonymous User")||fileIsPublic.toLowerCase.equals("true")) 
 
 	        val uploadedFile = f
 	        file match {
 	          case Some(f) => {
 	            	            
-	            val id = f.id
+	            val id = f.id	            
+	            accessRights.addPermissionLevel(realUser, id.stringify, "file", "administrate")	            
 	            if(showPreviews.equals("FileLevel"))
 	            	flags = flags + "+filelevelshowpreviews"
 	            else if(showPreviews.equals("None"))
@@ -406,7 +421,7 @@ class Files @Inject()(
   @ApiOperation(value = "Upload a file to a specific dataset",
       notes = "Uploads the file, then links it with the dataset. Returns file id as JSON object. ID can be used to work on the file using the API. Uploaded file can be an XML metadata file to be added to the dataset.",
       responseClass = "None", httpMethod = "POST")
-  def uploadToDataset(dataset_id: UUID, showPreviews: String="DatasetLevel", originalZipFile: String = "") = SecuredAction(parse.multipartFormData, authorization=WithPermission(Permission.CreateDatasets), Some(dataset_id)) { implicit request =>
+  def uploadToDataset(dataset_id: UUID, showPreviews: String="DatasetLevel", originalZipFile: String = "", fileIsPublic: String = "false") = SecuredAction(parse.multipartFormData, authorization=WithPermission(Permission.CreateDatasets), Some(dataset_id)) { implicit request =>
     request.user match {
      case Some(user) => {
       datasets.get(dataset_id) match {
@@ -435,8 +450,9 @@ class Files @Inject()(
                case None => {}
              }
          }
-          var realUserName = realUser.fullName
-          val file = files.save(new FileInputStream(f.ref.file), nameOfFile, f.contentType, realUser, showPreviews)
+          var realUserName = realUser.fullName	
+          val file = files.save(new FileInputStream(f.ref.file), nameOfFile, f.contentType, realUser, showPreviews, realUser.fullName.equals("Anonymous User")||fileIsPublic.toLowerCase.equals("true"))
+
           val uploadedFile = f         
           
           // submit file for extraction
@@ -444,6 +460,7 @@ class Files @Inject()(
             case Some(f) => {
                             
               val id = f.id.toString
+              accessRights.addPermissionLevel(realUser, id, "file", "administrate")
               if(showPreviews.equals("FileLevel"))
 	            flags = flags + "+filelevelshowpreviews"
 	          else if(showPreviews.equals("None"))
@@ -681,7 +698,7 @@ class Files @Inject()(
   @ApiOperation(value = "Get the user-generated metadata of the selected file in an RDF file",
 	      notes = "",
 	      responseClass = "None", httpMethod = "GET")
-  def getRDFUserMetadata(id: UUID, mappingNumber: String="1") = SecuredAction(parse.anyContent, authorization=WithPermission(Permission.ShowFilesMetadata)) {implicit request =>  
+  def getRDFUserMetadata(id: UUID, mappingNumber: String="1") = SecuredAction(parse.anyContent, authorization=WithPermission(Permission.ShowFilesMetadata), resourceId = Some(id)) {implicit request =>  
    current.plugin[RDFExportService].isDefined match{
     case true => {
       current.plugin[RDFExportService].get.getRDFUserMetadataFile(id.stringify, mappingNumber) match{
@@ -727,7 +744,7 @@ class Files @Inject()(
   @ApiOperation(value = "Get URLs of file's RDF metadata exports.",
 	      notes = "URLs of metadata files exported from XML (if the file was an XML metadata file) as well as the URL used to export the file's user-generated metadata as RDF.",
 	      responseClass = "None", httpMethod = "GET")
-  def getRDFURLsForFile(id: UUID) = SecuredAction(parse.anyContent, authorization=WithPermission(Permission.ShowFilesMetadata)) { request =>
+  def getRDFURLsForFile(id: UUID) = SecuredAction(parse.anyContent, authorization=WithPermission(Permission.ShowFilesMetadata), resourceId = Some(id)) { request =>
     current.plugin[RDFExportService].isDefined match{
       case true =>{
 	    current.plugin[RDFExportService].get.getRDFURLsForFile(id.stringify)  match {
@@ -767,13 +784,26 @@ class Files @Inject()(
     		"authorId" -> file.author.identityId.userId))
   }
 
-  def jsonFileWithThumbnail(file: File): JsValue = {
+  def jsonFileWithThumbnail(file: File, user: Option[Identity] = None, rightsForUser: Option[UserPermissions] = None): JsValue = {
+    var userRequested = "None"
+    var userCanEdit = false
     var fileThumbnail = "None"
     if (!file.thumbnail_id.isEmpty)
       fileThumbnail = file.thumbnail_id.toString().substring(5, file.thumbnail_id.toString().length - 1)
+      
+    user match{
+        case Some(theUser)=>{
+          userRequested = theUser.fullName
+          userCanEdit = checkAccessForFileUsingRightsList(file, user, "modify", rightsForUser)
+        }
+        case None=>{
+          userRequested = "None"
+          userCanEdit = checkAccessForFile(file, user, "modify")
+        }
+      }
 
     toJson(Map("id" -> file.id.toString, "filename" -> file.filename, "contentType" -> file.contentType, "dateCreated" -> file.uploadDate.toString(), "thumbnail" -> fileThumbnail,
-    		"authorId" -> file.author.identityId.userId))
+    		"authorId" -> file.author.identityId.userId, "usercanedit" -> userCanEdit.toString, "userThatRequested" -> userRequested   ))
   }
 
   def toDBObject(fields: Seq[(String, JsValue)]): DBObject = {
@@ -790,7 +820,7 @@ class Files @Inject()(
   @ApiOperation(value = "List file previews",
       notes = "Return the currently existing previews' basic characteristics (id, filename, content type) of the selected file.",
       responseClass = "None", httpMethod = "GET")
-  def filePreviewsList(id: UUID) = SecuredAction(parse.anyContent, authorization = WithPermission(Permission.ShowFile)) {
+  def filePreviewsList(id: UUID) = SecuredAction(parse.anyContent, authorization = WithPermission(Permission.ShowFile), resourceId = Some(id)) {
     request =>
       files.get(id) match {
         case Some(file) => {
@@ -901,7 +931,7 @@ class Files @Inject()(
    * Find geometry file for given 3D file and geometry filename.
    */
   def getGeometry(three_d_file_id: UUID, filename: String) =
-    SecuredAction(parse.anyContent, authorization = WithPermission(Permission.ShowFile)) {
+    SecuredAction(parse.anyContent, authorization = WithPermission(Permission.ShowFile), resourceId = Some(three_d_file_id)) {
       request =>
         threeD.findGeometry(three_d_file_id, filename) match {
           case Some(geometry) => {
@@ -955,7 +985,7 @@ class Files @Inject()(
    * Find texture file for given 3D file and texture filename.
    */
   def getTexture(three_d_file_id: UUID, filename: String) =
-    SecuredAction(parse.anyContent, authorization = WithPermission(Permission.ShowFile)) {
+    SecuredAction(parse.anyContent, authorization = WithPermission(Permission.ShowFile), resourceId = Some(three_d_file_id)) {
       request =>
         threeD.findTexture(three_d_file_id, filename) match {
           case Some(texture) => {
@@ -1175,7 +1205,7 @@ class Files @Inject()(
   @ApiOperation(value = "Is being processed",
       notes = "Return whether a file is currently being processed by a preprocessor.",
       responseClass = "None", httpMethod = "GET")
-  def isBeingProcessed(id: UUID) = SecuredAction(parse.anyContent, authorization = WithPermission(Permission.ShowFile)) {
+  def isBeingProcessed(id: UUID) = SecuredAction(parse.anyContent, authorization = WithPermission(Permission.ShowFile), resourceId = Some(id)) {
     request =>
       files.get(id) match {
         case Some(file) => {
@@ -1220,7 +1250,7 @@ class Files @Inject()(
   @ApiOperation(value = "Get file previews",
       notes = "Return the currently existing previews of the selected file (full description, including paths to preview files, previewer names etc).",
       responseClass = "None", httpMethod = "GET")
-  def getPreviews(id: UUID) = SecuredAction(parse.anyContent, authorization = WithPermission(Permission.ShowFile)) {
+  def getPreviews(id: UUID) = SecuredAction(parse.anyContent, authorization = WithPermission(Permission.ShowFile), resourceId = Some(id)) {
 	    request =>
 	      files.get(id) match {
 	        case Some(file) => {
@@ -1255,7 +1285,7 @@ class Files @Inject()(
       @ApiOperation(value = "Get metadata of the resource described by the file that were input as XML",
 	      notes = "",
 	      responseClass = "None", httpMethod = "GET")
-	  def getXMLMetadataJSON(id: UUID) = SecuredAction(parse.anyContent, authorization=WithPermission(Permission.ShowFilesMetadata)) { request =>
+	  def getXMLMetadataJSON(id: UUID) = SecuredAction(parse.anyContent, authorization=WithPermission(Permission.ShowFilesMetadata), resourceId = Some(id)) { request =>
 	    files.get(id)  match {
 	      case Some(file) => {
 	        Ok(files.getXMLMetadataJSON(id))
@@ -1267,7 +1297,7 @@ class Files @Inject()(
 	  @ApiOperation(value = "Get user-generated metadata of the resource described by the file",
 		      notes = "",
 		      responseClass = "None", httpMethod = "GET")
-	  def getUserMetadataJSON(id: UUID) = SecuredAction(parse.anyContent, authorization=WithPermission(Permission.ShowFilesMetadata)) { request =>
+	  def getUserMetadataJSON(id: UUID) = SecuredAction(parse.anyContent, authorization=WithPermission(Permission.ShowFilesMetadata), resourceId = Some(id)) { request =>
 	   files.get(id)  match {
 	      case Some(file) => {
 	        Ok(files.getUserMetadataJSON(id))
@@ -1279,7 +1309,7 @@ class Files @Inject()(
 	  @ApiOperation(value = "Get technical metadata of the resource described by the file",
 		      notes = "",
 		      responseClass = "None", httpMethod = "GET")
-	  def getTechnicalMetadataJSON(id: UUID) = SecuredAction(parse.anyContent, authorization = WithPermission(Permission.ShowFilesMetadata)) {
+	  def getTechnicalMetadataJSON(id: UUID) = SecuredAction(parse.anyContent, authorization = WithPermission(Permission.ShowFilesMetadata), resourceId = Some(id)) {
 	    request =>
 	      files.get(id) match {
 	        case Some(file) => {
@@ -1299,11 +1329,13 @@ class Files @Inject()(
 	    files.get(id)  match {
 	      case Some(file) => {
 	        files.removeFile(id)
-	        
+ 
 	        current.plugin[ElasticsearchPlugin].foreach {
 	        	_.delete("data", "file", id.stringify)
 	        }
-	        
+
+	        accessRights.removeResourceRightsForAll(id.stringify, "file")
+
 	        Logger.debug(file.filename)
 
 	        //remove file from RDF triple store if triple store is used
@@ -1342,8 +1374,18 @@ class Files @Inject()(
       //searchQuery = searchQuery.reverse
 
       Logger.debug("Search completed. Returning files list.")
+      
+      var list: List[JsValue] = List.empty
+      request.user match{
+	        case Some(theUser)=>{
+	        	val rightsForUser = accessRights.get(theUser)
+	        	list = for (file <- searchQuery; if(checkAccessForFileUsingRightsList(file, request.user , "view", rightsForUser))) yield jsonFileWithThumbnail(file, request.user, rightsForUser)
+	        }
+	        case None=>{
+	          list = for (file <- searchQuery; if(checkAccessForFile(file, request.user , "view"))) yield jsonFileWithThumbnail(file, request.user)
+	        }
+	 }
 
-      val list = for (file <- searchQuery) yield jsonFileWithThumbnail(file)
       Logger.debug("thelist: " + toJson(list))
       Ok(toJson(list))
   }
@@ -1365,10 +1407,41 @@ class Files @Inject()(
       //searchQuery = searchQuery.reverse
 
       Logger.debug("Search completed. Returning files list.")
+      
+      var list: List[JsValue] = List.empty
+      request.user match{
+	        case Some(theUser)=>{
+	        	val rightsForUser = accessRights.get(theUser)
+	        	list = for (file <- searchQuery; if(checkAccessForFileUsingRightsList(file, request.user , "view", rightsForUser))) yield jsonFileWithThumbnail(file, request.user, rightsForUser)
+	        }
+	        case None=>{
+	          list = for (file <- searchQuery; if(checkAccessForFile(file, request.user , "view"))) yield jsonFileWithThumbnail(file, request.user)
+	        }
+	 }
 
-      val list = for (file <- searchQuery) yield jsonFileWithThumbnail(file)
       Logger.debug("thelist: " + toJson(list))
       Ok(toJson(list))
+  }
+  
+  @ApiOperation(value = "Set whether a file is open for public viewing.",
+      notes = "",
+      responseClass = "None", httpMethod = "POST")
+  def setIsPublic(id: UUID) = SecuredAction(authorization = WithPermission(Permission.AdministrateFiles), resourceId = Some(id)) {
+    request =>
+        	(request.body \ "isPublic").asOpt[Boolean].map { isPublic =>
+        	  files.get(id)match{
+        	    case Some(file)=>{
+        	      files.setIsPublic(id, isPublic)
+        	      Ok("Done")
+        	    }
+        	    case None=>{
+        	      Logger.error("Error getting file with id " + id.stringify)
+                  Ok("No file with supplied id exists.")
+        	    }
+        	  } 
+	       }.getOrElse {
+	    	   BadRequest(toJson("Missing parameter [isPublic]"))
+	       }
   }
 
 
@@ -1421,7 +1494,8 @@ class Files @Inject()(
     }
   }
 
-  def setNotesHTML(id: UUID) = SecuredAction(authorization=WithPermission(Permission.CreateNotesFiles))  { implicit request =>
+
+  def setNotesHTML(id: UUID) = SecuredAction(authorization=WithPermission(Permission.CreateNotesFiles), resourceId = Some(id))  { implicit request =>
 	  request.user match {
 	    case Some(identity) => {
 		    request.body.\("notesHTML").asOpt[String] match {
@@ -1458,6 +1532,63 @@ class Files @Inject()(
     }      
   }
 	
+
+  
+  def checkAccessForFile(file: File, user: Option[Identity], permissionType: String): Boolean = {
+    if(permissionType.equals("view") && (file.isPublic.getOrElse(false) || file.author.fullName.equals("Anonymous User") || appConfiguration.getDefault.get.viewNoLoggedIn)){
+      true
+    }
+    else{
+      user match{
+        case Some(theUser)=>{
+          theUser.fullName.equals("Anonymous User") || appConfiguration.adminExists(theUser.email.getOrElse("")) || file.author.identityId.userId.equals(theUser.identityId.userId) || accessRights.checkForPermission(theUser, file.id.stringify, "file", permissionType)
+        }
+        case None=>{
+          false
+        }
+      }
+    }
+  }
+  
+  def checkAccessForFileUsingRightsList(file: File, user: Option[Identity], permissionType: String, rightsForUser: Option[UserPermissions]): Boolean = {
+    if(permissionType.equals("view") && (file.isPublic.getOrElse(false) || file.author.fullName.equals("Anonymous User") || appConfiguration.getDefault.get.viewNoLoggedIn)){
+      true
+    }
+    else{
+      user match{
+        case Some(theUser)=>{
+          val canAccessWithoutRightsList = theUser.fullName.equals("Anonymous User") || appConfiguration.adminExists(theUser.email.getOrElse("")) || file.author.identityId.userId.equals(theUser.identityId.userId)
+          rightsForUser match{
+	        case Some(userRights)=>{
+	        	if(canAccessWithoutRightsList)
+	        	  true
+	        	else{
+	        	  if(permissionType.equals("view")){
+			        userRights.filesViewOnly.contains(file.id.stringify)
+			      }else if(permissionType.equals("modify")){
+			        userRights.filesViewModify.contains(file.id.stringify)
+			      }else if(permissionType.equals("administrate")){
+			        userRights.filesAdministrate.contains(file.id.stringify)
+			      }
+			      else{
+			        Logger.error("Unknown permission type")
+			        false
+			      }
+	        	}
+	        }
+	        case None=>{
+	          canAccessWithoutRightsList
+	        }
+	      }
+        }
+        case None=>{
+          false
+        }
+      }
+    }
+  }
+  
+
 }
 
 object MustBreak extends Exception {}

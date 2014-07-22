@@ -71,7 +71,8 @@ class MongoUserService(application: Application) extends UserServicePlugin(appli
     Logger.trace("Searching for user " + email + " " + providerId)
     SocialUserDAO.findOne(MongoDBObject("email"->email, "identityId.providerId"->providerId))
   }
-
+  
+  
   /**
    * Saves the user.  This method gets called when a user logs in.
    * This is your chance to save the user information in your backing store.

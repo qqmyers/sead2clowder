@@ -29,6 +29,7 @@ import play.api.libs.json.JsString
 import scala.Some
 import models.File
 import play.api.Play.configuration
+import securesocial.core.Identity
 
 /**
  * Dataset API.
@@ -46,7 +47,9 @@ class Datasets @Inject()(
   comments: CommentService,
   previews: PreviewService,
   extractions: ExtractionService,
-  rdfsparql: RdfSPARQLService) extends ApiController {
+  accessRights: UserAccessRightsService,
+  rdfsparql: RdfSPARQLService,
+  appConfiguration: AppConfigurationService) extends ApiController {
 
   /**
    * List all datasets.
@@ -56,7 +59,17 @@ class Datasets @Inject()(
       responseClass = "None", httpMethod = "GET")
   def list = SecuredAction(parse.anyContent, authorization = WithPermission(Permission.ListDatasets)) {
     request =>
-      val list = datasets.listDatasets.map(datasets.toJSON(_))
+      var list: List[JsValue] = List.empty
+      request.user match{
+	        case Some(theUser)=>{
+	        	val rightsForUser = accessRights.get(theUser)
+	        	list = (for (d <- datasets.listDatasets if(checkAccessForDatasetUsingRightsList(d, request.user , "view", rightsForUser))) yield d).map(datasets.toJSON(_))
+	        }
+	        case None=>{
+	          list = (for (d <- datasets.listDatasets if(checkAccessForDataset(d, request.user , "view"))) yield d).map(datasets.toJSON(_))
+	        }
+	      }
+
       Ok(toJson(list))
   }
 
@@ -64,20 +77,44 @@ class Datasets @Inject()(
    * List all datasets outside a collection.
    */
   def listOutsideCollection(collectionId: UUID) = SecuredAction(parse.anyContent,
-    authorization = WithPermission(Permission.ListDatasets)) {
+    authorization = WithPermission(Permission.ShowCollection), resourceId = Some(collectionId)) {
     request =>
 
       collections.get(collectionId) match {
         case Some(collection) => {
-          val list = for (dataset <- datasets.listDatasetsChronoReverse; if (!datasets.isInCollection(dataset, collection)))
-          yield datasets.toJSON(dataset)
-          Ok(toJson(list))
+        	request.user match{
+		        case Some(theUser)=>{
+		            val rightsForUser = accessRights.get(theUser)
+		            val list = for (dataset <- datasets.listDatasetsChronoReverse; if (!datasets.isInCollection(dataset, collection) && checkAccessForDatasetUsingRightsList(dataset, request.user, "view", rightsForUser) )) yield datasets.toJSON(dataset)
+		            Ok(toJson(list))
+		        }
+		        case None=>{
+		        	val list = for (dataset <- datasets.listDatasetsChronoReverse; if (!datasets.isInCollection(dataset, collection) && checkAccessForDataset(dataset, request.user, "view") )) yield datasets.toJSON(dataset)
+		            Ok(toJson(list))
+		        }
+          }
         }
         case None => {
-          val list = datasets.listDatasetsChronoReverse.map(datasets.toJSON(_))
-          Ok(toJson(list))
+        	request.user match{
+		        case Some(theUser)=>{
+		            val rightsForUser = accessRights.get(theUser)
+		            val list = for (dataset <- datasets.listDatasetsChronoReverse; if (checkAccessForDatasetUsingRightsList(dataset, request.user, "view", rightsForUser) )) yield datasets.toJSON(dataset)
+		            Ok(toJson(list))
+		        }
+		        case None=>{
+		        	val list = for (dataset <- datasets.listDatasetsChronoReverse; if (checkAccessForDataset(dataset, request.user, "view") )) yield datasets.toJSON(dataset)
+		            Ok(toJson(list))
+		        }
+          }
         }
       }
+  }
+  
+  /**
+   * Sort all datasets in the input list in reverse chronological order.
+   */
+  def sortDatasetsChronoReverse(inOrder: List[Dataset]): List[Dataset] = {
+    inOrder.sortBy(_.created).reverse
   }
 
   /**
@@ -94,7 +131,14 @@ class Datasets @Inject()(
       	    (request.body \ "file_id").asOpt[String].map { file_id =>
       	      files.get(UUID(file_id)) match {
       	        case Some(file) =>
-      	           val d = Dataset(name=name,description=description, created=new Date(), files=List(file), author=request.user.get)
+      	           var isPublic = false
+	              (request.body \ "isPublic").asOpt[Boolean].map {
+	                inputIsPublic=>
+	                  isPublic = inputIsPublic
+	              }.getOrElse{}
+      	          
+      	           val d = Dataset(name=name,description=description, created=new Date(), files=List(file), author=request.user.get, isPublic = Some(request.user.get.fullName.equals("Anonymous User")||isPublic ))
+      	           accessRights.addPermissionLevel(request.user.get, d.id.stringify, "dataset", "administrate")
 		      	   datasets.insert(d) match {
 		      	     case Some(id) => {
                        files.index(UUID(file_id))
@@ -129,6 +173,27 @@ class Datasets @Inject()(
     }.getOrElse {
       BadRequest(toJson("Missing parameter [name]"))
     }
+  }
+  
+  @ApiOperation(value = "Set whether a dataset is open for public viewing.",
+      notes = "",
+      responseClass = "None", httpMethod = "POST")
+  def setIsPublic(id: UUID) = SecuredAction(authorization = WithPermission(Permission.AdministrateDatasets), resourceId = Some(id)) {
+    request =>
+        	(request.body \ "isPublic").asOpt[Boolean].map { isPublic =>
+        	  datasets.get(id)match{
+        	    case Some(dataset)=>{
+        	      datasets.setIsPublic(id, isPublic)
+        	      Ok("Done")
+        	    }
+        	    case None=>{
+        	      Logger.error("Error getting dataset with id " + id.stringify)
+                  Ok("No dataset with supplied id exists.")
+        	    }
+        	  } 
+	       }.getOrElse {
+	    	   BadRequest(toJson("Missing parameter [isPublic]"))
+	       }
   }
 
   @ApiOperation(value = "Attach existing file to dataset",
@@ -241,12 +306,21 @@ class Datasets @Inject()(
   //////////////////
 
   @ApiOperation(value = "List all datasets in a collection", notes = "Returns list of datasets and descriptions.", responseClass = "None", httpMethod = "GET")
-  def listInCollection(collectionId: UUID) = SecuredAction(parse.anyContent, authorization = WithPermission(Permission.ShowCollection)) {
+  def listInCollection(collectionId: UUID) = SecuredAction(parse.anyContent, authorization = WithPermission(Permission.ShowCollection), resourceId = Some(collectionId)) {
     request =>
       collections.get(collectionId) match {
         case Some(collection) => {
-          val list = for (dataset <- datasets.listInsideCollection(collectionId)) yield datasets.toJSON(dataset)
-          Ok(toJson(list))
+        	request.user match{
+		        case Some(theUser)=>{
+		            val rightsForUser = accessRights.get(theUser)
+		            val list = for (dataset <- datasets.listInsideCollection(collectionId); if (checkAccessForDatasetUsingRightsList(dataset, request.user, "view", rightsForUser) )) yield datasets.toJSON(dataset)
+		            Ok(toJson(list))
+		        }
+		        case None=>{
+		        	val list = for (dataset <- datasets.listInsideCollection(collectionId); if (checkAccessForDataset(dataset, request.user, "view") )) yield datasets.toJSON(dataset)
+		            Ok(toJson(list))
+		        }
+          }
         }
         case None => Logger.error("Error getting collection" + collectionId); InternalServerError
       }
@@ -295,21 +369,49 @@ class Datasets @Inject()(
   @ApiOperation(value = "List files in dataset",
       notes = "Datasets and descriptions.",
       responseClass = "None", httpMethod = "GET")
-  def datasetFilesList(id: UUID) = SecuredAction(parse.anyContent, authorization = WithPermission(Permission.ShowDataset)) {
+  def datasetFilesList(id: UUID) = SecuredAction(parse.anyContent, authorization = WithPermission(Permission.ShowDataset), resourceId = Some(id)) {
     request =>
       datasets.get(id) match {
         case Some(dataset) => {
-          val list = for (f <- dataset.files) yield jsonFile(f)
+          var list: List[JsValue] = List.empty
+          val filesChecker = services.DI.injector.getInstance(classOf[api.Files])
+          request.user match{
+	        case Some(theUser)=>{
+	        	val rightsForUser = accessRights.get(theUser)
+	        	list = for (f <- dataset.files if(filesChecker.checkAccessForFileUsingRightsList(f, request.user , "view", rightsForUser))) yield jsonFile(f, request.user, rightsForUser)
+	        }
+	        case None=>{
+	          list = for (f <- dataset.files if(filesChecker.checkAccessForFile(f, request.user, "view"))) yield jsonFile(f, request.user)
+	        }
+	      }  
+            
           Ok(toJson(list))
         }
         case None => Logger.error("Error getting dataset" + id); InternalServerError
       }
   }
 
-  def jsonFile(file: File): JsValue = {
+  def jsonFile(file: File, user: Option[Identity] = None, rightsForUser: Option[UserPermissions] = None): JsValue = {
+    var userRequested = "None"
+    var userCanEdit = false
+    val filesChecker = services.DI.injector.getInstance(classOf[api.Files])
+    user match{
+        case Some(theUser)=>{
+          userRequested = theUser.fullName
+          userCanEdit = filesChecker.checkAccessForFileUsingRightsList(file, user, "modify", rightsForUser)
+        }
+        case None=>{
+          userRequested = "None"
+          userCanEdit = filesChecker.checkAccessForFile(file, user, "modify")
+        }
+      }  
+    
     toJson(Map("id" -> file.id.toString, "filename" -> file.filename, "contentType" -> file.contentType,
-               "date-created" -> file.uploadDate.toString(), "size" -> file.length.toString, "authorId" -> file.author.identityId.userId))
+               "date-created" -> file.uploadDate.toString(), "size" -> file.length.toString, "authorId" -> file.author.identityId.userId,
+               "usercanedit" -> userCanEdit.toString, "userThatRequested" -> userRequested))
   }
+  
+
 
   // ---------- Tags related code starts ------------------
   /**
@@ -318,7 +420,7 @@ class Datasets @Inject()(
    * One returned field is "tags", containing a list of string values.
    */
   @ApiOperation(value = "Get the tags associated with this dataset", notes = "Returns a JSON object of multiple fields", responseClass = "None", httpMethod = "GET")
-  def getTags(id: UUID) = SecuredAction(parse.anyContent, authorization = WithPermission(Permission.ShowFile)) {
+  def getTags(id: UUID) = SecuredAction(parse.anyContent, authorization = WithPermission(Permission.ShowDataset)) {
     implicit request =>
       Logger.info(s"Getting tags for dataset with id  $id.")
       /* Found in testing: given an invalid ObjectId, a runtime exception
@@ -611,8 +713,18 @@ class Datasets @Inject()(
       //searchQuery = searchQuery.reverse
 
       Logger.debug("Search completed. Returning datasets list.")
+      
+      var list: List[JsValue] = List.empty
+      request.user match{
+	        case Some(theUser)=>{
+	        	val rightsForUser = accessRights.get(theUser)
+	        	list = for (dataset <- searchQuery; if(checkAccessForDatasetUsingRightsList(dataset, request.user , "view", rightsForUser))) yield datasets.toJSON(dataset, request.user, rightsForUser)
+	        }
+	        case None=>{
+	          list = for (dataset <- searchQuery; if(checkAccessForDataset(dataset, request.user , "view"))) yield datasets.toJSON(dataset, request.user)
+	        }
+	 }
 
-      val list = for (dataset <- searchQuery) yield datasets.toJSON(dataset)
       Logger.debug("thelist: " + toJson(list))
       Ok(toJson(list))
   }
@@ -633,8 +745,18 @@ class Datasets @Inject()(
       //searchQuery = searchQuery.reverse
 
       Logger.debug("Search completed. Returning datasets list.")
+      
+      var list: List[JsValue] = List.empty
+      request.user match{
+	        case Some(theUser)=>{
+	        	val rightsForUser = accessRights.get(theUser)
+	        	list = for (dataset <- searchQuery; if(checkAccessForDatasetUsingRightsList(dataset, request.user , "view", rightsForUser))) yield datasets.toJSON(dataset, request.user, rightsForUser)
+	        }
+	        case None=>{
+	          list = for (dataset <- searchQuery; if(checkAccessForDataset(dataset, request.user , "view"))) yield datasets.toJSON(dataset, request.user)
+	        }
+	 }
 
-      val list = for (dataset <- searchQuery) yield datasets.toJSON(dataset)
       Logger.debug("thelist: " + toJson(list))
       Ok(toJson(list))
   }
@@ -645,7 +767,7 @@ class Datasets @Inject()(
   @ApiOperation(value = "Is being processed",
       notes = "Return whether a dataset is currently being processed by a preprocessor.",
       responseClass = "None", httpMethod = "GET")
-  def isBeingProcessed(id: UUID) = SecuredAction(parse.anyContent, authorization = WithPermission(Permission.ShowDataset)) {
+  def isBeingProcessed(id: UUID) = SecuredAction(parse.anyContent, authorization = WithPermission(Permission.ShowDataset), resourceId = Some(id)) {
     request =>
       datasets.get(id) match {
         case Some(dataset) => {
@@ -704,7 +826,7 @@ class Datasets @Inject()(
   @ApiOperation(value = "Get dataset previews",
       notes = "Return the currently existing previews of the selected dataset (full description, including paths to preview files, previewer names etc).",
       responseClass = "None", httpMethod = "GET")
-  def getPreviews(id: UUID) = SecuredAction(parse.anyContent, authorization = WithPermission(Permission.ShowDataset)) {
+  def getPreviews(id: UUID) = SecuredAction(parse.anyContent, authorization = WithPermission(Permission.ShowDataset), resourceId = Some(id)) {
     request =>
       datasets.get(id) match {
         case Some(dataset) => {
@@ -745,13 +867,16 @@ class Datasets @Inject()(
             case _ => Logger.debug("userdfSPARQLStore not enabled")
           }
           datasets.removeDataset(id)
-          
+
           current.plugin[ElasticsearchPlugin].foreach {
         	  _.delete("data", "dataset", id.stringify)
           }
           for(file <- dataset.files)
         	  files.index(file.id)
           
+
+          accessRights.removeResourceRightsForAll(id.stringify, "dataset")
+
           Ok(toJson(Map("status" -> "success")))
           current.plugin[AdminsNotifierPlugin].foreach{_.sendAdminsNotification("Dataset","removed",dataset.id.stringify, dataset.name)}
           Ok(toJson(Map("status"->"success")))
@@ -764,7 +889,7 @@ class Datasets @Inject()(
   @ApiOperation(value = "Get the user-generated metadata of the selected dataset in an RDF file",
       notes = "",
       responseClass = "None", httpMethod = "GET")
-  def getRDFUserMetadata(id: UUID, mappingNumber: String="1") = SecuredAction(parse.anyContent, authorization=WithPermission(Permission.ShowDatasetsMetadata)) {implicit request =>
+  def getRDFUserMetadata(id: UUID, mappingNumber: String="1") = SecuredAction(parse.anyContent, authorization=WithPermission(Permission.ShowDatasetsMetadata), resourceId = Some(id)) {implicit request =>
     
     current.plugin[RDFExportService].isDefined match{
       case true => {
@@ -811,7 +936,7 @@ class Datasets @Inject()(
   @ApiOperation(value = "Get URLs of dataset's RDF metadata exports",
       notes = "URLs of metadata exported as RDF from XML files contained in the dataset, as well as the URL used to export the dataset's user-generated metadata as RDF.",
       responseClass = "None", httpMethod = "GET")
-  def getRDFURLsForDataset(id: UUID) = SecuredAction(parse.anyContent, authorization=WithPermission(Permission.ShowDatasetsMetadata)) { request =>
+  def getRDFURLsForDataset(id: UUID) = SecuredAction(parse.anyContent, authorization=WithPermission(Permission.ShowDatasetsMetadata), resourceId = Some(id)) { request =>
 
     current.plugin[RDFExportService].isDefined match{
       case true =>{
@@ -831,7 +956,7 @@ class Datasets @Inject()(
   @ApiOperation(value = "Get technical metadata of the dataset",
       notes = "",
       responseClass = "None", httpMethod = "GET")
-  def getTechnicalMetadataJSON(id: UUID) = SecuredAction(parse.anyContent, authorization = WithPermission(Permission.ShowDatasetsMetadata)) {
+  def getTechnicalMetadataJSON(id: UUID) = SecuredAction(parse.anyContent, authorization = WithPermission(Permission.ShowDatasetsMetadata), resourceId = Some(id)) {
     request =>
       datasets.get(id) match {
         case Some(dataset) => Ok(datasets.getTechnicalMetadataJSON(id))
@@ -839,7 +964,7 @@ class Datasets @Inject()(
       }
   }
 
-  def getXMLMetadataJSON(id: UUID) = SecuredAction(parse.anyContent, authorization=WithPermission(Permission.ShowDatasetsMetadata)) { request =>
+  def getXMLMetadataJSON(id: UUID) = SecuredAction(parse.anyContent, authorization=WithPermission(Permission.ShowDatasetsMetadata), resourceId = Some(id)) { request =>
     datasets.get(id)  match {
       case Some(dataset) => {
         Ok(datasets.getXMLMetadataJSON(id))
@@ -847,7 +972,7 @@ class Datasets @Inject()(
       case None => {Logger.error("Error finding dataset" + id); InternalServerError}      
     }
   }
-  def getUserMetadataJSON(id: UUID) = SecuredAction(parse.anyContent, authorization=WithPermission(Permission.ShowDatasetsMetadata)) { request =>
+  def getUserMetadataJSON(id: UUID) = SecuredAction(parse.anyContent, authorization=WithPermission(Permission.ShowDatasetsMetadata), resourceId = Some(id)) { request =>
     datasets.get(id)  match {
       case Some(dataset) => {
         Ok(datasets.getUserMetadataJSON(id))
@@ -856,6 +981,7 @@ class Datasets @Inject()(
     }
   }
   
+
   ////////////////////////////////
   
   def setNotesHTML(id: UUID) = SecuredAction(authorization=WithPermission(Permission.CreateNotesDatasets), resourceId = Some(id))  { implicit request =>
@@ -908,6 +1034,65 @@ class Datasets @Inject()(
       Ok(unsuccessfulMessage)  
     }      
   }
+
+  
+  
+  
+  def checkAccessForDataset(dataset: models.Dataset, user: Option[Identity], permissionType: String): Boolean = {
+    if(permissionType.equals("view") && (dataset.isPublic.getOrElse(false) || dataset.author.fullName.equals("Anonymous User") || appConfiguration.getDefault.get.viewNoLoggedIn)){
+      true
+    }
+    else{
+      user match{
+        case Some(theUser)=>{
+          theUser.fullName.equals("Anonymous User") || appConfiguration.adminExists(theUser.email.getOrElse("")) || dataset.author.identityId.userId.equals(theUser.identityId.userId) || accessRights.checkForPermission(theUser, dataset.id.stringify, "dataset", permissionType)
+        }
+        case None=>{
+          false
+        }
+      }
+    }
+  }
+  
+  def checkAccessForDatasetUsingRightsList(dataset: models.Dataset, user: Option[Identity], permissionType: String, rightsForUser: Option[UserPermissions]): Boolean = {
+    if(permissionType.equals("view") && (dataset.isPublic.getOrElse(false) || dataset.author.fullName.equals("Anonymous User") || appConfiguration.getDefault.get.viewNoLoggedIn)){
+      true
+    }
+    else{
+      user match{
+        case Some(theUser)=>{
+          val canAccessWithoutRightsList =  theUser.fullName.equals("Anonymous User") || appConfiguration.adminExists(theUser.email.getOrElse("")) || dataset.author.identityId.userId.equals(theUser.identityId.userId)
+          rightsForUser match{
+	        case Some(userRights)=>{
+	        	if(canAccessWithoutRightsList)
+	        	  true
+	        	else{
+	        	  if(permissionType.equals("view")){
+			        userRights.datasetsViewOnly.contains(dataset.id.stringify)
+			      }else if(permissionType.equals("modify")){
+			        userRights.datasetsViewModify.contains(dataset.id.stringify)
+			      }else if(permissionType.equals("administrate")){
+			        userRights.datasetsAdministrate.contains(dataset.id.stringify)
+			      }
+			      else{
+			        Logger.error("Unknown permission type")
+			        false
+			      }
+	        	}
+	        }
+	        case None=>{
+	          canAccessWithoutRightsList
+	        }
+	      }
+        }
+        case None=>{
+          false
+        }
+      }
+    }
+  }
+  
+
   
 }
 

@@ -17,7 +17,7 @@ trait FileService {
   /**
    * Save a file from an input stream.
    */
-  def save(inputStream: InputStream, filename: String, contentType: Option[String], author: Identity, showPreviews: String = "DatasetLevel"): Option[File]
+  def save(inputStream: InputStream, filename: String, contentType: Option[String], author: Identity, showPreviews: String = "DatasetLevel", isPublic: Boolean = false): Option[File]
   
   /**
    * Get the input stream of a file given a file id.
@@ -33,12 +33,12 @@ trait FileService {
   /**
    * List files after a specified date.
    */
-  def listFilesAfter(date: String, limit: Int): List[File]
+  def listFilesAfter(date: String, limit: Int, user:Option[Identity] = None): List[File]
   
   /**
    * List files before a specified date.
    */
-  def listFilesBefore(date: String, limit: Int): List[File]
+  def listFilesBefore(date: String, limit: Int, user:Option[Identity] = None): List[File]
   
   /**
    * Get file metadata.
@@ -48,7 +48,7 @@ trait FileService {
   /**
    * Lastest file in chronological order.
    */
-  def latest(): Option[File]
+  def latest(user:Option[Identity] = None): Option[File]
 
   /**
    * Lastest x files in chronological order.
@@ -58,7 +58,7 @@ trait FileService {
   /**
    * First file in chronological order.
    */
-  def first(): Option[File]
+  def first(user:Option[Identity] = None): Option[File]
   
   /**
    * Store file metadata.
@@ -82,6 +82,8 @@ trait FileService {
   def dumpAllFileMetadata(): List[String]
 
   def isInDataset(file: File, dataset: Dataset): Boolean
+  
+  def isInDatasetByFileId(fileId: String, dataset: Dataset): Boolean
 
   def removeTags(id: UUID, userIdStr: Option[String], eid: Option[String], tags: List[String])
 
@@ -138,5 +140,7 @@ trait FileService {
   def removeOldIntermediates()
   
   def setNotesHTML(id: UUID, html: String)
+
+  def setIsPublic(fileId: UUID, isPublic: Boolean)
 
 }

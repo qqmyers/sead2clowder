@@ -1236,7 +1236,7 @@ function clearConfigTabAnnotations(prNum){
   
   var inner = "<x3d id='x3dElement" + prNum + "' showStat='false' showLog='false' height='" + height + "px' width='" + width + "px' x='0px' y='0px' style=' position:absolute;top:" + ($(Configuration.tab).offset().top + window["x3dOffset" + prNum] - window["x3dOffset2" + prNum]) + "px;' >"; 
   window["oldx3dposition" + prNum] = $(Configuration.tab).offset().top;
-  window["thisPreview" + prNum] = $(Configuration.tab); 
+  window["thisPreview" + prNum] = $(Configuration.tab);
   //setInterval(function(){updatex3dPosition(prNum);},50);
   setInterval("updatex3dPosition('" + prNum + "');", 50);
   console.log("url: "+Configuration.url);

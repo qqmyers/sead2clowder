@@ -10,6 +10,7 @@ import models.UUID
 import services.FileService
 import services.DatasetService
 import services.CollectionService
+import services.UserAccessRightsService
 import play.api.Logger
 
  /**
@@ -31,13 +32,15 @@ object Permission extends Enumeration {
 		Unsubscribe,
 		CreateCollections,
 		DeleteCollections,
+		AdministrateCollections,
 		ListCollections,
-		ShowCollection,
+		ShowCollection,             
 		CreateDatasets,
 		DeleteDatasets,
+		AdministrateDatasets,
 		ListDatasets,
-		ShowDataset,
-		SearchDatasets,
+		ShowDataset,				
+		SearchDatasets,				
 		AddDatasetsMetadata,
 		ShowDatasetsMetadata,
 		ShowTags,
@@ -51,10 +54,11 @@ object Permission extends Enumeration {
 		DeleteTagsSections,
 		CreateFiles,
 		DeleteFiles,
+		AdministrateFiles,
 		ListFiles,
 		AddFilesMetadata,
-		ShowFilesMetadata,
-		ShowFile,
+		ShowFilesMetadata,			
+		ShowFile,					
 		SearchFiles,
 		CreateTagsFiles,
 		DeleteTagsFiles,
@@ -71,7 +75,7 @@ object Permission extends Enumeration {
 		SearchSensors,
 		RemoveSensors,
 		AddThumbnail,
-		DownloadFiles = Value
+		DownloadFiles = Value		
 }
 
 import api.Permission._
@@ -87,6 +91,7 @@ case class WithPermission(permission: Permission, resourceId: Option[UUID] = Non
   val files: FileService = services.DI.injector.getInstance(classOf[FileService])
   val datasets: DatasetService = services.DI.injector.getInstance(classOf[DatasetService])
   val collections: CollectionService = services.DI.injector.getInstance(classOf[CollectionService])
+  var accessRights: UserAccessRightsService = services.DI.injector.getInstance(classOf[UserAccessRightsService])
   
 
 	def isAuthorized(user: Identity): Boolean = {
@@ -95,48 +100,26 @@ case class WithPermission(permission: Permission, resourceId: Option[UUID] = Non
 	  
 		// order is important
 		(user, permission) match {
-		  		  
-		  // anybody can list/show if admin decides so (or else must be logged in), 'open public' pages always
-	  	  case (theUser, PublicOpen)           => true
-		  case (theUser, Public)         	   => (externalViewingEnabled || theUser != null)		  
-		  case (theUser, ListCollections)      => (externalViewingEnabled || theUser != null)
-		  case (theUser, ShowCollection)       => (externalViewingEnabled || theUser != null)
-		  case (theUser, ListDatasets)         => (externalViewingEnabled || theUser != null)
-		  case (theUser, ShowDataset)          => (externalViewingEnabled || theUser != null)
-		  case (theUser, SearchDatasets)       => (externalViewingEnabled || theUser != null)
-		  case (theUser, SearchFiles)	       => (externalViewingEnabled || theUser != null)
-		  case (theUser, GetSections)          => (externalViewingEnabled || theUser != null)
-		  case (theUser, ListFiles)            => (externalViewingEnabled || theUser != null)
-		  case (theUser, ShowFile)             => (externalViewingEnabled || theUser != null)
-		  case (theUser, ShowFilesMetadata)    => (externalViewingEnabled || theUser != null)
-		  case (theUser, ShowDatasetsMetadata) => (externalViewingEnabled || theUser != null)
-		  case (theUser, SearchStreams)        => (externalViewingEnabled || theUser != null)
-		  case (theUser, ListSensors)          => (externalViewingEnabled || theUser != null)
-		  case (theUser, GetSensors)           => (externalViewingEnabled || theUser != null)
-		  case (theUser, SearchSensors)        => (externalViewingEnabled || theUser != null)
-		  case (theUser, ShowTags)        	   => (externalViewingEnabled || theUser != null)
-		  case (theUser, DownloadFiles)        => (externalViewingEnabled || theUser != null)
-		  
-		  // all other permissions require authenticated user
-		  case (null, _)                 => false
-		  case(_, Permission.Admin) =>{
-		    if(!user.email.isEmpty)
-		    	if(appConfiguration.adminExists(user.email.get))
-		    	  true
-		    	else
-		    	  false  
-		    else	  
-		    	false	  
-		  }
-		  //Only authors of a resource-or admins-can modify a particular resource from the browser
 		  case (_, requestedPermission)  =>{
 		    resourceId match{
-		      case Some(idOfResource) => {
-		        if(requestedPermission == CreateFiles || requestedPermission == DeleteFiles || requestedPermission == AddFilesMetadata || requestedPermission == CreateNotesFiles){
+		      case Some(idOfResource) => {	//A request for accessing a specific resource, subject to individualized resource access rights
+		        var administrateOrModify = "modify"
+		        if(requestedPermission == AdministrateFiles || requestedPermission == AdministrateDatasets || requestedPermission == AdministrateCollections){
+		                administrateOrModify = "administrate"
+		        }
+
+		        //Modification and administration permissions require the user to be logged in
+		        if(user != null && (requestedPermission == CreateFiles || requestedPermission == DeleteFiles || requestedPermission == AddFilesMetadata || requestedPermission == AdministrateFiles || requestedPermission == CreateNotesFiles)){
 		          files.get(idOfResource) match{
-		            case Some(file)=>{
+		            case Some(file)=>{		              
+		              
+		              //User is the author of the resource
 		              if(file.author.identityId.userId.equals(user.identityId.userId))
 		                true
+		              //User has permission to modify the resource  
+		              else if(accessRights.checkForPermission(user, idOfResource.stringify, "file", administrateOrModify))
+		                true
+		              //Finally, is the user admin?  
 		              else
 		                appConfiguration.adminExists(user.email.getOrElse("none"))
 		            }
@@ -145,12 +128,14 @@ case class WithPermission(permission: Permission, resourceId: Option[UUID] = Non
 		              false
 		            }
 		          }
-		        }
-		        else if(requestedPermission == CreateDatasets || requestedPermission == DeleteDatasets || requestedPermission == AddDatasetsMetadata || requestedPermission == CreateNotesDatasets){
+		        }	
+		        else if(user != null && (requestedPermission == CreateDatasets || requestedPermission == DeleteDatasets || requestedPermission == AddDatasetsMetadata || requestedPermission == AdministrateDatasets || requestedPermission == CreateNotesDatasets)){
 		          datasets.get(idOfResource) match{
 		            case Some(dataset)=>{
 		              if(dataset.author.identityId.userId.equals(user.identityId.userId))
 		                true
+		              else if(accessRights.checkForPermission(user, idOfResource.stringify, "dataset", administrateOrModify))
+		                true  
 		              else
 		                appConfiguration.adminExists(user.email.getOrElse("none"))
 		            }
@@ -160,20 +145,26 @@ case class WithPermission(permission: Permission, resourceId: Option[UUID] = Non
 		            }
 		          }
 		        }
-		        else if(requestedPermission == CreateCollections || requestedPermission == DeleteCollections){
+		        else if(user != null && (requestedPermission == CreateCollections || requestedPermission == DeleteCollections || requestedPermission == AdministrateCollections)){
 		          collections.get(idOfResource) match{
 		            case Some(collection)=>{
 		              collection.author match{
 		                case Some(collectionAuthor)=>{
 		                  if(collectionAuthor.identityId.userId.equals(user.identityId.userId))
 		                	  true
+		                  else if(accessRights.checkForPermission(user, idOfResource.stringify, "collection", administrateOrModify))
+		                	  true  
 		                  else
 		                	  appConfiguration.adminExists(user.email.getOrElse("none"))
 		                }
 		                //Anonymous collections are free-for-all
 		                case None=>{
+		                 if(requestedPermission != AdministrateCollections){ 
 		                  Logger.info("Requested collection is anonymous, anyone can modify, granting modification request.")
 		                  true
+		                 }
+		                 else
+		                   false
 		                }
 		              }		              
 		            }
@@ -183,12 +174,152 @@ case class WithPermission(permission: Permission, resourceId: Option[UUID] = Non
 		            }
 		          }
 		        }
+		        
+		        //Viewing permissions do not require a logged in user (at least for public resources)
+		        else if(requestedPermission == ShowFilesMetadata || requestedPermission == ShowFile || requestedPermission == DownloadFiles){
+		          //If external viewing is enabled (public repository), all can view and download
+		          if(externalViewingEnabled)
+		            true
+		          else{
+			              files.get(idOfResource) match{
+				            case Some(file)=>{
+				              
+				              //Resource is public
+				              if(file.isPublic.getOrElse(false))
+				            	true
+				              //Anonymous resource	
+				              else if(file.author.fullName.equals("Anonymous User"))
+				                true
+				              else if(user != null){  
+					              //User is the author of the resource
+					              if(file.author.identityId.userId.equals(user.identityId.userId))
+					                true
+					              //User has permission to view the resource  
+					              else if(accessRights.checkForPermission(user, idOfResource.stringify, "file", "view"))
+					                true
+					              //Finally, is the user admin?  
+					              else
+					                appConfiguration.adminExists(user.email.getOrElse("none"))
+				              }
+				              else
+				                false
+				            }
+				            case _ =>{
+				              Logger.error("File requested to be accessed not found. Denying request.")
+				              false
+				            }
+			          }
+		            }  
+		        }
+		        else if(requestedPermission == ShowDataset || requestedPermission == ShowDatasetsMetadata){
+		          if(externalViewingEnabled)
+		            true
+		          else{
+			              datasets.get(idOfResource) match{
+				            case Some(dataset)=>{
+				              
+				              if(dataset.isPublic.getOrElse(false))
+				            	true
+				              else if(dataset.author.fullName.equals("Anonymous User"))
+				                true
+				              else if(user != null){  
+					              if(dataset.author.identityId.userId.equals(user.identityId.userId))
+					                true
+					              else if(accessRights.checkForPermission(user, idOfResource.stringify, "dataset", "view"))
+					                true
+					              else
+					                appConfiguration.adminExists(user.email.getOrElse("none"))
+				              }
+				              else
+				                false
+				            }
+				            case _ =>{
+				              Logger.error("Dataset requested to be accessed not found. Denying request.")
+				              false
+				            }
+			          }
+		            }  
+		        }
+		        else if(requestedPermission == ShowCollection){
+		          if(externalViewingEnabled)
+		            true
+		          else{
+			              collections.get(idOfResource) match{
+				            case Some(collection)=>{				              
+				              collection.author match{
+				                case Some(collectionAuthor)=>{
+				                  				                  
+				                  if(collection.isPublic.getOrElse(false))
+				                	  true
+				                  else if(collectionAuthor.fullName.equals("Anonymous User"))
+				                	  true
+				                  else if(user != null){  
+					                  if(collectionAuthor.identityId.userId.equals(user.identityId.userId))
+					                	  true
+					                  else if(accessRights.checkForPermission(user, idOfResource.stringify, "collection", "view"))
+					                	  true  
+					                  else
+					                	  appConfiguration.adminExists(user.email.getOrElse("none"))
+				                  }
+				                  else
+				                    false
+				                }
+				                //Anonymous collections are free-for-all
+				                case None=>{
+				                  Logger.info("Requested collection is anonymous, anyone can view, granting view request.")
+				                  true				                 
+				                }
+				              }	
+				            }
+				            case _ =>{
+				              Logger.error("Collection requested to be accessed not found. Denying request.")
+				              false
+				            }
+			          }
+		            }  
+		        }
+		        
 		        else{
 		          true
 		        }
 		      }
-		      case _ =>
-		      	true
+		      case _ =>{	//Not a request for a specific resource (or request was done using REST API secret key), so not subject to individualized resource access rights
+		        (user, permission) match {
+		          // anybody can list/show if admin decides so (or else must be logged in), 'open public' pages always
+			  	  case (theUser, PublicOpen)           => true
+				  case (theUser, Public)         	   => (externalViewingEnabled || theUser != null)		  
+				  case (theUser, ListCollections)      => (externalViewingEnabled || theUser != null)
+				  case (theUser, ShowCollection)       => (externalViewingEnabled || theUser != null)
+				  case (theUser, ListDatasets)         => (externalViewingEnabled || theUser != null)
+				  case (theUser, ShowDataset)          => (externalViewingEnabled || theUser != null)
+				  case (theUser, SearchDatasets)       => (externalViewingEnabled || theUser != null)
+				  case (theUser, SearchFiles)	       => (externalViewingEnabled || theUser != null)
+				  case (theUser, GetSections)          => (externalViewingEnabled || theUser != null)
+				  case (theUser, ListFiles)            => (externalViewingEnabled || theUser != null)
+				  case (theUser, ShowFile)             => (externalViewingEnabled || theUser != null)
+				  case (theUser, ShowFilesMetadata)    => (externalViewingEnabled || theUser != null)
+				  case (theUser, ShowDatasetsMetadata) => (externalViewingEnabled || theUser != null)
+				  case (theUser, SearchStreams)        => (externalViewingEnabled || theUser != null)
+				  case (theUser, ListSensors)          => (externalViewingEnabled || theUser != null)
+				  case (theUser, GetSensors)           => (externalViewingEnabled || theUser != null)
+				  case (theUser, SearchSensors)        => (externalViewingEnabled || theUser != null)
+				  case (theUser, DownloadFiles)        => (externalViewingEnabled || theUser != null)
+				  case (theUser, ShowTags)             => (externalViewingEnabled || theUser != null)
+				  
+				  // all other permissions require authenticated user
+				  case (null, _)                 => false
+				  case(_, Permission.Admin) =>{
+				    if(!user.email.isEmpty)
+				    	if(appConfiguration.adminExists(user.email.get))
+				    	  true
+				    	else
+				    	  false  
+				    else	  
+				    	false	  
+				  }
+				  case(_,_) => true
+		        } 
+		      }
 		    }
 		  }
 		}

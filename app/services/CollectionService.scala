@@ -2,6 +2,7 @@ package services
 
 import models.{UUID, Dataset, Collection}
 import scala.util.Try
+import securesocial.core.Identity
 
 /**
  * Generic collection service.
@@ -24,12 +25,12 @@ trait CollectionService {
   /**
    * List collections after a specified date.
    */
-  def listCollectionsAfter(date: String, limit: Int): List[Collection]
+  def listCollectionsAfter(date: String, limit: Int, user:Option[Identity] = None): List[Collection]
   
   /**
    * List collections before a specified date.
    */
-  def listCollectionsBefore(date: String, limit: Int): List[Collection]
+  def listCollectionsBefore(date: String, limit: Int, user:Option[Identity] = None): List[Collection]
   
   /**
    * Get collection.
@@ -39,12 +40,12 @@ trait CollectionService {
   /**
    * Lastest collection in chronological order.
    */
-  def latest(): Option[Collection]
+  def latest(user:Option[Identity] = None): Option[Collection]
 
   /**
    * First collection in chronological order.
    */
-  def first(): Option[Collection]
+  def first(user:Option[Identity] = None): Option[Collection]
 
   /**
    * Create collection.
@@ -92,5 +93,7 @@ trait CollectionService {
    * Set new thumbnail.
    */
   def createThumbnail(collectionId: UUID)
+  
+  def setIsPublic(fileId: UUID, isPublic: Boolean)
 
 }

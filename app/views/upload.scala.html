@@ -21,6 +21,9 @@
 	          '_label -> "Show file preview(s)",
 	          '_error -> myForm("datasetLevel").error.map(_.withMessage("Select where the preview will be viewable.")))
 	    </fieldset>
+	    <fieldset id="filePrivatePublicFieldSet" style="margin-bottom: 1%;">
+	      @checkbox(field = myForm("filePrivatePublic"),'_label -> "File is public")
+	    </fieldset>
         <div class="form-actions">
           <input type="submit" class="btn btn-default" value="Upload"/>
         </div>
@@ -31,5 +34,9 @@
   		$('#datasetLevel label').css('top', '0px');
   		$('#datasetLevel label').css('left', '0px');
   		$('#datasetLevel label').css('margin-right', '10px');
+  		
+  		$('#filePrivatePublicFieldSet label').css('top', '20px');
+  		$('#filePrivatePublicFieldSet label').css('left', '2%');
+  		$('#filePrivatePublicFieldSet label').css('position', 'relative');
   </script> 
 }

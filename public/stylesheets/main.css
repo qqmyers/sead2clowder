@@ -408,14 +408,6 @@ textarea, input[type='text'], input[type='password']{
 #noteEditor_feed table tr td input, #noteEditor_feed table tr td textarea {
 	width:300%;
 }
-#noteEditor_feed table tr td span {
-	color:red;
-	position:relative;
-
-
-.elasticsearchResult{
-	margin-bottom:10px;
-}
 
 .dumpBtn{
 	margin-bottom: 25% !important;
@@ -427,4 +419,23 @@ textarea, input[type='text'], input[type='password']{
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+.adminResourceBtn{
+	padding: 0px 0px !important; 
+}
+
+.adminResourceRemoveFromSubdoc{
+	display:inline;
+}
+
+#noteEditor_feed table tr td span {
+	color:red;
+	position:relative;
+}
+
+.elasticsearchResult{
+	margin-bottom:10px;
+}
+
+
 

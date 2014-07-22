@@ -16,6 +16,7 @@ import javax.inject.Inject
 import scala.Some
 import services.ExtractorMessage
 import api.WithPermission
+import securesocial.core.Identity
 
 
 /**
@@ -31,7 +32,9 @@ class Datasets @Inject()(
   comments: CommentService,
   sections: SectionService,
   extractions: ExtractionService,
-  sparql: RdfSPARQLService) extends SecuredController {
+  accessRights: UserAccessRightsService,
+  sparql: RdfSPARQLService,
+  appConfiguration: AppConfigurationService) extends SecuredController {
 
   object ActivityFound extends Exception {}
 
@@ -50,7 +53,18 @@ class Datasets @Inject()(
   def newDataset() = SecuredAction(authorization = WithPermission(Permission.CreateDatasets)) {
     implicit request =>
       implicit val user = request.user
-      val filesList = for (file <- files.listFiles.sortBy(_.filename)) yield (file.id.toString(), file.filename)
+      val filesChecker = services.DI.injector.getInstance(classOf[controllers.Files])
+      var filesList: List[(String, String)] = List.empty          
+	          user match{
+		        case Some(theUser)=>{
+		            val rightsForUser = accessRights.get(theUser)
+		            filesList = for (file <- files.listFiles.sortBy(_.filename); if filesChecker.checkAccessForFileUsingRightsList(file, user, "view", rightsForUser)) yield (file.id.toString(), file.filename)
+		        }
+		        case None=>{
+		          filesList = for (file <- files.listFiles.sortBy(_.filename); if filesChecker.checkAccessForFile(file, user, "view")) yield (file.id.toString(), file.filename)
+		        }
+		      }
+      
       Ok(views.html.newDataset(datasetForm, filesList)).flashing("error" -> "Please select ONE file (upload new or existing)")
   }
 
@@ -60,22 +74,31 @@ class Datasets @Inject()(
   def list(when: String, date: String, limit: Int) = SecuredAction(authorization = WithPermission(Permission.ListDatasets)) {
 	    implicit request =>
 	      implicit val user = request.user
+	      var rightsForUser: Option[models.UserPermissions] = None
+	      user match{
+			        case Some(theUser)=>{
+			            rightsForUser = accessRights.get(theUser)
+			        }
+			        case None=>{
+			        }
+	      }
+	      
 	      var direction = "b"
 	      if (when != "") direction = when
 	      val formatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS")
 	      var prev, next = ""
 	      var datasetList = List.empty[models.Dataset]
 	      if (direction == "b") {
-	        datasetList = datasets.listDatasetsBefore(date, limit)
+	        datasetList = datasets.listDatasetsBefore(date, limit, user)
 	      } else if (direction == "a") {
-	        datasetList = datasets.listDatasetsAfter(date, limit)
+	        datasetList = datasets.listDatasetsAfter(date, limit, user)
 	      } else {
 	        badRequest
 	      }
 	      // latest object
-	      val latest = datasets.latest()
+	      val latest = datasets.latest(user)
 	      // first object
-	      val first = datasets.first()
+	      val first = datasets.first(user)
 	      var firstPage = false
 	      var lastPage = false
 	      if (latest.size == 1) {
@@ -94,21 +117,40 @@ class Datasets @Inject()(
 	          next = formatter.format(datasetList.last.created)
 	        }
 	      }
-	      Ok(views.html.datasetList(datasetList, prev, next, limit))
+	      Ok(views.html.datasetList(datasetList, prev, next, limit, rightsForUser))
 	  }
 
+  
 
   /**
-   * Dataset.
+   * Dataset.	
    */
-  def dataset(id: UUID) = SecuredAction(authorization = WithPermission(Permission.ShowDataset)) {
+  def dataset(id: UUID) = SecuredAction(authorization = WithPermission(Permission.ShowDataset), resourceId = Some(id)) {
 	    implicit request =>
 	      implicit val user = request.user
+	      val filesChecker = services.DI.injector.getInstance(classOf[controllers.Files]) 
 	      Previewers.findPreviewers.foreach(p => Logger.info("Previewer found " + p.id))
 	      datasets.get(id) match {
 	        case Some(dataset) => {
-	          val filesInDataset = dataset.files.map(f => files.get(f.id).get)
-
+	          var filesInDataset: List[File] = List.empty
+	          var rightsForUser: Option[models.UserPermissions] = None
+	          
+	          user match{
+		        case Some(theUser)=>{
+		            rightsForUser = accessRights.get(theUser)
+		        	for(checkedFile <- dataset.files.map(f => files.get(f.id).get)){
+			            if(filesChecker.checkAccessForFileUsingRightsList(checkedFile, user, "view", rightsForUser))
+			              filesInDataset = filesInDataset :+ checkedFile
+			        }
+		        }
+		        case None=>{
+		          for(checkedFile <- dataset.files.map(f => files.get(f.id).get)){
+		            if(filesChecker.checkAccessForFile(checkedFile, user, "view"))
+		              filesInDataset = filesInDataset :+ checkedFile
+		          }
+		        }
+		      }
+	          
 	          //Search whether dataset is currently being processed by extractor(s)
 	          var isActivity = false
 	          try {
@@ -147,9 +189,23 @@ class Datasets @Inject()(
 	          val userMetadata = datasets.getUserMetadata(id)
 	          Logger.debug("User metadata: " + userMetadata.toString)
 
-	          val collectionsOutside = collections.listOutsideDataset(id).sortBy(_.name)
-	          val collectionsInside = collections.listInsideDataset(id).sortBy(_.name)
-	          val filesOutside = files.listOutsideDataset(id).sortBy(_.filename)
+	          var collectionsOutside: List[models.Collection]  = List.empty
+	          var collectionsInside: List[models.Collection]  = List.empty
+	          
+	          var filesOutside: List[models.File] = List.empty
+	          var collectionsChecker = services.DI.injector.getInstance(classOf[controllers.Collections])
+	          user match{
+		        case Some(theUser)=>{
+		            filesOutside = for(checkedFile <- files.listOutsideDataset(id).sortBy(_.filename); if(filesChecker.checkAccessForFileUsingRightsList(checkedFile, user, "view", rightsForUser))) yield checkedFile
+		            collectionsOutside = for(checkedCollection <- collections.listOutsideDataset(id).sortBy(_.name); if(collectionsChecker.checkAccessForCollectionUsingRightsList(checkedCollection, user, "modify", rightsForUser))) yield checkedCollection
+		            collectionsInside = for(checkedCollection <- collections.listInsideDataset(id).sortBy(_.name); if(collectionsChecker.checkAccessForCollectionUsingRightsList(checkedCollection, user, "modify", rightsForUser))) yield checkedCollection
+		        }
+		        case None=>{
+		          filesOutside = for(checkedFile <- files.listOutsideDataset(id).sortBy(_.filename); if(filesChecker.checkAccessForFile(checkedFile, user, "view"))) yield checkedFile
+		          collectionsOutside = for(checkedCollection <- collections.listOutsideDataset(id).sortBy(_.name); if(collectionsChecker.checkAccessForCollection(checkedCollection, user, "modify"))) yield checkedCollection
+		          collectionsInside = for(checkedCollection <- collections.listInsideDataset(id).sortBy(_.name); if(collectionsChecker.checkAccessForCollection(checkedCollection, user, "modify"))) yield checkedCollection
+		        }
+		      }
 
 	          var commentsByDataset = comments.findCommentsByDatasetId(id)
 	          filesInDataset.map {
@@ -163,7 +219,7 @@ class Datasets @Inject()(
 
 	          val isRDFExportEnabled = current.plugin[RDFExportService].isDefined
 
-	          Ok(views.html.dataset(datasetWithFiles, commentsByDataset, previews, metadata, userMetadata, isActivity, collectionsOutside, collectionsInside, filesOutside, isRDFExportEnabled))
+	          Ok(views.html.dataset(datasetWithFiles, commentsByDataset, previews, metadata, userMetadata, isActivity, collectionsOutside, collectionsInside, filesOutside, isRDFExportEnabled, rightsForUser))
 	        }
 	        case None => {
 	          Logger.error("Error getting dataset" + id); InternalServerError
@@ -174,12 +230,30 @@ class Datasets @Inject()(
   /**
    * 3D Dataset.
    */
-  def datasetThreeDim(id: String) = SecuredAction(authorization=WithPermission(Permission.ShowDataset)) { implicit request =>
-    implicit val user = request.user    
+  def datasetThreeDim(id: String) = SecuredAction(authorization=WithPermission(Permission.ShowDataset), resourceId = Some(UUID(id))) { implicit request =>
+    implicit val user = request.user
+    val filesChecker = services.DI.injector.getInstance(classOf[controllers.Files])
     Previewers.findPreviewers.foreach(p => Logger.info("Previewer found " + p.id))
     datasets.get(UUID(id))  match {
       case Some(dataset) => {
-        val filesInDataset = dataset.files.map(f => files.get(f.id).get)
+        var filesInDataset: List[File] = List.empty
+	          var rightsForUser: Option[models.UserPermissions] = None
+	          
+	          user match{
+		        case Some(theUser)=>{
+		            rightsForUser = accessRights.get(theUser)
+		        	for(checkedFile <- dataset.files.map(f => files.get(f.id).get)){
+			            if(filesChecker.checkAccessForFileUsingRightsList(checkedFile, user, "view", rightsForUser))
+			              filesInDataset = filesInDataset :+ checkedFile
+			        }
+		        }
+		        case None=>{
+		          for(checkedFile <- dataset.files.map(f => files.get(f.id).get)){
+		            if(filesChecker.checkAccessForFile(checkedFile, user, "view"))
+		              filesInDataset = filesInDataset :+ checkedFile
+		          }
+		        }
+		      }
 
 	          //Search whether dataset is currently being processed by extractor(s)
 	          var isActivity = false
@@ -219,9 +293,24 @@ class Datasets @Inject()(
 	          val userMetadata = datasets.getUserMetadata(UUID(id))
 	          Logger.debug("User metadata: " + userMetadata.toString)
 
-	          val collectionsOutside = collections.listOutsideDataset(UUID(id)).sortBy(_.name)
-	          val collectionsInside = collections.listInsideDataset(UUID(id)).sortBy(_.name)
-	          val filesOutside = files.listOutsideDataset(UUID(id)).sortBy(_.filename)
+	          var collectionsOutside: List[models.Collection]  = List.empty
+	          var collectionsInside: List[models.Collection]  = List.empty
+	          
+	          var filesOutside: List[models.File] = List.empty
+	          var collectionsChecker = services.DI.injector.getInstance(classOf[controllers.Collections])
+	          val idUUID = UUID(id)
+	          user match{
+		        case Some(theUser)=>{
+		            filesOutside = for(checkedFile <- files.listOutsideDataset(idUUID).sortBy(_.filename); if(filesChecker.checkAccessForFileUsingRightsList(checkedFile, user, "view", rightsForUser))) yield checkedFile
+		            collectionsOutside = for(checkedCollection <- collections.listOutsideDataset(idUUID).sortBy(_.name); if(collectionsChecker.checkAccessForCollectionUsingRightsList(checkedCollection, user, "modify", rightsForUser))) yield checkedCollection
+		            collectionsInside = for(checkedCollection <- collections.listInsideDataset(idUUID).sortBy(_.name); if(collectionsChecker.checkAccessForCollectionUsingRightsList(checkedCollection, user, "modify", rightsForUser))) yield checkedCollection
+		        }
+		        case None=>{
+		          filesOutside = for(checkedFile <- files.listOutsideDataset(idUUID).sortBy(_.filename); if(filesChecker.checkAccessForFile(checkedFile, user, "view"))) yield checkedFile
+		          collectionsOutside = for(checkedCollection <- collections.listOutsideDataset(idUUID).sortBy(_.name); if(collectionsChecker.checkAccessForCollection(checkedCollection, user, "modify"))) yield checkedCollection
+		          collectionsInside = for(checkedCollection <- collections.listInsideDataset(idUUID).sortBy(_.name); if(collectionsChecker.checkAccessForCollection(checkedCollection, user, "modify"))) yield checkedCollection
+		        }
+		      }
 
 	          var commentsByDataset = comments.findCommentsByDatasetId(UUID(id))
 	          filesInDataset.map {
@@ -233,7 +322,7 @@ class Datasets @Inject()(
 	          }
 	          commentsByDataset = commentsByDataset.sortBy(_.posted)
         
-        Ok(views.html.datasetThreeDim(datasetWithFiles, commentsByDataset, previews, metadata, userMetadata, isActivity, collectionsOutside, collectionsInside, filesOutside))
+        Ok(views.html.datasetThreeDim(datasetWithFiles, commentsByDataset, previews, metadata, userMetadata, isActivity, collectionsOutside, collectionsInside, filesOutside, rightsForUser))
       }
       case None => {Logger.error("Error getting dataset" + id); InternalServerError}
     }
@@ -297,7 +386,12 @@ class Datasets @Inject()(
 				        // store file
 	            	    Logger.info("Adding file" + identity)
 	            	    val showPreviews = request.body.asFormUrlEncoded.get("datasetLevel").get(0)
-	            	    val file = files.save(new FileInputStream(f.ref.file), nameOfFile, f.contentType, identity, showPreviews)
+	            	    var isFilePublicOption = request.body.asFormUrlEncoded.get("filePrivatePublic")
+				        if(!isFilePublicOption.isDefined)
+				          isFilePublicOption = Some(List("false"))	        
+				        val isFilePublic = isFilePublicOption.get(0).toBoolean
+	            	    
+	            	    val file = files.save(new FileInputStream(f.ref.file), nameOfFile, f.contentType, identity, showPreviews, isFilePublic)
 					    Logger.debug("Uploaded file id is " + file.get.id)
 					    Logger.debug("Uploaded file type is " + f.contentType)
 					    
@@ -305,7 +399,8 @@ class Datasets @Inject()(
 					    file match {
 					      case Some(f) => {
 					        					        
-					        val id = f.id	                	                
+					        val id = f.id
+					        accessRights.addPermissionLevel(request.user.get, id.stringify, "file", "administrate")
 			                if(showPreviews.equals("FileLevel"))
 			                	flags = flags + "+filelevelshowpreviews"
 			                else if(showPreviews.equals("None"))
@@ -349,8 +444,15 @@ class Datasets @Inject()(
 						        //current.plugin[ElasticsearchPlugin].foreach{_.index("data", "file", id, List(("filename",nameOfFile), ("contentType", f.contentType)))}
 					        }
 					        
-					        // add file to dataset 
-					        val dt = dataset.copy(files = List(f), author=identity)					        
+					        
+					    	var isDatasetPublicOption = request.body.asFormUrlEncoded.get("datasetPrivatePublic")
+					        if(!isDatasetPublicOption.isDefined)
+					          isDatasetPublicOption = Some(List("false"))	        
+					        val isDatasetPublic = isDatasetPublicOption.get(0).toBoolean
+					    	
+					        // add file to dataset
+					        val dt = dataset.copy(files = List(f), author=identity, isPublic=Some(isDatasetPublic))
+					        accessRights.addPermissionLevel(request.user.get, dt.id.stringify, "dataset", "administrate")
 					        // TODO create a service instead of calling salat directly
 				            datasets.update(dt)				            
 				            
@@ -442,11 +544,14 @@ class Datasets @Inject()(
 		          if(!thisFileThumbnail.isEmpty)
 		            thisFileThumbnailString = Some(thisFileThumbnail.get)
 		          
-				  val dt = dataset.copy(files = List(theFileGet), author=identity, thumbnail_id=thisFileThumbnailString)
+		          val isDatasetPublic = request.body.asFormUrlEncoded.get("datasetPrivatePublic").get(0).toBoolean
+				  val dt = dataset.copy(files = List(theFileGet), author=identity, thumbnail_id=thisFileThumbnailString, isPublic=Some(isDatasetPublic))
 				  datasets.update(dt)
 			      
 			      val dateFormat = new SimpleDateFormat("dd/MM/yyyy")
-			      
+
+			      accessRights.addPermissionLevel(request.user.get, dt.id.stringify, "dataset", "administrate")
+
 		          if(!theFileGet.xmlMetadata.isEmpty){
 		            val xmlToJSON = files.getXMLMetadataJSON(UUID(fileId))
 		            datasets.addXMLMetadata(dt.id, UUID(fileId), xmlToJSON)
@@ -506,8 +611,66 @@ class Datasets @Inject()(
       Ok(views.html.generalMetadataSearch())
   }
 
+
   def redirectToImg(imgResource: String)  = SecuredAction(authorization=WithPermission(Permission.Public)) { implicit request =>
   	Redirect(routes.Assets.at("images/"+ imgResource))
+  }
+
+  
+  
+  
+  def checkAccessForDataset(dataset: models.Dataset, user: Option[Identity], permissionType: String): Boolean = {
+    if(permissionType.equals("view") && (dataset.isPublic.getOrElse(false) || dataset.author.fullName.equals("Anonymous User") || appConfiguration.getDefault.get.viewNoLoggedIn)){
+      true
+    }
+    else{
+      user match{
+        case Some(theUser)=>{
+          appConfiguration.adminExists(theUser.email.getOrElse("")) || dataset.author.identityId.userId.equals(theUser.identityId.userId) || accessRights.checkForPermission(theUser, dataset.id.stringify, "dataset", permissionType)
+        }
+        case None=>{
+          false
+        }
+      }
+    }
+  }
+  
+  def checkAccessForDatasetUsingRightsList(dataset: models.Dataset, user: Option[Identity], permissionType: String, rightsForUser: Option[UserPermissions]): Boolean = {
+    if(permissionType.equals("view") && (dataset.isPublic.getOrElse(false) || dataset.author.fullName.equals("Anonymous User") || appConfiguration.getDefault.get.viewNoLoggedIn)){
+      true
+    }
+    else{
+      user match{
+        case Some(theUser)=>{
+          val canAccessWithoutRightsList =  appConfiguration.adminExists(theUser.email.getOrElse("")) || dataset.author.identityId.userId.equals(theUser.identityId.userId)
+          rightsForUser match{
+	        case Some(userRights)=>{
+	        	if(canAccessWithoutRightsList)
+	        	  true
+	        	else{
+	        	  if(permissionType.equals("view")){
+			        userRights.datasetsViewOnly.contains(dataset.id.stringify)
+			      }else if(permissionType.equals("modify")){
+			        userRights.datasetsViewModify.contains(dataset.id.stringify)
+			      }else if(permissionType.equals("administrate")){
+			        userRights.datasetsAdministrate.contains(dataset.id.stringify)
+			      }
+			      else{
+			        Logger.error("Unknown permission type")
+			        false
+			      }
+	        	}
+	        }
+	        case None=>{
+	          canAccessWithoutRightsList
+	        }
+	      }
+        }
+        case None=>{
+          false
+        }
+      }
+    }
   }
   
 

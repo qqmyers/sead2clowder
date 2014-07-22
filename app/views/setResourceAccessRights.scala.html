@@ -1,0 +1,261 @@
+@(resourceType: String, resourceId: String, isPublic: Boolean = false, resourceAuthor: Option[securesocial.core.Identity])(implicit user: Option[securesocial.core.Identity])
+
+@import services.{DI, UserAccessRightsService}
+@import securesocial.core.AuthenticationMethod
+@import securesocial.core.SocialUser
+@import securesocial.core.IdentityId 
+
+@defining(DI.injector.getInstance(classOf[UserAccessRightsService])){accessRightsServiceInner=>
+@defining(new SocialUser(new IdentityId("anonymous", ""), "Anonymous", "User", "Anonymous User", None, None, AuthenticationMethod.UserPassword)){anonUser=>
+<form class="form-inline">
+	<table class="table" id="usersTable">
+	     <tbody>
+	     	<tr>
+	     		@if(resourceType.equals("file")){
+		     		<th style="width: 37%">
+		     			Full name
+		     		</th>
+		     		<th style="width: 37%">
+		     			Email
+		     		</th>
+		     		<th style="width: 16%">
+		     			Access level
+		     		</th>
+		     		<th style="width: 10%">
+		     		</th>
+	     		}
+	     		@if(!resourceType.equals("file")){
+		     		<th style="width: 27%">
+		     			Full name
+		     		</th>
+		     		<th style="width: 27%">
+		     			Email
+		     		</th>
+		     		<th style="width: 12%">
+		     			Access level
+		     		</th>
+		     		<th style="width: 12%">
+		     		</th>
+		     		<th style="width: 10%">
+		     		</th>
+		     		<th style="width: 12%">
+		     		</th>
+	     		}
+	     	</tr>
+		    @for(userPermission <- accessRightsServiceInner.getAllRightsForResource(resourceId, resourceType)) {
+		     @if(!((userPermission._1.equals(user.get.fullName) && userPermission._2.equals(user.get.email.getOrElse(""))) || (userPermission._1.equals(resourceAuthor.getOrElse(anonUser).fullName) && userPermission._2.equals(resourceAuthor.getOrElse(anonUser).email.getOrElse(""))))){
+		      <tr>
+				<td>@userPermission._1</td>
+				<td>@userPermission._2</td>
+				<td>
+					<select onChange="setPermission('@userPermission._1','@userPermission._2','@resourceType','@resourceId', this.value, 'resetValue', resetValue, this, false)" onfocus="this.oldvalue = this.value;">
+						<option value="view" @if(userPermission._3.equals("view")){selected="true"}>View</option>
+						<option value="modify" @if(userPermission._3.equals("modify")){selected="true"}>Modify</option>
+						<option value="administrate" @if(userPermission._3.equals("administrate")){selected="true"}>Administrate</option>
+					</select>
+				</td>
+				@if(resourceType.equals("dataset")){
+					<td>
+						<button class="btn btn-default adminResourceBtn" onclick="setPermission('@userPermission._1','@userPermission._2','@resourceType','@resourceId', $(this).parent().parent().find('select').get(0).value, 'none', resetValue, this, true); return false;">
+							Apply to files
+						</button>
+					</td>
+				}
+				@if(resourceType.equals("collection")){
+					<td>
+						<button class="btn btn-default adminResourceBtn" onclick="setPermission('@userPermission._1','@userPermission._2','@resourceType','@resourceId', $(this).parent().parent().find('select').get(0).value, 'none', resetValue, this, true); return false;">
+							Apply to datasets
+						</button>
+					</td>
+				}
+				<td><a href="#!" onclick="handleRemoval('@userPermission._1','@userPermission._2',this);">Remove</a></td>
+				@if(resourceType.equals("dataset")){
+					<td>
+						<input value="true" type="checkbox">
+						<label class="adminResourceRemoveFromSubdoc">From files</label>
+					</td>
+				}
+				@if(resourceType.equals("collection")){
+					<td>
+						<input value="true" type="checkbox">
+						<label class="adminResourceRemoveFromSubdoc">From datasets</label>
+					</td>
+				}			
+			  </tr>
+			 }
+			}
+			<tr>
+				<td>
+					<input type="text" style="width: 95%" id="adminInputName">					
+				</td>
+				<td>
+					<input type="text" style="width: 95%" id="adminInputEmail">					
+				</td>
+				<td>
+					<select id="adminInputRights">
+						<option value="view" selected="true">View</option>
+						<option value="modify">Modify</option>
+						<option value="administrate">Administrate</option>
+					</select>					
+				</td>
+				<td><a href="#!" onclick="handleAddition($('#adminInputName').val().trim(), $('#adminInputEmail').val().trim(), $('#adminInputRights').val());">Add</a></td>
+				@if(!resourceType.equals("file")){<td></td><td></td>}
+			</tr>
+		</tbody>
+	</table>
+	<input id="privatePublic" name="privatePublic" value="true" type="checkbox" @if(isPublic){checked="checked"}>
+	<label>Is public</label>
+
+</form>
+<script src="@routes.Assets.at("javascripts/manageAccessRights.js")" type="text/javascript"></script>
+<script>
+	var allRowsUsers = $("#usersTable > tbody > tr");
+	allRowsUsers.each(function() {
+		var dataCells = $(this).find("td");
+		if(dataCells.length > 0){
+			if($(this).find("#adminInputName").length == 0){
+				$(this).find("select").val($(this).find("option[selected='true']").val());
+			}
+			else{
+				$(this).find("select").val("view");
+				$(this).find("#adminInputName").val("");
+				$(this).find("#adminInputEmail").val("");
+			}
+		}
+	});
+</script>
+	<script>
+	$('#privatePublic').change(function() {
+			setIsPublic($(this).is(":checked"), "@resourceType", "@resourceId");
+		});
+	
+	
+		function handleRemoval(fullName, email, theElement){			
+			if($(theElement).parent().parent().find("input").is(":checked"))
+				setPermission(fullName, email, "@resourceType", "@resourceId", "noaccess", "removeElemTrySubdocs", removeElemTrySubdocs, theElement, false);
+			else
+				setPermission(fullName, email, "@resourceType", "@resourceId", "noaccess", "removeElem", removeElem, theElement, false);
+		}
+		
+		function removeElem(theElement){
+			$(theElement).parent().parent().remove();
+		}
+		
+		function removeElemTrySubdocs(theElement, fullName, email){
+			$(theElement).parent().parent().remove();
+			var userRemember = {};
+			userRemember['userFullName'] = fullName;
+			userRemember['userEmail'] = email;
+			setPermission(fullName, email, "@resourceType", "@resourceId", "noaccess", "subdocsRemovalErrorInfo", subdocsRemovalErrorInfo, userRemember, true);  
+		}
+		
+		function resetValue(theElement){
+			theElement.value = theElement.oldvalue;
+		}
+		
+		function subdocsRemovalErrorInfo(userRemember){
+			var childrenType = "";
+			if("@resourceType" == "dataset")
+				childrenType = "files";
+			else
+				childrenType = "datasets";
+			
+			alert("Could not remove access rights for "+ "@resourceType"  +"'s "+childrenType+" due to error, even though access rights for "+"@resourceType"+" were removed.\n"
+					+"Try re-adding the user with full name '"+userRemember['userFullName']+"' and email '"+userRemember['userEmail']+"' and then removing the user again (with 'Remove from "+childrenType+"' checked).");
+		}
+		
+		function handleAddition(fullName, email, accessRights){
+			if(fullName == "@(user.get.fullName)" && email == "@(user.get.email.getOrElse(""))"){
+				alert("Cannot add self");
+				return;
+			}
+			else if(fullName == "@(resourceAuthor.getOrElse(anonUser).fullName)" && email == "@(resourceAuthor.getOrElse(anonUser).email.getOrElse(""))"){
+				alert("Cannot add author of resource");
+				return;
+			}
+			
+			var wasAlready = false;
+			var allRows = $("#usersTable > tbody > tr");
+			var entryPos = allRows.length-1;
+			var posFound = false;
+			allRows.each(function() {
+				var dataCells = $(this).find("td");
+				if(dataCells.length > 0 && $(this).find("#adminInputName").length == 0){
+					if(dataCells.get(0).innerHTML == fullName && dataCells.get(1).innerHTML == email){
+						alert("User already exists in the rights list.");
+						wasAlready = true;
+						return false;
+					}
+					
+					if(!posFound){
+						if(dataCells.get(0).innerHTML > fullName || (dataCells.get(0).innerHTML == fullName && dataCells.get(1).innerHTML > email)){
+							posFound = true;
+							entryPos = allRows.index($(this));
+						}
+					}					
+				}
+			});			
+			if(wasAlready)
+				return;
+			
+			setPermission(fullName,email,'@resourceType','@resourceId', accessRights, "addNewRow", addNewRow, entryPos, false);
+	
+		}
+		
+
+		function addNewRow(fullName, email, accessRights, entryPos){
+			var newRow = document.createElement('tr');
+			newRow.innerHTML = "<td>"+fullName+"</td><td>"+email+"</td>";
+			
+			var newSelect = document.createElement('select');
+			newSelect.innerHTML = "<option value='view'>View</option><option value='modify'>Modify</option><option value='administrate'>Administrate</option>";
+			newSelect.setAttribute("onfocus", "this.oldvalue = this.value;");
+			newSelect.setAttribute("onchange", "setPermission('"+fullName+"','"+email+"','@resourceType','@resourceId', this.value, 'resetValue', resetValue, this, false)");
+			var newTd = document.createElement('td');
+			newTd.appendChild(newSelect);
+			newRow.appendChild(newTd);
+			
+			@if(resourceType.equals("dataset")){
+				var newButton = document.createElement('button');
+				newButton.className = "btn";
+				newButton.className += " btn-default adminResourceBtn";
+				newButton.setAttribute("onclick","setPermission('"+fullName+"','"+email+"','@resourceType','@resourceId', $(this).parent().parent().find('select').get(0).value, 'none', resetValue, this, true); return false;");
+				newButton.innerHTML="Apply to files";
+				newTd = document.createElement('td');
+				newTd.appendChild(newButton);
+				newRow.appendChild(newTd);
+			}
+			@if(resourceType.equals("collection")){
+				var newButton = document.createElement('button');
+				newButton.className = "btn";
+				newButton.className += " btn-default adminResourceBtn";
+				newButton.setAttribute("onclick","setPermission('"+fullName+"','"+email+"','@resourceType','@resourceId', $(this).parent().parent().find('select').get(0).value, 'none', resetValue, this, true); return false;");
+				newButton.innerHTML="Apply to datasets";
+				newTd = document.createElement('td');
+				newTd.appendChild(newButton);
+				newRow.appendChild(newTd);
+			}
+			
+			newRow.innerHTML = newRow.innerHTML + "<td><a href='#!' onclick='handleRemoval(&quot;"+fullName+"&quot;,&quot;"+email+"&quot;,this);'>Remove</a></td>";
+			
+			@if(resourceType.equals("dataset")){
+				newRow.innerHTML = newRow.innerHTML + "<td><input value='true' type='checkbox'><label class='adminResourceRemoveFromSubdoc'>From files</label></td>";
+			}
+			@if(resourceType.equals("collection")){
+				newRow.innerHTML = newRow.innerHTML + "<td><input value='true' type='checkbox'><label class='adminResourceRemoveFromSubdoc'>From datasets</label></td>";
+			}
+			
+			$("#usersTable > tbody > tr:nth-child(" + (entryPos) + ")").after(newRow);
+			$("#usersTable > tbody > tr:nth-child(" + (entryPos+1) + ") > td:nth-child(3) > select > option[value='"+accessRights+"']").attr('selected','selected');
+
+			$("#adminInputName").val("");
+			$("#adminInputEmail").val("");
+			$("#adminInputRights").val("view");
+		}
+		
+		
+		
+		
+	</script>
+}
+}

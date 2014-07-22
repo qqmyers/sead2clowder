@@ -29,7 +29,8 @@ class Search @Inject() (
   files: FileService,
   collections: CollectionService,
   queries: MultimediaQueryService,
-  previews: PreviewService) extends SecuredController {
+  previews: PreviewService, 
+  accessRights: UserAccessRightsService) extends SecuredController {
 
   /**
    * Search results.
@@ -39,6 +40,18 @@ class Search @Inject() (
     current.plugin[ElasticsearchPlugin] match {
       case Some(plugin) => {
         Logger.debug("Searching for: " + query)
+        val filesChecker = services.DI.injector.getInstance(classOf[api.Files])
+        val datasetsChecker = services.DI.injector.getInstance(classOf[api.Datasets])
+        val collectionsChecker = services.DI.injector.getInstance(classOf[api.Collections])
+        var rightsForUser: Option[models.UserPermissions] = None
+        request.user match{
+	        case Some(theUser)=>{
+	        	rightsForUser = accessRights.get(theUser)
+	        }
+	        case None=>{
+	        }
+	      }
+        
         var listOfFiles = ListBuffer.empty[models.File]
         var listOfdatasets = ListBuffer.empty[models.Dataset]
         var listOfcollections = ListBuffer.empty[models.Collection]
@@ -62,16 +75,27 @@ class Search @Inject() (
                       Logger.debug("FILES:hits.hits._id: Search result found file " + hit.getId());
                       Logger.debug("FILES:hits.hits._source: Search result found dataset " + hit.getSource().get("datasetId"))
                       //Logger.debug("Search result found file " + hit.getId()); files += file
+                      var isPermitted = false
+                      request.user match{
+				        case Some(theUser)=>{
+				        	isPermitted = filesChecker.checkAccessForFileUsingRightsList(file, request.user , "view", rightsForUser)
+				        }
+				        case None=>{
+				          isPermitted = filesChecker.checkAccessForFile(file, request.user , "view")
+				        }
+				      }
                       
-                      var datasetsList =  ListBuffer() : ListBuffer[(String, String)]
-                      val datasetsIdsList = hit.getSource().get("datasetId").toString().split(" %%% ").toList
-                      val datasetsNamesList = hit.getSource().get("datasetName").toString().split(" %%% ").toList.iterator
-                      for(currentDatasetId <- datasetsIdsList){
-                        datasetsList = datasetsList :+ (currentDatasetId, datasetsNamesList.next())
+                      if(isPermitted){
+	                      var datasetsList =  ListBuffer() : ListBuffer[(String, String)]
+	                      val datasetsIdsList = hit.getSource().get("datasetId").toString().split(" %%% ").toList
+	                      val datasetsNamesList = hit.getSource().get("datasetName").toString().split(" %%% ").toList.iterator
+	                      for(currentDatasetId <- datasetsIdsList){
+	                        datasetsList = datasetsList :+ (currentDatasetId, datasetsNamesList.next())
+	                      }
+	                      
+	                      mapdatasetIds.put(hit.getId(), datasetsList)
+	                      listOfFiles += file
                       }
-                      
-                      mapdatasetIds.put(hit.getId(), datasetsList)
-                      listOfFiles += file
                     }
                     case None => Logger.debug("File not found " + hit.getId())
                   }
@@ -85,18 +109,29 @@ class Search @Inject() (
                   datasets.get(UUID(hit.getId())) match {
                     case Some(dataset) =>{
                       Logger.debug("Search result found dataset" + hit.getId())
+                      var isPermitted = false
+                      request.user match{
+				        case Some(theUser)=>{
+				        	isPermitted = datasetsChecker.checkAccessForDatasetUsingRightsList(dataset, request.user , "view", rightsForUser)
+				        }
+				        case None=>{
+				          isPermitted = datasetsChecker.checkAccessForDataset(dataset, request.user , "view")
+				        }
+				      }
                       
-                      var collectionsList =  ListBuffer() : ListBuffer[(String, String)]
-                      Logger.debug("src: "+hit.getSource().toString())
-                      val collectionsIdsList = hit.getSource().get("collId").toString().split(" %%% ").toList
-                      val collectionsNamesList = hit.getSource().get("collName").toString().split(" %%% ").toList.iterator
-                      for(currentCollectionId <- collectionsIdsList){
-                        collectionsList = collectionsList :+ (currentCollectionId, collectionsNamesList.next())
-                      }
-                      
-                      mapcollectionIds.put(hit.getId(), collectionsList)
-                      
-                      listOfdatasets += dataset
+	                      if(isPermitted){
+		                      var collectionsList =  ListBuffer() : ListBuffer[(String, String)]
+		                      Logger.debug("src: "+hit.getSource().toString())
+		                      val collectionsIdsList = hit.getSource().get("collId").toString().split(" %%% ").toList
+		                      val collectionsNamesList = hit.getSource().get("collName").toString().split(" %%% ").toList.iterator
+		                      for(currentCollectionId <- collectionsIdsList){
+		                        collectionsList = collectionsList :+ (currentCollectionId, collectionsNamesList.next())
+		                      }
+		                      
+		                      mapcollectionIds.put(hit.getId(), collectionsList)
+		                      
+		                      listOfdatasets += dataset
+	                      }
                       }
                     case None => {
                       Logger.debug("Dataset not found " + hit.getId())
@@ -111,20 +146,31 @@ class Search @Inject() (
                   //Dataset.findOneById(new ObjectId(hit.getId())) match {
                   collections.get(UUID(hit.getId())) match {
                     case Some(collection) =>
-                      Logger.debug("Search result found collection" + hit.getId());                      
-                      var collectionThumbnail:Option[String] = None
-                      try{
-				        for(dataset <- collection.datasets){
-				          if(!dataset.thumbnail_id.isEmpty){
-				            collectionThumbnail = dataset.thumbnail_id
-				            throw ThumbnailFound		
-				          }
+                      Logger.debug("Search result found collection" + hit.getId());
+                      var isPermitted = false
+                      request.user match{
+				        case Some(theUser)=>{
+				        	isPermitted = collectionsChecker.checkAccessForCollectionUsingRightsList(collection, request.user , "view", rightsForUser)
 				        }
-				        }catch {
-				        	case ThumbnailFound =>
+				        case None=>{
+				          isPermitted = collectionsChecker.checkAccessForCollection(collection, request.user , "view")
 				        }
-                      val collectionWithThumbnail = collection.copy(thumbnail_id = collectionThumbnail)
-                      listOfcollections += collectionWithThumbnail
+				      }
+                      if(isPermitted){
+	                      var collectionThumbnail:Option[String] = None
+	                      try{
+					        for(dataset <- collection.datasets){
+					          if(!dataset.thumbnail_id.isEmpty){
+					            collectionThumbnail = dataset.thumbnail_id
+					            throw ThumbnailFound		
+					          }
+					        }
+					        }catch {
+					        	case ThumbnailFound =>
+					        }
+	                      val collectionWithThumbnail = collection.copy(thumbnail_id = collectionThumbnail)
+	                      listOfcollections += collectionWithThumbnail
+                      }
                     case None => {
                       Logger.debug("Collection not found " + hit.getId())
                       Redirect(routes.Collections.collection(UUID(hit.getId)))

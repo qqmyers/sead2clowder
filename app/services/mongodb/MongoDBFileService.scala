@@ -55,7 +55,9 @@ class MongoDBFileService @Inject() (
   comments: CommentService,
   previews: PreviewService,
   threeD: ThreeDService,
-  sparql: RdfSPARQLService) extends FileService {
+  sparql: RdfSPARQLService,
+  appConfiguration: AppConfigurationService,
+  accessRights: UserAccessRightsService) extends FileService {
 
   object MustBreak extends Exception {}
   
@@ -80,48 +82,215 @@ class MongoDBFileService @Inject() (
   /**
    * List files after a specified date.
    */
-  def listFilesAfter(date: String, limit: Int): List[File] = {
+  def listFilesAfter(date: String, limit: Int, user:Option[Identity] = None): List[File] = {
     val order = MongoDBObject("uploadDate" -> -1)
-    if (date == "") {
-      FileDAO.find("isIntermediate" $ne true).sort(order).limit(limit).toList
-    } else {
-      val sinceDate = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS").parse(date)
-      Logger.info("After " + sinceDate)
-      FileDAO.find($and("isIntermediate" $ne true, "uploadDate" $lt sinceDate)).sort(order).limit(limit).toList
+    val externalViewingEnabled = appConfiguration.getDefault.get.viewNoLoggedIn
+    var haveAdmin = false
+    user match{
+      case Some(user)=>{
+        haveAdmin = appConfiguration.adminExists(user.email.getOrElse("none"))
+      }
+      case None=>{}
     }
+    
+    if(externalViewingEnabled || haveAdmin){
+	      if (date == "") {
+	    	  FileDAO.find("isIntermediate" $ne true).sort(order).limit(limit).toList
+	      } else {
+		      val sinceDate = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS").parse(date)
+		      Logger.info("After " + sinceDate)
+		      FileDAO.find($and("isIntermediate" $ne true, "uploadDate" $lt sinceDate)).sort(order).limit(limit).toList
+	    }
+    }
+    else{   
+        if (date == "") {
+            user match{
+              case Some(user)=>{
+                var idsAllowedForUser: List[org.bson.types.ObjectId] = List.empty
+                var rightsOfUser = accessRights.get(user)
+                rightsOfUser match{
+                  case Some(someRightsOfUser)=>{
+                    idsAllowedForUser = for(idAllowed <- someRightsOfUser.filesViewOnly) yield (new ObjectId(idAllowed))
+                  }
+                  case None=>{}
+                }              
+                FileDAO.find($and("isIntermediate" $ne true,$or("isPublic"->true,"author.fullName"->"Anonymous User","author.identityId.userId"->user.identityId.userId,"_id"->MongoDBObject("$in"->idsAllowedForUser)   ))  ).sort(order).limit(limit).toList
+              }
+              case None=>{
+                FileDAO.find($and("isIntermediate" $ne true,$or("isPublic"->true,"author.fullName"->"Anonymous User"))).sort(order).limit(limit).toList
+              }
+            }	    	  
+	      } else {
+		      val sinceDate = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS").parse(date)
+		      Logger.info("After " + sinceDate)
+		      
+		      user match{
+              case Some(user)=>{
+                var idsAllowedForUser: List[org.bson.types.ObjectId] = List.empty
+                var rightsOfUser = accessRights.get(user)
+                rightsOfUser match{
+                  case Some(someRightsOfUser)=>{
+                    idsAllowedForUser = for(idAllowed <- someRightsOfUser.filesViewOnly) yield (new ObjectId(idAllowed))
+                  }
+                  case None=>{}
+                }              
+                FileDAO.find($and("isIntermediate" $ne true, "uploadDate" $lt sinceDate,$or("isPublic"->true,"author.fullName"->"Anonymous User","author.identityId.userId"->user.identityId.userId,"_id"->MongoDBObject("$in"->idsAllowedForUser))  )  ).sort(order).limit(limit).toList
+              }
+              case None=>{
+                FileDAO.find($and("isIntermediate" $ne true, "uploadDate" $lt sinceDate,$or("isPublic"->true,"author.fullName"->"Anonymous User"))).sort(order).limit(limit).toList
+              }
+            }
+	    }
+    }
+ 
   }
+  
 
   /**
    * List files before a specified date.
    */
-  def listFilesBefore(date: String, limit: Int): List[File] = {
+  def listFilesBefore(date: String, limit: Int, user:Option[Identity] = None): List[File] = {
     var order = MongoDBObject("uploadDate" -> -1)
-    if (date == "") {
-      FileDAO.find("isIntermediate" $ne true).sort(order).limit(limit).toList
-    } else {
-      order = MongoDBObject("uploadDate" -> 1)
-      val sinceDate = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS").parse(date)
-      Logger.info("Before " + sinceDate)
-      var fileList = FileDAO.find($and("isIntermediate" $ne true, "uploadDate" $gt sinceDate)).sort(order).limit(limit).toList.reverse
-      //fileList = fileList.filter(_ != fileList.last)
-      fileList
+    val externalViewingEnabled = appConfiguration.getDefault.get.viewNoLoggedIn
+    var haveAdmin = false
+    user match{
+      case Some(user)=>{
+        haveAdmin = appConfiguration.adminExists(user.email.getOrElse("none"))
+      }
+      case None=>{}
     }
+    
+    if(externalViewingEnabled || haveAdmin){
+	      if (date == "") {
+	    	  FileDAO.find("isIntermediate" $ne true).sort(order).limit(limit).toList
+	      } else {
+	    	  order = MongoDBObject("uploadDate" -> 1)
+		      val sinceDate = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS").parse(date)
+		      Logger.info("Before " + sinceDate)
+		      FileDAO.find($and("isIntermediate" $ne true, "uploadDate" $gt sinceDate)).sort(order).limit(limit).toList.reverse
+	    }
+    }
+    else{   
+        if (date == "") {
+            user match{
+              case Some(user)=>{
+                var idsAllowedForUser: List[org.bson.types.ObjectId] = List.empty
+                var rightsOfUser = accessRights.get(user)
+                rightsOfUser match{
+                  case Some(someRightsOfUser)=>{
+                    idsAllowedForUser = for(idAllowed <- someRightsOfUser.filesViewOnly) yield (new ObjectId(idAllowed))		
+                  }
+                  case None=>{}
+                }              
+                FileDAO.find($and("isIntermediate" $ne true,$or("isPublic"->true,"author.fullName"->"Anonymous User","author.identityId.userId"->user.identityId.userId,"_id"->MongoDBObject("$in"->idsAllowedForUser)   ))  ).sort(order).limit(limit).toList
+              }
+              case None=>{
+                FileDAO.find($and("isIntermediate" $ne true,$or("isPublic"->true,"author.fullName"->"Anonymous User"))).sort(order).limit(limit).toList
+              }
+            }	    	  
+	      } else {
+	    	  order = MongoDBObject("uploadDate" -> 1)
+		      val sinceDate = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS").parse(date)
+		      Logger.info("Before " + sinceDate)
+		      
+		      user match{
+              case Some(user)=>{
+                var idsAllowedForUser: List[org.bson.types.ObjectId] = List.empty
+                var rightsOfUser = accessRights.get(user)
+                rightsOfUser match{
+                  case Some(someRightsOfUser)=>{
+                    idsAllowedForUser = for(idAllowed <- someRightsOfUser.filesViewOnly) yield (new ObjectId(idAllowed))
+                  }
+                  case None=>{}
+                }              
+                FileDAO.find($and("isIntermediate" $ne true, "uploadDate" $gt sinceDate,$or("isPublic"->true,"author.fullName"->"Anonymous User","author.identityId.userId"->user.identityId.userId,"_id"->MongoDBObject("$in"->idsAllowedForUser))  )  ).sort(order).limit(limit).toList.reverse
+              }
+              case None=>{
+                FileDAO.find($and("isIntermediate" $ne true, "uploadDate" $gt sinceDate,$or("isPublic"->true,"author.fullName"->"Anonymous User"))).sort(order).limit(limit).toList.reverse
+              }
+            }
+	    }
+    }
+ 
   }
+  
 
-  def latest(): Option[File] = {
-    val results = FileDAO.find(MongoDBObject()).sort(MongoDBObject("uploadDate" -> -1)).limit(1).toList
+  def latest(user:Option[Identity] = None): Option[File] = {
+    val externalViewingEnabled = appConfiguration.getDefault.get.viewNoLoggedIn
+    var haveAdmin = false
+    user match{
+      case Some(user)=>{
+        haveAdmin = appConfiguration.adminExists(user.email.getOrElse("none"))
+      }
+      case None=>{}
+    }
+    var results: List[File] = List.empty
+    val order = MongoDBObject("uploadDate" -> -1)
+    if(externalViewingEnabled || haveAdmin){
+      results = FileDAO.find(MongoDBObject()).sort(order).limit(1).toList
+    }else{
+	            user match{
+	              case Some(user)=>{
+	                var idsAllowedForUser: List[org.bson.types.ObjectId] = List.empty
+	                var rightsOfUser = accessRights.get(user)
+	                rightsOfUser match{
+	                  case Some(someRightsOfUser)=>{
+	                    idsAllowedForUser = for(idAllowed <- someRightsOfUser.filesViewOnly) yield (new ObjectId(idAllowed))
+	                  }
+	                  case None=>{}
+	                }              
+	                results = FileDAO.find($and("isIntermediate" $ne true,$or("isPublic"->true,"author.fullName"->"Anonymous User","author.identityId.userId"->user.identityId.userId,"_id"->MongoDBObject("$in"->idsAllowedForUser)  ) )  ).sort(order).limit(1).toList
+	              }
+	              case None=>{
+	                results = FileDAO.find($and("isIntermediate" $ne true,$or("isPublic"->true,"author.fullName"->"Anonymous User"))).sort(order).limit(1).toList
+	              }
+	            }	    	  
+    }
+  
     if (results.size > 0)
       Some(results(0))
     else
       None
   }
+  
+  
 
   def latest(i: Int): List[File] = {
     FileDAO.find(MongoDBObject()).sort(MongoDBObject("uploadDate" -> -1)).limit(i).toList
   }
 
-  def first(): Option[File] = {
-    val results = FileDAO.find(MongoDBObject()).sort(MongoDBObject("uploadDate" -> 1)).limit(1).toList
+  def first(user:Option[Identity] = None): Option[File] = {
+    val externalViewingEnabled = appConfiguration.getDefault.get.viewNoLoggedIn
+    var haveAdmin = false
+    user match{
+      case Some(user)=>{
+        haveAdmin = appConfiguration.adminExists(user.email.getOrElse("none"))
+      }
+      case None=>{}
+    }
+    var results: List[File] = List.empty
+    val order = MongoDBObject("uploadDate" -> 1)
+    if(externalViewingEnabled || haveAdmin){
+      results = FileDAO.find(MongoDBObject()).sort(order).limit(1).toList
+    }else{
+	            user match{
+	              case Some(user)=>{
+	                var idsAllowedForUser: List[org.bson.types.ObjectId] = List.empty
+	                var rightsOfUser = accessRights.get(user)
+	                rightsOfUser match{
+	                  case Some(someRightsOfUser)=>{
+	                    idsAllowedForUser = for(idAllowed <- someRightsOfUser.filesViewOnly) yield (new ObjectId(idAllowed))
+	                  }
+	                  case None=>{}
+	                }              
+	                results = FileDAO.find($and("isIntermediate" $ne true,$or("isPublic"->true,"author.fullName"->"Anonymous User","author.identityId.userId"->user.identityId.userId,"_id"->MongoDBObject("$in"->idsAllowedForUser) )  )  ).sort(order).limit(1).toList
+	              }
+	              case None=>{
+	                results = FileDAO.find($and("isIntermediate" $ne true,$or("isPublic"->true,"author.fullName"->"Anonymous User"))).sort(order).limit(1).toList
+	              }
+	            }	    	  
+    }
+  
     if (results.size > 0)
       Some(results(0))
     else
@@ -158,7 +327,7 @@ class MongoDBFileService @Inject() (
   /**
    * Save blob.
    */
-  def save(inputStream: InputStream, filename: String, contentType: Option[String], author: Identity, showPreviews: String = "DatasetLevel"): Option[File] = {
+  def save(inputStream: InputStream, filename: String, contentType: Option[String], author: Identity, showPreviews: String = "DatasetLevel", isPublic: Boolean = false): Option[File] = {
     val files = current.plugin[MongoSalatPlugin] match {
       case None    => throw new RuntimeException("No MongoSalatPlugin");
       case Some(x) =>  x.gridFS("uploads")
@@ -177,6 +346,7 @@ class MongoDBFileService @Inject() (
     mongoFile.contentType = ct
     mongoFile.put("showPreviews", showPreviews)
     mongoFile.put("author", SocialUserDAO.toDBObject(author))
+    mongoFile.put("isPublic", Some(isPublic))
     mongoFile.save
     val oid = mongoFile.getAs[ObjectId]("_id").get
 
@@ -433,6 +603,14 @@ class MongoDBFileService @Inject() (
   def isInDataset(file: File, dataset: Dataset): Boolean = {
     for(dsFile <- dataset.files){
       if(dsFile.id == file.id)
+        return true
+    }
+    return false
+  }
+  
+  def isInDatasetByFileId(fileId: String, dataset: Dataset): Boolean = {
+    for(dsFile <- dataset.files){
+      if(dsFile.id == fileId)
         return true
     }
     return false
@@ -843,7 +1021,6 @@ class MongoDBFileService @Inject() (
       $set("thumbnail_id" -> thumbnailId.stringify), false, false, WriteConcern.Safe)
   }
   
-  
   def setNotesHTML(id: UUID, html: String) {
     FileDAO.update(MongoDBObject("_id" -> new ObjectId(id.stringify)), $set("notesHTML" -> Some(html)), false, false, WriteConcern.Safe)    
   }
@@ -911,6 +1088,11 @@ class MongoDBFileService @Inject() (
 	}
     
     return unsuccessfulDumps.toList
+
+  }
+  
+  def setIsPublic(fileId: UUID, isPublic: Boolean){
+    FileDAO.update(MongoDBObject("_id" -> new ObjectId(fileId.stringify)), $set("isPublic" -> isPublic), false, false, WriteConcern.Safe)
   }
 
 }

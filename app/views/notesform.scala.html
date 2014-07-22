@@ -1,16 +1,14 @@
-@(id: String, posturl: String, currentHTML: String, authorId: String)(implicit user: Option[securesocial.core.Identity])
+@(id: String, posturl: String, currentHTML: String, authorId: String, hasEditAccess: Boolean)(implicit user: Option[securesocial.core.Identity])
 
 @import services.{DI, AppConfigurationService}
 @import securesocial.core.{SocialUser, IdentityId, AuthenticationMethod}
 
-@defining(user.getOrElse(new SocialUser(new IdentityId("anonymous", ""), "Anonymous", "User", "Anonymous User", None, None, AuthenticationMethod.UserPassword))){userOrAnon=>
-	@defining(DI.injector.getInstance(classOf[AppConfigurationService])
-				.adminExists(userOrAnon.email.getOrElse(""))){userIsAdmin=>
+
 		<form class="form-inline" style="margin-top:20px;">
 			<div id="noteContainer_@id" style="display:block;">
 			  @Html(currentHTML)
 			</div>
-			@if(userIsAdmin || userOrAnon.identityId.userId.equals(authorId)) {	
+			@if(hasEditAccess) {	
 				<div id="noteEditor_@id" style="display:none;">
 					<textarea name="content" class="notesArea" id="noteField_@id" style="width:100%;">@currentHTML</textarea>
 				</div>
@@ -19,7 +17,7 @@
 				<button class="btn btn-default" onclick="return cancelEdit();" style="display:none;" id="noteCancel_@id">Cancel</button>
 			}
 		</form>
-		@if(userIsAdmin || userOrAnon.identityId.userId.equals(authorId)) {
+		@if(hasEditAccess) {
 			<script language="javascript">
 				window["previousHTML"] = '@Html(currentHTML)';
 				
@@ -74,6 +72,5 @@
 					return false;
 				}
 			</script>
-		}
-	}
+		
 }

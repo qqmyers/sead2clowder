@@ -18,7 +18,7 @@
     <form action="@securesocial.core.providers.utils.RoutesHelper.handleSignUp(token).absoluteURL(IdentityProvider.sslEnabled)"
           class="form-horizontal"
           autocomplete= "off"
-          method="POST"
+          method="POST"  id="registerSubmit"
     >
         <fieldset>
             @if( UsernamePasswordProvider.withUserNameSupport ) {
@@ -59,4 +59,31 @@
             </div>
         </fieldset>
     </form>
+    <script>
+    	$("#registerSubmit").submit(function( event ) { 
+    		
+    			var data = {};
+    			data['name'] = $("#firstName").val()+" "+$("#lastName").val();
+    			data['email'] = "@(securesocial.core.UserService.findToken(token).get.email)";
+    		
+	    		var request = $.ajax({
+					url:  "@api.routes.Users.initRights",
+					data: JSON.stringify(data),
+					type: "POST",
+					async: false,
+					contentType: "application/json",
+		     	});
+				request.done(function (response, textStatus, jqXHR){ 
+					console.log("Response: " + response);
+				});
+				request.fail(function (jqXHR, textStatus, errorThrown){ 
+					console.error("The following error occured while setting user access rights: " + textStatus, errorThrown);
+					alert("The user was not registered due to error setting user access rights, due to : " + errorThrown);
+					event.preventDefault();
+					return false;
+				});			
+    		});
+    </script>
+    
+
 }

@@ -1,8 +1,5 @@
 @()(implicit user: Option[securesocial.core.Identity])
 
-@import services.{DI, AppConfigurationService}
-@import securesocial.core.{SocialUser, IdentityId, AuthenticationMethod}
-
 @main("Dataset metadata search") {
 <div class="page-header">
   <h1>Dataset metadata search</h1>
@@ -40,21 +37,19 @@
 			</tbody>
 		</table>
 		<ul class="pager">
-  			<li class="previous" style="visibility:hidden;"><a href="#">Previous</a></li>
-  			<li class ="next" style="visibility:hidden;"><a href="#">Next</a></li>
+  			<li class="previous" style="visibility:hidden;"><a href="#!">Previous</a></li>
+  			<li class ="next" style="visibility:hidden;"><a href="#!">Next</a></li>
 		</ul>
 	</div>
 </div>
 <script language="javascript">
 	window["userDefined"] = false;
 	window["userId"] = "";
-	window["userIsAdmin"] = false;
 </script>
 @if(user.isDefined) {
 	<script language="javascript">
 		window["userDefined"] = true;
 		window["userId"] = "@user.get.identityId.userId";
-		window["userIsAdmin"] = @DI.injector.getInstance(classOf[AppConfigurationService]).adminExists(user.getOrElse(new SocialUser(new IdentityId("anonymous", ""), "Anonymous", "User", "Anonymous User", None, None, AuthenticationMethod.UserPassword)).email.getOrElse(""));
 	</script>
 }
 <script language="javascript">	
