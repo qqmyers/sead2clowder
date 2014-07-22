@@ -195,7 +195,11 @@ class Files @Inject() (
 				             Logger.error(fileType.substring(7))
 				             InternalServerError(fileType.substring(7))
 				          }
-				          if(fileType.equals("imageset/ptmimages-zipped") || fileType.equals("imageset/ptmimages+zipped") ){
+				          if(fileType.equals("imageset/ptmimages-zipped") || fileType.equals("imageset/ptmimages+zipped") || fileType.equals("multi/files-ptm-zipped") ){
+				            if(fileType.equals("multi/files-ptm-zipped")){
+	            				    fileType = "multi/files-zipped";
+	            				  }
+				            
 				              var thirdSeparatorIndex = nameOfFile.indexOf("__")
 				              if(thirdSeparatorIndex >= 0){
 				                var firstSeparatorIndex = nameOfFile.indexOf("_")
@@ -397,7 +401,11 @@ class Files @Inject() (
 			             Logger.error(fileType.substring(7))
 			             InternalServerError(fileType.substring(7))
 			          }
-			          if(fileType.equals("imageset/ptmimages-zipped") || fileType.equals("imageset/ptmimages+zipped") ){
+			          if(fileType.equals("imageset/ptmimages-zipped") || fileType.equals("imageset/ptmimages+zipped") || fileType.equals("multi/files-ptm-zipped") ){
+			            if(fileType.equals("multi/files-ptm-zipped")){
+	            				    fileType = "multi/files-zipped";
+	            				  }
+			            
 				              var thirdSeparatorIndex = nameOfFile.indexOf("__")
 				              if(thirdSeparatorIndex >= 0){
 				                var firstSeparatorIndex = nameOfFile.indexOf("_")
@@ -499,7 +507,11 @@ class Files @Inject() (
 			             Logger.error(fileType.substring(7))
 			             InternalServerError(fileType.substring(7))
 			          }
-			          if(fileType.equals("imageset/ptmimages-zipped") || fileType.equals("imageset/ptmimages+zipped") ){
+			          if(fileType.equals("imageset/ptmimages-zipped") || fileType.equals("imageset/ptmimages+zipped") || fileType.equals("multi/files-ptm-zipped") ){
+			            if(fileType.equals("multi/files-ptm-zipped")){
+	            				    fileType = "multi/files-zipped";
+	            				  }
+			            
 				              var thirdSeparatorIndex = nameOfFile.indexOf("__")
 				              if(thirdSeparatorIndex >= 0){
 				                var firstSeparatorIndex = nameOfFile.indexOf("_")
@@ -600,7 +612,11 @@ class Files @Inject() (
 			             Logger.error(fileType.substring(7))
 			             InternalServerError(fileType.substring(7))
 			          }
-			          if(fileType.equals("imageset/ptmimages-zipped") || fileType.equals("imageset/ptmimages+zipped") ){
+			          if(fileType.equals("imageset/ptmimages-zipped") || fileType.equals("imageset/ptmimages+zipped") || fileType.equals("multi/files-ptm-zipped") ){
+			            if(fileType.equals("multi/files-ptm-zipped")){
+	            				    fileType = "multi/files-zipped";
+	            				  }
+			            
 				              var thirdSeparatorIndex = nameOfFile.indexOf("__")
 				              if(thirdSeparatorIndex >= 0){
 				                var firstSeparatorIndex = nameOfFile.indexOf("_")
@@ -706,7 +722,11 @@ class Files @Inject() (
 								Logger.error(fileType.substring(7))
 								InternalServerError(fileType.substring(7))
 								}
-						  if(fileType.equals("imageset/ptmimages-zipped") || fileType.equals("imageset/ptmimages+zipped") ){
+						  if(fileType.equals("imageset/ptmimages-zipped") || fileType.equals("imageset/ptmimages+zipped") || fileType.equals("multi/files-ptm-zipped") ){
+						    if(fileType.equals("multi/files-ptm-zipped")){
+	            				    fileType = "multi/files-zipped";
+	            				  }
+						    
 				              var thirdSeparatorIndex = nameOfFile.indexOf("__")
 				              if(thirdSeparatorIndex >= 0){
 				                var firstSeparatorIndex = nameOfFile.indexOf("_")
