@@ -1,4 +1,4 @@
 { "name" : "3DWebGL",
   "main" : "some-library.js",
-  "contentType" : ["model/obj"]
+  "contentType" : ["none"]
   }
