@@ -557,7 +557,7 @@
 			    </div>
 			    	@if(services.DI.injector.getInstance(classOf[controllers.Datasets]).checkAccessForDatasetUsingRightsList(dataset, user, "administrate", rightsForUser)){
 			    		<div class="tab-pane" id="tab4">	
-			      			@setResourceAccessRights("dataset", dataset.id.stringify, dataset.isPublic.getOrElse(false))
+			      			@setResourceAccessRights("dataset", dataset.id.stringify, dataset.isPublic.getOrElse(false), Some(dataset.author))
 			    		</div>
 			    	}		    
 			  </div>

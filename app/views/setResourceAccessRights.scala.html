@@ -1,8 +1,12 @@
-@(resourceType: String, resourceId: String, isPublic: Boolean = false)(implicit user: Option[securesocial.core.Identity])
+@(resourceType: String, resourceId: String, isPublic: Boolean = false, resourceAuthor: Option[securesocial.core.Identity])(implicit user: Option[securesocial.core.Identity])
 
-@import services.{DI, UserAccessRightsService} 
+@import services.{DI, UserAccessRightsService}
+@import securesocial.core.AuthenticationMethod
+@import securesocial.core.SocialUser
+@import securesocial.core.IdentityId 
 
 @defining(DI.injector.getInstance(classOf[UserAccessRightsService])){accessRightsServiceInner=>
+@defining(new SocialUser(new IdentityId("anonymous", ""), "Anonymous", "User", "Anonymous User", None, None, AuthenticationMethod.UserPassword)){anonUser=>
 <form class="form-inline">
 	<table class="table" id="usersTable">
 	     <tbody>
@@ -39,7 +43,7 @@
 	     		}
 	     	</tr>
 		    @for(userPermission <- accessRightsServiceInner.getAllRightsForResource(resourceId, resourceType)) {
-		     @if(!(userPermission._1.equals(user.get.fullName) && userPermission._2.equals(user.get.email.getOrElse("")))){
+		     @if(!((userPermission._1.equals(user.get.fullName) && userPermission._2.equals(user.get.email.getOrElse(""))) || (userPermission._1.equals(resourceAuthor.getOrElse(anonUser).fullName) && userPermission._2.equals(resourceAuthor.getOrElse(anonUser).email.getOrElse(""))))){
 		      <tr>
 				<td>@userPermission._1</td>
 				<td>@userPermission._2</td>
@@ -165,6 +169,10 @@
 				alert("Cannot add self");
 				return;
 			}
+			else if(fullName == "@(resourceAuthor.getOrElse(anonUser).fullName)" && email == "@(resourceAuthor.getOrElse(anonUser).email.getOrElse(""))"){
+				alert("Cannot add author of resource");
+				return;
+			}
 			
 			var wasAlready = false;
 			var allRows = $("#usersTable > tbody > tr");
@@ -249,4 +257,5 @@
 		
 		
 	</script>
+}
 }
