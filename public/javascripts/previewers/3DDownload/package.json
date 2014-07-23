@@ -1,0 +1,4 @@
+{ "name" : "3D download",
+  "main" : "some-library.js",
+  "contentType" : ["application/objfromptm"]
+  }
