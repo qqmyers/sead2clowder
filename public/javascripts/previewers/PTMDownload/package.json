@@ -1,0 +1,4 @@
+{ "name" : "PTM download",
+  "main" : "some-library.js",
+  "contentType" : ["application/ptmfromimages"]
+  }
