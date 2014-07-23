@@ -139,7 +139,7 @@ object Users extends Controller {
     val token = Token(
       uuid, email,
       now,
-      now.plusMinutes(TokenDuration),
+      now.plusDays(2),
       isSignUp = isSignUp
     )
     UserService.save(token)

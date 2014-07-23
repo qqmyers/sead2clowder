@@ -164,11 +164,13 @@ POST	/api/files/:three_d_file_id/geometries/:geometry_id		@api.Files.attachGeome
 POST	/api/files/:three_d_file_id/3dTextures/:texture_id		@api.Files.attachTexture(three_d_file_id: UUID,texture_id: UUID)
 POST	/api/files/:file_id/thumbnails/:thumbnail_id			@api.Files.attachThumbnail(file_id: UUID,thumbnail_id: UUID)
 GET     /api/files                        						@api.Files.list
-POST    /api/files                        						@api.Files.upload(showPreviews: String ?= "DatasetLevel", originalZipFile: String ?= "", fileIsPublic: String ?= "false")
+POST    /api/files                        						@api.Files.upload(showPreviews: String ?= "DatasetLevel", originalZipFile: String ?= "", fileIsPublic: String ?= "false", flags: String ?= "")
+POST    /api/files/withFlags/:flags                             @api.Files.upload(showPreviews: String ?= "DatasetLevel", originalZipFile: String ?= "", fileIsPublic: String ?= "false", flags: String) 
 POST	/api/files/searchusermetadata							@api.Files.searchFilesUserMetadata
 POST	/api/files/searchmetadata								@api.Files.searchFilesGeneralMetadata
 POST	/api/files/setIsPublic/:id								@api.Files.setIsPublic(id:UUID)
-POST    /api/uploadToDataset/:id                        		@api.Files.uploadToDataset(id: UUID, String ?= "DatasetLevel", originalZipFile: String ?= "", fileIsPublic: String ?= "false")
+POST    /api/uploadToDataset/:id                        		@api.Files.uploadToDataset(id: UUID, showPreviews: String ?= "DatasetLevel", originalZipFile: String ?= "", fileIsPublic: String ?= "false", flags: String ?= "")
+POST    /api/uploadToDataset/withFlags/:id/:flags               @api.Files.uploadToDataset(id: UUID, showPreviews: String ?= "DatasetLevel", originalZipFile: String ?= "", fileIsPublic: String ?= "false", flags: String) 
 
 POST	/api/files/uploadIntermediate/:idAndFlags				@api.Files.uploadIntermediate(idAndFlags)
 
