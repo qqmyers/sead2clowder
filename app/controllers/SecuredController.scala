@@ -50,7 +50,7 @@ trait SecuredController extends Controller {
 
   def SecuredAction[A](p: BodyParser[A] = parse.anyContent, authorization: Authorization = WithPermission(Permission.Public), resourceId: Option[UUID] = None)(f: RequestWithUser[A] => Result) = Action(p) {
     implicit request =>
-      {  Logger.debug("prt: "+httpProtocol + "://" + request.host.substring(0, request.host.lastIndexOf(":")+1) + appPort + request.path)
+      {
         if(!Utils.protocol(request).equals(httpProtocol)){
           
 	        Results.Redirect(httpProtocol + "://" + request.host.substring(0, request.host.lastIndexOf(":")+1) + appPort + request.path)
