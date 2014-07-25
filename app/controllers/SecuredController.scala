@@ -24,6 +24,7 @@ import securesocial.core.providers.UsernamePasswordProvider
 import securesocial.core.providers.utils.RoutesHelper
 import securesocial.core.IdentityId
 import models.UUID
+import play.api.Play.current
 
 /**
  * Enforce authentication and authorization.
@@ -33,22 +34,39 @@ import models.UUID
  *
  */
 trait SecuredController extends Controller {
+  
+    var appPort = play.api.Play.configuration.getString("https.port").getOrElse("")
+  val httpProtocol = {
+					if(!appPort.equals("")){
+						"https"
+					}
+					else{
+						appPort = play.api.Play.configuration.getString("http.port").getOrElse("9000")
+						"http"
+					}
+		}
+  
   val anonymous = new SocialUser(new IdentityId("anonymous", ""), "Anonymous", "User", "Anonymous User", None, None, AuthenticationMethod.UserPassword)
 
   def SecuredAction[A](p: BodyParser[A] = parse.anyContent, authorization: Authorization = WithPermission(Permission.Public), resourceId: Option[UUID] = None)(f: RequestWithUser[A] => Result) = Action(p) {
     implicit request =>
       {
-        request.headers.get("Authorization") match { // basic authentication
-          case Some(authHeader) => {
-            val header = new String(Base64.decodeBase64(authHeader.slice(6, authHeader.length).getBytes))
-            val credentials = header.split(":")
-            UserService.findByEmailAndProvider(credentials(0), UsernamePasswordProvider.UsernamePassword) match {
-              case Some(identity) => {
-                if(identity.fullName.equals("Anonymous User")){
-                  Unauthorized("Not authorized")
-                }
-                else{
-                	if (BCrypt.checkpw(credentials(1), identity.passwordInfo.get.password)) {
+        if(!Utils.protocol(request).equals(httpProtocol)){
+          
+	        Results.Redirect(httpProtocol + "://" + request.host.substring(0, request.host.lastIndexOf(":")+1) + appPort + request.path)
+	      }
+	      else{
+		        request.headers.get("Authorization") match { // basic authentication
+	          case Some(authHeader) => {
+	            val header = new String(Base64.decodeBase64(authHeader.slice(6, authHeader.length).getBytes))
+	            val credentials = header.split(":")
+	            UserService.findByEmailAndProvider(credentials(0), UsernamePasswordProvider.UsernamePassword) match {
+	              case Some(identity) => {
+	                if(identity.fullName.equals("Anonymous User")){
+	                	Unauthorized("Not authorized")
+	                }
+                   else{
+	                if (BCrypt.checkpw(credentials(1), identity.passwordInfo.get.password)) {
 	                  if (authorization.isInstanceOf[WithPermission]){
 	                    var authorPermission = authorization.asInstanceOf[WithPermission]
 	                    if (WithPermission(authorPermission.permission,resourceId).isAuthorized(identity))
@@ -74,22 +92,22 @@ trait SecuredController extends Controller {
 	                  Logger.debug("Password doesn't match")
 	                  Results.Redirect(RoutesHelper.login.absoluteURL(IdentityProvider.sslEnabled)).flashing("error" -> "Username/password are not valid.")
 	                }
-                }
-              }
-              case None => {
-                Logger.debug("User not found")
-                Results.Redirect(RoutesHelper.login.absoluteURL(IdentityProvider.sslEnabled)).flashing("error" -> "Username/password are not valid.")
-              }
-            }
-          }
-          case None => {
-            SecureSocial.currentUser(request) match { // calls from browser
-              case Some(identity) => {
-                if(identity.fullName.equals("Anonymous User")){
-                  Unauthorized("Not authorized")
-                }
-                else{
-                	if (authorization.isInstanceOf[WithPermission]){
+	               }
+	              }
+	              case None => {
+	                Logger.debug("User not found")
+	                Results.Redirect(RoutesHelper.login.absoluteURL(IdentityProvider.sslEnabled)).flashing("error" -> "Username/password are not valid.")
+	              }
+	            }
+	          }
+	          case None => {
+	            SecureSocial.currentUser(request) match { // calls from browser
+	              case Some(identity) => {
+	               if(identity.fullName.equals("Anonymous User")){
+	            	   Unauthorized("Not authorized")
+                  }
+                   else{ 
+	                if (authorization.isInstanceOf[WithPermission]){
 	                  var authorPermission = authorization.asInstanceOf[WithPermission]
 	                  if (WithPermission(authorPermission.permission,resourceId).isAuthorized(identity))
 	                	  f(RequestWithUser(Some(identity), request))
@@ -108,17 +126,21 @@ trait SecuredController extends Controller {
 		                    else{   //User not logged in, so redirect to login page
 		                    	Results.Redirect(RoutesHelper.login.absoluteURL(IdentityProvider.sslEnabled)).flashing("error" -> "You are not authorized.")
 		                    }
-                }
-              }
-              case None => {
-                if (authorization.isAuthorized(null))
-                  f(RequestWithUser(None, request))
-                else
-                  Results.Redirect(RoutesHelper.login.absoluteURL(IdentityProvider.sslEnabled)).flashing("error" -> "You are not logged in.")
-              }
-            }
-          }
-        }
+	               }
+	              }
+	              case None => {
+	                if (authorization.isAuthorized(null))
+	                  f(RequestWithUser(None, request))
+	                else
+	                  Results.Redirect(RoutesHelper.login.absoluteURL(IdentityProvider.sslEnabled)).flashing("error" -> "You are not logged in.")
+	              }
+	            }
+	          }
+	        }
+	      }
+        
+        
+        
       }
   }
 }
