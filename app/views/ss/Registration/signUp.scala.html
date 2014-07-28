@@ -87,8 +87,6 @@
     </script>
     
 
-}
-
     @defining(play.api.Play.configuration.getString("https.port").getOrElse("")){ httpsPort =>
 	    <script>
 	    	if(window.location.protocol == "http:" && @(!httpsPort.equals(""))){
