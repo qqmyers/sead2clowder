@@ -105,8 +105,9 @@ case class WithPermission(permission: Permission, resourceId: Option[UUID] = Non
 		        }
 
 		        //Modification and administration permissions require the user to be logged in
-		        if(user != null && (requestedPermission == CreateFiles || requestedPermission == DeleteFiles || requestedPermission == AddFilesMetadata || requestedPermission == AdministrateFiles)){
-		          files.get(idOfResource) match{
+		        if((requestedPermission == CreateFiles || requestedPermission == DeleteFiles || requestedPermission == AddFilesMetadata || requestedPermission == AdministrateFiles)){
+		          if(user != null){
+		           files.get(idOfResource) match{
 		            case Some(file)=>{		              
 		              
 		              //User is the author of the resource
@@ -124,51 +125,61 @@ case class WithPermission(permission: Permission, resourceId: Option[UUID] = Non
 		              false
 		            }
 		          }
+		         }
+		          else false
 		        }	
-		        else if(user != null && (requestedPermission == CreateDatasets || requestedPermission == DeleteDatasets || requestedPermission == AddDatasetsMetadata || requestedPermission == AdministrateDatasets)){
-		          datasets.get(idOfResource) match{
-		            case Some(dataset)=>{
-		              if(dataset.author.identityId.userId.equals(user.identityId.userId))
-		                true
-		              else if(accessRights.checkForPermission(user, idOfResource.stringify, "dataset", administrateOrModify))
-		                true  
-		              else
-		                appConfiguration.adminExists(user.email.getOrElse("none"))
-		            }
-		            case _ =>{
-		              Logger.error("Dataset requested to be accessed not found. Denying request.")
-		              false
-		            }
+		        else if((requestedPermission == CreateDatasets || requestedPermission == DeleteDatasets || requestedPermission == AddDatasetsMetadata || requestedPermission == AdministrateDatasets)){
+		          if(user != null){
+			           datasets.get(idOfResource) match{
+			            case Some(dataset)=>{
+			              if(dataset.author.identityId.userId.equals(user.identityId.userId))
+			                true
+			              else if(accessRights.checkForPermission(user, idOfResource.stringify, "dataset", administrateOrModify))
+			                true  
+			              else
+			                appConfiguration.adminExists(user.email.getOrElse("none"))
+			            }
+			            case _ =>{
+			              Logger.error("Dataset requested to be accessed not found. Denying request.")
+			              false
+			            }
+			          }
 		          }
+		          else false
+		          
 		        }
-		        else if(user != null && (requestedPermission == CreateCollections || requestedPermission == DeleteCollections || requestedPermission == AdministrateCollections)){
-		          collections.get(idOfResource) match{
-		            case Some(collection)=>{
-		              collection.author match{
-		                case Some(collectionAuthor)=>{
-		                  if(collectionAuthor.identityId.userId.equals(user.identityId.userId))
-		                	  true
-		                  else if(accessRights.checkForPermission(user, idOfResource.stringify, "collection", administrateOrModify))
-		                	  true  
-		                  else
-		                	  appConfiguration.adminExists(user.email.getOrElse("none"))
-		                }
-		                //Anonymous collections are free-for-all
-		                case None=>{
-		                 if(requestedPermission != AdministrateCollections){ 
-		                  Logger.info("Requested collection is anonymous, anyone can modify, granting modification request.")
-		                  true
-		                 }
-		                 else
-		                   false
-		                }
-		              }		              
-		            }
-		            case _ =>{
-		              Logger.error("Collection requested to be accessed not found. Denying request.")
-		              false
-		            }
+		        else if((requestedPermission == CreateCollections || requestedPermission == DeleteCollections || requestedPermission == AdministrateCollections)){
+		          if(user != null){
+			           collections.get(idOfResource) match{
+			            case Some(collection)=>{
+			              collection.author match{
+			                case Some(collectionAuthor)=>{
+			                  if(collectionAuthor.identityId.userId.equals(user.identityId.userId))
+			                	  true
+			                  else if(accessRights.checkForPermission(user, idOfResource.stringify, "collection", administrateOrModify))
+			                	  true  
+			                  else
+			                	  appConfiguration.adminExists(user.email.getOrElse("none"))
+			                }
+			                //Anonymous collections are free-for-all
+			                case None=>{
+			                 if(requestedPermission != AdministrateCollections){ 
+			                  Logger.info("Requested collection is anonymous, anyone can modify, granting modification request.")
+			                  true
+			                 }
+			                 else
+			                   false
+			                }
+			              }		              
+			            }
+			            case _ =>{
+			              Logger.error("Collection requested to be accessed not found. Denying request.")
+			              false
+			            }
+			          }
 		          }
+		          else false
+		          
 		        }
 		        
 		        //Viewing permissions do not require a logged in user (at least for public resources)
