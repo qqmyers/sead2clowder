@@ -53,7 +53,7 @@ class Datasets @Inject()(
   def newDataset() = SecuredAction(authorization = WithPermission(Permission.CreateDatasets)) {
     implicit request =>
       implicit val user = request.user
-      val filesList = for (file <- files.listFiles.sortBy(_.filename)) yield (file.id.toString(), file.filename)
+      val filesList = for (file <- files.listFilesNotIntermediate.sortBy(_.filename)) yield (file.id.toString(), file.filename)
       Ok(views.html.newDataset(datasetForm, filesList)).flashing("error" -> "Please select ONE file (upload new or existing)")
   }
 
@@ -208,7 +208,7 @@ def submit() = SecuredAction(parse.multipartFormData, authorization=WithPermissi
     user match {
       case Some(identity) => {
         datasetForm.bindFromRequest.fold(
-          errors => BadRequest(views.html.newDataset(errors, for(file <- files.listFiles.sortBy(_.filename)) yield (file.id.toString(), file.filename))),
+          errors => BadRequest(views.html.newDataset(errors, for(file <- files.listFilesNotIntermediate.sortBy(_.filename)) yield (file.id.toString(), file.filename))),
 	      dataset => {
 	           request.body.file("file").map { f =>
 	             //Uploaded file selected
