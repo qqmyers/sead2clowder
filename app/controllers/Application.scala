@@ -1,5 +1,6 @@
 package controllers
 
+import api.{Permission, WithPermission}
 import play.api.Routes
 import models.AppAppearance
 import javax.inject.{Singleton, Inject}
@@ -7,6 +8,7 @@ import services.FileService
 import services.AppAppearanceService
 import api.WithPermission
 import api.Permission
+import play.api.Logger
 
 /**
  * Main application controller.
@@ -24,6 +26,19 @@ class Application  @Inject() (files: FileService, appAppearance: AppAppearanceSe
 	val latestFiles = files.latest(5)
 	val appAppearanceGet = appAppearance.getDefault.get
 	Ok(views.html.index(latestFiles, appAppearanceGet.displayedName, appAppearanceGet.welcomeMessage))
+  }
+  
+  def options(path:String) = SecuredAction() { implicit request =>
+    Logger.info("---controller: PreFlight Information---")
+    Ok("")
+   }
+
+  /**
+   * Bookmarklet
+   */
+  def bookmarklet() = SecuredAction(authorization = WithPermission(Permission.Public)) { implicit request =>
+    val protocol = Utils.protocol(request)
+    Ok(views.html.bookmarklet(request.host, protocol)).as("application/javascript")
   }
 
   /**
@@ -44,6 +59,8 @@ class Application  @Inject() (files: FileService, appAppearance: AppAppearanceSe
         routes.javascript.Admin.setTheme,
         
         api.routes.javascript.Comments.comment,
+        api.routes.javascript.Comments.removeComment,
+        api.routes.javascript.Comments.editComment,
         api.routes.javascript.Datasets.comment,
         api.routes.javascript.Datasets.getTags,
         api.routes.javascript.Datasets.addTags,
@@ -55,6 +72,7 @@ class Application  @Inject() (files: FileService, appAppearance: AppAppearanceSe
         api.routes.javascript.Files.addTags,
         api.routes.javascript.Files.removeTags,
         api.routes.javascript.Files.removeAllTags,
+        api.routes.javascript.Files.extract,
         api.routes.javascript.Previews.upload,
         api.routes.javascript.Previews.uploadMetadata,
         api.routes.javascript.Sections.add,

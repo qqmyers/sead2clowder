@@ -819,14 +819,35 @@ class MongoDBDatasetService @Inject() (
 
         val xmlMd = getXMLMetadataJSON(id)
         Logger.debug("xmlmd=" + xmlMd)
+        
+        var fileDsId = ""
+        var fileDsName = ""          
+        for(file <- dataset.files){
+          fileDsId = fileDsId + file.id.stringify + "  "
+          fileDsName = fileDsName + file.filename + "  "
+        }
+        
+        var dsCollsId = ""
+        var dsCollsName = ""
+          
+        for(collection <- collections.listInsideDataset(dataset.id)){
+          dsCollsId = dsCollsId + collection.id.stringify + " %%% "
+          dsCollsName = dsCollsName + collection.name + " %%% "
+        }
 
+        val formatter = new SimpleDateFormat("dd/MM/yyyy")
+       
         current.plugin[ElasticsearchPlugin].foreach {
           _.index("data", "dataset", id,
-            List(("name", dataset.name), ("description", dataset.description), ("tag", tagsJson.toString), ("comments", commentJson.toString), ("usermetadata", usrMd), ("technicalmetadata", techMd), ("xmlmetadata", xmlMd)))
+            List(("name", dataset.name), ("description", dataset.description), ("author",dataset.author.fullName),("created",formatter.format(dataset.created)), ("fileId",fileDsId),("fileName",fileDsName), ("collId",dsCollsId),("collName",dsCollsName), ("tag", tagsJson.toString), ("comments", commentJson.toString), ("usermetadata", usrMd), ("technicalmetadata", techMd), ("xmlmetadata", xmlMd)  ))
         }
       }
       case None => Logger.error("Dataset not found: " + id)
     }
+  }
+  
+  def setNotesHTML(id: UUID, notesHTML: String){
+    Dataset.update(MongoDBObject("_id" -> new ObjectId(id.stringify)), $set("notesHTML" -> Some(notesHTML)), false, false, WriteConcern.Safe)
   }
 }
 

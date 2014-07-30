@@ -24,6 +24,7 @@ import api.WithPermission
  * @author Luigi Marini
  *
  */
+
 class Datasets @Inject()(
   datasets: DatasetService,
   files: FileService,
@@ -31,7 +32,9 @@ class Datasets @Inject()(
   comments: CommentService,
   sections: SectionService,
   extractions: ExtractionService,
+  dtsrequests:ExtractionRequestsService,
   sparql: RdfSPARQLService) extends SecuredController {
+
 
   object ActivityFound extends Exception {}
 
@@ -198,7 +201,8 @@ class Datasets @Inject()(
   /**
    * Upload file.
    */
-  def submit() = SecuredAction(parse.multipartFormData, authorization=WithPermission(Permission.CreateDatasets)) { implicit request =>
+def submit() = SecuredAction(parse.multipartFormData, authorization=WithPermission(Permission.CreateDatasets)) { implicit request =>
+
     implicit val user = request.user
     
     user match {
@@ -270,26 +274,19 @@ class Datasets @Inject()(
 					    	// TODO RK need to replace unknown with the server name
 					    	val key = "unknown." + "file."+ fileType.replace(".", "_").replace("/", ".")
 		//			        val key = "unknown." + "file."+ "application.x-ptm"
-					    	
-			                // TODO RK : need figure out if we can use https
-			                val host = "http://" + request.host + request.path.replaceAll("dataset/submit$", "")
-		      
-			                //If uploaded file contains zipped files to be unzipped and added to the dataset, wait until the dataset is saved before sending extractor messages to unzip
-			                //and return the files
-			                if(!fileType.equals("multi/files-zipped")){
-						        current.plugin[RabbitmqPlugin].foreach{_.extract(ExtractorMessage(id, id, host, key, Map.empty, f.length.toString, null, flags))}
-						        //current.plugin[ElasticsearchPlugin].foreach{_.index("data", "file", id, List(("filename",nameOfFile), ("contentType", f.contentType)))}
-					        }
-					        
+
+			                val host = Utils.baseUrl(request) + request.path.replaceAll("dataset/submit$", "")
+        
 					        // add file to dataset 
 					        val dt = dataset.copy(files = List(f), author=identity)					        
 					        // TODO create a service instead of calling salat directly
-				            datasets.update(dt)				            
+				            datasets.update(dt)	
 				            
-				            if(fileType.equals("multi/files-zipped")){
 						        current.plugin[RabbitmqPlugin].foreach{_.extract(ExtractorMessage(id, id, host, key, Map.empty, f.length.toString, dt.id, flags))}
 						        //current.plugin[ElasticsearchPlugin].foreach{_.index("data", "file", id, List(("filename",nameOfFile), ("contentType", f.contentType)))}
-					        }
+
+					        
+					        val dateFormat = new SimpleDateFormat("dd/MM/yyyy")
 					        
 					        //for metadata files
 							  if(fileType.equals("application/xml") || fileType.equals("text/xml")){
@@ -301,21 +298,25 @@ class Datasets @Inject()(
 										  
 										  //index the file
 										  current.plugin[ElasticsearchPlugin].foreach{
-								  			  _.index("data", "file", id, List(("filename",f.filename), ("contentType", fileType),("datasetId",dt.id.toString()),("datasetName",dt.name), ("xmlmetadata", xmlToJSON)))
+								  			  _.index("data", "file", id, List(("filename",f.filename), ("contentType", fileType), ("author", identity.fullName), ("uploadDate", dateFormat.format(new Date())),("datasetId",dt.id.toString()),("datasetName",dt.name), ("xmlmetadata", xmlToJSON)))
 								  		  }
 								  		  // index dataset
 								  		  current.plugin[ElasticsearchPlugin].foreach{_.index("data", "dataset", dt.id, 
-								  		  List(("name",dt.name), ("description", dt.description), ("xmlmetadata", xmlToJSON)))}
+								  		  List(("name",dt.name), ("description", dt.description), ("author", identity.fullName), ("created", dateFormat.format(new Date())), ("fileId",f.id.toString),("fileName",f.filename), ("collId",""),("collName",""), ("xmlmetadata", xmlToJSON)))}
 							  }
 							  else{
 								  //index the file
-								  current.plugin[ElasticsearchPlugin].foreach{_.index("data", "file", id, List(("filename",f.filename), ("contentType", fileType),("datasetId",dt.id.toString),("datasetName",dt.name)))}
+								  current.plugin[ElasticsearchPlugin].foreach{_.index("data", "file", id, List(("filename",f.filename), ("contentType", fileType), ("author", identity.fullName), ("uploadDate", dateFormat.format(new Date())),("datasetId",dt.id.toString),("datasetName",dt.name)))}
 								  // index dataset
 								  current.plugin[ElasticsearchPlugin].foreach{_.index("data", "dataset", dt.id, 
-								  List(("name",dt.name), ("description", dt.description)))}
+										  List(("name",dt.name), ("description", dt.description), ("author", identity.fullName), ("created", dateFormat.format(new Date())), ("fileId",f.id.toString),("fileName",f.filename), ("collId",""),("collName","")))}
 							  }
 					    	// TODO RK need to replace unknown with the server name and dataset type		            
-		 			    	val dtkey = "unknown." + "dataset."+ "unknown"
+		 			    	
+					        // index the file using Versus for content-based retrieval
+                            current.plugin[VersusPlugin].foreach{ _.index(f.id.toString,fileType) }
+					        
+                            val dtkey = "unknown." + "dataset."+ "unknown"
 					        current.plugin[RabbitmqPlugin].foreach{_.extract(ExtractorMessage(dt.id, dt.id, host, dtkey, Map.empty, "0", dt.id, ""))}
 		 			    	
 		 			    	//add file to RDF triple store if triple store is used
@@ -328,10 +329,14 @@ class Datasets @Inject()(
 						             case _ => {}
 					             }
 				             }
-		 			    	
-		 			    	var extractJobId=current.plugin[VersusPlugin].foreach{_.extract(id)} 
-		 			    	Logger.debug("Inside File: Extraction Id : "+ extractJobId)
-		 			    	
+	  	
+		 			    	/*---- Insert DTS Request to the database   ----*/
+
+		 			    	val clientIP=request.remoteAddress
+		 			    	val serverIP= request.host
+		 			    	dtsrequests.insertRequest(serverIP,clientIP, f.filename, id, fileType, f.length,f.uploadDate)
+			    			/*--------------------------------------------*/
+
 				            // redirect to dataset page
 				            Redirect(routes.Datasets.dataset(dt.id))
 		//		            Ok(views.html.dataset(dt, Previewers.searchFileSystem))
@@ -374,24 +379,25 @@ class Datasets @Inject()(
 		          
 				  val dt = dataset.copy(files = List(theFileGet), author=identity, thumbnail_id=thisFileThumbnailString)
 				  datasets.update(dt)
+				  
+				  val dateFormat = new SimpleDateFormat("dd/MM/yyyy")
 			      
 		          if(!theFileGet.xmlMetadata.isEmpty){
 		            val xmlToJSON = files.getXMLMetadataJSON(UUID(fileId))
 		            datasets.addXMLMetadata(dt.id, UUID(fileId), xmlToJSON)
 		            // index dataset
 		            current.plugin[ElasticsearchPlugin].foreach{_.index("data", "dataset", dt.id, 
-			        List(("name",dt.name), ("description", dt.description),  ("xmlmetadata", xmlToJSON)))}
+			        List(("name",dt.name), ("description", dt.description), ("author", identity.fullName), ("created", dateFormat.format(new Date())), ("fileId",theFileGet.id.toString),("fileName",theFileGet.filename), ("collId",""),("collName",""), ("xmlmetadata", xmlToJSON)))}
 		          }else{
 		            // index dataset
 		        	  current.plugin[ElasticsearchPlugin].foreach{_.index("data", "dataset", dt.id, 
-			    	   List(("name",dt.name), ("description", dt.description)))}
+			    	   List(("name",dt.name), ("description", dt.description), ("author", identity.fullName), ("created", dateFormat.format(new Date())), ("fileId",theFileGet.id.toString),("fileName",theFileGet.filename), ("collId",""),("collName","")))}
 		          }
 		          
 		          //reindex file
 		          files.index(theFileGet.id)
 		          
-		          // TODO RK : need figure out if we can use https
-		          val host = "http://" + request.host + request.path.replaceAll("dataset/submit$", "")
+		          val host = Utils.baseUrl(request) + request.path.replaceAll("dataset/submit$", "")
 				  // TODO RK need to replace unknown with the server name and dataset type		            
 				  val dtkey = "unknown." + "dataset."+ "unknown"
 						  current.plugin[RabbitmqPlugin].foreach{_.extract(ExtractorMessage(dt.id, dt.id, host, dtkey, Map.empty, "0", dt.id, ""))}
@@ -405,6 +411,16 @@ class Datasets @Inject()(
 					             case _ => {}
 				             }
 				   }
+		          //***** Inserting DTS Requests   **//  
+		          Logger.debug("The file already exists")
+		          val clientIP=request.remoteAddress
+		          val domain=request.domain
+		          val keysHeader=request.headers.keys
+		          Logger.debug("clientIP:"+clientIP+ "   domain:= "+domain+ "  keysHeader="+ keysHeader.toString +"\n")
+		          val serverIP= request.host
+		          dtsrequests.insertRequest(serverIP,clientIP, theFileGet.filename, theFileGet.id, theFileGet.contentType, theFileGet.length,theFileGet.uploadDate)
+						            
+				//****************************//
 		          
 				  // redirect to dataset page
 				  Redirect(routes.Datasets.dataset(dt.id))
@@ -417,6 +433,7 @@ class Datasets @Inject()(
 		 )
         }
         case None => Redirect(routes.Datasets.list()).flashing("error" -> "You are not authorized to create new datasets.")
+
       }
   }
 

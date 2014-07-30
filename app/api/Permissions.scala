@@ -41,6 +41,9 @@ object Permission extends Enumeration {
 		CreateTagsDatasets,
 		DeleteTagsDatasets,
 		CreateComments,
+		RemoveComments,
+		EditComments,
+		CreateNotes,
 		AddSections,
 		GetSections,
 		CreateTagsSections,
@@ -48,6 +51,7 @@ object Permission extends Enumeration {
 		CreateFiles,
 		DeleteFiles,
 		ListFiles,
+		ExtractMetadata,
 		AddFilesMetadata,
 		ShowFilesMetadata,
 		ShowFile,
@@ -89,8 +93,7 @@ case class WithPermission(permission: Permission, resourceId: Option[UUID] = Non
 	  	val externalViewingEnabled = appConfiguration.getDefault.get.viewNoLoggedIn
 	  
 		// order is important
-		(user, permission) match {
-		  		  
+		(user, permission) match {	  
 		  // anybody can list/show if admin decides so (or else must be logged in), 'open public' pages always
 	  	  case (theUser, PublicOpen)           => true
 		  case (theUser, Public)         	   => (externalViewingEnabled || theUser != null)		  
@@ -109,7 +112,8 @@ case class WithPermission(permission: Permission, resourceId: Option[UUID] = Non
 		  case (theUser, ListSensors)          => (externalViewingEnabled || theUser != null)
 		  case (theUser, GetSensors)           => (externalViewingEnabled || theUser != null)
 		  case (theUser, SearchSensors)        => (externalViewingEnabled || theUser != null)
-		  case (theUser, DownloadFiles)        => (externalViewingEnabled || theUser != null)
+		  case (theUser, DownloadFiles)        => (externalViewingEnabled || theUser != null)		  
+		  case (theUser, ExtractMetadata)	   => (externalViewingEnabled || theUser != null)
 		  
 		  // all other permissions require authenticated user
 		  case (null, _)                 => false

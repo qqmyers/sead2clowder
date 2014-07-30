@@ -29,6 +29,7 @@ import play.api.libs.json.JsString
 import scala.Some
 import models.File
 import play.api.Play.configuration
+import controllers.Utils
 
 /**
  * Dataset API.
@@ -115,6 +116,7 @@ class Datasets @Inject()(
                        Ok(toJson(Map("id" -> id)))
                        current.plugin[AdminsNotifierPlugin].foreach{_.sendAdminsNotification("Dataset","added",id, name)} 
                        Ok(toJson(Map("id" -> id)))
+
 		      	     }
 		      	     case None => Ok(toJson(Map("status" -> "error")))
 		      	   }
@@ -180,7 +182,7 @@ class Datasets @Inject()(
         case None => Logger.error("Error getting dataset" + dsId); InternalServerError
       }
   }
-  
+
   @ApiOperation(value = "Detach file from dataset",
       notes = "File is not deleted, only separated from the selected dataset. If the file is an XML metadata file, the metadata are removed from the dataset.",
       responseClass = "None", httpMethod = "POST")
@@ -226,6 +228,7 @@ class Datasets @Inject()(
                   }
                 }
                }
+
               else  Logger.info("File was already out of the dataset.")
               Ok(toJson(Map("status" -> "success")))
             }
@@ -242,6 +245,7 @@ class Datasets @Inject()(
   }
   
   //////////////////
+
 
   @ApiOperation(value = "List all datasets in a collection", notes = "Returns list of datasets and descriptions.", responseClass = "None", httpMethod = "GET")
   def listInCollection(collectionId: UUID) = SecuredAction(parse.anyContent, authorization = WithPermission(Permission.ShowCollection)) {
@@ -278,8 +282,8 @@ class Datasets @Inject()(
       }
       Ok(toJson(Map("status" -> "success")))
   }
-
-
+  
+  
   def datasetFilesGetIdByDatasetAndFilename(datasetId: UUID, filename: String): Option[String] = {
     datasets.get(datasetId) match {
       case Some(dataset) => {
@@ -352,6 +356,7 @@ class Datasets @Inject()(
         tagId =>
           Logger.debug(s"Removing $tagId from $id.")
           datasets.removeTag(id, UUID(tagId))
+          datasets.index(id)
       }
       Ok(toJson(""))
   }
@@ -376,10 +381,11 @@ class Datasets @Inject()(
       notes = "Requires that the request body contains a 'tags' field of List[String] type.",
       responseClass = "None", httpMethod = "POST")
   def removeTags(id: UUID) = SecuredAction(authorization = WithPermission(Permission.DeleteTagsDatasets)) {
-    implicit request =>
+    implicit request =>{
       removeTagsHelper(TagCheck_Dataset, id, request)
+    }
   }
-
+  				
   /*
  *  Helper function to handle adding and removing tags for files/datasets/sections.
  *  Input parameters:
@@ -441,7 +447,10 @@ class Datasets @Inject()(
       val tagsCleaned = tags.get.map(_.trim().replaceAll("\\s+", " "))
       (obj_type) match {
         case TagCheck_File => files.removeTags(id, userOpt, extractorOpt, tagsCleaned)
-        case TagCheck_Dataset => datasets.removeTags(id, userOpt, extractorOpt, tagsCleaned)
+        case TagCheck_Dataset => {
+        	datasets.removeTags(id, userOpt, extractorOpt, tagsCleaned)
+        	datasets.index(id)
+          }
         case TagCheck_Section => sections.removeTags(id, userOpt, extractorOpt, tagsCleaned)
       }
       Ok(Json.obj("status" -> "success"))
@@ -551,6 +560,7 @@ class Datasets @Inject()(
         datasets.get(id) match {
           case Some(dataset) => {
             datasets.removeAllTags(id)
+            datasets.index(id)
             Ok(Json.obj("status" -> "success"))
           }
           case None => {
@@ -740,6 +750,13 @@ class Datasets @Inject()(
             case _ => Logger.debug("userdfSPARQLStore not enabled")
           }
           datasets.removeDataset(id)
+          current.plugin[ElasticsearchPlugin].foreach {
+        	  _.delete("data", "dataset", id.stringify)
+          }
+          
+          for(file <- dataset.files)
+        	  files.index(file.id)
+          
           Ok(toJson(Map("status" -> "success")))
           current.plugin[AdminsNotifierPlugin].foreach{_.sendAdminsNotification("Dataset","removed",dataset.id.stringify, dataset.name)}
           Ok(toJson(Map("status"->"success")))
@@ -794,6 +811,7 @@ class Datasets @Inject()(
 
     return xmlFile
   }
+
   
   @ApiOperation(value = "Get URLs of dataset's RDF metadata exports",
       notes = "URLs of metadata exported as RDF from XML files contained in the dataset, as well as the URL used to export the dataset's user-generated metadata as RDF.",
@@ -839,7 +857,33 @@ class Datasets @Inject()(
       case Some(dataset) => {
         Ok(datasets.getUserMetadataJSON(id))
       }
-      case None => {Logger.error("Error finding dataset" + id); InternalServerError}      
+      case None => {
+        Logger.error("Error finding dataset" + id);
+        InternalServerError
+      }      
+    }
+  }
+
+  
+  def setNotesHTML(id: UUID) = SecuredAction(authorization=WithPermission(Permission.CreateNotes))  { implicit request =>
+	  request.user match {
+	    case Some(identity) => {
+		    request.body.\("notesHTML").asOpt[String] match {
+			    case Some(html) => {
+			        datasets.setNotesHTML(id, html)
+			        //index(id)
+			        Ok(toJson(Map("status"->"success")))
+			    }
+			    case None => {
+			    	Logger.error("no html specified.")
+			    	BadRequest(toJson("no html specified."))
+			    }
+		    }
+	    }
+	    case None => {
+	      Logger.error(("No user identity found in the request, request body: " + request.body))
+	      BadRequest(toJson("No user identity found in the request, request body: " + request.body))
+	    }
     }
   }
 }
