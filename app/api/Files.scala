@@ -1469,7 +1469,7 @@ class Files @Inject()(
   
   
   def checkAccessForFile(file: File, user: Option[Identity], permissionType: String): Boolean = {
-    if(permissionType.equals("view") && (file.isPublic.getOrElse(false) || file.author.fullName.equals("Anonymous User") || appConfiguration.getDefault.get.viewNoLoggedIn)){
+    if(permissionType.equals("view") && (file.isPublic.getOrElse(false) || appConfiguration.getDefault.get.viewNoLoggedIn)){
       true
     }
     else{
@@ -1485,7 +1485,7 @@ class Files @Inject()(
   }
   
   def checkAccessForFileUsingRightsList(file: File, user: Option[Identity], permissionType: String, rightsForUser: Option[UserPermissions]): Boolean = {
-    if(permissionType.equals("view") && (file.isPublic.getOrElse(false) || file.author.fullName.equals("Anonymous User") || appConfiguration.getDefault.get.viewNoLoggedIn)){
+    if(permissionType.equals("view") && (file.isPublic.getOrElse(false) || appConfiguration.getDefault.get.viewNoLoggedIn)){
       true
     }
     else{

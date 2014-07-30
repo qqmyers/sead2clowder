@@ -505,7 +505,7 @@ class Datasets @Inject()(
   
   
   def checkAccessForDataset(dataset: models.Dataset, user: Option[Identity], permissionType: String): Boolean = {
-    if(permissionType.equals("view") && (dataset.isPublic.getOrElse(false) || dataset.author.fullName.equals("Anonymous User") || appConfiguration.getDefault.get.viewNoLoggedIn)){
+    if(permissionType.equals("view") && (dataset.isPublic.getOrElse(false) || appConfiguration.getDefault.get.viewNoLoggedIn)){
       true
     }
     else{
@@ -521,7 +521,7 @@ class Datasets @Inject()(
   }
   
   def checkAccessForDatasetUsingRightsList(dataset: models.Dataset, user: Option[Identity], permissionType: String, rightsForUser: Option[UserPermissions]): Boolean = {
-    if(permissionType.equals("view") && (dataset.isPublic.getOrElse(false) || dataset.author.fullName.equals("Anonymous User") || appConfiguration.getDefault.get.viewNoLoggedIn)){
+    if(permissionType.equals("view") && (dataset.isPublic.getOrElse(false) || appConfiguration.getDefault.get.viewNoLoggedIn)){
       true
     }
     else{

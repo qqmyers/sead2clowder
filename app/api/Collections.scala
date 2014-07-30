@@ -143,7 +143,7 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
     var isAuthorless = true
     collection.author match{
       case Some(author)=>{
-        isAuthorless = collection.author.get.fullName.equals("Anonymous User")
+        isAuthorless = false
       }
       case None=>{}
     }
@@ -172,7 +172,7 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
     var isAuthorless = true
     collection.author match{
       case Some(author)=>{
-        isAuthorless = collection.author.get.fullName.equals("Anonymous User")
+        isAuthorless = false
       }
       case None=>{}
     }
