@@ -188,8 +188,8 @@ case class WithPermission(permission: Permission, resourceId: Option[UUID] = Non
 				              if(file.isPublic.getOrElse(false))
 				            	true
 				              //Anonymous resource	
-				              else if(file.author.fullName.equals("Anonymous User"))
-				                true
+//				              else if(file.author.fullName.equals("Anonymous User"))
+//				                true
 				              else if(user != null){  
 					              //User is the author of the resource
 					              if(file.author.identityId.userId.equals(user.identityId.userId))
@@ -220,8 +220,8 @@ case class WithPermission(permission: Permission, resourceId: Option[UUID] = Non
 				              
 				              if(dataset.isPublic.getOrElse(false))
 				            	true
-				              else if(dataset.author.fullName.equals("Anonymous User"))
-				                true
+//				              else if(dataset.author.fullName.equals("Anonymous User"))
+//				                true
 				              else if(user != null){  
 					              if(dataset.author.identityId.userId.equals(user.identityId.userId))
 					                true
@@ -251,8 +251,8 @@ case class WithPermission(permission: Permission, resourceId: Option[UUID] = Non
 				                  				                  
 				                  if(collection.isPublic.getOrElse(false))
 				                	  true
-				                  else if(collectionAuthor.fullName.equals("Anonymous User"))
-				                	  true
+//				                  else if(collectionAuthor.fullName.equals("Anonymous User"))
+//				                	  true
 				                  else if(user != null){  
 					                  if(collectionAuthor.identityId.userId.equals(user.identityId.userId))
 					                	  true
