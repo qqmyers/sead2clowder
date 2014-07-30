@@ -65,7 +65,7 @@ class Tags @Inject()(datasets: DatasetService, files: FileService, sections: Sec
               weightedTags += ((tagName, 4))
         }
       }
-      for(file <- files.listFiles){
+      for(file <- files.listFilesNotIntermediate){
         for(tag <- file.tags){
           var tagName = tag.name
           if(weightedTags.contains(tagName))

@@ -58,10 +58,10 @@ class Datasets @Inject()(
 	          user match{
 		        case Some(theUser)=>{
 		            val rightsForUser = accessRights.get(theUser)
-		            filesList = for (file <- files.listFiles.sortBy(_.filename); if filesChecker.checkAccessForFileUsingRightsList(file, user, "view", rightsForUser)) yield (file.id.toString(), file.filename)
+		            filesList = for (file <- files.listFilesNotIntermediate.sortBy(_.filename); if filesChecker.checkAccessForFileUsingRightsList(file, user, "view", rightsForUser)) yield (file.id.toString(), file.filename)
 		        }
 		        case None=>{
-		          filesList = for (file <- files.listFiles.sortBy(_.filename); if filesChecker.checkAccessForFile(file, user, "view")) yield (file.id.toString(), file.filename)
+		          filesList = for (file <- files.listFilesNotIntermediate.sortBy(_.filename); if filesChecker.checkAccessForFile(file, user, "view")) yield (file.id.toString(), file.filename)
 		        }
 		      }
       
@@ -361,7 +361,7 @@ class Datasets @Inject()(
     user match {
       case Some(identity) => {
         datasetForm.bindFromRequest.fold(
-          errors => BadRequest(views.html.newDataset(errors, for(file <- files.listFiles.sortBy(_.filename)) yield (file.id.toString(), file.filename))),
+          errors => BadRequest(views.html.newDataset(errors, for(file <- files.listFilesNotIntermediate.sortBy(_.filename)) yield (file.id.toString(), file.filename))),
 	      dataset => {
 	           request.body.file("file").map { f =>
 	             //Uploaded file selected

@@ -101,10 +101,10 @@ class Files @Inject()(
       request.user match{
 	        case Some(theUser)=>{
 	        	val rightsForUser = accessRights.get(theUser)
-	        	list = for (f <- files.listFiles() if(checkAccessForFileUsingRightsList(f, request.user , "view", rightsForUser))) yield jsonFile(f)
+	        	list = for (f <- files.listFilesNotIntermediate if(checkAccessForFileUsingRightsList(f, request.user , "view", rightsForUser))) yield jsonFile(f)
 	        }
 	        case None=>{
-	          list = for (f <- files.listFiles() if(checkAccessForFile(f, request.user , "view"))) yield jsonFile(f)
+	          list = for (f <- files.listFilesNotIntermediate if(checkAccessForFile(f, request.user , "view"))) yield jsonFile(f)
 	        }
 	      }
 
