@@ -15,7 +15,7 @@ object ApplicationBuild extends Build {
     "com.spatial4j" % "spatial4j" % "0.3" exclude("play", "*"),
     "org.mongodb" %% "casbah" % "2.6.3" exclude("play", "*"),
     "postgresql" % "postgresql" % "9.1-901.jdbc4" exclude("play", "*"),
-    "com.wordnik" %% "swagger-play2" % "1.2.5" exclude("org.scala-stm", "scala-stm_2.10.0") exclude("play", "*"),
+    "com.wordnik" %% "swagger-play2" % "1.2.6-SNAPSHOT" exclude("org.scala-stm", "scala-stm_2.10.0") exclude("play", "*"),
     "org.reflections" % "reflections" % "0.9.9-RC1" exclude("play", "*"),
     "com.google.code.findbugs" % "jsr305" % "2.0.1" exclude("play", "*"),
     "org.openrdf.sesame" % "sesame-rio-api" % "2.7.8" exclude("play", "*"),
@@ -68,7 +68,7 @@ object ApplicationBuild extends Build {
     templatesImport += "org.bson.types.ObjectId",
     resolvers += Resolver.url("sbt-plugin-releases", url("http://repo.scala-sbt.org/scalasbt/sbt-plugin-releases/"))(Resolver.ivyStylePatterns),
     resolvers += Resolver.url("sbt-plugin-snapshots", url("http://repo.scala-sbt.org/scalasbt/sbt-plugin-snapshots/"))(Resolver.ivyStylePatterns),
-    resolvers += "Sonatype OSS Snapshots" at "http://oss.sonatype.org/content/repositories/snapshots",
+    resolvers += "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots",
     resolvers += "Aduna" at "http://maven-us.nuxeo.org/nexus/content/repositories/public/",
     resolvers += "Forth" at "http://139.91.183.63/repository",
     resolvers += "opencastproject" at "http://repository.opencastproject.org/nexus/content/repositories/public"
