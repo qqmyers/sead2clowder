@@ -399,3 +399,9 @@ textarea, input[type='text'], input[type='password']{
 	display:inline;
 }
 
+.securesocialSingleUseError{
+	margin-left:2%;
+	color:red;
+	display:none;	
+}
+

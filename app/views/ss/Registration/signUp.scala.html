@@ -54,18 +54,58 @@
             )
 
             <div class="form-actions">
-                <button type="submit" class="btn btn-primary">@Messages("securesocial.signup.createAccount")</button>
+                <button type="submit" class="btn btn-primary" id="submitBtn">@Messages("securesocial.signup.createAccount")</button>
                 <a class="btn btn-default" href="@securesocial.core.providers.utils.RoutesHelper.login()">@Messages("securesocial.signup.cancel")</a>
             </div>
         </fieldset>
     </form>
     <script>
-    	$("#registerSubmit").submit(function( event ) { 
+    	
+    	$("#submitBtn").click(function( event ) {
+			var isInputValid = true;
+			if($("#firstName").val().trim().length == 0){
+				alert("First Name must not be empty");
+				isInputValid = false;
+			}
+			else if($("#lastName").val().trim().length == 0){
+				alert("Last Name must not be empty");
+				isInputValid = false;
+			}
+			else if($("#password_password1").val().trim().length < 8){
+				alert("Password must not be empty and must be at least eight characters");
+				isInputValid = false;
+			}
+			else if($("#password_password2").val() != $("#password_password1").val()){
+				alert("Passwords do not match");
+				isInputValid = false;
+			}
+			
+			if(!isInputValid){
+				location.reload();
+			}
+		
+    	});
+    	
+    	$("#registerSubmit").submit(function( event ) {
     		
-    			var data = {};
-    			data['name'] = $("#firstName").val()+" "+$("#lastName").val();
-    			data['email'] = "@(securesocial.core.UserService.findToken(token).get.email)";
-    		
+    		var isInputValid = true;
+			if($("#firstName").val().trim().length == 0){
+				isInputValid = false;
+			}
+			else if($("#lastName").val().trim().length == 0){
+				isInputValid = false;
+			}
+			else if($("#password_password1").val().trim().length < 8){
+				isInputValid = false;
+			}
+			else if($("#password_password2").val() != $("#password_password1").val()){
+				isInputValid = false;
+			}			
+			if(isInputValid){
+				var data = {};
+				data['name'] = $("#firstName").val()+" "+$("#lastName").val();
+				data['email'] = "@(securesocial.core.UserService.findToken(token).get.email)";
+			
 	    		var request = $.ajax({
 					url:  "@api.routes.Users.initRights",
 					data: JSON.stringify(data),
@@ -81,10 +121,14 @@
 					alert("The user was not registered due to error setting user access rights, due to : " + errorThrown);
 					event.preventDefault();
 					return false;
-				});			
-    		});
+				});	
+			}
+			else{
+				event.preventDefault();
+				return false;
+			}		
+		});
     </script>
-    
     
     
     
