@@ -150,6 +150,7 @@ GET     /api-docs.json                                                      cont
 GET     /api-docs.json/datasets           controllers.ApiHelpController.getResource(path = "/api-docs.json/datasets")
 GET     /api-docs.json/files              controllers.ApiHelpController.getResource(path = "/api-docs.json/files")
 GET     /api-docs.json/collections        controllers.ApiHelpController.getResource(path = "/api-docs.json/collections")
+GET     /api-docs.json/users        	  controllers.ApiHelpController.getResource(path = "/api-docs.json/users")
 
 # Rest API
 

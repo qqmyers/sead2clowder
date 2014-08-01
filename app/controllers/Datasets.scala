@@ -548,7 +548,10 @@ class Datasets @Inject()(
 		          if(!thisFileThumbnail.isEmpty)
 		            thisFileThumbnailString = Some(thisFileThumbnail.get)
 		          
-		          val isDatasetPublic = request.body.asFormUrlEncoded.get("datasetPrivatePublic").get(0).toBoolean
+		          var isDatasetPublicOption = request.body.asFormUrlEncoded.get("datasetPrivatePublic")
+					        if(!isDatasetPublicOption.isDefined)
+					          isDatasetPublicOption = Some(List("false"))	        
+					        val isDatasetPublic = isDatasetPublicOption.get(0).toBoolean
 				  val dt = dataset.copy(files = List(theFileGet), author=identity, thumbnail_id=thisFileThumbnailString, isPublic=Some(isDatasetPublic))
 				  datasets.update(dt)
 			      
