@@ -35,7 +35,8 @@ class ExtractionInfo @Inject() (extractors: ExtractorService, dtsrequests: Extra
         x <- ExtractionInfoSetUp.updateExtractorsInfo()
         status <- x
       } yield {
-
+    	implicit val user = request.user    
+        
         Logger.debug("Update Status:" + status)
         val list_servers = extractors.getExtractorServerIPList()
         var jarr = new JsArray()
@@ -56,7 +57,8 @@ class ExtractionInfo @Inject() (extractors: ExtractorService, dtsrequests: Extra
  * Directs currently running extractors information to the webpage 
  */
   def getExtractorNames() = SecuredAction(authorization = WithPermission(Permission.Admin)) { implicit request =>
-
+  	implicit val user = request.user
+    
     val list_names = extractors.getExtractorNames()
     var jarr = new JsArray()
     var list_names1=List[String]()
@@ -76,6 +78,7 @@ class ExtractionInfo @Inject() (extractors: ExtractorService, dtsrequests: Extra
  * Directs input type supported by currently running extractors information to the webpage
  */
   def getExtractorInputTypes() = SecuredAction(authorization = WithPermission(Permission.Admin)) { implicit request =>
+    implicit val user = request.user
 
     val list_inputtypes = extractors.getExtractorInputTypes()
     var jarr = new JsArray()
@@ -96,6 +99,7 @@ class ExtractionInfo @Inject() (extractors: ExtractorService, dtsrequests: Extra
    * Directs DTS extractions requests information to the webpage
    */
    def getDTSRequests() = SecuredAction(authorization = WithPermission(Permission.Admin)) { implicit request =>
+    implicit val user = request.user
 
     var list_requests = dtsrequests.getDTSRequests()
     var startTime = models.ServerStartTime.startTime
