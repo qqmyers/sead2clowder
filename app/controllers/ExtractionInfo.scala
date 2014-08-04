@@ -29,7 +29,7 @@ class ExtractionInfo @Inject() (extractors: ExtractorService, dtsrequests: Extra
    * Directs currently running extractor's server IPs to the webpage
    */
 
-  def getExtractorServersIP() = SecuredAction(authorization = WithPermission(Permission.Public)) { implicit request =>
+  def getExtractorServersIP() = SecuredAction(authorization = WithPermission(Permission.Admin)) { implicit request =>
     Async {
       for {
         x <- ExtractionInfoSetUp.updateExtractorsInfo()
@@ -55,7 +55,7 @@ class ExtractionInfo @Inject() (extractors: ExtractorService, dtsrequests: Extra
 /**
  * Directs currently running extractors information to the webpage 
  */
-  def getExtractorNames() = SecuredAction(authorization = WithPermission(Permission.Public)) { implicit request =>
+  def getExtractorNames() = SecuredAction(authorization = WithPermission(Permission.Admin)) { implicit request =>
 
     val list_names = extractors.getExtractorNames()
     var jarr = new JsArray()
@@ -75,7 +75,7 @@ class ExtractionInfo @Inject() (extractors: ExtractorService, dtsrequests: Extra
 /**
  * Directs input type supported by currently running extractors information to the webpage
  */
-  def getExtractorInputTypes() = SecuredAction(authorization = WithPermission(Permission.Public)) { implicit request =>
+  def getExtractorInputTypes() = SecuredAction(authorization = WithPermission(Permission.Admin)) { implicit request =>
 
     val list_inputtypes = extractors.getExtractorInputTypes()
     var jarr = new JsArray()
@@ -95,7 +95,7 @@ class ExtractionInfo @Inject() (extractors: ExtractorService, dtsrequests: Extra
   /**
    * Directs DTS extractions requests information to the webpage
    */
-   def getDTSRequests() = SecuredAction(authorization = WithPermission(Permission.Public)) { implicit request =>
+   def getDTSRequests() = SecuredAction(authorization = WithPermission(Permission.Admin)) { implicit request =>
 
     var list_requests = dtsrequests.getDTSRequests()
     var startTime = models.ServerStartTime.startTime
@@ -106,7 +106,7 @@ class ExtractionInfo @Inject() (extractors: ExtractorService, dtsrequests: Extra
    /**
    * DTS Bookmarklet page
    */
-   def getBookmarkletPage() = SecuredAction(authorization = WithPermission(Permission.Public)) { implicit request =>
+   def getBookmarkletPage() = SecuredAction(authorization = WithPermission(Permission.Admin)) { implicit request =>
 
       Ok(views.html.dtsbookmarklet(Utils.baseUrl(request)))
   }
