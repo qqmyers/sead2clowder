@@ -26,7 +26,7 @@ class Comments @Inject()(datasets: DatasetService, comments: CommentService) ext
             case Some(identity) => {
               request.body.\("text").asOpt[String] match {
                 case Some(text) => {
-                  val comment = parent.copy(comment_id = Some(id), author = identity, text = text, posted = new Date())
+                  val comment = parent.copy(comment_id = Some(id), author = identity, text = text, posted = new Date(), id = UUID.generate)
                   comments.insert(comment)
                   if (parent.dataset_id.isDefined) {
                     datasets.get(parent.dataset_id.get) match {
