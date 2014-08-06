@@ -23,7 +23,7 @@ class MongoDBCommentService extends CommentService {
   }
 
   def findCommentsByCommentId(id: UUID) : List[Comment] = {
-    Comment.dao.find(MongoDBObject("comment_id"->id)).map { comment =>
+    Comment.dao.find(MongoDBObject("comment_id"->new ObjectId(id.stringify))).map { comment =>
       comment.copy(replies=findCommentsByCommentId(comment.id))
     }.toList
   }
