@@ -653,10 +653,10 @@
 					</script>
 					<script>
 						$('body').on('click','#addFileBtn',function(e){
-							if($("#doesNotExistErrorFiles").css('display') == 'inline')
+							if($("#doesNotExistErrorFiles").css('display') == 'block')
 								return;
 							if($("#selectingInputFiles").val() == ""){
-								$("#doesNotExistErrorFiles").css('display','inline');
+								$("#doesNotExistErrorFiles").css('display','block');
 								return;
 							}
 							
