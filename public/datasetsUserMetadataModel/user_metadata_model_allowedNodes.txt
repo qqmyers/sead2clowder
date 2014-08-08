@@ -12,8 +12,8 @@ General Info,Node
 Cultural Heritage Subset,Node
 Description,String
 Location of Origin,Node
-Toponym,Node
-Historic Toponym,Node
+Toponym,String
+Historic Toponym,String
 Spatial Reference,Node
 y Coordinates,String
 x Coordinates,String
