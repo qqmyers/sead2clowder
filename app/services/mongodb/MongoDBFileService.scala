@@ -811,9 +811,9 @@ class MongoDBFileService @Inject() (
                   realValue = "^"+realValue+"$";
                 }
                 if(currValue.contains(" IGNORE CASE")){
-                  realValue = "/"+realValue+"/i";
+                  realValue = "(?i)"+realValue;
                 }
-                builder += MongoDBObject(actualKey -> MongoDBObject("$ne" ->  realValue.r))
+                builder += MongoDBObject(actualKey -> MongoDBObject("$not" ->  realValue.r))
               }
               else{
                 builder += MongoDBObject(actualKey -> MongoDBObject("$ne" ->  currValue))
@@ -826,7 +826,7 @@ class MongoDBFileService @Inject() (
                   realValue = "^"+realValue+"$";
                 }
                 if(currValue.contains(" IGNORE CASE")){
-                  realValue = "/"+realValue+"/i";
+                  realValue = "(?i)"+realValue;
                 }
                 builder += MongoDBObject(actualKey -> realValue.r)
               }
@@ -855,10 +855,34 @@ class MongoDBFileService @Inject() (
             if(reqValue.isInstanceOf[String]){
               val currValue = reqValue.asInstanceOf[String]
               if(keyTrimmed.endsWith("__not")){
-                objectForEach += MongoDBObject(tempActualKey -> MongoDBObject("$ne" ->  currValue))
+                if(currValue.contains(" IGNORE CASE") || currValue.contains(" ANYWHERE")){
+	                var realValue = currValue.replace(" IGNORE CASE", "").replace(" ANYWHERE", "");                
+	                if(!currValue.contains(" ANYWHERE")){
+	                  realValue = "^"+realValue+"$";
+	                }
+	                if(currValue.contains(" IGNORE CASE")){
+	                  realValue = "(?i)"+realValue;
+	                }
+	                objectForEach += MongoDBObject(tempActualKey -> MongoDBObject("$not" ->  realValue.r))
+                }
+                else{
+                	objectForEach += MongoDBObject(tempActualKey -> MongoDBObject("$ne" ->  currValue))
+                }
               }
               else{
-                objectForEach += MongoDBObject(tempActualKey -> currValue)
+                if(currValue.contains(" IGNORE CASE") || currValue.contains(" ANYWHERE")){
+	                var realValue = currValue.replace(" IGNORE CASE", "").replace(" ANYWHERE", "");                
+	                if(!currValue.contains(" ANYWHERE")){
+	                  realValue = "^"+realValue+"$";
+	                }
+	                if(currValue.contains(" IGNORE CASE")){
+	                  realValue = "(?i)"+realValue;
+	                }
+	                objectForEach += MongoDBObject(tempActualKey -> realValue.r)
+                }
+                else{
+                	objectForEach += MongoDBObject(tempActualKey -> currValue)
+                }
               }
             }else{
               //recursive
