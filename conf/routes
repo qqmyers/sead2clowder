@@ -19,14 +19,14 @@ GET      /users                                                              con
 GET      /users/by-country/:country                                          controllers.Users.listByCountry(country)
 GET      /users/create/:username                                             controllers.Users.create(username)
 GET      /users/view/:id                                                     controllers.Users.view(id)
-
+GET      /users/not-enabled                                                  controllers.Users.notEnabled
 # DTS Information
 GET      /extractions/requests          								    @controllers.ExtractionInfo.getDTSRequests()
 GET      /extractions/servers_ips								  		    @controllers.ExtractionInfo.getExtractorServersIP()
 GET      /extractions/extractors_names         					 		    @controllers.ExtractionInfo.getExtractorNames() 
 GET      /extractions/supported_input_types        				   			@controllers.ExtractionInfo.getExtractorInputTypes()
 
-#DTS Bookmarklet
+# DTS Bookmarklet
 GET     /bookmarklet														@controllers.ExtractionInfo.getBookmarkletPage()
 GET     /bookmarklet.js                                                     @controllers.Application.bookmarklet
 
@@ -35,10 +35,10 @@ GET     /bookmarklet.js                                                     @con
 GET		/files					          @controllers.Files.list(when: String ?= "", date: String ?= "", size: Int ?= 10)
 GET		/files/new					      @controllers.Files.uploadFile
 
-#This may not require; This is only for testing. It will change in subsequent version
+# This may not require; This is only for testing. It will change in subsequent version
 GET     /extraction/form                  @controllers.Files.extractFile
 POST    /extraction/upload                @controllers.Files.uploadExtract()
-#End
+# End
 
 GET     /files/metadataSearch          	  @controllers.Files.metadataSearch
 GET     /files/generalMetadataSearch      @controllers.Files.generalMetadataSearch

@@ -1,6 +1,3 @@
-/**
- *
- */
 package controllers
 
 import org.apache.commons.codec.binary.Base64
@@ -23,6 +20,7 @@ import securesocial.core.UserService
 import securesocial.core.providers.UsernamePasswordProvider
 import securesocial.core.providers.utils.RoutesHelper
 import securesocial.core.IdentityId
+import services.{AuthorizationService, DI}
 
 /**
  * Enforce authentication and authorization.
@@ -32,6 +30,9 @@ import securesocial.core.IdentityId
  *
  */
 trait SecuredController extends Controller {
+
+  val authorizationService: AuthorizationService =  DI.injector.getInstance(classOf[AuthorizationService])
+
   val anonymous = new SocialUser(new IdentityId("anonymous", ""), "Anonymous", "User", "Anonymous User", None, None, AuthenticationMethod.UserPassword)
 
   def SecuredAction[A](p: BodyParser[A] = parse.anyContent, authorization: Authorization = WithPermission(Permission.Public))(f: RequestWithUser[A] => Result) = Action(p) {
@@ -44,9 +45,16 @@ trait SecuredController extends Controller {
             UserService.findByEmailAndProvider(credentials(0), UsernamePasswordProvider.UsernamePassword) match {
               case Some(identity) => {
                 if (BCrypt.checkpw(credentials(1), identity.passwordInfo.get.password)) {
-                  if (authorization.isAuthorized(identity))
-                    f(RequestWithUser(Some(identity), request))
-                  else
+                  if (authorization.isAuthorized(identity)) {
+                    // check if account is enabled
+                    if (authorizationService.isUserEnabled(identity.identityId)) {
+                      // account is enabled
+                      f(RequestWithUser(Some(identity), request))
+                    } else {
+                      // account has not been enable by administrator yet
+                      Redirect(routes.Users.notEnabled())
+                    }
+                  } else
                     Results.Redirect(RoutesHelper.login.absoluteURL(IdentityProvider.sslEnabled)).flashing("error" -> "You are not authorized.")
                 } else {
                   Logger.debug("Password doesn't match")
@@ -63,7 +71,14 @@ trait SecuredController extends Controller {
             SecureSocial.currentUser(request) match { // calls from browser
               case Some(identity) => {
                 if (authorization.isAuthorized(identity))
-                  f(RequestWithUser(Some(identity), request))
+                  // check if account is enabled
+                  if (authorizationService.isUserEnabled(identity.identityId)) {
+                    // account is enabled
+                    f(RequestWithUser(Some(identity), request))
+                  } else {
+                    // account has not been enable by administrator yet
+                    Redirect(routes.Users.notEnabled())
+                  }
                 else
                   Results.Redirect(RoutesHelper.login.absoluteURL(IdentityProvider.sslEnabled)).flashing("error" -> "You are not authorized.")
               }

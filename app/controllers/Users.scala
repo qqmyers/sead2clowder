@@ -47,4 +47,8 @@ object Users extends Controller {
     User.save(user)
     Ok(views.html.user(user))
   }
+
+  def notEnabled() = Action {
+    Ok(views.html.auth.notEnabled())
+  }
 }
