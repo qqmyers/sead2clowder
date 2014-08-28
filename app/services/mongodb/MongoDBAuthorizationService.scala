@@ -7,7 +7,7 @@ import models.{Role, Authorization}
 import org.bson.types.ObjectId
 import play.api.Logger
 import play.api.Play._
-import securesocial.core.IdentityId
+import securesocial.core.{Identity, IdentityId}
 import services.AuthorizationService
 import MongoContext.context
 
@@ -76,6 +76,20 @@ class MongoDBAuthorizationService extends AuthorizationService {
   def getRoles(identityId: IdentityId, spaceId: String): List[Role] = {
     List.empty[Role]
   }
+
+  /**
+   * Retrieve all users with their authentication as a list of tuples.
+   *
+   * @return list of tuples with user identity and authorization object
+   */
+  def listUsersWithRoles(): List[(Identity, Authorization)] = {
+    for {
+      identity <- SocialUserDAO.find(MongoDBObject()).toList;
+      authorization <- AuthorizationDAO.findOne(MongoDBObject("identityId.userId" -> identity.identityId.userId,
+        "identityId.providerId" -> identity.identityId.providerId))
+    } yield (identity, authorization)
+  }
+
 }
 
 object AuthorizationDAO extends ModelCompanion[Authorization, ObjectId] {

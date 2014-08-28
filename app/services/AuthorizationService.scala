@@ -1,6 +1,7 @@
 package services
 
-import models.Role
+import models.{Role, Authorization}
+import securesocial.core.Identity
 import securesocial.core.IdentityId
 
 /**
@@ -36,5 +37,13 @@ trait AuthorizationService {
    * @return
    */
   def getRoles(identityId: IdentityId, spaceId: String): List[Role]
+
+
+  /**
+   * Retrieve all users with their authentication as a list of tuples.
+   *
+   * @return list of tuples with user identity and authorization object
+   */
+  def listUsersWithRoles(): List[(Identity, Authorization)]
 
 }

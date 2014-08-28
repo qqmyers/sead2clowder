@@ -1,0 +1,32 @@
+@(usersWithRoles: List[(Identity, models.Authorization)])
+
+@main("User Management") {
+
+<div class="page-header">
+    <h1>User management</h1>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <table class="table">
+            <thead>
+            <tr>
+                <th>User Id</th>
+                <th>Provider Id</th>
+                <th>Enabled</th>
+            </tr>
+            </thead>
+            <tbody>
+            @for(user <- usersWithRoles) {
+                <tr><td>@user._1.identityId.userId</td>
+                    <td>@user._1.identityId.providerId</td>
+                    <td>
+                        @user._2.status
+                    </td></tr>
+            }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+}

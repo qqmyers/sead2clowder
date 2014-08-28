@@ -133,6 +133,7 @@ POST  	/admin/index/:id/build                                               @con
 DELETE  /admin/index/:id/delete                                              @controllers.Admin.deleteIndex(id:String)
 DELETE  /admin/index/:id                                              		 @controllers.Admin.deleteIndex(id:String)
 DELETE 	/admin/index/deleteAll		                                         @controllers.Admin.deleteAllIndexes
+GET     /admin/users                                                         @controllers.Authorization.userManagement
 
 
 

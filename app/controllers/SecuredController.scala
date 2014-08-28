@@ -12,7 +12,7 @@ import play.api.mvc.Controller
 import play.api.mvc.Result
 import play.api.mvc.Results
 import securesocial.core.AuthenticationMethod
-import securesocial.core.Authorization
+import securesocial.core.{Authorization => SSAuth}
 import securesocial.core.IdentityProvider
 import securesocial.core.SecureSocial
 import securesocial.core.SocialUser
@@ -35,7 +35,7 @@ trait SecuredController extends Controller {
 
   val anonymous = new SocialUser(new IdentityId("anonymous", ""), "Anonymous", "User", "Anonymous User", None, None, AuthenticationMethod.UserPassword)
 
-  def SecuredAction[A](p: BodyParser[A] = parse.anyContent, authorization: Authorization = WithPermission(Permission.Public))(f: RequestWithUser[A] => Result) = Action(p) {
+  def SecuredAction[A](p: BodyParser[A] = parse.anyContent, authorization: SSAuth = WithPermission(Permission.Public))(f: RequestWithUser[A] => Result) = Action(p) {
     implicit request =>
       {
         request.headers.get("Authorization") match { // basic authentication

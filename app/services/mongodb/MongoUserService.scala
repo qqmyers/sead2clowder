@@ -52,7 +52,7 @@ class MongoUserService(application: Application) extends UserServicePlugin(appli
    * @param id the user id
    * @return an optional user
    */
-  def find(id: IdentityId):Option[Identity] = {
+  def find(id: IdentityId): Option[Identity] = {
     Logger.trace("Searching for user " + id)
     SocialUserDAO.findOne(MongoDBObject("identityId.userId"->id.userId, "identityId.providerId"->id.providerId))
   }
