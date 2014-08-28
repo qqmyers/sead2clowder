@@ -977,7 +977,7 @@ function clearConfigTabAnnotations(prNum){
 		  window["x3dOffset2" + prNum] = 95;
   }
   else if(Configuration.calledFrom == "file")
-	  window["x3dOffset2" + prNum] = 200;
+	  window["x3dOffset2" + prNum] = 100;
   
 
   $(Configuration.tab).append("<table id='x3dElementTable" + prNum + "' style ='margin-bottom:560px;'><tr><td>Left mouse button drag</td><td>&nbsp;&nbsp;&nbsp;&nbsp;Rotate</td></tr>" 
