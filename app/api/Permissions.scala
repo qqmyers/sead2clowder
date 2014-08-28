@@ -40,6 +40,9 @@ object Permission extends Enumeration {
 		ShowDatasetsMetadata,
 		CreateTagsDatasets,
 		DeleteTagsDatasets,
+		UpdateDatasetInformation,
+		UpdateLicenseFiles,
+		UpdateLicenseDatasets,
 		CreateComments,
 		RemoveComments,
 		EditComments,
@@ -130,7 +133,7 @@ case class WithPermission(permission: Permission, resourceId: Option[UUID] = Non
 		  case (_, requestedPermission)  =>{
 		    resourceId match{
 		      case Some(idOfResource) => {
-		        if(requestedPermission == CreateFiles || requestedPermission == DeleteFiles || requestedPermission == AddFilesMetadata){
+		        if(requestedPermission == CreateFiles || requestedPermission == DeleteFiles || requestedPermission == AddFilesMetadata || requestedPermission == UpdateLicenseFiles){
 		          files.get(idOfResource) match{
 		            case Some(file)=>{
 		              if(file.author.identityId.userId.equals(user.identityId.userId))
@@ -144,7 +147,7 @@ case class WithPermission(permission: Permission, resourceId: Option[UUID] = Non
 		            }
 		          }
 		        }
-		        else if(requestedPermission == CreateDatasets || requestedPermission == DeleteDatasets || requestedPermission == AddDatasetsMetadata){
+		        else if(requestedPermission == CreateDatasets || requestedPermission == DeleteDatasets || requestedPermission == AddDatasetsMetadata || requestedPermission == UpdateLicenseDatasets || requestedPermission == UpdateDatasetInformation){
 		          datasets.get(idOfResource) match{
 		            case Some(dataset)=>{
 		              if(dataset.author.identityId.userId.equals(user.identityId.userId))

@@ -76,7 +76,7 @@ class MongoDBFileService @Inject() (
     if (date == "") {
       FileDAO.find("isIntermediate" $ne true).sort(order).limit(limit).toList
     } else {
-      val sinceDate = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss").parse(date)
+      val sinceDate = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS").parse(date)
       Logger.info("After " + sinceDate)
       FileDAO.find($and("isIntermediate" $ne true, "uploadDate" $lt sinceDate)).sort(order).limit(limit).toList
     }
@@ -91,7 +91,7 @@ class MongoDBFileService @Inject() (
       FileDAO.find("isIntermediate" $ne true).sort(order).limit(limit).toList
     } else {
       order = MongoDBObject("uploadDate" -> 1)
-      val sinceDate = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss").parse(date)
+      val sinceDate = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS").parse(date)
       Logger.info("Before " + sinceDate)
       var fileList = FileDAO.find($and("isIntermediate" $ne true, "uploadDate" $gt sinceDate)).sort(order).limit(limit).toList.reverse
       //fileList = fileList.filter(_ != fileList.last)
@@ -138,7 +138,7 @@ class MongoDBFileService @Inject() (
       ct = MimeTypes.forFileName(filename).getOrElse(ContentTypes.BINARY)
     }
     mongoFile.contentType = ct
-    mongoFile.put("path", id)
+    mongoFile.put("path", id.stringify)
     mongoFile.put("author", SocialUserDAO.toDBObject(author))
     mongoFile.save
     val oid = mongoFile.getAs[ObjectId]("_id").get
@@ -171,6 +171,7 @@ class MongoDBFileService @Inject() (
     mongoFile.save
     val oid = mongoFile.getAs[ObjectId]("_id").get
 
+    //No LicenseData needed here, as on creation, default arg handles it. MMF - 5/2014
     Some(File(UUID(oid.toString), None, mongoFile.filename.get, author, mongoFile.uploadDate, mongoFile.contentType.get, mongoFile.length, showPreviews))
   }
 
@@ -499,20 +500,32 @@ class MongoDBFileService @Inject() (
    * Parse each json object based on the field/key name and obtain the values and combine them as a tuple
    * Obtain the existing versus descriptors in the "metadata" as list of tuples (extraction_id,adapter_name,extractor_name,descriptor)
    * merge with the tuples obtained from descriptors received from versus
-   * write it back to the versus_descriptors field of "metadata" to monoDB
+   * write it back to the versus_descriptors field of "metadata" to mongoDB
    *
    */
-  def addVersusMetadata(id:UUID,json:JsValue){
-    val doc = JSON.parse(Json.stringify(json)).asInstanceOf[DBObject]
-    FileDAO.update(MongoDBObject("_id" -> new ObjectId(id.stringify)), $addToSet("metadata" -> doc), false, false, WriteConcern.Safe)
+ def addVersusMetadata(id:UUID,json:JsValue){
+    val doc = JSON.parse(Json.stringify(json)).asInstanceOf[DBObject].toMap
+              .asScala.asInstanceOf[scala.collection.mutable.Map[String,Any]].toMap
+    VersusDAO.insert(new Versus(id,doc),WriteConcern.Safe)
     Logger.info("--Added versus descriptors in json format received from versus to the metadata field --")
-  }
+  } 
+  
+ def getVersusMetadata(id: UUID): Option[JsValue] = {
+    val versusDescriptor=VersusDAO.findOne(MongoDBObject("fileId" -> new ObjectId(id.stringify)))
+    versusDescriptor.map{
+      vdes=>
+      	 val x=com.mongodb.util.JSON.serialize(vdes.asInstanceOf[Versus].descriptors("versus_descriptors"))
+      	 Json.parse(x)
+     }
+  } 
   
   /**
    * This is the previous code that adds Versus descriptors to the metadata. If the Versus extraction is carried out more than once, it takes care of it
    * by merging the extractions results into single list
    * This works fine in Mac but due to some reason, it does not work in Ubuntu and gives mongodb exception
    * TODO: need to incorporate this into the current addVersusMetadata code
+   * 
+   * This code will be deleted once we figure out where to add versus metadata
    */
   /*def addVersusMetadata(id: UUID, json: JsValue) {
    
@@ -586,40 +599,7 @@ class MongoDBFileService @Inject() (
     list.foldLeft(JsArray())((acc, x) => acc ++ Json.arr(x))
   }
  
-/*
-  * 
-  * This returns the Versus descriptors in the metadata field of the File
-  * TODO: For more than one versus_descriptors object, result should return merged list
-  * */ 
-  
- def getVersusMetadata(id: UUID): JsValue = {
-    FileDAO.dao.collection.findOneByID(new ObjectId(id.stringify)) match {
-      case None => {
-        Logger.error("Error getting file" + id)
-        null
-        }
-      case Some(x) => {
-        x.getAs[DBObject]("metadata") match{
-          case Some(y)=>{
-            val returnedMetadata = com.mongodb.util.JSON.serialize(x.getAs[DBObject]("metadata").get)
-            Logger.debug("returned : "+ returnedMetadata)
-             val listd = Json.parse(returnedMetadata) \\ ("versus_descriptors")
-             if(listd.length>0){
-               Logger.info("metadata field found: Versus Descriptors Found")
-               listd(0)
-              }else{
-                 Logger.info("metadata field found: No versus descriptors")
-                 null
-              }
-          }
-          case None=>{
-            Logger.info("Metadata field not found")
-            null
-            }
-        }
-      }
-    }
-  } 
+
 
   def addUserMetadata(id: UUID, json: String) {
     Logger.debug("Adding/modifying user metadata to file " + id + " : " + json)
@@ -640,6 +620,17 @@ class MongoDBFileService @Inject() (
 
   def findIntermediates(): List[File] = {
     FileDAO.find(MongoDBObject("isIntermediate" -> true)).toList
+  }
+  
+  
+  /**
+   * Implementation of updateLicenseing defined in services/FileService.scala.
+   */
+  def updateLicense(id: UUID, licenseType: String, rightsHolder: String, licenseText: String, licenseUrl: String, allowDownload: String) {      
+      val licenseData = models.LicenseData(m_licenseType = licenseType, m_rightsHolder = rightsHolder, m_licenseText = licenseText, m_licenseUrl = licenseUrl, m_allowDownload = allowDownload.toBoolean)
+      val result = FileDAO.update(MongoDBObject("_id" -> new ObjectId(id.stringify)), 
+          $set("licenseData" -> LicenseData.toDBObject(licenseData)), 
+          false, false, WriteConcern.Safe);      
   }
 
   // ---------- Tags related code starts ------------------
@@ -900,3 +891,11 @@ object FileDAO extends ModelCompanion[File, ObjectId] {
     case Some(x) => new SalatDAO[File, ObjectId](collection = x.collection("uploads.files")) {}
   }
 }
+
+object VersusDAO extends ModelCompanion[Versus,ObjectId]{
+    val dao = current.plugin[MongoSalatPlugin] match {
+    case None => throw new RuntimeException("No MongoSalatPlugin");
+    case Some(x) => new SalatDAO[Versus, ObjectId](collection = x.collection("versus.descriptors")) {}
+  }
+}
+

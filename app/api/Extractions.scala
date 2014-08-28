@@ -44,7 +44,6 @@ import models.File
 import play.api.libs.json.JsObject
 import play.api.Play.configuration
 import com.wordnik.swagger.annotations.{ApiOperation, Api}
-import services.ExtractorMessage
 import scala.concurrent.Future
 import scala.util.control._
 import javax.activation.MimetypesFileTypeMap
@@ -436,12 +435,15 @@ class Extractions @Inject() (
 
                   val jpreviews = FileOP.extractPreviews(id)
 
-                 // val vdescriptors = FileOP.extractVersusDescriptors(id)
-                  val vdescriptors = ""
+                  val vdescriptors=files.getVersusMetadata(id) match {
+                  													case Some(vd)=>api.routes.Files.getVersusMetadataJSON(id).toString
+                  													case None=> ""
+                  													}
+                  
                   Logger.debug("jtags: " + jtags.toString)
                   Logger.debug("jpreviews: " + jpreviews.toString)
 
-                  Ok(Json.obj("file_id" -> id.stringify, "filename" -> file.filename, "Status" -> status, "tags" -> jtags, "previews" -> jpreviews, "versus descriptors" -> vdescriptors))
+                  Ok(Json.obj("file_id" -> id.stringify, "filename" -> file.filename, "Status" -> status, "tags" -> jtags, "previews" -> jpreviews, "versus descriptors url" -> vdescriptors))
                 } //end of yield
 
               } //end of some file
@@ -604,3 +606,4 @@ def getJsonArray(list: List[JsObject]): JsArray = {
   
 
 }
+
