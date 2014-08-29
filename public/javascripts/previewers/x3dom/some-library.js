@@ -1224,7 +1224,7 @@ function clearConfigTabAnnotations(prNum){
 		  					+ "<tr><td>M</td><td>&nbsp;&nbsp;&nbsp;&nbsp;Change rendering (regular-vertices-wireframe)</td></tr>"
 		  					+ "<tr><td>D</td><td>&nbsp;&nbsp;&nbsp;&nbsp;Show/hide texture maps</td></tr>"
 		  					+ "<tr><td>Space</td><td>&nbsp;&nbsp;&nbsp;&nbsp;Show/hide model statistics</td></tr>"
-		  					+ "<tr><td>Shift + Left mouse button</td><td>&nbsp;&nbsp;&nbsp;&nbsp;Add annotation (must be author)</td></tr>"
+		  					+ "<tr><td>Shift + Left mouse button</td><td>&nbsp;&nbsp;&nbsp;&nbsp;Add annotation (need edit permission)</td></tr>"
 		  					+ "<tr><td>Q</td><td>&nbsp;&nbsp;&nbsp;&nbsp;Toggle annotations visibility</td></tr>"
 		  					+ x3dMeasureInstructions
 		  					+ "<tr><td>J</td><td>&nbsp;&nbsp;&nbsp;&nbsp;Lighting on/off</td></tr>"
@@ -1443,7 +1443,7 @@ function clearConfigTabAnnotations(prNum){
 			  					+ "<tr><td>M&nbsp;&nbsp;&nbsp;&nbsp;</td><td>Change rendering (regular-vertices-wireframe)</td></tr>"
 			  					+ "<tr><td>D&nbsp;&nbsp;&nbsp;&nbsp;</td><td>Show/hide texture maps</td></tr>"
 			  					+ "<tr><td>Space&nbsp;&nbsp;&nbsp;&nbsp;</td><td>Show/hide model statistics</td></tr>"
-			  					+ "<tr><td>Shift + Left mouse button&nbsp;&nbsp;&nbsp;&nbsp;</td><td>Add annotation (must be author)</td></tr>"
+			  					+ "<tr><td>Shift + Left mouse button&nbsp;&nbsp;&nbsp;&nbsp;</td><td>Add annotation (need edit permission)</td></tr>"
 			  					+ "<tr><td>Q&nbsp;&nbsp;&nbsp;&nbsp;</td><td>Toggle annotations visibility</td></tr>"
 			  					+ x3dMeasureInstructions
 			  					+ "<tr><td>J&nbsp;&nbsp;&nbsp;&nbsp;</td><td>Lighting on/off</td></tr>"
