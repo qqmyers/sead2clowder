@@ -24,7 +24,7 @@
 		$("#rubberbandCanvas"+prNum).css("cursor", "crosshair");
 
 		$(Configuration.tab).append(
-			"<div id='rubberbandFormDiv"+prNum+"'><form id='rubberbandForm"+prNum+"' action='#' onsubmit='return false;'>" +
+			"<div id='rubberbandFormDiv"+prNum+"' style='display:none;'><form id='rubberbandForm"+prNum+"' action='#' onsubmit='return false;'>" +
 			"<fieldset>" +
 			"<label for='rubberbandFormTag"+prNum+"'>Tag :</label><input type='text' id='rubberbandFormTag"+prNum+"' />" +
 			"<label for='rubberbandFormComment"+prNum+"'>Comment :</label><textarea type='text' id='rubberbandFormComment"+prNum+"'></textarea>" +
