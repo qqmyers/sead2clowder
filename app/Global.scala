@@ -20,13 +20,47 @@ object Global extends GlobalSettings {
         mongo.sources.values.map {
           source =>
             Logger.debug("Ensuring indexes on " + source.uri)
+            source.collection("collections").ensureIndex(MongoDBObject("created" -> -1))
+            
             source.collection("datasets").ensureIndex(MongoDBObject("created" -> -1))
             source.collection("datasets").ensureIndex(MongoDBObject("tags" -> 1))
+            source.collection("datasets").ensureIndex(MongoDBObject("files._id" -> 1))
+            
             source.collection("uploads.files").ensureIndex(MongoDBObject("uploadDate" -> -1))
+            source.collection("uploads.files").ensureIndex(MongoDBObject("tags" -> 1))
             source.collection("uploadquery.files").ensureIndex(MongoDBObject("uploadDate" -> -1))
+            
             source.collection("previews.files").ensureIndex(MongoDBObject("uploadDate" -> -1, "file_id" -> 1))
             source.collection("previews.files").ensureIndex(MongoDBObject("uploadDate" -> -1, "section_id" -> 1))
+            
+            source.collection("textures.files").ensureIndex(MongoDBObject("file_id" -> 1))
+            source.collection("tiles.files").ensureIndex(MongoDBObject("preview_id" -> 1, "filename" -> 1,"level" -> 1))
+            
             source.collection("sections").ensureIndex(MongoDBObject("uploadDate" -> -1, "file_id" -> 1))
+            
+            //Indexing for users access rights
+            source.collection("useraccessrights").ensureIndex(MongoDBObject("email" -> 1, "name" -> 1))
+            source.collection("useraccessrights").ensureIndex(MongoDBObject("email" -> 1, "name" -> 1))
+            
+            source.collection("useraccessrights").ensureIndex(MongoDBObject("email" -> 1, "name" -> 1, "collectionsViewOnly" -> 1))
+            source.collection("useraccessrights").ensureIndex(MongoDBObject("email" -> 1, "name" -> 1, "collectionsViewModify" -> 1))
+            source.collection("useraccessrights").ensureIndex(MongoDBObject("email" -> 1, "name" -> 1, "collectionsAdministrate" -> 1))
+            source.collection("useraccessrights").ensureIndex(MongoDBObject("email" -> 1, "name" -> 1, "datasetsViewOnly" -> 1))
+            source.collection("useraccessrights").ensureIndex(MongoDBObject("email" -> 1, "name" -> 1, "datasetsViewModify" -> 1))
+            source.collection("useraccessrights").ensureIndex(MongoDBObject("email" -> 1, "name" -> 1, "datasetsAdministrate" -> 1))
+            source.collection("useraccessrights").ensureIndex(MongoDBObject("email" -> 1, "name" -> 1, "filesViewOnly" -> 1))
+            source.collection("useraccessrights").ensureIndex(MongoDBObject("email" -> 1, "name" -> 1, "filesViewModify" -> 1))
+            source.collection("useraccessrights").ensureIndex(MongoDBObject("email" -> 1, "name" -> 1, "filesAdministrate" -> 1))
+            
+            source.collection("useraccessrights").ensureIndex(MongoDBObject("collectionsViewOnly" -> 1))
+            source.collection("useraccessrights").ensureIndex(MongoDBObject("collectionsViewModify" -> 1))
+            source.collection("useraccessrights").ensureIndex(MongoDBObject("collectionsAdministrate" -> 1))
+            source.collection("useraccessrights").ensureIndex(MongoDBObject("datasetsViewOnly" -> 1))
+            source.collection("useraccessrights").ensureIndex(MongoDBObject("datasetsViewModify" -> 1))
+            source.collection("useraccessrights").ensureIndex(MongoDBObject("datasetsAdministrate" -> 1))
+            source.collection("useraccessrights").ensureIndex(MongoDBObject("filesViewOnly" -> 1))
+            source.collection("useraccessrights").ensureIndex(MongoDBObject("filesViewModify" -> 1))
+            source.collection("useraccessrights").ensureIndex(MongoDBObject("filesAdministrate" -> 1))
         }
     }
 
