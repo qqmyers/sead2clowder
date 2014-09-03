@@ -493,3 +493,4 @@ object Collection extends ModelCompanion[Collection, ObjectId] {
     case Some(x) => new SalatDAO[Collection, ObjectId](collection = x.collection("collections")) {}
   }
 }
+

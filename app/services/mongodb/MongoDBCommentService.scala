@@ -55,6 +55,28 @@ class MongoDBCommentService extends CommentService {
     }
     Comment.remove(MongoDBObject("_id" -> new ObjectId(c.id.stringify)))
   }
+  
+  /**
+   * Implementation of the editComment method defined in the services/CommentService.scala trait.
+   * 
+   * This implementation edits the comment by updating the "text" field in for the identified comment.
+   */
+  def editComment(id: UUID, commentText: String) {      
+      val result = Comment.dao.update(MongoDBObject("_id" -> new ObjectId(id.stringify)), 
+          $set("text" -> commentText), 
+          false, false, WriteConcern.Safe);      
+  }
+  
+  /**
+   * Implementation of the removeComment method defined in the services/CommentService.scala trait.
+   * 
+   * This implementation removes the file by getting it by its identifier originally.
+   */
+  def removeComment(id: UUID) {      
+      var theComment = get(id)
+      removeComment(theComment.get)
+  } 
+  
 }
 
 
@@ -64,3 +86,4 @@ object Comment extends ModelCompanion[Comment, ObjectId] {
     case Some(x) => new SalatDAO[Comment, ObjectId](collection = x.collection("comments")) {}
   }
 }
+

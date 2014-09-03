@@ -1,4 +1,4 @@
-@(title: String)(content: Html)(implicit user: Option[securesocial.core.Identity] = None)
+@(title: String)(content: Html)(implicit user: Option[securesocial.core.Identity] = None) 
 
 @import services._
 
@@ -124,12 +124,12 @@
 					@user match {
     					case Some(x) => {
     						<li>
-								<a  class="navbar-link" href="@securesocial.controllers.routes.LoginPage.logout">Logout (@x.fullName)</a>
+								<a  class="btn btn-link" href="@securesocial.controllers.routes.LoginPage.logout" title="Logout from the system"><span class="glyphicon glyphicon-log-out"></span> Logout (@x.fullName)</a>
 							</li>
 						}
     					case None => {
     						<li>
-								<a class="navbar-link" href="@securesocial.controllers.routes.LoginPage.login">Login</a>
+								<a class="btn btn-link" href="@securesocial.controllers.routes.LoginPage.login" title="Login to the system"><span class="glyphicon glyphicon-log-in"></span> Login</a>
 							</li>
 						}
 					}
@@ -150,11 +150,7 @@
 						</li>
 					
 					</ul>
-					
 
-					
-					
-					
 				</div>
 		</div>
 	</div>
@@ -173,3 +169,4 @@
 
 </body>
 </html>
+

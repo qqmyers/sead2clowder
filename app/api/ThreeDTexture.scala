@@ -24,3 +24,4 @@ class ThreeDTexture @Inject()(threeD: ThreeDService) extends Controller with Api
   }
 
 }
+

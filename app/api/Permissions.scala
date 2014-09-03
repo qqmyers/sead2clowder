@@ -46,8 +46,13 @@ object Permission extends Enumeration {
 		ShowTags,
 		CreateTagsDatasets,
 		DeleteTagsDatasets,
-		CreateNotesDatasets,
-		CreateComments,		
+		UpdateDatasetInformation,
+		UpdateLicenseFiles,
+		UpdateLicenseDatasets,
+		CreateComments,
+		RemoveComments,
+		EditComments,
+		CreateNotesDatasets,	
 		AddSections,
 		GetSections,
 		CreateTagsSections,
@@ -104,12 +109,14 @@ case class WithPermission(permission: Permission, resourceId: Option[UUID] = Non
 		    resourceId match{
 		      case Some(idOfResource) => {	//A request for accessing a specific resource, subject to individualized resource access rights
 		        var administrateOrModify = "modify"
-		        if(requestedPermission == AdministrateFiles || requestedPermission == AdministrateDatasets || requestedPermission == AdministrateCollections){
+		        if(requestedPermission == AdministrateFiles || requestedPermission == AdministrateDatasets || requestedPermission == AdministrateCollections
+		             || requestedPermission == UpdateLicenseFiles  || requestedPermission == UpdateLicenseDatasets){
 		                administrateOrModify = "administrate"
 		        }
 
 		        //Modification and administration permissions require the user to be logged in
-		        if((requestedPermission == CreateFiles || requestedPermission == DeleteFiles || requestedPermission == AddFilesMetadata || requestedPermission == AdministrateFiles || requestedPermission == CreateNotesFiles)){
+		        if((requestedPermission == CreateFiles || requestedPermission == DeleteFiles || requestedPermission == AddFilesMetadata || requestedPermission == AdministrateFiles || requestedPermission == CreateNotesFiles
+		            || requestedPermission == UpdateLicenseFiles)){
 		          if(user != null){
 		           files.get(idOfResource) match{
 		            case Some(file)=>{		              
@@ -132,7 +139,8 @@ case class WithPermission(permission: Permission, resourceId: Option[UUID] = Non
 		         }
 		          else false
 		        }	
-		        else if((requestedPermission == CreateDatasets || requestedPermission == DeleteDatasets || requestedPermission == AddDatasetsMetadata || requestedPermission == AdministrateDatasets || requestedPermission == CreateNotesDatasets)){
+		        else if((requestedPermission == CreateDatasets || requestedPermission == DeleteDatasets || requestedPermission == AddDatasetsMetadata || requestedPermission == AdministrateDatasets 
+		            || requestedPermission == CreateNotesDatasets || requestedPermission == UpdateLicenseDatasets || requestedPermission == UpdateDatasetInformation)){
 		          if(user != null){
 			           datasets.get(idOfResource) match{
 			            case Some(dataset)=>{
@@ -336,3 +344,4 @@ case class WithPermission(permission: Permission, resourceId: Option[UUID] = Non
 		}
 	}
 }
+

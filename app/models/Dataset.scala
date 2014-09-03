@@ -13,9 +13,9 @@ import securesocial.core.Identity
  */
 case class Dataset(
   id: UUID = UUID.generate,
-  name: String = "N/A",
+  var name: String = "N/A",
   author: Identity,
-  description: String = "N/A",
+  var description: String = "N/A",
   created: Date,
   files: List[File] = List.empty,
   streams_id: List[ObjectId] = List.empty,
@@ -27,6 +27,8 @@ case class Dataset(
   datasetXmlMetadata: List[DatasetXMLMetadata] = List.empty,
   userMetadataWasModified: Option[Boolean] = None,
   isPublic: Option[Boolean] = Some(false),
+  licenseData: LicenseData = new LicenseData(),
   notesHTML: Option[String] = None
 )
+
 

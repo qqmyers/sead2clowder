@@ -22,4 +22,5 @@ object Utils {
     val httpsPort = System.getProperties().getProperty("https.port", "")
     if (httpsPort == request.host.split(':').last)  "https" else "http"
   }
+
 }

@@ -23,5 +23,5 @@
 	  $(Configuration.tab).append("<br/><p>Note: 3D models embedded in PDF cannot be interacted with on Unix-based Google Chrome. You can use Firefox, or download the PDF" +
 	  								" and view the model on your desktop.</p>");
     
-
 }(jQuery, Configuration));
+

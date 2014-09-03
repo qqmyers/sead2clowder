@@ -51,3 +51,4 @@ abstract class MultimediaQueryService {
 
   def listAll(): List[MultimediaFeatures]
 }
+

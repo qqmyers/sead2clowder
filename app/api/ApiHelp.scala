@@ -1,9 +1,11 @@
+
 package api
 
 import play.api.mvc.Controller
 import play.api.libs.json.Json._
 import play.api.mvc.Action
 import play.api.Play.current
+import play.api.Logger
 
 /**
  * Documentation about API using swagger.
@@ -22,6 +24,11 @@ object ApiHelp extends Controller {
 						"http://"
 					}
 		}
+  
+  def options(path:String) = Action { 
+    Logger.info("ApiHelp: preflight request")
+    Ok("")
+  }
 
   /**
    * Used as entry point by swagger.
@@ -51,3 +58,4 @@ object ApiHelp extends Controller {
   }
   
 }
+

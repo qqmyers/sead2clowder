@@ -23,3 +23,4 @@ class Geometry @Inject()(threeD: ThreeDService) extends Controller with ApiContr
       }
   }
 }
+

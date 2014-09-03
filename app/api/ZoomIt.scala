@@ -25,4 +25,6 @@ class ZoomIt @Inject()(tiles: TileService) extends Controller with ApiController
         BadRequest(toJson("File not attached."))
       }
   }
+
 }
+

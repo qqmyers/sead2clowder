@@ -56,3 +56,4 @@ object User extends ModelCompanion[User, ObjectId] {
   def findByCountry(country: String) = dao.find(MongoDBObject("address.country" -> country))
 }
 
+

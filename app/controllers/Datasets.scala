@@ -17,6 +17,8 @@ import scala.Some
 import services.ExtractorMessage
 import api.WithPermission
 import securesocial.core.Identity
+import scala.xml.Utility 
+import org.apache.commons.lang.StringEscapeUtils 
 
 
 /**
@@ -32,6 +34,7 @@ class Datasets @Inject()(
   comments: CommentService,
   sections: SectionService,
   extractions: ExtractionService,
+  dtsrequests:ExtractionRequestsService,
   accessRights: UserAccessRightsService,
   sparql: RdfSPARQLService,
   appConfiguration: AppConfigurationService) extends SecuredController {
@@ -45,7 +48,7 @@ class Datasets @Inject()(
     mapping(
       "name" -> nonEmptyText,
       "description" -> nonEmptyText
-    )
+    )	//No LicenseData needed here, as on creation, default arg handles it. MMF - 5/2014 
       ((name, description) => Dataset(name = name, description = description, created = new Date, author = null))
       ((dataset: Dataset) => Some((dataset.name, dataset.description)))
   )
@@ -117,6 +120,14 @@ class Datasets @Inject()(
 	          next = formatter.format(datasetList.last.created)
 	        }
 	      }
+	      
+	      //Modifications to decode HTML entities that were stored in an encoded fashion as part 
+	      //of the datasets names or descriptions
+	      val aBuilder = new StringBuilder()
+	      for (aDataset <- datasetList) {
+	          decodeDatasetElements(aDataset)
+	      }
+	      
 	      Ok(views.html.datasetList(datasetList, prev, next, limit, rightsForUser))
 	  }
 
@@ -166,6 +177,7 @@ class Datasets @Inject()(
 
 
 	          val datasetWithFiles = dataset.copy(files = filesInDataset)
+	          decodeDatasetElements(datasetWithFiles)
 	          val previewers = Previewers.findPreviewers
 	          val previewslist = for (f <- datasetWithFiles.files) yield {
 	            val pvf = for (p <- previewers; pv <- f.previews; if (f.showPreviews.equals("DatasetLevel")) && (p.contentType.contains(pv.contentType))) yield {
@@ -329,6 +341,20 @@ class Datasets @Inject()(
   }
   
   /**
+   * Utility method to modify the elements in a dataset that are encoded when submitted and stored. These elements
+   * are decoded when a view requests the objects, so that they can be human readable.
+   * 
+   * Currently, the following dataset elements are encoded:
+   * name
+   * description
+   *  
+   */
+  def decodeDatasetElements(dataset: Dataset) {      
+      dataset.name = StringEscapeUtils.unescapeHtml(dataset.name)
+      dataset.description = StringEscapeUtils.unescapeHtml(dataset.description)
+  }
+  
+  /**
    * Dataset by section.
    */
   def datasetBySection(section_id: UUID) = SecuredAction(authorization = WithPermission(Permission.ShowDataset)) {
@@ -438,8 +464,7 @@ class Datasets @Inject()(
 					    	val key = "unknown." + "file."+ fileType.replace(".", "_").replace("/", ".")
 		//			        val key = "unknown." + "file."+ "application.x-ptm"
 					    	
-			                // TODO RK : need figure out if we can use https
-			                val host = "http://" + request.host + request.path.replaceAll("dataset/submit$", "")
+			                val host = Utils.baseUrl(request) + request.path.replaceAll("dataset/submit$", "")
 		      
 			                //If uploaded file contains zipped files to be unzipped and added to the dataset, wait until the dataset is saved before sending extractor messages to unzip
 			                //and return the files
@@ -494,6 +519,9 @@ class Datasets @Inject()(
 		 			    	val dtkey = "unknown." + "dataset."+ "unknown"
 					        current.plugin[RabbitmqPlugin].foreach{_.extract(ExtractorMessage(dt.id, dt.id, host, dtkey, Map.empty, "0", dt.id, ""))}
 		 			    	
+		 			    	// index the file using Versus for content-based retrieval
+                            current.plugin[VersusPlugin].foreach{ _.index(f.id.toString,fileType) }
+		 			    	
 		 			    	//add file to RDF triple store if triple store is used
 		 			    	if(fileType.equals("application/xml") || fileType.equals("text/xml")){
 					             play.api.Play.configuration.getString("userdfSPARQLStore").getOrElse("no") match{      
@@ -505,8 +533,12 @@ class Datasets @Inject()(
 					             }
 				             }
 		 			    	
-		 			    	var extractJobId=current.plugin[VersusPlugin].foreach{_.extract(id)} 
-		 			    	Logger.debug("Inside File: Extraction Id : "+ extractJobId)
+		 			    	/*---- Insert DTS Request to the database   ----*/
+
+		 			    	val clientIP=request.remoteAddress
+		 			    	val serverIP= request.host
+		 			    	dtsrequests.insertRequest(serverIP,clientIP, f.filename, id, fileType, f.length,f.uploadDate)
+			    			/*--------------------------------------------*/
 		 			    	
 				            // redirect to dataset page
 				            Redirect(routes.Datasets.dataset(dt.id))
@@ -576,8 +608,7 @@ class Datasets @Inject()(
 		          //reindex file
 		          files.index(theFileGet.id)
 		          
-		          // TODO RK : need figure out if we can use https
-		          val host = "http://" + request.host + request.path.replaceAll("dataset/submit$", "")
+		          val host = Utils.baseUrl(request) + request.path.replaceAll("dataset/submit$", "")
 				  // TODO RK need to replace unknown with the server name and dataset type		            
 				  val dtkey = "unknown." + "dataset."+ "unknown"
 						  current.plugin[RabbitmqPlugin].foreach{_.extract(ExtractorMessage(dt.id, dt.id, host, dtkey, Map.empty, "0", dt.id, ""))}
@@ -591,6 +622,17 @@ class Datasets @Inject()(
 					             case _ => {}
 				             }
 				   }
+		          
+		          //***** Inserting DTS Requests   **//  
+		          Logger.debug("The file already exists")
+		          val clientIP=request.remoteAddress
+		          val domain=request.domain
+		          val keysHeader=request.headers.keys
+		          Logger.debug("clientIP:"+clientIP+ "   domain:= "+domain+ "  keysHeader="+ keysHeader.toString +"\n")
+		          val serverIP= request.host
+		          dtsrequests.insertRequest(serverIP,clientIP, theFileGet.filename, theFileGet.id, theFileGet.contentType, theFileGet.length,theFileGet.uploadDate)
+						            
+				//****************************//
 		          
 				  // redirect to dataset page
 				  Redirect(routes.Datasets.dataset(dt.id))
@@ -682,3 +724,4 @@ class Datasets @Inject()(
   
 
 }
+

@@ -146,3 +146,4 @@ class Search @Inject() (files: FileService, datasets: DatasetService, collection
       }
   }
 }
+

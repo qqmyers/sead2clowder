@@ -1,27 +1,20 @@
 package controllers
 
-import scala.collection.mutable.Map
-import jsonutils.JsonUtil
-import play.api.Logger
-import play.api.Routes
-
-import play.api.libs.concurrent.Execution.Implicits._
 import play.api.libs.iteratee._
 import play.api.libs.iteratee.Concurrent.Channel
-import play.api.mvc.Action
-import play.api.mvc.Controller
 import play.api.mvc.WebSocket
-import play.api.libs.json.Json
-import api.Sections
-import api.WithPermission
-import api.Permission
+import play.api.libs.concurrent.Execution.Implicits._
+import scala.collection.mutable.Map
 
+import api.{Permission, WithPermission}
+import play.api.Routes
 import models.AppAppearance
 import javax.inject.{Singleton, Inject}
 import services.FileService
 import services.AppAppearanceService
 import api.WithPermission
 import api.Permission
+import play.api.Logger
 
 /**
  * Main application controller.
@@ -40,7 +33,20 @@ class Application  @Inject() (files: FileService, appAppearance: AppAppearanceSe
 	val appAppearanceGet = appAppearance.getDefault.get
 	Ok(views.html.index(latestFiles, appAppearanceGet.displayedName, appAppearanceGet.welcomeMessage))
   }
+  
+  def options(path:String) = SecuredAction() { implicit request =>
+    Logger.info("---controller: PreFlight Information---")
+    Ok("")
+   }
 
+  /**
+   * Bookmarklet
+   */
+  def bookmarklet() = SecuredAction(authorization = WithPermission(Permission.Public)) { implicit request =>
+    val protocol = Utils.protocol(request)
+    Ok(views.html.bookmarklet(request.host, protocol)).as("application/javascript")
+  }
+  
   //Global map to store dataset id and (enumerator, channel) pairs
   val channelMap = Map[String, (Enumerator[String], Channel[String])]()
 
@@ -69,7 +75,7 @@ class Application  @Inject() (files: FileService, appAppearance: AppAppearanceSe
   def testJson = SecuredAction()  { implicit request =>
     Ok("{test:1}").as(JSON)
   }
-  
+
   /**
    *  Javascript routing.
    */
@@ -88,17 +94,23 @@ class Application  @Inject() (files: FileService, appAppearance: AppAppearanceSe
         routes.javascript.Admin.setTheme,
         
         api.routes.javascript.Comments.comment,
+        api.routes.javascript.Comments.removeComment,
+        api.routes.javascript.Comments.editComment,
         api.routes.javascript.Datasets.comment,
         api.routes.javascript.Datasets.getTags,
         api.routes.javascript.Datasets.addTags,
         api.routes.javascript.Datasets.removeTag,
         api.routes.javascript.Datasets.removeTags,
         api.routes.javascript.Datasets.removeAllTags,
+        api.routes.javascript.Datasets.updateInformation,
+        api.routes.javascript.Datasets.updateLicense,
         api.routes.javascript.Files.comment,
         api.routes.javascript.Files.getTags,
         api.routes.javascript.Files.addTags,
         api.routes.javascript.Files.removeTags,
         api.routes.javascript.Files.removeAllTags,
+        api.routes.javascript.Files.updateLicense, 
+        api.routes.javascript.Files.extract,
         api.routes.javascript.Previews.upload,
         api.routes.javascript.Previews.uploadMetadata,
         api.routes.javascript.Sections.add,
@@ -115,3 +127,4 @@ class Application  @Inject() (files: FileService, appAppearance: AppAppearanceSe
   }
   
 }
+

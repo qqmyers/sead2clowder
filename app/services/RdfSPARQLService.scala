@@ -21,5 +21,6 @@ trait RdfSPARQLService {
   def removeDatasetFromUserGraphs(fileId: UUID): Null
   
   def addFromFile(id: UUID, tempFile: java.io.File, fileOrDataset: String, selectedGraph:String = "rdfCommunityGraphName") : Null
-  
+
 }
+

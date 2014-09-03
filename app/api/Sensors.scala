@@ -69,3 +69,4 @@ object Sensors extends Controller with ApiController {
   }
   
 }
+

@@ -5,6 +5,18 @@ import play.api.Play.current
 import services.mongodb.MongoSalatPlugin
 import services.mongodb.MongoDBAppConfigurationService
 import services._
+import play.libs.Akka
+import java.util.concurrent.TimeUnit
+import scala.concurrent.duration._
+import play.api.libs.concurrent.Execution.Implicits._
+import models.ExtractionInfoSetUp
+import services.ExtractorService
+import java.util.Date
+import java.util.Calendar
+import models._
+import play.api.mvc.WithFilters
+import play.filters.gzip.GzipFilter
+import akka.actor.Cancellable
 
 /**
  * Configure application. Ensure mongo indexes if mongo plugin is enabled.
@@ -12,8 +24,15 @@ import services._
  * @author Luigi Marini
  */
 object Global extends GlobalSettings {
+  
+  var serverStartTime:Date=null
+  var extractorTimer: Cancellable = null
 
   override def onStart(app: Application) {
+    ServerStartTime.startTime = Calendar.getInstance().getTime()
+    serverStartTime = ServerStartTime.startTime
+    Logger.debug("\n----Server Start Time----" + serverStartTime + "\n \n")
+    
     // create mongo indexes if plugin is loaded
     current.plugin[MongoSalatPlugin].map {
       mongo =>
@@ -37,6 +56,9 @@ object Global extends GlobalSettings {
             source.collection("tiles.files").ensureIndex(MongoDBObject("preview_id" -> 1, "filename" -> 1,"level" -> 1))
             
             source.collection("sections").ensureIndex(MongoDBObject("uploadDate" -> -1, "file_id" -> 1))
+            
+            source.collection("dtsrequests").ensureIndex(MongoDBObject("startTime" -> -1, "endTime" -> -1))
+            source.collection("versus.descriptors").ensureIndex(MongoDBObject("preview_id" -> 1, "file_id" -> 1 )) 
             
             //Indexing for users access rights
             source.collection("useraccessrights").ensureIndex(MongoDBObject("email" -> 1, "name" -> 1))
@@ -70,10 +92,15 @@ object Global extends GlobalSettings {
     for(initialAdmin <- play.Play.application().configuration().getString("initialAdmins").split(","))
     	appConfObj.addAdmin(initialAdmin)
     
+    extractorTimer = Akka.system().scheduler.schedule(0.minutes,5 minutes){
+           ExtractionInfoSetUp.updateExtractorsInfo()
+    }
+    
     Logger.info("Application has started")
   }
 
   override def onStop(app: Application) {
+    extractorTimer.cancel
     Logger.info("Application shutdown")
   }
 
@@ -84,3 +111,4 @@ object Global extends GlobalSettings {
     injector.getInstance(clazz)
   }
 }
+

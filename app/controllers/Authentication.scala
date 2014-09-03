@@ -52,3 +52,4 @@ object Authentication extends SecuredController {
     Ok(views.html.notAuthorized())
   }
 }
+

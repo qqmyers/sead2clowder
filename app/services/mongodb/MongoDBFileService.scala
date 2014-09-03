@@ -39,6 +39,7 @@ import java.io.BufferedWriter
 import java.io.FileReader
 import java.io.FileWriter
 import java.io.FileInputStream
+import scala.collection.mutable.MutableList
 
 
 /**
@@ -61,7 +62,7 @@ class MongoDBFileService @Inject() (
 
   object MustBreak extends Exception {}
   
-  var appPort = play.api.Play.configuration.getString("https.port").getOrElse("")
+  var appPort = play.api.Play.configuration.getString("https.port").getOrElse("")  
   val httpProtocol = {
 					if(!appPort.equals("")){
 						"https://"
@@ -234,7 +235,7 @@ class MongoDBFileService @Inject() (
     var results: List[File] = List.empty
     val order = MongoDBObject("uploadDate" -> -1)
     if(externalViewingEnabled || haveAdmin){
-      results = FileDAO.find(MongoDBObject()).sort(order).limit(1).toList
+      results = FileDAO.find("isIntermediate" $ne true).sort(order).limit(1).toList
     }else{
 	            user match{
 	              case Some(user)=>{
@@ -278,7 +279,7 @@ class MongoDBFileService @Inject() (
     var results: List[File] = List.empty
     val order = MongoDBObject("uploadDate" -> 1)
     if(externalViewingEnabled || haveAdmin){
-      results = FileDAO.find(MongoDBObject()).sort(order).limit(1).toList
+      results = FileDAO.find("isIntermediate" $ne true).sort(order).limit(1).toList
     }else{
 	            user match{
 	              case Some(user)=>{
@@ -323,7 +324,7 @@ class MongoDBFileService @Inject() (
       ct = MimeTypes.forFileName(filename).getOrElse(ContentTypes.BINARY)
     }
     mongoFile.contentType = ct
-    mongoFile.put("path", id)
+    mongoFile.put("path", id.stringify)
     mongoFile.put("author", SocialUserDAO.toDBObject(author))
     mongoFile.save
     val oid = mongoFile.getAs[ObjectId]("_id").get
@@ -357,6 +358,7 @@ class MongoDBFileService @Inject() (
     mongoFile.save
     val oid = mongoFile.getAs[ObjectId]("_id").get
 
+    //No LicenseData needed here, as on creation, default arg handles it. MMF - 5/2014 
     Some(File(UUID(oid.toString), None, mongoFile.filename.get, author, mongoFile.uploadDate, mongoFile.contentType.get, mongoFile.length, showPreviews))
   }
 
@@ -679,7 +681,7 @@ class MongoDBFileService @Inject() (
     }
   }
 
-  /**
+ /**
    *  Add versus descriptors to the metadata
    *
    * Reads descriptors received from versus( in the response body)  as list of JSON objects
@@ -687,12 +689,36 @@ class MongoDBFileService @Inject() (
    * Parse each json object based on the field/key name and obtain the values and combine them as a tuple
    * Obtain the existing versus descriptors in the "metadata" as list of tuples (extraction_id,adapter_name,extractor_name,descriptor)
    * merge with the tuples obtained from descriptors received from versus
-   * write it back to the versus_descriptors field of "metadata" to monoDB
+   * write it back to the versus_descriptors field of "metadata" to mongoDB
    *
    */
-  def addVersusMetadata(id: UUID, json: JsValue) {
-
-    Logger.debug("Adding metadata to file " + id + " : " + json)
+ def addVersusMetadata(id:UUID,json:JsValue){
+    val doc = JSON.parse(Json.stringify(json)).asInstanceOf[DBObject].toMap
+              .asScala.asInstanceOf[scala.collection.mutable.Map[String,Any]].toMap
+    VersusDAO.insert(new Versus(id,doc),WriteConcern.Safe)
+    Logger.info("--Added versus descriptors in json format received from versus to the metadata field --")
+  } 
+  
+ def getVersusMetadata(id: UUID): Option[JsValue] = {
+    val versusDescriptor=VersusDAO.findOne(MongoDBObject("fileId" -> new ObjectId(id.stringify)))
+    versusDescriptor.map{
+      vdes=>
+      	 val x=com.mongodb.util.JSON.serialize(vdes.asInstanceOf[Versus].descriptors("versus_descriptors"))
+      	 Json.parse(x)
+     }
+  } 
+  
+  /**
+   * This is the previous code that adds Versus descriptors to the metadata. If the Versus extraction is carried out more than once, it takes care of it
+   * by merging the extractions results into single list
+   * This works fine in Mac but due to some reason, it does not work in Ubuntu and gives mongodb exception
+   * TODO: need to incorporate this into the current addVersusMetadata code
+   * 
+   * This code will be deleted once we figure out where to add versus metadata
+   */
+  /*def addVersusMetadata(id: UUID, json: JsValue) {
+   
+     Logger.debug("******MongoDB::::Adding Versus metadata to file " + id.toString )
 
     var jsonlist = json.as[List[JsObject]] // read json as list of JSON objects
 
@@ -701,7 +727,7 @@ class MongoDBFileService @Inject() (
         Logger.debug("extraction_id=" + list \ ("extraction_id"))
         Logger.debug("adapter_name=" + list \ ("adapter_name"))
         Logger.debug("extractor_name=" + list \ ("extractor_name"))
-        Logger.debug("descriptor=" + list \ ("descriptor"))
+        //Logger.debug("descriptor=" + list \ ("descriptor"))
         (list \ ("extraction_id"), list \ ("adapter_name"), list \ ("extractor_name"), list \ ("descriptor"))
     } /* to access into the list of json objects and convert as list of tuples*/
 
@@ -712,13 +738,15 @@ class MongoDBFileService @Inject() (
 
         x.getAs[DBObject]("metadata") match {
           case None => {
-            Logger.debug("No metadata field found: Adding meta data field")
+            Logger.debug("-----No metadata field found: Adding meta data field and setting Versus Descriptors----")
             FileDAO.dao.collection.update(MongoDBObject("_id" -> new ObjectId(id.stringify)), $set("metadata.versus_descriptors" -> doc), false, false, WriteConcern.Safe)
-
+            Logger.debug("-----Added metadata field ----")
+            
+            
           }
           case Some(map) => {
 
-            Logger.debug("metadata found ")
+            Logger.debug("----metadata found--- ")
 
             val returnedMetadata = com.mongodb.util.JSON.serialize(x.getAs[DBObject]("metadata").get)
             Logger.debug("retmd: " + returnedMetadata)
@@ -753,7 +781,7 @@ class MongoDBFileService @Inject() (
       }
       case None => Logger.error("Error getting file" + id)
     }
-  }
+  }*/
 
   /*convert list of JsObject to JsArray*/
   def getJsonArray(list: List[JsObject]): JsArray = {
@@ -780,6 +808,16 @@ class MongoDBFileService @Inject() (
 
   def findIntermediates(): List[File] = {
     FileDAO.find(MongoDBObject("isIntermediate" -> true)).toList
+  }
+  
+  /**
+   * Implementation of updateLicenseing defined in services/FileService.scala.
+   */
+  def updateLicense(id: UUID, licenseType: String, rightsHolder: String, licenseText: String, licenseUrl: String, allowDownload: String) {      
+      val licenseData = models.LicenseData(m_licenseType = licenseType, m_rightsHolder = rightsHolder, m_licenseText = licenseText, m_licenseUrl = licenseUrl, m_allowDownload = allowDownload.toBoolean)
+      val result = FileDAO.update(MongoDBObject("_id" -> new ObjectId(id.stringify)), 
+          $set("licenseData" -> LicenseData.toDBObject(licenseData)), 
+          false, false, WriteConcern.Safe);      
   }
 
   // ---------- Tags related code starts ------------------
@@ -1158,3 +1196,11 @@ object FileDAO extends ModelCompanion[File, ObjectId] {
     case Some(x) => new SalatDAO[File, ObjectId](collection = x.collection("uploads.files")) {}
   }
 }
+
+object VersusDAO extends ModelCompanion[Versus,ObjectId]{
+    val dao = current.plugin[MongoSalatPlugin] match {
+    case None => throw new RuntimeException("No MongoSalatPlugin");
+    case Some(x) => new SalatDAO[Versus, ObjectId](collection = x.collection("versus.descriptors")) {}
+  }
+}
+

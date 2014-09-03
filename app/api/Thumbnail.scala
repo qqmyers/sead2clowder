@@ -33,3 +33,4 @@ class Thumbnail @Inject() (thumbnails: ThumbnailService) extends Controller with
   }
 
 }
+

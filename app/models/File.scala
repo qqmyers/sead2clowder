@@ -29,6 +29,13 @@ case class File(
 	xmlMetadata: Map[String, Any] = Map.empty,
 	userMetadataWasModified: Option[Boolean] = None,
 	notesHTML: Option[String] = None,
-    isPublic: Option[Boolean] = Some(false) 
+    isPublic: Option[Boolean] = Some(false),
+    licenseData: LicenseData = new LicenseData()
+    )
+
+  
+case class Versus(
+  fileId: UUID,
+  descriptors: Map[String,Any]= Map.empty
 )
 

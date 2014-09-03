@@ -8,6 +8,7 @@ object ApplicationBuild extends Build {
   val appVersion = "1.0-SNAPSHOT"
 
   val appDependencies = Seq(
+  	filters exclude("play", "*"),
     "com.novus" %% "salat" % "1.9.5" exclude("org.scala-stm", "scala-stm_2.10.0") exclude("play", "*"),
     "ws.securesocial" %% "securesocial" % "2.1.3" exclude("org.scala-stm", "scala-stm_2.10.0") exclude("play", "*"),
     "com.rabbitmq" % "amqp-client" % "3.0.0" exclude("play", "*"),
@@ -50,7 +51,7 @@ object ApplicationBuild extends Build {
     "postgresql" % "postgresql" % "8.1-407.jdbc3" exclude("play", "*"),
     "org.postgresql" % "com.springsource.org.postgresql.jdbc4" % "8.3.604" exclude("play", "*"),
     "org.springframework" % "spring" % "2.5.6" exclude("play", "*"),
-    "org.scalatest" %% "scalatest" % "2.1.0" % "test" exclude("play", "*")
+    "org.scalatestplus" % "play_2.10" % "1.0.0" % "test" exclude("play", "*")
   )
 
   // Only compile the bootstrap bootstrap.less file and any other *.less file in the stylesheets directory 
@@ -74,3 +75,4 @@ object ApplicationBuild extends Build {
     resolvers += "opencastproject" at "http://repository.opencastproject.org/nexus/content/repositories/public"
   ).settings(net.virtualvoid.sbt.graph.Plugin.graphSettings: _*)
 }
+

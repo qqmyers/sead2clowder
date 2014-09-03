@@ -32,6 +32,8 @@ class ProdModule extends AbstractModule {
     bind(classOf[MultimediaQueryService]).to(classOf[MongoDBMultimediaQueryService])
     bind(classOf[CollectionService]).to(classOf[MongoDBCollectionService])
     bind(classOf[TagService]).to(classOf[MongoDBTagService])
+    bind(classOf[ExtractorService]).to(classOf[MongoDBExtractorService])
+    bind(classOf[ExtractionRequestsService]).to(classOf[MongoDBExtractionRequestsService])
     bind(classOf[SectionService]).to(classOf[MongoDBSectionService])
     bind(classOf[CommentService]).to(classOf[MongoDBCommentService])
     bind(classOf[PreviewService]).to(classOf[MongoDBPreviewService])
@@ -59,6 +61,8 @@ class DevModule extends AbstractModule {
     bind(classOf[MultimediaQueryService]).to(classOf[MongoDBMultimediaQueryService])
     bind(classOf[CollectionService]).to(classOf[MongoDBCollectionService])
     bind(classOf[TagService]).to(classOf[MongoDBTagService])
+    bind(classOf[ExtractorService]).to(classOf[MongoDBExtractorService])
+    bind(classOf[ExtractionRequestsService]).to(classOf[MongoDBExtractionRequestsService])
     bind(classOf[SectionService]).to(classOf[MongoDBSectionService])
     bind(classOf[CommentService]).to(classOf[MongoDBCommentService])
     bind(classOf[PreviewService]).to(classOf[MongoDBPreviewService])
@@ -75,3 +79,4 @@ class DevModule extends AbstractModule {
     bind(classOf[UserAccessRightsService]).to(classOf[MongoDBUserAccessRightsService])
   }
 }
+

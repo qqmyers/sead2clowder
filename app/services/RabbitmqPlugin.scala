@@ -20,6 +20,19 @@ import java.io._
 import java.security._
 import javax.net.ssl._
 
+import com.rabbitmq.client.ReturnListener
+import scala.concurrent.Future
+import play.api.libs.ws.WS
+import play.api.libs.ws.Response
+import play.api.libs.json._
+import com.ning.http.client.Realm.AuthScheme
+import scala.util.parsing.json.JSON
+import play.api.libs.json.Json
+import play.api.libs.json.JsValue
+import play.api.libs.json.JsObject
+import play.api.libs.json.JsArray
+import play.api.libs.concurrent.Execution.Implicits._
+
 /**
  * Rabbitmq service.
  *
@@ -28,7 +41,20 @@ import javax.net.ssl._
  */
 class RabbitmqPlugin(application: Application) extends Plugin {
 
-  var extractQueue: Option[ActorRef] = None  
+  val files: FileService =  DI.injector.getInstance(classOf[FileService]) 
+  var extractQueue: Option[ActorRef] = None
+  
+  var channel:Channel=null
+  var connection:Connection=null
+  
+  val rabbitmqHttpProtocol = {
+					if(play.api.Play.configuration.getBoolean("rabbitmq.useSSL").getOrElse(false)){
+						"https://"
+					}
+					else{
+						"http://"
+					}
+		}
   
   override def onStart() {
     Logger.debug("Starting Rabbitmq Plugin")
@@ -73,7 +99,7 @@ class RabbitmqPlugin(application: Application) extends Plugin {
       val connection: Connection = factory.newConnection()
       val channel = connection.createChannel()
       val replyQueueName = channel.queueDeclare().getQueue()
-      Logger.info("Reply queue name: " + replyQueueName)
+      Logger.debug("Reply queue name: " + replyQueueName)
       // extraction queue
       channel.exchangeDeclare(exchange, "topic", true)
       extractQueue = Some(Akka.system.actorOf(Props(new SendingActor(channel = channel, exchange = exchange, replyQueueName = replyQueueName))))
@@ -93,13 +119,21 @@ class RabbitmqPlugin(application: Application) extends Plugin {
       )
     } catch {
       case ioe: java.io.IOException => Logger.error("Error connecting to rabbitmq broker " + ioe.toString + ":" + ioe.printStackTrace())
-      case _:Throwable => Logger.error("Unknown error connecting to rabbitmq broker ")
+      case t:Throwable => Logger.error("Unknown error connecting to rabbitmq broker " + t.toString)
     }
   }
 
   override def onStop() {
     Logger.debug("Shutting down Rabbitmq Plugin")
-  }
+    if(channel!=null){   
+        Logger.debug("Channel closing")
+        channel.close()
+    }
+    if(connection!=null){
+      Logger.debug("Connection closing")
+      connection.close()
+    }
+  }//end of Rabbitmq on stop
 
   override lazy val enabled = {
     !application.configuration.getString("rabbitmqplugin").filter(_ == "disabled").isDefined
@@ -112,6 +146,82 @@ class RabbitmqPlugin(application: Application) extends Plugin {
       case None => Logger.warn("Could not send message over RabbitMQ")
     }
   }
+  
+  /**
+ * Get the binding lists (lists of routing keys) from the rabbitmq broker 
+ */
+  
+  def getBindings(): Future[Response] = {
+    val configuration = play.api.Play.configuration
+    val host = configuration.getString("rabbitmq.host").getOrElse("")
+    val mgmt_api_port=configuration.getString("rabbitmq.mgmt_api_port").getOrElse("")
+    
+     val ruser = configuration.getString("rabbitmq.user").getOrElse("")
+     val ruser_pwd = configuration.getString("rabbitmq.password").getOrElse("")
+       
+    val rUrl=rabbitmqHttpProtocol+host+":"+mgmt_api_port+"/api/bindings"
+   
+    val bindingList: Future[Response] = WS.url(rUrl).withHeaders("Accept" -> "application/json").withAuth(ruser, ruser_pwd, AuthScheme.BASIC).get()
+    bindingList
+
+  }
+ /**
+  *  Get Channel list from rabbitmq broker
+  */ 
+
+  def getChannelsList():Future[Response] = {
+    val configuration = play.api.Play.configuration
+    val host = configuration.getString("rabbitmq.host").getOrElse("")
+    val mgmt_api_port=configuration.getString("rabbitmq.mgmt_api_port").getOrElse("")
+    
+    val ruser = configuration.getString("rabbitmq.user").getOrElse("")
+    val ruser_pwd = configuration.getString("rabbitmq.password").getOrElse("")
+       
+    val rUrl=rabbitmqHttpProtocol+host+":"+mgmt_api_port+"/api/channels"
+    val ipList: Future[Response] = WS.url(rUrl).withHeaders("Accept" -> "application/json").withAuth(ruser, ruser_pwd, AuthScheme.BASIC).get()
+    
+    ipList
+   }
+ 
+  /**
+   * Get queue bindings for a given host and queue from rabbitmq broker
+   */
+  
+  def getQueueBindings(vhost:String,qname:String):Future[Response]={
+    val configuration = play.api.Play.configuration
+    val host = configuration.getString("rabbitmq.host").getOrElse("")
+    val mgmt_api_port=configuration.getString("rabbitmq.mgmt_api_port").getOrElse("")
+    
+    val ruser = configuration.getString("rabbitmq.user").getOrElse("")
+    val ruser_pwd = configuration.getString("rabbitmq.password").getOrElse("")
+    
+    var vhost1:String=""
+    if(vhost=="/"){
+      vhost1="%2F"
+    }
+       
+    val qbindUrl=rabbitmqHttpProtocol+host+":"+mgmt_api_port+"/api/queues/"+vhost1+"/"+qname+"/bindings"
+    
+    Logger.debug("-----query bind Url:  "+ qbindUrl)
+    
+    val rks=WS.url(qbindUrl).withHeaders("Accept" -> "application/json").withAuth(ruser,ruser_pwd, AuthScheme.BASIC).get()
+    rks 
+  }
+  /**
+   *  Get Channel information from rabbitmq broker for given channel id 'cid'
+   */ 
+  def getChannelInfo(cid: String): Future[Response]={
+     val configuration = play.api.Play.configuration
+     val host = configuration.getString("rabbitmq.host").getOrElse("")
+     val mgmt_api_port=configuration.getString("rabbitmq.mgmt_api_port").getOrElse("")
+    
+     val ruser = configuration.getString("rabbitmq.user").getOrElse("")
+     val ruser_pwd = configuration.getString("rabbitmq.password").getOrElse("")
+     val cUrl=rabbitmqHttpProtocol+host+":"+mgmt_api_port+"/api/channels"
+     val chInfo: Future[Response] = WS.url(cUrl+"/"+cid).withHeaders("Accept" -> "application/json").withAuth(ruser, ruser_pwd, AuthScheme.BASIC).get()
+    chInfo
+  }
+  
 }
 
 class SendingActor(channel: Channel, exchange: String, replyQueueName: String) extends Actor {
@@ -199,11 +309,15 @@ class EventFilter(channel: Channel, queue: String) extends Actor {
       val extractor_id = (json \ "extractor_id").as[String]
       val status = (json \ "status").as[String]
       val start = (json \ "start").asOpt[String]
+      //val end = (json \ "end").asOpt[String] 
       val formatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss")
       val startDate = formatter.parse(start.get)
+      //val endDate=formatter.parse(end.get) 
       Logger.info("Status start: " + startDate)
       val extractions: ExtractionService = DI.injector.getInstance(classOf[ExtractionService])
       extractions.insert(Extraction(UUID.generate, file_id, extractor_id, status, Some(startDate), None))
+      models.ExtractionInfoSetUp.updateDTSRequests(file_id,extractor_id) 
   }
 }
+
 

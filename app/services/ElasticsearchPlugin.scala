@@ -149,3 +149,4 @@ class ElasticsearchPlugin(application: Application) extends Plugin {
     Logger.info("ElasticsearchPlugin has stopped")
   }
 }
+
