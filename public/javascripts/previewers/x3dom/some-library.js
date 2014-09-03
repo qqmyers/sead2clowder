@@ -1208,7 +1208,7 @@ function clearConfigTabAnnotations(prNum){
 		  window["x3dOffset2" + prNum] = 95;
   }	  
   else if(Configuration.calledFrom == "file")
-	  window["x3dOffset2" + prNum] = 200;
+	  window["x3dOffset2" + prNum] = 100;
   else if(Configuration.calledFrom == "3d_dataset")
 	  window["x3dOffset2" + prNum] = 0;
   
