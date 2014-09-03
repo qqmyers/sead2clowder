@@ -40,15 +40,6 @@
 	    <fieldset id="filePrivatePublicFieldSet" style="margin-bottom: 1%;">
 	      @checkbox(field = myForm("filePrivatePublic"),'_label -> "File is public")
 	    </fieldset>
-	    <fieldset>
-	      @select(
-  			myForm("existingFile"),
-  			("__nofile" -> "--NONE--") +: filesList.map{ oneFile =>
-    			oneFile._1 -> (oneFile._2)
-  			},
-  			'_label -> "or select an existing file"
-		)
-	    </fieldset>
 	    <fieldset id="datasetRadioFieldSet">
 	      @inputRadioGroup(
 	          myForm("datasetLevel").copy(value=myForm("datasetLevel").value.orElse(Some("DatasetLevel")) ),
@@ -56,6 +47,15 @@
 	          '_label -> "Show file preview(s)",
 	          '_error -> myForm("datasetLevel").error.map(_.withMessage("Select where the preview will be viewable.")))
 	    </fieldset>
+	    <fieldset style="position: relative;  margin-bottom:1%;">
+	      @select(
+  			myForm("existingFile"),
+  			("__nofile" -> "--NONE--") +: filesList.map{ oneFile =>
+    			oneFile._1 -> (oneFile._2)
+  			},
+  			'_label -> "or select an existing file"
+		)
+	    </fieldset>	    
         <div class="form-actions">
           <button type="submit" class="btn btn-primary btn-large" title="Create the Dataset"><span class="glyphicon glyphicon-ok"></span> Create</button>          
         </div>
