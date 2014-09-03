@@ -44,8 +44,8 @@ class ExtractionInfo @Inject() (extractors: ExtractorService, dtsrequests: Extra
         list_servers.map {
           ls =>
             Logger.debug("Server Name:  " + ls.substring(1, ls.size-1))
-            jarr = jarr :+ (Json.parse(ls))
-            list_servers1=ls.substring(1, ls.size-1)::list_servers1
+            jarr = jarr :+ (Json.parse("\""+ls+"\""))
+            list_servers1=ls::list_servers1
             }
         Logger.debug("Json array for list of extractors server ips----" + jarr.toString)
         Ok(views.html.extractorsServersIP(list_servers1,list_servers1.size))
@@ -65,8 +65,8 @@ class ExtractionInfo @Inject() (extractors: ExtractorService, dtsrequests: Extra
     list_names.map {
       ls =>
         Logger.debug("Extractor Name:  " + ls)
-        jarr = jarr :+ (Json.parse(ls))
-        list_names1=ls.substring(1, ls.size-1)::list_names1
+        jarr = jarr :+ (Json.parse("\""+ls+"\""))
+        list_names1=ls::list_names1
 
     }
     Logger.debug("Json array for list of extractor names----" + jarr.toString)
@@ -86,8 +86,8 @@ class ExtractionInfo @Inject() (extractors: ExtractorService, dtsrequests: Extra
     list_inputtypes.map {
       ls =>
         Logger.debug("Extractor Input Type:  " + ls)
-        jarr = jarr :+ (Json.parse(ls))
-        list_inputtypes1=ls.substring(1, ls.size-1)::list_inputtypes1
+        jarr = jarr :+ (Json.parse("\""+ls+"\""))
+        list_inputtypes1=ls::list_inputtypes1
 
     }
     Logger.debug("Json array for list of input types supported by extractors----" + jarr.toString)

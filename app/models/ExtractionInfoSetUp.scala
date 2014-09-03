@@ -110,7 +110,7 @@ def updateDTSRequests(file_id:UUID,extractor_id:String)={
                 var flag = false
                 for (xt <- consumer_tags) {
                   var str = xt
-                  var substr = str
+                  var substr = str.substring(1, str.length()-1) 
                   if (substr.startsWith("medici_")) {
                     Logger.debug(substr + " :::  CONSUMER")
                     flag = true
