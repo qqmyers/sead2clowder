@@ -26,7 +26,7 @@ POST	 /users/registerThroughAdmins										 controllers.Users.handleStartSignUp
 
 # DTS Information
 GET      /extractions/requests          								    @controllers.ExtractionInfo.getDTSRequests()
-GET      /extractions/servers_ips								  		    @controllers.ExtractionInfo.getExtractorServersIP()
+GET      /extractions/servers_addresses								  		@controllers.ExtractionInfo.getExtractorServersIP()
 GET      /extractions/extractors_names         					 		    @controllers.ExtractionInfo.getExtractorNames() 
 GET      /extractions/supported_input_types        				   			@controllers.ExtractionInfo.getExtractorInputTypes()
 
