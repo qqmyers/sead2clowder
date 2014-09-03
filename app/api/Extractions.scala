@@ -14,6 +14,7 @@ import java.io.BufferedWriter
 import java.io.FileWriter
 import java.io.FileReader
 import java.io.ByteArrayInputStream
+import java.text.SimpleDateFormat
 import scala.collection.mutable.MutableList
 import models._
 import play.api.Logger
@@ -185,7 +186,7 @@ class Extractions @Inject() (
    *
    */
   @ApiOperation(value = "Uploads a file for extraction using the file's URL",
-    notes = "Saves the uploaded file and sends it for extraction. Does not index the file.  ",
+    notes = "Saves the uploaded file and sends it for extraction. Does not index the file unless specified.  ",
     responseClass = "None", httpMethod = "POST")
   def uploadByURL() = SecuredAction(authorization = WithPermission(Permission.CreateFiles)) { implicit request =>
     request.user match {
@@ -195,6 +196,18 @@ class Extractions @Inject() (
 
         val fileurljs = request.body.\("fileurl").asOpt[String]
         Logger.debug("[uploadURL] file Url=" + fileurljs)
+        
+        val toBeCurated = request.body.\("curate").asOpt[String].map{ toBeCuratedOpt =>
+          toBeCuratedOpt.toLowerCase().toBoolean
+        }.getOrElse {
+      		  false
+      	   }
+
+        val showPreviews = request.body.\("showPreviews").asOpt[String].map{ showPreviewsOpt =>
+          showPreviewsOpt
+        }.getOrElse {
+      		  "DatasetLevel"
+      	   }
 
         fileurljs match {
 
@@ -214,7 +227,19 @@ class Extractions @Inject() (
                * 
                */
               val urlsplit = fileurl.split("/")
-              val filename = urlsplit(urlsplit.length - 1) 
+              var filename = urlsplit(urlsplit.length - 1)
+
+	          var flags = ""
+	          if(filename.toLowerCase().endsWith(".ptm")){
+		          	  var thirdSeparatorIndex = filename.indexOf("__")
+		              if(thirdSeparatorIndex >= 0){
+			                var firstSeparatorIndex = filename.indexOf("_")
+			                var secondSeparatorIndex = filename.indexOf("_", firstSeparatorIndex+1)
+			            	flags = flags + "+numberofIterations_" +  filename.substring(0,firstSeparatorIndex) + "+heightFactor_" + filename.substring(firstSeparatorIndex+1,secondSeparatorIndex)+ "+ptm3dDetail_" + filename.substring(secondSeparatorIndex+1,thirdSeparatorIndex)
+			            	filename = filename.substring(thirdSeparatorIndex+2)
+		              }
+	          }
+              
               val url = new URL(fileurl)
               var len = 0
               Logger.debug("filename: " + filename)
@@ -257,17 +282,46 @@ class Extractions @Inject() (
               val mimetype = new MimetypesFileTypeMap().getContentType(localfile)
               var fileType = mimetype
               Logger.debug("fileType= " + fileType)
-              val file = files.save(new FileInputStream(localfile), localfile.getName(), Some(ct), user, null)
+              val file = files.save(new FileInputStream(localfile), localfile.getName(), Some(ct), user, showPreviews)
               val uploadedFile = localfile
 
               file match {
                 case Some(f) => {
 
                   val id = f.id
+                  if(showPreviews.equals("FileLevel"))
+	            	flags = flags + "+filelevelshowpreviews"
+	              else if(showPreviews.equals("None"))
+	            	flags = flags + "+nopreviews"
                   fileType = f.contentType
+                  if(fileType.contains("/zip") || fileType.contains("/x-zip") || filename.toLowerCase().endsWith(".zip")){
+	            	fileType = FilesUtils.getMainFileTypeOfZipFile(localfile, filename, "file")			          
+	            	if(fileType.startsWith("ERROR: ")){
+	            		Logger.error(fileType.substring(7))
+	            		InternalServerError(fileType.substring(7))
+	            	}
+	            	if(fileType.equals("imageset/ptmimages-zipped") || fileType.equals("imageset/ptmimages+zipped") ){
+					        	  var thirdSeparatorIndex = filename.indexOf("__")
+					              if(thirdSeparatorIndex >= 0){
+					                var firstSeparatorIndex = filename.indexOf("_")
+					                var secondSeparatorIndex = filename.indexOf("_", firstSeparatorIndex+1)
+					            	flags = flags + "+numberofIterations_" +  filename.substring(0,firstSeparatorIndex) + "+heightFactor_" + filename.substring(firstSeparatorIndex+1,secondSeparatorIndex)+ "+ptm3dDetail_" + filename.substring(secondSeparatorIndex+1,thirdSeparatorIndex)
+					            	filename = filename.substring(thirdSeparatorIndex+2)
+					            	files.renameFile(f.id, filename)
+					              }
+					        	  files.setContentType(f.id, fileType)
+					}
+	            }
+	            else if(filename.toLowerCase().endsWith(".mov")){
+							  fileType = "ambiguous/mov";
+						  }
+                  
+                  if(toBeCurated)
+                    current.plugin[FileDumpService].foreach{_.dump(DumpOfFile(localfile, f.id.toString, filename))}
+                  
                   val key = "unknown." + "file." + fileType.replace(".", "_").replace("/", ".")
                   val host = Utils.baseUrl(request)
-                  current.plugin[RabbitmqPlugin].foreach { _.extract(ExtractorMessage(id, id, host, key, Map.empty, f.length.toString, null, "")) }
+                  current.plugin[RabbitmqPlugin].foreach { _.extract(ExtractorMessage(id, id, host, key, Map.empty, f.length.toString, null, flags)) }
                   Logger.debug("After RabbitmqPlugin")
 
                   /*--- Insert DTS Requests  ---*/
@@ -277,11 +331,45 @@ class Extractions @Inject() (
                   dtsrequests.insertRequest(serverIP, clientIP, f.filename, id, fileType, f.length, f.uploadDate)
 
                   /*----------------------*/
+                  
+                  // index the file using Versus if file is to be curated
+                  if(toBeCurated)
+                	  current.plugin[VersusPlugin].foreach{ _.index(f.id.toString,fileType) }
+                  
+                  val dateFormat = new SimpleDateFormat("dd/MM/yyyy") 
+                  //for metadata files
+                  if (fileType.equals("application/xml") || fileType.equals("text/xml")) {
+                    val xmlToJSON = FilesUtils.readXMLgetJSON(localfile)
+                    files.addXMLMetadata(id, xmlToJSON)
+
+                    Logger.debug("xmlmd=" + xmlToJSON)
+
+                    if(toBeCurated)
+	                    current.plugin[ElasticsearchPlugin].foreach {
+	                      _.index("data", "file", id, List(("filename", filename), ("contentType", f.contentType), ("author", user.fullName), ("uploadDate", dateFormat.format(new Date())),("xmlmetadata", xmlToJSON)))
+	                    }
+
+                    //add file to RDF triple store if triple store is used
+                    configuration.getString("userdfSPARQLStore").getOrElse("no") match {
+                      case "yes" => sqarql.addFileToGraph(f.id)
+                      case _ => {}
+                    }
+	            }
+	            else{
+	              if(toBeCurated)
+		            current.plugin[ElasticsearchPlugin].foreach{
+		              _.index("data", "file", id, List(("filename",filename), ("contentType", f.contentType), ("author", user.fullName), ("uploadDate", dateFormat.format(new Date()))))
+		            }
+	            }
 
                   /*file remove from temporary directory*/
 
                   localfile.delete()
 
+                  if(toBeCurated){
+                    Ok(toJson(Map("id"->id.stringify)))
+                    current.plugin[AdminsNotifierPlugin].foreach{_.sendAdminsNotification("File","added",id.stringify, filename)}
+                  }
                   Ok(toJson(Map("id" -> id.toString)))
                 }
                 case None => {

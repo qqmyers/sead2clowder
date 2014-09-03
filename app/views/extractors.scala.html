@@ -1,4 +1,4 @@
-@(dtsextractors:List[String], size:Integer)
+@(dtsextractors:List[String], size:Integer)(implicit user: Option[securesocial.core.Identity])
 @import helper._
 @import collection.JavaConverters._
 @implicitFieldConstructor = @{ FieldConstructor(twitterBootstrapInput.f) }
