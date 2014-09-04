@@ -146,7 +146,7 @@ class Files @Inject() (
   /**
    * List a specific number of files before or after a certain date.
    */
-  def list(when: String, date: String, limit: Int) = SecuredAction(authorization = WithPermission(Permission.ListFiles)) { implicit request =>
+  def list(when: String, date: String, limit: Int, listView: String) = SecuredAction(authorization = WithPermission(Permission.ListFiles)) { implicit request =>
     implicit val user = request.user
     var rightsForUser: Option[models.UserPermissions] = None
 	      user match{
@@ -190,7 +190,7 @@ class Files @Inject() (
         next = formatter.format(fileList.last.uploadDate)
       }
     }
-    Ok(views.html.filesList(fileList, prev, next, limit, rightsForUser))
+    Ok(views.html.filesList(fileList, prev, next, limit, listView, rightsForUser))
   }
 
   /**

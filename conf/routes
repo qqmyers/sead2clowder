@@ -36,7 +36,7 @@ GET     /bookmarklet.js                                                     @con
 
 
 # Files
-GET		/files					          @controllers.Files.list(when: String ?= "", date: String ?= "", size: Int ?= 10)
+GET		/files					          @controllers.Files.list(when: String ?= "", date: String ?= "", size: Int ?= 10, listView: String ?= "list")
 GET		/files/new					      @controllers.Files.uploadFile
 
 #This may not require; This is only for testing. It will change in subsequent version
@@ -66,7 +66,7 @@ GET		/assets/javascripts/previewers/iipJS/images/:imgResource	  @controllers.Dat
 GET /assets/javascripts/previewers/multispectral/images/:imgResource  @controllers.Datasets.redirectToImg(imgResource)
 
 # Datasets
-GET		/datasets					      @controllers.Datasets.list(when: String ?= "", date: String ?= "", size: Int ?= 10)
+GET		/datasets					      @controllers.Datasets.list(when: String ?= "", date: String ?= "", size: Int ?= 10, listView: String ?= "list")
 GET     /datasets/new                     @controllers.Datasets.newDataset
 GET     /datasets/metadataSearch          @controllers.Datasets.metadataSearch
 GET     /datasets/generalMetadataSearch   @controllers.Datasets.generalMetadataSearch
@@ -76,7 +76,7 @@ GET     /datasets_by_section/:id          @controllers.Datasets.datasetBySection
 POST    /dataset/submit                   @controllers.Datasets.submit
 
 # Collections
-GET      /collections                                                        @controllers.Collections.list(when: String ?= "", date: String ?= "", size: Int ?= 10)
+GET      /collections                                                        @controllers.Collections.list(when: String ?= "", date: String ?= "", size: Int ?= 10, listView: String ?= "list")
 GET      /collections/new                                                    @controllers.Collections.newCollection
 POST     /collection/submit                                                  @controllers.Collections.submit
 GET      /collection/:id                                                     @controllers.Collections.collection(id: UUID)

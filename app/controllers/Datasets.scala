@@ -82,7 +82,7 @@ class Datasets @Inject()(
   /**
    * List datasets.
    */
-  def list(when: String, date: String, limit: Int) = SecuredAction(authorization = WithPermission(Permission.ListDatasets)) {
+  def list(when: String, date: String, limit: Int, listView: String) = SecuredAction(authorization = WithPermission(Permission.ListDatasets)) {
 	    implicit request =>
 	      implicit val user = request.user
 	      var rightsForUser: Option[models.UserPermissions] = None
@@ -136,7 +136,7 @@ class Datasets @Inject()(
 	          decodeDatasetElements(aDataset)
 	      }
 	      
-	      Ok(views.html.datasetList(datasetList, prev, next, limit, rightsForUser))
+	      Ok(views.html.datasetList(datasetList, prev, next, limit, listView, rightsForUser))
 	  }
 
   
