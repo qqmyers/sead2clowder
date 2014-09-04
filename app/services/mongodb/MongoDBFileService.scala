@@ -234,7 +234,7 @@ class MongoDBFileService @Inject() (
     var results: List[File] = List.empty
     val order = MongoDBObject("uploadDate" -> -1)
     if(externalViewingEnabled || haveAdmin){
-      results = FileDAO.find(MongoDBObject()).sort(order).limit(1).toList
+      results = FileDAO.find("isIntermediate" $ne true).sort(order).limit(1).toList
     }else{
 	            user match{
 	              case Some(user)=>{
@@ -278,7 +278,7 @@ class MongoDBFileService @Inject() (
     var results: List[File] = List.empty
     val order = MongoDBObject("uploadDate" -> 1)
     if(externalViewingEnabled || haveAdmin){
-      results = FileDAO.find(MongoDBObject()).sort(order).limit(1).toList
+      results = FileDAO.find("isIntermediate" $ne true).sort(order).limit(1).toList
     }else{
 	            user match{
 	              case Some(user)=>{
