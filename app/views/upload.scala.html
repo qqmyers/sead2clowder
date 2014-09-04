@@ -1,25 +1,45 @@
-@(myForm: Form[FileMD])(implicit user: Option[securesocial.core.Identity])
+@(myForm: Form[FileMD])(implicit flash: play.api.mvc.Flash, user: Option[securesocial.core.Identity])
 
 @import helper._
 @implicitFieldConstructor = @{ FieldConstructor(twitterBootstrapInput.f) }
 
 @main("Medici 2.0") {
+  <script>
+	  	function clearUpload(){
+	  		$('#File').val('');
+	  	}
+  </script> 
   <div class="page-header">
     <h1>File Upload</h1>
   </div>
   <div class="row">
 	<div class="col-md-12">
+	@if(myForm.hasErrors) {
+		<div class="alert alert-error">
+            <p>Please fix all errors</p>
+        </div>
+    }
+    @flash.get("error").map { message =>
+    	<div class="alert alert-error">
+            <p>@message</p>
+        </div>
+    }
+	
 	  @form(action = routes.Files.upload, 'enctype -> "multipart/form-data", 'class -> "form-horizontal") {
-	    <fieldset>
+	    <fieldset  id="fileUploadField">
 	      <legend>Select file</legend>
-	      @inputFile(myForm("File"))
+	      @inputFile(myForm("File"))	      
 	    </fieldset>
+	    <button id="uploadCLearBtn" style="position: relative;  margin-top:10px; margin-bottom:10px;" onclick="clearUpload();return false;">Clear</button>
 	    <fieldset id="fileRadioFieldSet" style="margin-top:10px;">
 	      @inputRadioGroup(
 	          myForm("datasetLevel").copy(value=myForm("datasetLevel").value.orElse(Some("DatasetLevel")) ),
 	          options = options("DatasetLevel"->"Everywhere","FileLevel"->"On file page","None"->"Nowhere"),
 	          '_label -> "Show file preview(s)",
 	          '_error -> myForm("datasetLevel").error.map(_.withMessage("Select where the preview will be viewable.")))
+	    </fieldset>
+	    <fieldset id="fileURLFieldSet" >
+	      @inputText(myForm("fileURL"), '_label -> "Or select a URL of a file")
 	    </fieldset>
 	    <fieldset id="filePrivatePublicFieldSet" style="margin-bottom: 1%;">
 	      @checkbox(field = myForm("filePrivatePublic"),'_label -> "File is public")
