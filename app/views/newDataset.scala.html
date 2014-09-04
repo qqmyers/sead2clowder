@@ -36,8 +36,11 @@
 	    <fieldset  id="fileUploadField">
 	      @inputFile(myForm("file"), '_label -> "Upload file")
 	    </fieldset>
-	    <button id="uploadCLearBtn" style="position: relative;  margin-top:10px; margin-bottom:10px;" onclick="clearUpload();return false;">Clear</button>
-	    <fieldset id="filePrivatePublicFieldSet" style="margin-bottom: 1%;">
+	    <button id="uploadCLearBtn" style="position: relative;  margin-top:10px; margin-bottom:0px;" onclick="clearUpload();return false;">Clear</button>
+	    <fieldset id="fileURLFieldSet" >
+	      @inputText(myForm("fileURL"), '_label -> "Or select a URL of a file")
+	    </fieldset>
+	    <fieldset id="filePrivatePublicFieldSet" style="margin-bottom: 0%;margin-top: 0%;">
 	      @checkbox(field = myForm("filePrivatePublic"),'_label -> "File is public")
 	    </fieldset>
 	    <fieldset id="datasetRadioFieldSet">
@@ -47,7 +50,7 @@
 	          '_label -> "Show file preview(s)",
 	          '_error -> myForm("datasetLevel").error.map(_.withMessage("Select where the preview will be viewable.")))
 	    </fieldset>
-	    <fieldset style="position: relative;  margin-bottom:1%;">
+	    <fieldset style="position: relative;  margin-bottom:1%; margin-top:1%;">
 	      @select(
   			myForm("existingFile"),
   			("__nofile" -> "--NONE--") +: filesList.map{ oneFile =>

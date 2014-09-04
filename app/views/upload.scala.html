@@ -30,16 +30,16 @@
 	      <legend>Select file</legend>
 	      @inputFile(myForm("File"))	      
 	    </fieldset>
-	    <button id="uploadCLearBtn" style="position: relative;  margin-top:10px; margin-bottom:10px;" onclick="clearUpload();return false;">Clear</button>
+	    <button id="uploadCLearBtn" style="position: relative;  margin-top:10px; margin-bottom:10px;" onclick="clearUpload();return false;">Clear</button>	    
+	    <fieldset id="fileURLFieldSet" >
+	      @inputText(myForm("fileURL"), '_label -> "Or select a URL of a file")
+	    </fieldset>
 	    <fieldset id="fileRadioFieldSet" style="margin-top:10px;">
 	      @inputRadioGroup(
 	          myForm("datasetLevel").copy(value=myForm("datasetLevel").value.orElse(Some("DatasetLevel")) ),
 	          options = options("DatasetLevel"->"Everywhere","FileLevel"->"On file page","None"->"Nowhere"),
 	          '_label -> "Show file preview(s)",
 	          '_error -> myForm("datasetLevel").error.map(_.withMessage("Select where the preview will be viewable.")))
-	    </fieldset>
-	    <fieldset id="fileURLFieldSet" >
-	      @inputText(myForm("fileURL"), '_label -> "Or select a URL of a file")
 	    </fieldset>
 	    <fieldset id="filePrivatePublicFieldSet" style="margin-bottom: 1%;">
 	      @checkbox(field = myForm("filePrivatePublic"),'_label -> "File is public")

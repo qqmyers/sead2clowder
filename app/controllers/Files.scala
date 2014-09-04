@@ -491,7 +491,7 @@ def uploadExtract() = SecuredAction(parse.multipartFormData, authorization = Wit
 	      }
           
 	          
-	      }.getOrElse {
+	      }.getOrElse {	//File from URL
 	         val fileurl = request.body.asFormUrlEncoded.get("fileURL").get(0).trim()
 	         try{	
 	        	 	val url = new URL(fileurl)
