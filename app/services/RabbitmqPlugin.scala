@@ -41,6 +41,15 @@ val files: FileService =  DI.injector.getInstance(classOf[FileService])
 
   var channel:Channel=null
   var connection:Connection=null
+  
+  val rabbitmqHttpProtocol = {
+			if(play.api.Play.configuration.getBoolean("rabbitmq.useSSL").getOrElse(false)){
+				"https://"
+			}
+			else{
+				"http://"
+			}
+	}
 
   override def onStart() {
     Logger.debug("Starting Rabbitmq Plugin")
@@ -123,7 +132,7 @@ val files: FileService =  DI.injector.getInstance(classOf[FileService])
      val ruser = configuration.getString("rabbitmq.user").getOrElse("")
      val ruser_pwd = configuration.getString("rabbitmq.password").getOrElse("")
        
-    val rUrl="http://"+host+":"+mgmt_api_port+"/api/bindings"
+    val rUrl=rabbitmqHttpProtocol+host+":"+mgmt_api_port+"/api/bindings"
    
     val bindingList: Future[Response] = WS.url(rUrl).withHeaders("Accept" -> "application/json").withAuth(ruser, ruser_pwd, AuthScheme.BASIC).get()
     bindingList
@@ -141,7 +150,7 @@ val files: FileService =  DI.injector.getInstance(classOf[FileService])
     val ruser = configuration.getString("rabbitmq.user").getOrElse("")
     val ruser_pwd = configuration.getString("rabbitmq.password").getOrElse("")
        
-    val rUrl="http://"+host+":"+mgmt_api_port+"/api/channels"
+    val rUrl=rabbitmqHttpProtocol+host+":"+mgmt_api_port+"/api/channels"
     val ipList: Future[Response] = WS.url(rUrl).withHeaders("Accept" -> "application/json").withAuth(ruser, ruser_pwd, AuthScheme.BASIC).get()
     
     ipList
@@ -164,7 +173,7 @@ val files: FileService =  DI.injector.getInstance(classOf[FileService])
       vhost1="%2F"
     }
        
-    val qbindUrl="http://"+host+":"+mgmt_api_port+"/api/queues/"+vhost1+"/"+qname+"/bindings"
+    val qbindUrl=rabbitmqHttpProtocol+host+":"+mgmt_api_port+"/api/queues/"+vhost1+"/"+qname+"/bindings"
     
     Logger.debug("-----query bind Url:  "+ qbindUrl)
     
@@ -181,7 +190,7 @@ def getChannelInfo(cid: String): Future[Response]={
     
      val ruser = configuration.getString("rabbitmq.user").getOrElse("")
      val ruser_pwd = configuration.getString("rabbitmq.password").getOrElse("")
-     val cUrl="http://"+host+":"+mgmt_api_port+"/api/channels"
+     val cUrl=rabbitmqHttpProtocol+host+":"+mgmt_api_port+"/api/channels"
      val chInfo: Future[Response] = WS.url(cUrl+"/"+cid).withHeaders("Accept" -> "application/json").withAuth(ruser, ruser_pwd, AuthScheme.BASIC).get()
     chInfo
 }
