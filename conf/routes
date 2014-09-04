@@ -23,7 +23,7 @@ POST	 /users/registerThroughAdmins										 controllers.Users.handleStartSignUp
 
 # DTS Information
 GET      /extractions/requests          								    @controllers.ExtractionInfo.getDTSRequests()
-GET      /extractions/servers_ips								  		    @controllers.ExtractionInfo.getExtractorServersIP()
+GET      /extractions/servers_addresses								  		@controllers.ExtractionInfo.getExtractorServersIP()
 GET      /extractions/extractors_names         					 		    @controllers.ExtractionInfo.getExtractorNames() 
 GET      /extractions/supported_input_types        				   			@controllers.ExtractionInfo.getExtractorInputTypes()
 
@@ -192,7 +192,7 @@ POST    /api/files/:id/license                                	@api.Files.update
 #This may change depending on our discussion on identifying the details of extraction in DTS service
 # DTS Information
 GET       /api/extractions/requests                    		@api.Extractions.getDTSRequests()
-GET       /api/extractions/servers_ips				      	@api.Extractions.getExtractorServersIP()
+GET       /api/extractions/servers_addresses				@api.Extractions.getExtractorServersIP()
 GET       /api/extractions/extractors_names                 @api.Extractions.getExtractorNames() 
 GET       /api/extractions/supported_input_types      		@api.Extractions.getExtractorInputTypes()
 
