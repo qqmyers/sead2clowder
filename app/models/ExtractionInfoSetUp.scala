@@ -208,8 +208,9 @@ def updateDTSRequests(file_id:UUID,extractor_id:String)={
           		var inputTypes = List[String]()
           		for (input <- types) {
                 var typearr = input.split("\\.")
-                if (!inputTypes.contains(typearr(2)))
-                  inputTypes = typearr(2) :: inputTypes
+                var fullType = typearr(2)+"."+typearr(3)
+                if (!inputTypes.contains(fullType))
+                  inputTypes = fullType :: inputTypes
                 }
             Logger.debug("inputTypes: " + inputTypes)
             extractors.insertInputTypes(inputTypes)
