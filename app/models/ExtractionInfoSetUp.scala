@@ -192,8 +192,8 @@ def updateDTSRequests(file_id:UUID,extractor_id:String)={
                     (qb \ "routing_key").toString()
                 } //end of map
                 for (rk <- rkList) {
-                  if (rk != qn) {
-                    frk = rk
+                  if (rk.replace("\"","") != qn) {
+                    frk =  frk.concat("__"+rk.replace("\"",""))
                   }
                 }
                 frk
@@ -211,6 +211,16 @@ def updateDTSRequests(file_id:UUID,extractor_id:String)={
                 var fullType = typearr(2)+"."+typearr(3)
                 if (!inputTypes.contains(fullType))
                   inputTypes = fullType :: inputTypes
+          		for (input <- types) { Logger.debug("inpp: "+input)
+          		  for(inputPerQueue <- input.replaceFirst("__", "").split("__").toList){ Logger.debug("inppq: "+inputPerQueue)
+	                var typearr = inputPerQueue.split("\\.")
+	                var fullType = (typearr(2)+"."+typearr(3)).replace(".#","")
+	                if(fullType.endsWith("\""))
+	                  fullType = fullType.substring(0, fullType.length()-1)                
+	                Logger.debug("fulltype: "+fullType)
+	                if (!inputTypes.contains(fullType))
+	                  inputTypes = fullType :: inputTypes
+          		  }
                 }
             Logger.debug("inputTypes: " + inputTypes)
             extractors.insertInputTypes(inputTypes)
