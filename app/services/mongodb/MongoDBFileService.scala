@@ -981,6 +981,7 @@ class MongoDBFileService @Inject() (
 
           if(reqValue.isInstanceOf[String]){
             val currValue = reqValue.asInstanceOf[String]
+                        
             if(keyTrimmed.endsWith("__not")){
             	if(currValue.contains(" IGNORE CASE") || currValue.contains(" ANYWHERE")){
                     var realValue = currValue.replace(" IGNORE CASE", "").replace(" ANYWHERE", "");                
