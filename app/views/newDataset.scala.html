@@ -33,8 +33,18 @@
 	    <fieldset  id="fileUploadField">
 	      @inputFile(myForm("file"), '_label -> "Upload file")
 	    </fieldset>
-	    <button id="uploadCLearBtn" style="position: relative;  margin-top:10px; margin-bottom:10px;" onclick="clearUpload();return false;">Clear</button>
-	    <fieldset>
+	    <button id="uploadCLearBtn" style="position: relative;  margin-top:10px; margin-bottom:0px;" onclick="clearUpload();return false;">Clear</button>
+	    <fieldset id="fileURLFieldSet" >
+	      @inputText(myForm("fileURL"), '_label -> "Or select a URL of a file")
+	    </fieldset>	    
+	    <fieldset id="datasetRadioFieldSet">
+	      @inputRadioGroup(
+	          myForm("datasetLevel").copy(value=myForm("datasetLevel").value.orElse(Some("DatasetLevel")) ),
+	          options = options("DatasetLevel"->"Everywhere","FileLevel"->"On file page","None"->"Nowhere"),
+	          '_label -> "Show file preview(s)",
+	          '_error -> myForm("datasetLevel").error.map(_.withMessage("Select where the preview will be viewable.")))
+	    </fieldset>
+	    <fieldset style="position: relative;  margin-bottom:1%; margin-top:1%;">
 	      @select(
   			myForm("existingFile"),
   			("__nofile" -> "--NONE--") +: filesList.map{ oneFile =>
@@ -43,15 +53,8 @@
   			'_label -> "or select an existing file"
 		)
 	    </fieldset>
-	    <fieldset id="datasetRadioFieldSet">
-	      @inputRadioGroup(
-	          myForm("datasetLevel").copy(value=myForm("datasetLevel").value.orElse(Some("DatasetLevel")) ),
-	          options = options("DatasetLevel"->"Everywhere","FileLevel"->"On file page","None"->"Nowhere"),
-	          '_label -> "Show file preview(s)",
-	          '_error -> myForm("datasetLevel").error.map(_.withMessage("Select where the preview will be viewable.")))
-	    </fieldset>
         <div class="form-actions">
-          <input type="submit" class="btn btn-default" value="Upload"/>
+          <input type="submit" class="btn btn-default" value="Create"/>
         </div>
 	  }
     </div>

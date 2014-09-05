@@ -246,7 +246,12 @@ button.tech_md_ {
 	left:20px;
 }
 
-
+#fileURLFieldSet .control-group .controls input{
+	width:400px;
+}
+#fileURLFieldSet{
+	margin-top:10px;
+}
 
 #nameDescrFieldSet .control-group .controls textarea{
 	width:208px;
