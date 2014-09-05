@@ -1,4 +1,4 @@
-@(datasets: List[models.Dataset], prev: String, next: String, limit: Int)(implicit user: Option[securesocial.core.Identity])
+@(datasets: List[models.Dataset], prev: String, next: String, limit: Int, listView: String)(implicit user: Option[securesocial.core.Identity])
 
 @import services.{DI, AppConfigurationService}
 @import securesocial.core.{SocialUser, IdentityId, AuthenticationMethod}
@@ -16,8 +16,14 @@
 <div class="row">
     <div class="col-md-12">
         <div class="btn-group btn-group-sm pull-right">            
-            <button type="button" class="btn btn-default active" href="#list-view" id="list-view-btn"><span class="glyphicon glyphicon-th-list"></span></button>
-            <button type="button" class="btn btn-default" href="#tile-view" id="tile-view-btn"><span class="glyphicon glyphicon-th-large"></span></button>
+            @if(listView == "list"){            
+	            <button type="button" class="btn btn-default active" href="#list-view" id="list-view-btn"><span class="glyphicon glyphicon-th-list"></span></button>
+	            <button type="button" class="btn btn-default" href="#tile-view" id="tile-view-btn"><span class="glyphicon glyphicon-th-large"></span></button>
+            }
+            @if(listView == "tiles"){            
+	            <button type="button" class="btn btn-default" href="#list-view" id="list-view-btn"><span class="glyphicon glyphicon-th-list"></span></button>
+	            <button type="button" class="btn btn-default active" href="#tile-view" id="tile-view-btn"><span class="glyphicon glyphicon-th-large"></span></button>
+            }
         </div>
         <script>
             $(function() {
@@ -45,7 +51,12 @@
     </div>
 </div>
 
-<div class="row hidden" id="tile-view">
+@if(listView == "list"){ 
+	<div class="row hidden" id="tile-view">
+}
+@if(listView == "tiles"){ 
+	<div class="row" id="tile-view">
+}
 	<div class="col-md-12">
 		<div id="masonry">
 		@datasets.map { dataset =>
@@ -84,7 +95,12 @@
 </div>
 
 
-<div class="row" id="list-view">
+@if(listView == "list"){ 
+	<div class="row" id="list-view">
+}
+@if(listView == "tiles"){ 
+	<div class="row hidden" id="list-view">
+}
 	<div class="col-md-12">
 		<table class="table table-bordered table-hover">
 			<thead>
@@ -142,10 +158,10 @@
     <div class="col-md-12">
         <ul class="pager">
             @if(prev != "") {
-            <li class="previous"><a href="@(routes.Datasets.list("b", prev, limit))">Previous</a></li>
+            	<li class="previous"><a onclick="window.location='@(routes.Datasets.list("b", prev, limit))&listView='+(($('#list-view').is(':visible')) ? 'list' : 'tiles')" href="#">Previous</a></li>
             }
             @if(next != "") {
-            <li class ="next"><a href="@(routes.Datasets.list("a", next, limit))">Next</a></li>
+            	<li class="next"><a onclick="window.location='@(routes.Datasets.list("a", next, limit))&listView='+(($('#list-view').is(':visible')) ? 'list' : 'tiles')" href="#">Next</a></li>
             }
         </ul>
     </div>

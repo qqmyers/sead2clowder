@@ -44,7 +44,7 @@ class Collections @Inject()(datasets: DatasetService, collections: CollectionSer
   /**
    * List collections.
    */
-  def list(when: String, date: String, limit: Int) = SecuredAction(authorization = WithPermission(Permission.ListCollections)) {
+  def list(when: String, date: String, limit: Int, listView: String) = SecuredAction(authorization = WithPermission(Permission.ListCollections)) {
     implicit request =>
       implicit val user = request.user
       var direction = "b"
@@ -83,7 +83,7 @@ class Collections @Inject()(datasets: DatasetService, collections: CollectionSer
         }
       }
 
-      Ok(views.html.collectionList(collectionList, prev, next, limit))
+      Ok(views.html.collectionList(collectionList, prev, next, limit, listView))
     
   }
 
