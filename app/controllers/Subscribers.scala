@@ -308,5 +308,5 @@ object Subscribers extends SecuredController {
     Ok(views.html.makeNewsFeed(subscriberService.findAllHavingFB, true))
   }
   
-   
+
 }
