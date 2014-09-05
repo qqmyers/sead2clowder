@@ -12,3 +12,4 @@ case class Subscriber (
   fbAuthToken: Option[String] = None,
   expirationTime: Option[Date] = None
 )
+

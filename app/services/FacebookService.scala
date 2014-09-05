@@ -97,6 +97,7 @@ class FacebookService (application: Application) extends Plugin  {
     }
   }
   
+  
   def getUsernameById(id: String): String = {
     FBClient match{
       case Some(fbClient) => {
@@ -173,6 +174,7 @@ class FacebookService (application: Application) extends Plugin  {
 		  }		  
 		}  	
   }
+
   
   def getIfUserGrantedPermissions(authToken : String): Boolean = {
     
