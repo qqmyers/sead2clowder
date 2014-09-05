@@ -50,8 +50,9 @@ object ApplicationBuild extends Build {
     "postgresql" % "postgresql" % "8.1-407.jdbc3",
     "org.postgresql" % "com.springsource.org.postgresql.jdbc4" % "8.3.604",
     "org.springframework" % "spring" % "2.5.6",
-    "org.scalatest" %% "scalatest" % "2.1.0" % "test"
+    "org.scalatestplus" % "play_2.10" % "1.0.0" % "test"
   )
+
 
   // Only compile the bootstrap bootstrap.less file and any other *.less file in the stylesheets directory 
   def customLessEntryPoints(base: File): PathFinder = (
@@ -70,7 +71,6 @@ object ApplicationBuild extends Build {
     resolvers += Resolver.url("sbt-plugin-snapshots", url("http://repo.scala-sbt.org/scalasbt/sbt-plugin-snapshots/"))(Resolver.ivyStylePatterns),
     resolvers += "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots",
     resolvers += "Aduna" at "http://maven-us.nuxeo.org/nexus/content/repositories/public/",
-
     resolvers += "Forth" at "http://139.91.183.63/repository",
     resolvers += "opencastproject" at "http://repository.opencastproject.org/nexus/content/repositories/public"
   ).settings(net.virtualvoid.sbt.graph.Plugin.graphSettings: _*)

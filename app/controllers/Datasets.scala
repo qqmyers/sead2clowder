@@ -14,8 +14,10 @@ import fileutils.FilesUtils
 import api.Permission
 import javax.inject.Inject
 import scala.Some
+import scala.xml.Utility
 import services.ExtractorMessage
 import api.WithPermission
+import org.apache.commons.lang.StringEscapeUtils
 
 
 /**
@@ -46,6 +48,7 @@ class Datasets @Inject()(
       "name" -> nonEmptyText,
       "description" -> nonEmptyText
     )
+      //No LicenseData needed here, as on creation, default arg handles it. MMF - 5/2014
       ((name, description) => Dataset(name = name, description = description, created = new Date, author = null))
       ((dataset: Dataset) => Some((dataset.name, dataset.description)))
   )
@@ -97,6 +100,14 @@ class Datasets @Inject()(
 	          next = formatter.format(datasetList.last.created)
 	        }
 	      }
+	      
+	      //Modifications to decode HTML entities that were stored in an encoded fashion as part 
+	      //of the datasets names or descriptions
+	      val aBuilder = new StringBuilder()
+	      for (aDataset <- datasetList) {
+	          decodeDatasetElements(aDataset)
+	      }
+	      
 	      Ok(views.html.datasetList(datasetList, prev, next, limit))
 	  }
 
@@ -127,6 +138,7 @@ class Datasets @Inject()(
 
 
 	          val datasetWithFiles = dataset.copy(files = filesInDataset)
+	          decodeDatasetElements(datasetWithFiles)
 	          val previewers = Previewers.findPreviewers
 	          val previewslist = for (f <- datasetWithFiles.files) yield {
 	            val pvf = for (p <- previewers; pv <- f.previews; if (f.showPreviews.equals("DatasetLevel")) && (p.contentType.contains(pv.contentType))) yield {
@@ -173,6 +185,20 @@ class Datasets @Inject()(
 	        }
 	    }
 	  }
+  
+  /**
+   * Utility method to modify the elements in a dataset that are encoded when submitted and stored. These elements
+   * are decoded when a view requests the objects, so that they can be human readable.
+   * 
+   * Currently, the following dataset elements are encoded:
+   * name
+   * description
+   *  
+   */
+  def decodeDatasetElements(dataset: Dataset) {      
+      dataset.name = StringEscapeUtils.unescapeHtml(dataset.name)
+      dataset.description = StringEscapeUtils.unescapeHtml(dataset.description)
+  }
 
   /**
    * Dataset by section.

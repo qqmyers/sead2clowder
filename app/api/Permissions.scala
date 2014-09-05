@@ -40,6 +40,8 @@ object Permission extends Enumeration {
 		ShowDatasetsMetadata,
 		CreateTagsDatasets,
 		DeleteTagsDatasets,
+		UpdateDatasetInformation,
+		UpdateLicense,
 		CreateComments,
 		RemoveComments,
 		EditComments,
@@ -191,5 +193,6 @@ case class WithPermission(permission: Permission, resourceId: Option[UUID] = Non
 		  }
 		}
 	}
+
 }
 
