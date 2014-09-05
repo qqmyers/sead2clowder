@@ -440,15 +440,7 @@ class Datasets @Inject()(
 					    	
 			                // TODO RK : need figure out if we can use https
 			                val host = "http://" + request.host + request.path.replaceAll("dataset/submit$", "")
-		      
-			                //If uploaded file contains zipped files to be unzipped and added to the dataset, wait until the dataset is saved before sending extractor messages to unzip
-			                //and return the files
-			                if(!fileType.equals("multi/files-zipped")){
-						        current.plugin[RabbitmqPlugin].foreach{_.extract(ExtractorMessage(id, id, host, key, Map.empty, f.length.toString, null, flags))}
-						        //current.plugin[ElasticsearchPlugin].foreach{_.index("data", "file", id, List(("filename",nameOfFile), ("contentType", f.contentType)))}
-					        }
-					        
-					        
+		      				        
 					    	var isDatasetPublicOption = request.body.asFormUrlEncoded.get("datasetPrivatePublic")
 					        if(!isDatasetPublicOption.isDefined)
 					          isDatasetPublicOption = Some(List("false"))	        
@@ -460,10 +452,7 @@ class Datasets @Inject()(
 					        // TODO create a service instead of calling salat directly
 				            datasets.update(dt)				            
 				            
-				            if(fileType.equals("multi/files-zipped")){
-						        current.plugin[RabbitmqPlugin].foreach{_.extract(ExtractorMessage(id, id, host, key, Map.empty, f.length.toString, dt.id, flags))}
-						        //current.plugin[ElasticsearchPlugin].foreach{_.index("data", "file", id, List(("filename",nameOfFile), ("contentType", f.contentType)))}
-					        }
+						    current.plugin[RabbitmqPlugin].foreach{_.extract(ExtractorMessage(id, id, host, key, Map.empty, f.length.toString, dt.id, flags))}
 					        
 					        val dateFormat = new SimpleDateFormat("dd/MM/yyyy")
 					        
