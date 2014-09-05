@@ -38,11 +38,12 @@
 	      @inputText(myForm("surname"), '_label -> "Surname")
 	      @if(FBEnabled){
 	      	@inputText(myForm("identifier"), '_label -> "Email, Facebook username or Facebook ID")
+	      	@inputPassword(myForm("password"), '_label -> "Password (for unregistering). IMPORTANT: Do not use your Facebook password!")
 	      }
 	      @if(!FBEnabled){
 	      	@inputText(myForm("identifier"), '_label -> "Email")
-	      }
-	      @inputPassword(myForm("password"), '_label -> "Password (for unregistering). IMPORTANT: Do not use your Facebook password!")
+	      	@inputPassword(myForm("password"), '_label -> "Password (for unregistering).")
+	      }	      
 	    </fieldset>
 	    @if(FBEnabled){
 		    <div style="margin-top:10px;margin-bottom:10px;">

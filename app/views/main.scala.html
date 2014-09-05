@@ -1,5 +1,8 @@
 @(title: String)(content: Html)(implicit user: Option[securesocial.core.Identity] = None)
 
+@import play.api.Play.current
+@import services.FacebookService
+
 <!DOCTYPE html>
 
 <html lang="en">
@@ -126,7 +129,9 @@
 						   	<li><a href="@routes.Admin.main">Main</a></li>	
 						   	<li><a href="@routes.Extractors.extractions">Extractors events</a></li>
 						   	<li><a href="@routes.Subscribers.makeNewsFeed">Send news feed.</a></li>
-						   	<li><a href="@routes.Subscribers.makeNewsFeedFB">Send Facebook news feed.</a></li>		
+						   	@if(current.plugin[FacebookService].isDefined){
+						   		<li><a href="@routes.Subscribers.makeNewsFeedFB">Send Facebook news feed.</a></li>
+						   	}		
 						   	<li><a href="@routes.Subscribers.list">List newsfeeds subscribers</a></li>
 						   	<li><a href="@routes.Subscribers.addSubscriber">Add new subscriber</a></li>							   			   	
 						   	<li><a href="@routes.Admin.newAdmin">Add admin</a></li>	
