@@ -95,8 +95,7 @@ class Collections @Inject()(datasets: DatasetService, collections: CollectionSer
         }
       }
 
-      Ok(views.html.collectionList(collectionList, prev, next, limit, listView, rightsForUser))
-    
+      Ok(views.html.collectionList(collectionList, prev, next, limit, listView, rightsForUser))    
   }
 
   def jsonCollection(collection: Collection): JsValue = {
