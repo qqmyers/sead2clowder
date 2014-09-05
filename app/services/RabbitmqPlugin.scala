@@ -48,14 +48,14 @@ class RabbitmqPlugin(application: Application) extends Plugin {
   var connection:Connection=null
   
   val rabbitmqHttpProtocol = {
-					if(play.api.Play.configuration.getBoolean("rabbitmq.useSSL").getOrElse(false)){
-						"https://"
-					}
-					else{
-						"http://"
-					}
-		}
-  
+			if(play.api.Play.configuration.getBoolean("rabbitmq.useSSL").getOrElse(false)){
+				"https://"
+			}
+			else{
+				"http://"
+			}
+	}
+
   override def onStart() {
     Logger.debug("Starting Rabbitmq Plugin")
 
