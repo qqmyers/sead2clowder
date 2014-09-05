@@ -253,8 +253,7 @@ class MongoDBFileService @Inject() (
 	                results = FileDAO.find($and("isIntermediate" $ne true,$or("isPublic"->true,"author.fullName"->"Anonymous User"))).sort(order).limit(1).toList
 	              }
 	            }	    	  
-    }
-  
+    }  
     if (results.size > 0)
       Some(results(0))
     else
@@ -297,8 +296,7 @@ class MongoDBFileService @Inject() (
 	                results = FileDAO.find($and("isIntermediate" $ne true,$or("isPublic"->true,"author.fullName"->"Anonymous User"))).sort(order).limit(1).toList
 	              }
 	            }	    	  
-    }
-  
+    }  
     if (results.size > 0)
       Some(results(0))
     else
