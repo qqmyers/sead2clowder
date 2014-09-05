@@ -1,4 +1,4 @@
-@(myForm: Form[FileMD])(implicit user: Option[securesocial.core.Identity])
+@(myForm: Form[FileMD])(implicit flash: play.api.mvc.Flash, user: Option[securesocial.core.Identity])
 
 @import helper._
 @implicitFieldConstructor = @{ FieldConstructor(twitterBootstrapInput.f) }
