@@ -110,7 +110,7 @@ def updateDTSRequests(file_id:UUID,extractor_id:String)={
                 var flag = false
                 for (xt <- consumer_tags) {
                   var str = xt
-                  var substr = str.substring(1, str.length()-1) 
+                  var substr = str.substring(1, str.length-1) 
                   if (substr.startsWith("medici_")) {
                     Logger.debug(substr + " :::  CONSUMER")
                     flag = true
@@ -208,8 +208,8 @@ def updateDTSRequests(file_id:UUID,extractor_id:String)={
             	types <- scala.concurrent.Future.sequence(rktypelist)
           	} yield {
           		var inputTypes = List[String]()
-          		for (input <- types) { Logger.debug("inpp: "+input)
-          		  for(inputPerQueue <- input.replaceFirst("__", "").split("__").toList){ Logger.debug("inppq: "+inputPerQueue)
+          		for (input <- types) {
+          		  for(inputPerQueue <- input.replaceFirst("__", "").split("__").toList){ 
 	                var typearr = inputPerQueue.split("\\.")
 	                var fullType = (typearr(2)+"."+typearr(3)).replace(".#","")
 	                if(fullType.endsWith("\""))
