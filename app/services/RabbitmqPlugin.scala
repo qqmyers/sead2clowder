@@ -48,7 +48,7 @@ class RabbitmqPlugin(application: Application) extends Plugin {
   var connection:Connection=null
   
   val rabbitmqMgmtHttpProtocol = {
-			if(play.api.Play.configuration.getBoolean("mgmt_use_ssl").getOrElse(false)){
+			if(play.api.Play.configuration.getBoolean("rabbitmq.mgmt_use_ssl").getOrElse(false)){
 				"https://"
 			}
 			else{
