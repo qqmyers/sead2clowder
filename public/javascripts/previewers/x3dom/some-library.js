@@ -1742,3 +1742,4 @@ function clearConfigTabAnnotations(prNum){
 	}  
 
 }(jQuery, Configuration));
+

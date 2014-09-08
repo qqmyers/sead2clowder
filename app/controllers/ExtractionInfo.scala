@@ -36,7 +36,6 @@ class ExtractionInfo @Inject() (extractors: ExtractorService, dtsrequests: Extra
         status <- x
       } yield {
     	implicit val user = request.user    
-        
         Logger.debug("Update Status:" + status)
         val list_servers = extractors.getExtractorServerIPList()
         var jarr = new JsArray()
@@ -58,7 +57,7 @@ class ExtractionInfo @Inject() (extractors: ExtractorService, dtsrequests: Extra
  */
   def getExtractorNames() = SecuredAction(authorization = WithPermission(Permission.Admin)) { implicit request =>
   	implicit val user = request.user
-    
+
     val list_names = extractors.getExtractorNames()
     var jarr = new JsArray()
     var list_names1=List[String]()
@@ -67,7 +66,6 @@ class ExtractionInfo @Inject() (extractors: ExtractorService, dtsrequests: Extra
         Logger.debug("Extractor Name:  " + ls)
         jarr = jarr :+ (Json.parse("\""+ls+"\""))
         list_names1=ls::list_names1
-
     }
     Logger.debug("Json array for list of extractor names----" + jarr.toString)
     Ok(views.html.extractors(list_names1,list_names1.size))
@@ -116,3 +114,4 @@ class ExtractionInfo @Inject() (extractors: ExtractorService, dtsrequests: Extra
   }
 
 }
+

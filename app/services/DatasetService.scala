@@ -205,4 +205,3 @@ trait DatasetService {
   def setIsPublic(datasetId: UUID, isPublic: Boolean)
 
 }
-

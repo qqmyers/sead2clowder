@@ -169,8 +169,6 @@ class Collections @Inject()(datasets: DatasetService, collections: CollectionSer
         }
       }
   }
-
-  
   
   def checkAccessForCollection(collection: Collection, user: Option[Identity], permissionType: String): Boolean = {
     var isAuthorless = true

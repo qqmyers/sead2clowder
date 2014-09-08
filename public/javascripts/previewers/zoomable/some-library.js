@@ -24,3 +24,4 @@
 	 viewer.openDzi(Configuration.url);
 			
 }(jQuery, Configuration));
+

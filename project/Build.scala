@@ -75,3 +75,4 @@ object ApplicationBuild extends Build {
     resolvers += "opencastproject" at "http://repository.opencastproject.org/nexus/content/repositories/public"
   ).settings(net.virtualvoid.sbt.graph.Plugin.graphSettings: _*)
 }
+

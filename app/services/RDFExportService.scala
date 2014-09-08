@@ -217,5 +217,5 @@ class RDFExportService (application: Application) extends Plugin {
     return xmlFile    
   }
   
-  
 }
+

@@ -93,7 +93,6 @@ class ElasticsearchPlugin(application: Application) extends Plugin {
     Logger.info("Deleting document: " + response.getId())
   }
 
-
   def indexDataset(dataset: Dataset) {
     var tagListBuffer = new ListBuffer[String]()
 

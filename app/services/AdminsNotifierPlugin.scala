@@ -85,3 +85,4 @@ class AdminsNotifierPlugin(application:Application) extends Plugin {
   }
   
 }
+

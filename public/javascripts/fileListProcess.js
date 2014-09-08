@@ -18,10 +18,8 @@ function removeFile(fileId,event, reloadPage){
         	location.reload(true);
     });
 	request.fail(function (jqXHR, textStatus, errorThrown){
-		console.error(
-    		"The following error occured: "+
-    		textStatus, errorThrown		            
-			);
-		alert("ERROR: " + errorThrown +". File not deleted. Maybe it was already deleted, or maybe you are not authorized to delete it." );
+		console.error("The following error occured: " + textStatus, errorThrown);
+        var errMsg = "You must be logged in to delete a file from the system.";        
+            alert("The file was not deleted from the system due to : " + errorThrown);
 			});	
 }

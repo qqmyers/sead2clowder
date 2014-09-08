@@ -12,4 +12,3 @@ case class ThreeDAnnotation(
   description: String = "",
   id: UUID = UUID.generate)
 
-

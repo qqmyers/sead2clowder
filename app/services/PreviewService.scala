@@ -15,6 +15,7 @@ trait PreviewService {
   
   def setIIPKey(id: UUID, iipKey: String)
 
+
   def findByFileId(id: UUID): List[Preview]
 
   def findBySectionId(id: UUID): List[Preview]

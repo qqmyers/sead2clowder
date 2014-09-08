@@ -62,6 +62,7 @@ class Files @Inject() (
     Logger.info("GET file with id " + id)
     files.get(id) match {
       case Some(file) => {
+
         var rightsForUser: Option[models.UserPermissions] = None
         user match{
 		        case Some(theUser)=>{
@@ -99,7 +100,7 @@ class Files @Inject() (
         		s.copy(preview = None)
         }
         Logger.debug("Sections available: " + sectionsWithPreviews)
-        
+
         //Search whether file is currently being processed by extractor(s)
         var isActivity = false
         extractions.findIfBeingProcessed(file.id) match {
@@ -142,6 +143,7 @@ class Files @Inject() (
         }
     }
   }
+
 
   /**
    * List a specific number of files before or after a certain date.
@@ -248,32 +250,33 @@ def uploadExtract() = SecuredAction(parse.multipartFormData, authorization = Wit
 	        file match {
 	          case Some(f) => {
 	        	accessRights.addPermissionLevel(request.user.get, f.id.stringify, "file", "administrate")  
+
 	            if(showPreviews.equals("FileLevel"))
 	                	flags = flags + "+filelevelshowpreviews"
 	            else if(showPreviews.equals("None"))
 	                	flags = flags + "+nopreviews"
 	             var fileType = f.contentType
-				    if(fileType.contains("/zip") || fileType.contains("/x-zip") || nameOfFile.toLowerCase().endsWith(".zip")){
+				 if(fileType.contains("/zip") || fileType.contains("/x-zip") || nameOfFile.toLowerCase().endsWith(".zip")){
 				          fileType = FilesUtils.getMainFileTypeOfZipFile(uploadedFile.ref.file, nameOfFile, "file")			          
-                if (fileType.startsWith("ERROR: ")) {
-                  Logger.error(fileType.substring(7))
-                  InternalServerError(fileType.substring(7))
-                }
-				if(fileType.equals("imageset/ptmimages-zipped") || fileType.equals("imageset/ptmimages+zipped") || fileType.equals("multi/files-ptm-zipped") ){
-				            if(fileType.equals("multi/files-ptm-zipped")){
-	            				    fileType = "multi/files-zipped";
-	            				  }
-				            
-				              var thirdSeparatorIndex = nameOfFile.indexOf("__")
-				              if(thirdSeparatorIndex >= 0){
-				                var firstSeparatorIndex = nameOfFile.indexOf("_")
-				                var secondSeparatorIndex = nameOfFile.indexOf("_", firstSeparatorIndex+1)
-				            	flags = flags + "+numberofIterations_" +  nameOfFile.substring(0,firstSeparatorIndex) + "+heightFactor_" + nameOfFile.substring(firstSeparatorIndex+1,secondSeparatorIndex)+ "+ptm3dDetail_" + nameOfFile.substring(secondSeparatorIndex+1,thirdSeparatorIndex)
-				            	nameOfFile = nameOfFile.substring(thirdSeparatorIndex+2)
-				            	files.renameFile(f.id, nameOfFile)
-				              }
-				              files.setContentType(f.id, fileType)
-				          }          
+	                if (fileType.startsWith("ERROR: ")) {
+	                  Logger.error(fileType.substring(7))
+	                  InternalServerError(fileType.substring(7))
+	                }
+					if(fileType.equals("imageset/ptmimages-zipped") || fileType.equals("imageset/ptmimages+zipped") || fileType.equals("multi/files-ptm-zipped") ){
+					            if(fileType.equals("multi/files-ptm-zipped")){
+		            				    fileType = "multi/files-zipped";
+		            				  }
+					            
+					              var thirdSeparatorIndex = nameOfFile.indexOf("__")
+					              if(thirdSeparatorIndex >= 0){
+					                var firstSeparatorIndex = nameOfFile.indexOf("_")
+					                var secondSeparatorIndex = nameOfFile.indexOf("_", firstSeparatorIndex+1)
+					            	flags = flags + "+numberofIterations_" +  nameOfFile.substring(0,firstSeparatorIndex) + "+heightFactor_" + nameOfFile.substring(firstSeparatorIndex+1,secondSeparatorIndex)+ "+ptm3dDetail_" + nameOfFile.substring(secondSeparatorIndex+1,thirdSeparatorIndex)
+					            	nameOfFile = nameOfFile.substring(thirdSeparatorIndex+2)
+					            	files.renameFile(f.id, nameOfFile)
+					              }
+					              files.setContentType(f.id, fileType)
+					          }          
               }
 	            
 	          current.plugin[FileDumpService].foreach{_.dump(DumpOfFile(uploadedFile.ref.file, f.id.toString, nameOfFile))}
@@ -292,6 +295,7 @@ def uploadExtract() = SecuredAction(parse.multipartFormData, authorization = Wit
               Logger.debug("Origin: "+request.headers.get("Origin") + "  Referer="+ request.headers.get("Referer")+ " Connections="+request.headers.get("Connection")+"\n \n")
        		  val serverIP= request.host
               dtsrequests.insertRequest(serverIP,clientIP, f.filename, id, fileType, f.length,f.uploadDate)
+
               /****************************/
               
               val dateFormat = new SimpleDateFormat("dd/MM/yyyy")
@@ -348,6 +352,7 @@ def uploadExtract() = SecuredAction(parse.multipartFormData, authorization = Wit
 
 }*/
 
+
   /**
    * Upload file.
    */
@@ -389,6 +394,7 @@ user match {
 	        file match {
 	          case Some(f) => {
 	        	accessRights.addPermissionLevel(request.user.get, f.id.stringify, "file", "administrate")  
+
 	            if(showPreviews.equals("FileLevel"))
 	                	flags = flags + "+filelevelshowpreviews"
 	            else if(showPreviews.equals("None"))
@@ -447,6 +453,7 @@ user match {
 
               // TODO replace null with None
 	            current.plugin[RabbitmqPlugin].foreach{_.extract(ExtractorMessage(id, id, host, key, Map.empty, f.length.toString, null, flags))}
+
 	            
 	            val dateFormat = new SimpleDateFormat("dd/MM/yyyy")
 	            
@@ -457,7 +464,7 @@ user match {
 	              
 	              Logger.debug("xmlmd=" + xmlToJSON)
 	              
-	              current.plugin[ElasticsearchPlugin].foreach{
+	              current.plugin[ElasticsearchPlugin].foreach{	
 		              _.index("data", "file", id, List(("filename",f.filename), ("contentType", f.contentType), ("author", identity.fullName), ("uploadDate", dateFormat.format(new Date())), ("datasetId",""),("datasetName",""), ("xmlmetadata", xmlToJSON)))
 		            }
 	            }
@@ -478,6 +485,7 @@ user match {
 	             }
 	                        
 	            // redirect to file page]
+
 	            Redirect(routes.Files.file(f.id))
 	            current.plugin[AdminsNotifierPlugin].foreach{_.sendAdminsNotification("File","added",f.id.stringify, nameOfFile)}
 	            Redirect(routes.Files.file(f.id))
@@ -1212,6 +1220,7 @@ user match {
 
 								  current.plugin[ElasticsearchPlugin].foreach{
 						  			  _.index("data", "file", id, List(("filename",f.filename), ("contentType", f.contentType), ("author", identity.fullName), ("uploadDate", dateFormat.format(new Date())), ("datasetId",dataset.id.toString()),("datasetName",dataset.name), ("xmlmetadata", xmlToJSON)))
+
 						  		  }
 					  }
 					  else{
@@ -1327,7 +1336,7 @@ user match {
       }
     }
   }
-  
+
 
   ///////////////////////////////////
   //

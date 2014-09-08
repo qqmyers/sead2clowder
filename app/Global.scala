@@ -23,7 +23,7 @@ import akka.actor.Cancellable
  *
  * @author Luigi Marini
  */
-object Global extends GlobalSettings {
+object Global extends WithFilters(new GzipFilter(),CORSFilter()) with GlobalSettings  {
   
   var serverStartTime:Date=null
   var extractorTimer: Cancellable = null
@@ -111,4 +111,3 @@ object Global extends GlobalSettings {
     injector.getInstance(clazz)
   }
 }
-

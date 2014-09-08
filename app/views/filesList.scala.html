@@ -7,6 +7,10 @@
 @import org.apache.commons.io._
 
 @main("Files") {
+
+<script src="@routes.Assets.at("javascripts/errorRedirect.js")" type="text/javascript"></script>
+<script src="@routes.Assets.at("javascripts/fileListProcess.js")" type="text/javascript"></script>
+
 <div class="page-header" xmlns="http://www.w3.org/1999/html">
   <h1>Files</h1>
 </div>
@@ -123,7 +127,8 @@
 							</td>
 							<td class="requiresLogin">
 										@if(services.DI.injector.getInstance(classOf[controllers.Files]).checkAccessForFileUsingRightsList(file, user, "modify", rightsForUser)){
-											<a href="#!" onclick="removeFile('@(file.id)',event)">Remove</a>
+											<a href="#" onclick="removeFile('@(file.id)',event)" class="btn btn-link" style="text-align:right" title="Delete">
+											<span class="glyphicon glyphicon-trash"></span></a>
 										}													
 							</td>						
 						</tr>
@@ -152,7 +157,6 @@
 		</script>
 	}
 
-<script src="@routes.Assets.at("javascripts/fileListProcess.js")" type="text/javascript"></script>
 @util.masonry()
 }
 

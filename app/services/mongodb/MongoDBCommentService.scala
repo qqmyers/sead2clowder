@@ -5,6 +5,7 @@ import services.CommentService
 import com.novus.salat.dao.{ModelCompanion, SalatDAO}
 import MongoContext.context
 import play.api.Play.current
+import play.Logger
 import com.mongodb.casbah.commons.MongoDBObject
 import com.mongodb.casbah.Imports._
 
@@ -55,7 +56,7 @@ class MongoDBCommentService extends CommentService {
     }
     Comment.remove(MongoDBObject("_id" -> new ObjectId(c.id.stringify)))
   }
-  
+
   /**
    * Implementation of the editComment method defined in the services/CommentService.scala trait.
    * 
@@ -76,7 +77,7 @@ class MongoDBCommentService extends CommentService {
       var theComment = get(id)
       removeComment(theComment.get)
   } 
-  
+
 }
 
 

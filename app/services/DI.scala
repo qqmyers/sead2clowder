@@ -7,6 +7,7 @@ import com.google.inject.AbstractModule
 import services.mongodb._
 import services.fourstore.FourStoreRdfSPARQLService
 
+
 /**
  * Guice module configuration.
  *

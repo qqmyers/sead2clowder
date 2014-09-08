@@ -24,14 +24,13 @@ import services.{TileService, PreviewService, UserAccessRightsService, FileServi
  */
 @Singleton
 class Previews @Inject()(previews: PreviewService, tiles: TileService, accessRights: UserAccessRightsService, files: FileService, datasets: DatasetService) extends ApiController {
-  
 
   def downloadPreview(id: UUID, datasetid: UUID) =
     SecuredAction(parse.anyContent, authorization = WithPermission(Permission.ShowFile)) {
       request =>
         Redirect(routes.Previews.download(id))
     }
-  
+
   def checkPreviewAccess(user: Option[securesocial.core.Identity], preview: Preview, requestedRight: String): Boolean = {
     val filesChecker = services.DI.injector.getInstance(classOf[api.Files])
     val datasetsChecker = services.DI.injector.getInstance(classOf[api.Datasets])
@@ -88,6 +87,7 @@ class Previews @Inject()(previews: PreviewService, tiles: TileService, accessRig
 	    }
     }
   }
+
 
   /**
    * Download preview bytes.
@@ -335,10 +335,7 @@ class Previews @Inject()(previews: PreviewService, tiles: TileService, accessRig
           }
           case None => BadRequest(toJson("Preview not found " + dzi_id))
         }
-        
-        
-        
-        
+
     }
 
   /**

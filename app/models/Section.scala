@@ -23,3 +23,4 @@ case class Rectangle(
   h: Double) {
   override def toString() = f"x: $x%.0f, y: $y%.0f, width: $w%.0f, height: $h%.0f"
 }
+

@@ -26,7 +26,6 @@ class Search @Inject() (files: FileService, datasets: DatasetService, collection
         var collectionsFound = ListBuffer.empty[models.Collection]
 
         if (query != "") {
-
           val result = current.plugin[ElasticsearchPlugin].map { _.search("data", query.replaceAll("([:/\\\\])", "\\\\$1"))}
           
           result match {

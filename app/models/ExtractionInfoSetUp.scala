@@ -47,10 +47,9 @@ def updateDTSRequests(file_id:UUID,extractor_id:String)={
       case Some(plugin) => {
         val configuration = play.api.Play.configuration
         var futureIPs = plugin.getChannelsList() /* Get Channel IPs*/
-        
         var ips = for {
           ipsResponse <- futureIPs /* Convert Future Response to Response*/
-        } yield {  
+        } yield {
           val ipsjson = ipsResponse.json
 
           val ipsjsonlist = ipsjson.as[List[JsObject]] /*Convert JsValue to List of JsObject(Channel Objects) that enables to traverse*/
@@ -69,8 +68,7 @@ def updateDTSRequests(file_id:UUID,extractor_id:String)={
           } //end of map
           ulist
         } //end of first yield
-        
-       
+
         /*
 		* Get the channel details
 		* extract consumer_tags field
@@ -177,7 +175,6 @@ def updateDTSRequests(file_id:UUID,extractor_id:String)={
             }
           }
           extractors.insertServerIPs(kslist)
-          
           extractors.insertExtractorNames(qlist)
 
           var rktypelist = qlist.map {
@@ -238,6 +235,6 @@ def updateDTSRequests(file_id:UUID,extractor_id:String)={
     } //end of match
     updateStatus
   }
-  
-  
+
 }
+

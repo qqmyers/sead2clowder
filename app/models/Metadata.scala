@@ -11,4 +11,3 @@ case class Metadata(
   value: String,
   predicate: Option[String])
 
-
