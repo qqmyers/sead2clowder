@@ -549,7 +549,7 @@ def uploadExtract() = SecuredAction(parse.multipartFormData, authorization = Wit
 		                    current.plugin[FileDumpService].foreach{_.dump(DumpOfFile(localfile, f.id.toString, filename))}
 		                  
 		                  val key = "unknown." + "file." + fileType.replace(".", "_").replace("/", ".")
-		                  val host = Utils.baseUrl(request)
+		                  val host = Utils.baseUrl(request) + request.path.replaceAll("upload$", "")
 		                  current.plugin[RabbitmqPlugin].foreach { _.extract(ExtractorMessage(id, id, host, key, Map.empty, f.length.toString, null, flags)) }
 		                  Logger.debug("After RabbitmqPlugin")
 		

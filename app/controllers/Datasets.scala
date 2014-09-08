@@ -499,7 +499,7 @@ def submit() = SecuredAction(parse.multipartFormData, authorization=WithPermissi
 			                    current.plugin[FileDumpService].foreach{_.dump(DumpOfFile(localfile, f.id.toString, filename))}
 			                  
 			                  val key = "unknown." + "file." + fileType.replace(".", "_").replace("/", ".")
-			                  val host = Utils.baseUrl(request)
+			                  val host = Utils.baseUrl(request) + request.path.replaceAll("dataset/submit$", "")
 						    	
 						        // add file to dataset
 						        val dt = dataset.copy(files = List(f), author=identity)
