@@ -101,6 +101,9 @@ def updateDTSRequests(file_id:UUID,extractor_id:String)={
                   var ctag = ct \\ "consumer_tag"
                   consumer_tags = ctag(0).toString :: consumer_tags
                   queue = ct \\ "queue"
+                  //Temporary fix to comply with older versions of RabbitMQ that use "queue_details"
+                  if(queue.size == 0)
+                    queue = ct \\ "queue_details"                  
                   queuename = queue(0) \\ "name"
                   Logger.debug(" Queuename: " + queuename(0))
                 }
