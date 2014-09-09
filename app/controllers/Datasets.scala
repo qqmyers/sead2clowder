@@ -693,7 +693,7 @@ class Datasets @Inject()(
 			                    current.plugin[FileDumpService].foreach{_.dump(DumpOfFile(localfile, f.id.toString, filename))}
 			                  
 			                  val key = "unknown." + "file." + fileType.replace(".", "_").replace("/", ".")
-			                  val host = Utils.baseUrl(request)
+			                  val host = Utils.baseUrl(request) + request.path.replaceAll("dataset/submit$", "")
 			                  
 			                    var isDatasetPublicOption = request.body.asFormUrlEncoded.get("datasetPrivatePublic")
 						        if(!isDatasetPublicOption.isDefined)
