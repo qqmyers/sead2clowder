@@ -136,7 +136,7 @@ class Extractions @Inject() (
                   }
 
                   val key = "unknown." + "file." + fileType.replace(".", "_").replace("/", ".")
-                  val host = Utils.baseUrl(request)
+                  val host = Utils.baseUrl(request) + request.path.replaceAll("api/extractions/upload_file$", "")
 
                   /** Insert DTS Requests   **/
 
@@ -324,7 +324,7 @@ class Extractions @Inject() (
                     current.plugin[FileDumpService].foreach{_.dump(DumpOfFile(localfile, f.id.toString, filename))}
                   
                   val key = "unknown." + "file." + fileType.replace(".", "_").replace("/", ".")
-                  val host = Utils.baseUrl(request)
+                  val host = Utils.baseUrl(request) + request.path.replaceAll("api/extractions/upload_url$", "")
                   current.plugin[RabbitmqPlugin].foreach { _.extract(ExtractorMessage(id, id, host, key, Map.empty, f.length.toString, null, flags)) }
                   Logger.debug("After RabbitmqPlugin")
 
@@ -423,7 +423,7 @@ class Extractions @Inject() (
             case Some(file) => {
               val fileType = file.contentType
               val key = "unknown." + "file." + fileType.replace(".", "_").replace("/", ".")
-              val host = Utils.baseUrl(request)
+              val host = Utils.baseUrl(request) + request.path.replaceAll("api/extractions/[A-Za-z0-9_+]*/submit$", "") 
               current.plugin[RabbitmqPlugin].foreach { _.extract(ExtractorMessage(id, id, host, key, Map.empty, file.length.toString, null, "")) }
               Ok("Sent for Extraction. check the status")
             }

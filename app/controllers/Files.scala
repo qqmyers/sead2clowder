@@ -283,7 +283,7 @@ def uploadExtract() = SecuredAction(parse.multipartFormData, authorization = Wit
 
               // TODO RK need to replace unknown with the server name
               val key = "unknown." + "file." + fileType.replace(".", "_").replace("/", ".")
-              val host = Utils.baseUrl(request)
+              val host = Utils.baseUrl(request) + request.path.replaceAll("extraction/upload$", "")
               val id = f.id
 	          current.plugin[RabbitmqPlugin].foreach{_.extract(ExtractorMessage(id, id, host, key, Map.empty, f.length.toString, null, flags))}
               /***** Inserting DTS Requests   **/  
