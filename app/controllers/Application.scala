@@ -44,7 +44,8 @@ class Application  @Inject() (files: FileService, appAppearance: AppAppearanceSe
    */
   def bookmarklet() = SecuredAction(authorization = WithPermission(Permission.Public)) { implicit request =>
     val protocol = Utils.protocol(request)
-    Ok(views.html.bookmarklet(request.host, protocol)).as("application/javascript")
+    Redirect(routes.Application.index())
+    //Ok(views.html.bookmarklet(request.host, protocol)).as("application/javascript")
   }
   
   //Global map to store dataset id and (enumerator, channel) pairs
