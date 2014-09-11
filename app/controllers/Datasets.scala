@@ -198,12 +198,12 @@ class Datasets @Inject()(
 		        case Some(theUser)=>{
 		            filesOutside = for(checkedFile <- files.listOutsideDataset(id).sortBy(_.filename); if(filesChecker.checkAccessForFileUsingRightsList(checkedFile, user, "view", rightsForUser))) yield checkedFile
 		            collectionsOutside = for(checkedCollection <- collections.listOutsideDataset(id).sortBy(_.name); if(collectionsChecker.checkAccessForCollectionUsingRightsList(checkedCollection, user, "modify", rightsForUser))) yield checkedCollection
-		            collectionsInside = for(checkedCollection <- collections.listInsideDataset(id).sortBy(_.name); if(collectionsChecker.checkAccessForCollectionUsingRightsList(checkedCollection, user, "modify", rightsForUser))) yield checkedCollection
+		            collectionsInside = for(checkedCollection <- collections.listInsideDataset(id).sortBy(_.name); if(collectionsChecker.checkAccessForCollectionUsingRightsList(checkedCollection, user, "view", rightsForUser))) yield checkedCollection
 		        }
 		        case None=>{
 		          filesOutside = for(checkedFile <- files.listOutsideDataset(id).sortBy(_.filename); if(filesChecker.checkAccessForFile(checkedFile, user, "view"))) yield checkedFile
 		          collectionsOutside = for(checkedCollection <- collections.listOutsideDataset(id).sortBy(_.name); if(collectionsChecker.checkAccessForCollection(checkedCollection, user, "modify"))) yield checkedCollection
-		          collectionsInside = for(checkedCollection <- collections.listInsideDataset(id).sortBy(_.name); if(collectionsChecker.checkAccessForCollection(checkedCollection, user, "modify"))) yield checkedCollection
+		          collectionsInside = for(checkedCollection <- collections.listInsideDataset(id).sortBy(_.name); if(collectionsChecker.checkAccessForCollection(checkedCollection, user, "view"))) yield checkedCollection
 		        }
 		      }
 
