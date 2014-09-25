@@ -26,7 +26,7 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
 
 
   @ApiOperation(value = "Create a collection",
-      notes = "",
+      notes = "Accepted JSON:{\"name\":\"select a name\",\"description\":\"select a description\"}",
       responseClass = "None", httpMethod = "POST")
   def createCollection() = SecuredAction(authorization=WithPermission(Permission.CreateCollections)) {
     request =>

@@ -88,7 +88,8 @@ class Datasets @Inject()(
    * Create new dataset
    */
   @ApiOperation(value = "Create new dataset",
-      notes = "New dataset containing one existing file, based on values of fields in attached JSON. Returns dataset id as JSON object.",
+      notes = "New dataset containing one existing file, based on values of fields in attached JSON. Returns dataset id as JSON object.</br>"
+        		+ "Accepted JSON:{\"name\":\"select a name\",\"description\":\"select a description\",\"file_id\":\"ID of a file in Medici to include\"}",
       responseClass = "None", httpMethod = "POST")
   def createDataset() = SecuredAction(authorization = WithPermission(Permission.CreateDatasets)) {
     request =>
@@ -348,7 +349,8 @@ class Datasets @Inject()(
    *  
    */
   @ApiOperation(value = "Update dataset administrative information",
-      notes = "Takes one argument, a UUID of the dataset. Request body takes key-value pairs for name and description.",
+      notes = "Takes one argument, a UUID of the dataset. Request body takes key-value pairs for name and description.</br>"
+        		+ "Accepted JSON:{\"name\":\"select a new name\",\"description\":\"input a new description\"}",
       responseClass = "None", httpMethod = "POST")
   def updateInformation(id: UUID) = 
     SecuredAction(parse.json, authorization = WithPermission(Permission.UpdateDatasetInformation), resourceId = Some(id)) {    
@@ -430,7 +432,10 @@ class Datasets @Inject()(
    *  allowDownload, true or false, whether the file or dataset can be downloaded. Only relevant for license1 type.  
    */
   @ApiOperation(value = "Update license information to a dataset",
-      notes = "Takes four arguments, all Strings. licenseType, rightsHolder, licenseText, licenseUrl",
+      notes = "Takes four arguments, all Strings. licenseType, rightsHolder, licenseText, licenseUrl.",
+//      notes = "Accepted JSON:{<br/>" 
+//      			+ "&emsp;&emsp;\"licenseType\": One of \"license1\"(for Limited), \"license2\"(for Creative Commons), \"license3\"(for Public Domain)<br/>"   //\"description\":\"input a new description\"}",
+//      			+ "&emsp;&emsp;\"rightsHolder\": Person or organization holding the rights to the dataset (only required for Limited license)<br/>"
       responseClass = "None", httpMethod = "POST")
   def updateLicense(id: UUID) = 
     SecuredAction(parse.json, authorization = WithPermission(Permission.UpdateLicenseDatasets), resourceId = Some(id)) {    
