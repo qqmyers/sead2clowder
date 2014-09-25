@@ -39,6 +39,7 @@ object Permission extends Enumeration {
 		SearchDatasets,
 		AddDatasetsMetadata,
 		ShowDatasetsMetadata,
+		ShowTags,
 		CreateTagsDatasets,
 		DeleteTagsDatasets,
 		UpdateDatasetInformation,
@@ -112,6 +113,7 @@ case class WithPermission(permission: Permission, resourceId: Option[UUID] = Non
 		  case (theUser, ShowFile)             => (externalViewingEnabled || theUser != null)
 		  case (theUser, ShowFilesMetadata)    => (externalViewingEnabled || theUser != null)
 		  case (theUser, ShowDatasetsMetadata) => (externalViewingEnabled || theUser != null)
+		  case (theUser, ShowTags)             => (externalViewingEnabled || theUser != null)
 		  case (theUser, SearchStreams)        => (externalViewingEnabled || theUser != null)
 		  case (theUser, ListSensors)          => (externalViewingEnabled || theUser != null)
 		  case (theUser, GetSensors)           => (externalViewingEnabled || theUser != null)
@@ -195,4 +197,5 @@ case class WithPermission(permission: Permission, resourceId: Option[UUID] = Non
 		}
 	}
 }
+
 
