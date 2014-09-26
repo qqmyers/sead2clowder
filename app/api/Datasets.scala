@@ -88,8 +88,8 @@ class Datasets @Inject()(
    * Create new dataset
    */
   @ApiOperation(value = "Create new dataset",
-      notes = "New dataset containing one existing file, based on values of fields in attached JSON. Returns dataset id as JSON object.</br>"
-        		+ "Accepted JSON:{\"name\":\"select a name\",\"description\":\"select a description\",\"file_id\":\"ID of a file in Medici to include\"}",
+      notes = """New dataset containing one existing file, based on values of fields in attached JSON. Returns dataset id as JSON object.</br>
+Accepted JSON:{"name":"select a name","description":"select a description","file_id":"ID of a file in Medici to include"}""",
       responseClass = "None", httpMethod = "POST")
   def createDataset() = SecuredAction(authorization = WithPermission(Permission.CreateDatasets)) {
     request =>
@@ -349,8 +349,8 @@ class Datasets @Inject()(
    *  
    */
   @ApiOperation(value = "Update dataset administrative information",
-      notes = "Takes one argument, a UUID of the dataset. Request body takes key-value pairs for name and description.</br>"
-        		+ "Accepted JSON:{\"name\":\"select a new name\",\"description\":\"input a new description\"}",
+      notes = """Takes one argument, a UUID of the dataset. Request body takes key-value pairs for name and description.</br>
+Accepted JSON:{"name":"select a new name","description":"input a new description"}""",
       responseClass = "None", httpMethod = "POST")
   def updateInformation(id: UUID) = 
     SecuredAction(parse.json, authorization = WithPermission(Permission.UpdateDatasetInformation), resourceId = Some(id)) {    
@@ -432,10 +432,12 @@ class Datasets @Inject()(
    *  allowDownload, true or false, whether the file or dataset can be downloaded. Only relevant for license1 type.  
    */
   @ApiOperation(value = "Update license information to a dataset",
-      notes = "Takes four arguments, all Strings. licenseType, rightsHolder, licenseText, licenseUrl.",
-//      notes = "Accepted JSON:{<br/>" 
-//      			+ "&emsp;&emsp;\"licenseType\": One of \"license1\"(for Limited), \"license2\"(for Creative Commons), \"license3\"(for Public Domain)<br/>"   //\"description\":\"input a new description\"}",
-//      			+ "&emsp;&emsp;\"rightsHolder\": Person or organization holding the rights to the dataset (only required for Limited license)<br/>"
+      notes = """Accepted JSON:{<br/>
+&emsp;&emsp;"licenseType": One of "license1"(for Limited), "license2"(for Creative Commons), "license3"(for Public Domain)<br/>
+&emsp;&emsp;"rightsHolder": Person or organization holding the rights to the dataset<br/>
+&emsp;&emsp;"licenseText": Description of the license<br/>
+&emsp;&emsp;"licenseUrl": URL of the license<br/>
+&emsp;&emsp;"allowDownload": Can anyone but the author download the dataset?(relevant only for Limited license, must be boolean)}""",
       responseClass = "None", httpMethod = "POST")
   def updateLicense(id: UUID) = 
     SecuredAction(parse.json, authorization = WithPermission(Permission.UpdateLicenseDatasets), resourceId = Some(id)) {    
@@ -574,18 +576,18 @@ class Datasets @Inject()(
   }
 
   @ApiOperation(value = "Remove tag of dataset",
-      notes = "",
+      notes = "Accepted JSON:{\"tagId\": ID of tag to remove from dataset}", 
       responseClass = "None", httpMethod = "POST")
-  def removeTag(id: UUID) = SecuredAction(parse.json, authorization = WithPermission(Permission.DeleteTagsDatasets)) {
+  def removeTag(datasetId: UUID) = SecuredAction(parse.json, authorization = WithPermission(Permission.DeleteTagsDatasets)) {
     implicit request =>
       Logger.debug("Removing tag " + request.body)
       request.body.\("tagId").asOpt[String].map {
         tagId =>
-          Logger.debug(s"Removing $tagId from $id.")
-          datasets.removeTag(id, UUID(tagId))
-          datasets.index(id)
+          Logger.debug(s"Removing $tagId from $datasetId.")
+          datasets.removeTag(datasetId, UUID(tagId))
+          datasets.index(datasetId)
       }
-      Ok(toJson(""))
+      Ok(toJson(s"success"))
   }
 
   /**

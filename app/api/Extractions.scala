@@ -185,7 +185,8 @@ class Extractions @Inject() (
    *
    */
   @ApiOperation(value = "Uploads a file for extraction using the file's URL",
-    notes = "Saves the uploaded file and sends it for extraction. Does not index the file.  ",
+    notes = """Saves the uploaded file and sends it for extraction. Does not index the file.<br>
+Accepted JSON:{"fileurl":"URL of the file"}""",
     responseClass = "None", httpMethod = "POST")
   def uploadByURL() = SecuredAction(authorization = WithPermission(Permission.CreateFiles)) { implicit request =>
     request.user match {

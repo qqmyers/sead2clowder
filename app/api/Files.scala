@@ -1115,8 +1115,13 @@ class Files @Inject()(
    *  
    *  allowDownload, true or false, whether the file or dataset can be downloaded. Only relevant for license1 type.  
    */
-  @ApiOperation(value = "Update License information to a dataset",
-      notes = "Takes four arguments, all Strings. licenseType, rightsHolder, licenseText, licenseUrl",
+  @ApiOperation(value = "Update License information to a file",
+      notes = """Accepted JSON:{<br/>
+&emsp;&emsp;"licenseType": One of "license1"(for Limited), "license2"(for Creative Commons), "license3"(for Public Domain)<br/>
+&emsp;&emsp;"rightsHolder": Person or organization holding the rights to the file<br/>
+&emsp;&emsp;"licenseText": Description of the license<br/>
+&emsp;&emsp;"licenseUrl": URL of the license<br/>
+&emsp;&emsp;"allowDownload": Can anyone but the author download the file?(relevant only for Limited license, must be boolean)}""",
       responseClass = "None", httpMethod = "POST")
   def updateLicense(id: UUID) = 
     SecuredAction(parse.json, authorization = WithPermission(Permission.UpdateLicenseFiles), resourceId = Some(id)) {    
