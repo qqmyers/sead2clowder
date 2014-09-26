@@ -121,7 +121,8 @@ class Datasets @Inject()(
    * Create new dataset
    */
   @ApiOperation(value = "Create new dataset",
-      notes = "New dataset containing one existing file, based on values of fields in attached JSON. Returns dataset id as JSON object.",
+      notes = """New dataset containing one existing file, based on values of fields in attached JSON. Returns dataset id as JSON object.</br>
+Accepted JSON:{"name":"select a name","description":"select a description","file_id":"ID of a file in Medici to include"}""",
       responseClass = "None", httpMethod = "POST")
   def createDataset() = SecuredAction(authorization = WithPermission(Permission.CreateDatasets)) {
     request =>
@@ -443,7 +444,7 @@ class Datasets @Inject()(
 
   
   @ApiOperation(value = "Remove tag of dataset",
-      notes = "",
+      notes = "Accepted JSON:{\"tagId\": ID of tag to remove from dataset}",
       responseClass = "None", httpMethod = "POST")
   def removeTag(id: UUID) = SecuredAction(parse.json, authorization = WithPermission(Permission.DeleteTagsDatasets)) {
     implicit request =>
