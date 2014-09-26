@@ -272,7 +272,10 @@ class Users @Inject() (users: UserAccessRightsService, files: FileService, datas
    * Upgrade or demote a user's access rights to a collection
    */
   @ApiOperation(value = "Upgrade or demote a user's access rights to a collection",
-      notes = "",
+             notes = """Accepted JSON:{<br/>
+&emsp;&emsp;"userFullName": The full name the target user uses in Medici<br/>
+&emsp;&emsp;"userEmail": The email the target user uses to log in to Medici<br/>
+&emsp;&emsp;"newPermissionLevel": Can be "view", "modify", "administrate" or "noaccess"}""",
       responseClass = "None", httpMethod = "POST")
   def modifyRightsToCollection(collectionId: UUID) = SecuredAction(authorization=WithPermission(Permission.AdministrateCollections), resourceId = Some(collectionId)) { 
     request =>
