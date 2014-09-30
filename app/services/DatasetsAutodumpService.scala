@@ -1,6 +1,9 @@
 package services
 
 import play.api.{ Plugin, Logger, Application }
+import play.libs.Akka
+import scala.concurrent.duration._
+import play.api.libs.concurrent.Execution.Implicits._
 
 /**
  * Dataset file groupings automatic dump service.
@@ -14,6 +17,11 @@ class DatasetsAutodumpService (application: Application) extends Plugin {
   
   override def onStart() {
     Logger.debug("Starting dataset file groupings autodumper Plugin")
+    //Dump dataset file groupings periodically
+    val timeInterval = play.Play.application().configuration().getInt("datasetdump.dumpEvery") 
+	    Akka.system().scheduler.schedule(0.days, timeInterval.intValue().days){
+	      dumpDatasetGroupings
+	}
   }
   
   override def onStop() {

@@ -1,6 +1,9 @@
 package services
 
 import play.api.{ Plugin, Logger, Application }
+import play.libs.Akka
+import scala.concurrent.duration._
+import play.api.libs.concurrent.Execution.Implicits._
 
 /**
  * File metadata automatic dump service.
@@ -14,6 +17,11 @@ class FileMetadataAutodumpService (application: Application) extends Plugin {
   
   override def onStart() {
     Logger.debug("Starting file metadata autodumper Plugin")
+    //Dump metadata of all files periodically
+    val timeInterval = play.Play.application().configuration().getInt("filemetadatadump.dumpEvery") 
+	Akka.system().scheduler.schedule(0.days, timeInterval.intValue().days){
+	      dumpAllFileMetadata
+	}    
   }
   
   override def onStop() {

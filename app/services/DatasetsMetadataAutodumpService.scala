@@ -1,6 +1,9 @@
 package services
 
 import play.api.{ Plugin, Logger, Application }
+import play.libs.Akka
+import scala.concurrent.duration._
+import play.api.libs.concurrent.Execution.Implicits._
 
 /**
  * Dataset metadata automatic dump service.
@@ -14,6 +17,11 @@ class DatasetsMetadataAutodumpService (application: Application) extends Plugin 
   
   override def onStart() {
     Logger.debug("Starting dataset metadata autodumper Plugin")
+    //Dump metadata of all datasets periodically
+    val timeInterval = play.Play.application().configuration().getInt("datasetmetadatadump.dumpEvery") 
+	    Akka.system().scheduler.schedule(0.days, timeInterval.intValue().days){
+	      dumpAllDatasetMetadata
+	    }
   }
   
   override def onStop() {
