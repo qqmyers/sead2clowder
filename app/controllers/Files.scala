@@ -337,6 +337,11 @@ def uploadExtract() = SecuredAction(parse.multipartFormData, authorization = Wit
 							  fileType = "ambiguous/mov";
 						  }
 	            
+	            if(nameOfFile.startsWith("MEDICI2DATASET_")){
+	              nameOfFile = nameOfFile.replaceFirst("MEDICI2DATASET_","")
+	              files.renameFile(f.id, nameOfFile)
+	            }
+	            
 	            current.plugin[FileDumpService].foreach{_.dump(DumpOfFile(uploadedFile.ref.file, f.id.toString, nameOfFile))}
 	            
 	            // TODO RK need to replace unknown with the server name
@@ -560,6 +565,11 @@ def uploadExtract() = SecuredAction(parse.multipartFormData, authorization = Wit
 							  fileType = "ambiguous/mov";
 						  }
              
+             if(nameOfFile.startsWith("MEDICI2DATASET_")){
+	              nameOfFile = nameOfFile.replaceFirst("MEDICI2DATASET_","")
+	              files.renameFile(f.id, nameOfFile)
+	            }
+             
              current.plugin[FileDumpService].foreach{_.dump(DumpOfFile(uploadedFile.ref.file, f.id.toString, nameOfFile))}
             
             // TODO RK need to replace unknown with the server name
@@ -663,6 +673,11 @@ def uploadExtract() = SecuredAction(parse.multipartFormData, authorization = Wit
 							  fileType = "ambiguous/mov";
 						  }
             
+            if(nameOfFile.startsWith("MEDICI2DATASET_")){
+	              nameOfFile = nameOfFile.replaceFirst("MEDICI2DATASET_","")
+	              files.renameFile(f.id, nameOfFile)
+	            }
+            
             current.plugin[FileDumpService].foreach{_.dump(DumpOfFile(uploadedFile.ref.file, f.id.toString, nameOfFile))}
             
             // TODO RK need to replace unknown with the server name
@@ -763,6 +778,11 @@ def uploadExtract() = SecuredAction(parse.multipartFormData, authorization = Wit
 			    else if(nameOfFile.toLowerCase().endsWith(".mov")){
 							  fileType = "ambiguous/mov";
 						  }
+             
+             if(nameOfFile.startsWith("MEDICI2DATASET_")){
+	              nameOfFile = nameOfFile.replaceFirst("MEDICI2DATASET_","")
+	              files.renameFile(f.id, nameOfFile)
+	            }
              
              current.plugin[FileDumpService].foreach{_.dump(DumpOfFile(uploadedFile.ref.file, f.id.toString, nameOfFile))}
             
@@ -870,6 +890,11 @@ def uploadExtract() = SecuredAction(parse.multipartFormData, authorization = Wit
 					  else if(nameOfFile.toLowerCase().endsWith(".mov")){
 							  fileType = "ambiguous/mov";
 						  }
+	                
+	                if(nameOfFile.startsWith("MEDICI2DATASET_")){
+	                	nameOfFile = nameOfFile.replaceFirst("MEDICI2DATASET_","")
+	                	files.renameFile(f.id, nameOfFile)
+	                }
 	                
 	                current.plugin[FileDumpService].foreach{_.dump(DumpOfFile(uploadedFile.ref.file, f.id.toString, nameOfFile))}
 				  	  
