@@ -624,9 +624,6 @@ class Files @Inject()(
                   current.plugin[RabbitmqPlugin].foreach {
                     _.extract(ExtractorMessage(UUID(originalId), id, host, key, Map.empty, f.length.toString, null, flags))
                   }
-                  current.plugin[ElasticsearchPlugin].foreach {
-                    _.index("files", "file", id, List(("filename", f.filename), ("contentType", f.contentType)))
-                  }
                   Ok(toJson(Map("id" -> id.stringify)))
                 }
                 case None => {
