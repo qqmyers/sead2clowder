@@ -107,7 +107,7 @@
 		<h1>@file.filename</h1>
 	</div>
 	<div class="row">
-		<div class="col-md-8">
+		<div class="col-md-8 col-right-border">
 		@for((f, pvs) <- previews) {
 			<div class="row" id="filePrevContainer_@(f.id.toString)" data-previewsCount="@(pvs.length)" data-filename="@f.filename">
 		    	<div class="col-md-12">
@@ -136,11 +136,21 @@
 	    			$('#myTab_@(f.id.toString)').attr('style', 'display:none;');
 	    		</script>
     		}
+    		
+    		<div class="row">
+	            <div class="col-md-12 button-margins">
+	                @if(user.isDefined) {
+	                <button class="btn btn-primary" title="Download the file" onclick="return downloadFile();"><span class="glyphicon glyphicon-save"></span> Download</button>
+	                } else {
+	                <button class="btn btn-primary" title="You don't have permission to download this file" disabled="disabled"><span class="glyphicon glyphicon-save"></span> Download</button>
+	                }
+	            </div>
+        	</div>
 
 			<!-- sections -->
 			@if(sections.size > 0) {
-			  	<div class="row" style="padding-top: 10px">
-			  	  <div class="col-md-6">
+			  	<div class="row border-top" style="padding-top: 10px">
+			  	  <div class="col-md-12">
 				  	<div id="galleria" style="float:left;clear:none;width:600px;height:300px;">
 					  	@sections.map { s =>
 					  		@if(s.preview.isDefined) {
@@ -163,7 +173,6 @@
 				</div>
 				<div class="row" style="padding-top: 10px">
 				    <div class="col-md-10">
-				  		<h5>Sections</h5>
 						<table class="table">
 							<thead>
 								<tr>
@@ -176,7 +185,7 @@
 							<tbody>
 					  		@sections.map { s =>
 					  			<tr>
-						  			<td>@s.order</td>
+						  			<td>@(if (s.order > 0) s.order else "")</td>
 						  			<td>
 								  		@if(s.preview.isDefined) {
 								  			<img src="@api.routes.Previews.download(s.preview.get.id)"
@@ -262,8 +271,25 @@
 			    </script>
     			}
     		}
+    		
+    		<div class="row">
+                <div class="col-md-12 border-top col-section">
+                    <h4>Notes</h4>
+                    @notesform(file.id.toString, api.routes.Files.setNotesHTML(file.id).toString, file.notesHTML.getOrElse(""))
+                </div>
+            </div>
+
+            <div class="row border-top">
+                <div class="col-md-12">
+                    <h4>Community-generated metadata</h4>
+                    @fileusermetadata(file, usrmd, rdfExported)
+                </div>
+            </div>
 
 			@if(!file.metadata.isEmpty) {
+			 <div class="row border-top">
+                <div class="col-md-12">
+                    <h4>System-generated metadata</h4>
 					<div id='technicalMetadata_@(file.id)'>
 						<button class="tech_md_" type="button">Show file technical metadata</button>
 						<div style="display:none;">
@@ -286,6 +312,8 @@
 							}
 						});
 					</script>
+				   </div>
+                  </div>	
 				}
 			@if(!file.xmlMetadata.isEmpty) {
 					<div id='xmlMetadata_@(file.id.toString)'>
@@ -309,29 +337,147 @@
 						});
 					</script>
 				}
+				
+				<div class="row border-top">
+	                <div class="col-md-12">
+	                    <h4>Comments</h4>
+	                    @if(user.isDefined) {
+	                    @commentform(file.id.toString, api.routes.Files.comment(file.id).toString)
+	                    }
+	                    <ol class="comment-threads unstyled" id="reply_@file.id.toString">
+	                        @comment(comments)
+	                    </ol>
+	                </div>
+            	</div>
 		</div>
 
         <div class="col-md-4">
-            <dl class="dl-horizontal">
-                <dt>Author:</dt>
-                <dd>@file.author.fullName</dd>
-                <dt>Filename:</dt>
-                <dd>@file.filename</dd>
-                <dt>Type:</dt>
-                <dd>@file.contentType</dd>
-                <dt>Uploaded on:</dt>
-                <dd>@file.uploadDate</dd>
-            </dl>
-            
-            <div class="row ds-section-sm">
-              <a href="@routes.Files.download(UUID(id))" class="btn btn-default pull-right" target="_blank">Download</a>
+            <div class="row ds-section-sm file-info">
+                <table class="table table-condensed">
+                    <tr><td><b>Filename:</b></td><td>@file.filename</td></tr>
+                    <tr><td><b>Type:</b></td><td>@file.contentType</td></tr>
+                    <tr><td><b>Uploaded on:</b></td><td>@file.uploadDate.format("MMM dd, yyyy HH:mm:ss")</td></tr>
+                    <tr><td><b>Uploaded by:</b></td><td>@file.author.fullName</td></tr>
+                </table>
             </div>
+            
+            <!-- License elements-->
+            <div class="row ds-section-sm border-top">
+                <div class="accordion" id="accordion6">
+                    <div class="accordion-group">
+                        <div class="accordian-heading">
+                            <h4>License</h4>
 
-            <div class="row ds-section-sm">
-              <h3>Tags</h3>
+                            <table>
+                                <tr>
+                                    <td><b>Type: </b></td>
+                                    <td id="licensetextdata" style="padding-left:10px;">blank</td>
+                                </tr>
+                                <tr>
+                                    <td><b>Holder: </b></td>
+                                    <td id="rightsholderdata" style="padding-left:10px;">blank</td>
+                                </tr>
+                            </table>
+                            	@if(userIsAdmin) {
+			                        <a class="btn btn-link btn-sm accordion-toggle collapsed" data-toggle="collapse"
+                                   		data-parent="#accordion6" href="#collapseSix" id="editlicense"
+                                   		title="Edit License Information">
+                                    	<span class="glyphicon glyphicon-chevron-down"></span> Edit
+                                	</a>
+			                    }
+			                    @if(user.isDefined && !userIsAdmin) {
+						      	 	@if(user.get.identityId.userId.equals(file.author.identityId.userId)){
+							      	   <a class="btn btn-link btn-sm accordion-toggle collapsed" data-toggle="collapse"
+                                   			data-parent="#accordion6" href="#collapseSix" id="editlicense"
+                                   			title="Edit License Information">
+                                    		<span class="glyphicon glyphicon-chevron-down"></span> Edit
+                                		</a>
+							       }
+						      	 }
+                        </div>
+                        <div id="collapseSix" class="accordion-body collapse">
+                            <div class="panel panel-primary">
+                                <div class="panel-body">
+                                	@if(userIsAdmin) {
+				                      @licenseform(file.id.toString, file.licenseData, "file", file.author.fullName)  
+			                    	}
+			                    	@if(user.isDefined && !userIsAdmin) {
+						      	 		@if(user.get.identityId.userId.equals(file.author.identityId.userId)){
+						      	 			@licenseform(file.id.toString, file.licenseData, "file", file.author.fullName)
+						      	 		}
+						      	 	}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <script type="text/javascript" language="javascript">
+                $(document).ready(function() {
+                    //Will have to modify the if check to see if there is data that specifies what should be selected
+                    //Incoming data may specifiy the type of license, the name of the owner of the rights, the text
+                    //describing the license rights, the URL for the license, and whether or not downloading is
+                    //allowed.
+                    var fileLicenseType = "@file.licenseData.m_licenseType";
+                    var fileRightsHolder = "@file.licenseData.m_rightsHolder";
+                    var fileLicenseText = "@file.licenseData.m_licenseText";
+                    var fileLicenseUrl = "@file.licenseData.m_licenseUrl";
+                    var fileAllowDownload = "@file.licenseData.m_allowDownload";
+                    var fileImageBase = '@routes.Assets.at("images")';
+                    var fileAuthorName = '@file.author.fullName';
+
+                    if (!@user.isDefined){
+                        updateInterface(fileLicenseType, fileRightsHolder, fileLicenseText, fileLicenseUrl, fileAllowDownload, fileImageBase, fileAuthorName);
+                    }
+                    if(@(user.isDefined && !userIsAdmin)) {
+        	      	 	if(@(!user.get.identityId.userId.equals(file.author.identityId.userId))){
+        	      	 		updateInterface(datasetLicenseType, datasetRightsHolder, datasetLicenseText, datasetLicenseUrl, datasetAllowDownload, datasetImageBase, datasetAuthorName);
+        		       }
+        	      	 }
+                });
+
+                function downloadFile() {
+                    var downloadRoute = "@routes.Files.download(UUID(id))";
+                    var owner = "@file.author.fullName";
+                    var userName = null;
+
+                    @user match {
+                        case None => {
+                           userName = "";
+                        }
+                        case Some(x) => {
+                           userName = "@user.getOrElse(null).fullName";
+                        }
+                    }
+
+                    //The checkLicenseType and checkAllowDownload variables are globally defined, and referenced from
+                    //updateLicenseInfo.js.
+                    //
+                    //Check the license type, only type1 needs to have further checks, otherwise download should be allowed
+                    if (checkLicenseType != 'license1') {
+                        window.open(downloadRoute, '_blank');
+                    }
+                    //Check if the downloading of the file is allowed, however always allow the owner of the file to download it.
+                    else {
+                        if (checkAllowDownload == "true" || userName == owner) {
+                            window.open(downloadRoute, '_blank');
+                        }
+                        else {
+                            alert("The license for this file does not allow it to be downloaded.");
+                        }
+                    }
+                }
+                </script>
+            </div>
+            <!-- End License elements -->
+            
+            <div class="row ds-section-sm border-top">
+              <h4>Tags</h4>
               <ul id="tagList">
                   @file.tags.map { tag =>
-                    <li><a href="@routes.Tags.search(tag.name)">@tag.name [File]</a></li>
+                    <li>
+                    	<a href="@routes.Tags.search(tag.name)" id="@tag.name">@tag.name [File]</a>
+                    	<a href='javascript:void(0);'><i style='display:none;' id='@tag.name' class='glyphicon glyphicon-remove'></i></a>
+                    </li>
                   }
                   @file.sections.map { section =>
                     @section.tags.map { tag =>
@@ -343,7 +489,9 @@
                 <div class="input-group input-group-sm col-md-8"">
                   <input type="text" id="tagField" class="form-control">
                   <span class="input-group-btn">
-                    <button class="btn btn-default btn-sm" id="tagB">Tag</button>
+                    <button class="btn btn-default btn-large" id="tagB" title="Add Tag">
+                    	<span class="glyphicon glyphicon-tag"></span>
+                    </button>
                   </span>
                 </div>
               </form>
@@ -357,9 +505,9 @@
               }
               <script language="javascript">
                 function removeTag() {
-                  console.log("removing tag ");
-                  //alert($(this).attr("id"));
+                  
                   var tagId = $(this).attr("id");
+                  console.log("Removing tag " + tagId);
                   
                   var request = jsRoutes.api.Files.removeTag('@file.id').ajax({
                     data: JSON.stringify({"tagId":tagId}),
@@ -375,8 +523,10 @@
                     "The following error occured: "+
                     textStatus, errorThrown
                     );
-                    //alert("ERROR: " + errorThrown +". Tag not removed from file." );         
-                    window.location = "../login"; // FIXME hardcoded
+                    var errMsg = "You must be logged in to remove a tag from a file.";
+                    if (!checkErrorAndRedirect(jqXHR, errMsg)) {
+                        alert("The tag was not removed from the file due to : " + errorThrown);
+                    } 
                   });
                   
                   return false;
@@ -420,17 +570,18 @@
                       request.done(function (response, textStatus, jqXHR){
                         console.log("Response " + response);
                         var url = "../tags/search?tag=" + tag;
-                        $newTag = $("<li><a href='" + url + "'>" + tag + " [File]</a><a href='javascript:void(0);'><i style='display:none;'id='" + response +"' class='glyphicon-remove'></i></a></li>").appendTo('#tagList');
-                          /*$newTag.children("li").each(function(){$(this).hover(removeIconMouseIn,removeIconMouseOut);});
-                      $newTag.find(".glyphicon-remove").click(removeTag);*/                 
+                        $newTag = $("<li><a href='" + url + "'>" + tag + " [File]</a><a href='javascript:void(0);'><i style='display:none;'id='" + tag +"' class='glyphicon glyphicon-remove'></i></a></li>").appendTo('#tagList');                
                           $newTag.hover(removeIconMouseIn,removeIconMouseOut);
                       $newTag.find(".glyphicon-remove").click(removeTag);
                           $('#tagField').val("");
                        });
                   
                       request.fail(function (jqXHR, textStatus, errorThrown){
-                        console.error("The following error occured: " + textStatus, errorThrown);
-                        window.location = "../login"; // FIXME hardcoded
+                    	  console.error("The following error occured: " + textStatus, errorThrown);
+                          var errMsg = "You must be logged in to add a tag to a file.";                                
+                          if (!checkErrorAndRedirect(jqXHR, errMsg)) {
+                              alert("The tag was not added to the file due to : " + errorThrown);
+                          }
                       });
                       return false;
                     }
@@ -446,24 +597,24 @@
                 
               });
             </script>           
-            @if(!user.isDefined) {
-              <script language="javascript">
-                $(".requiresLogin").css("display","none");
-              </script>
-            }
+
             </div>
+        
+        <div class="row ds-section-sm border-top">
+            <h4>Datasets containing the file</h4>
+            @datasetsContainingFile(file, fileDataset, datasetsOutside)
         </div>
-    </div>
+
+    </div> @* End of small right hand side column *@
 
 
-
-		@if(beingProcessed == true){
+		@if(beingProcessed == true){ 
     			<div id='beingProcessed' style='display:block;'><h5>File is being processed...</h5></div>
     		}else{
     			<div id='beingProcessed' style='display:none;'><h5>File is being processed...</h5></div>
     		}
     		<script>
-    			function updateIsBeingProcessed(){
+    			function updateIsBeingProcessed(){  
     				var request = $.ajax({
  				       type: 'GET',
  				       url: "@api.routes.Files.isBeingProcessed(file.id)",
@@ -579,42 +730,7 @@
     				setTimeout(function(){checkForNewPreviews()}, 1000);
     			});
     		</script>
-
-
-        <div class="row">
-            <div class="col-md-12">
-                <h3>Notes</h3>
-	            @notesform(file.id.toString, api.routes.Files.setNotesHTML(file.id).toString, file.notesHTML.getOrElse(""))
-            </div>
-		</div>
-		
-		<div class="row">
-            <div class="col-md-12">
-                <h3>Comments</h3>
-                @if(user.isDefined) {
-                    @commentform(file.id.toString, api.routes.Files.comment(file.id).toString)
-                }
-                <ol class="comment-threads unstyled" id="reply_@file.id.toString">
-                    @comment(comments)
-                </ol>
-            </div>
-        </div>
-        
-        <div class="row">
-            <div class="col-md-12">
-                <h3>User-generated metadata</h3>
-                @fileusermetadata(file, usrmd, rdfExported)
-            </div>
-        </div>
-        
-        <div class="row">
-            <div class="col-md-12">
-                <h3>Datasets containing the file</h3>
-                @datasetsContainingFile(file, fileDataset, datasetsOutside)
-            </div>
-        </div>
-
-		
+	
 	</div>
 		@if(!user.isDefined) {
      	   <script language="javascript">

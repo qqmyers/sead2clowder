@@ -41,17 +41,26 @@ object Global extends WithFilters(new GzipFilter(),CORSFilter()) with GlobalSett
     current.plugin[MongoSalatPlugin].map { mongo =>
       mongo.sources.values.map { source =>
         Logger.debug("Ensuring indexes on " + source.uri)
+        source.collection("collections").ensureIndex(MongoDBObject("created" -> -1))
+        
         source.collection("datasets").ensureIndex(MongoDBObject("created" -> -1))
         source.collection("datasets").ensureIndex(MongoDBObject("tags" -> 1))
+        source.collection("datasets").ensureIndex(MongoDBObject("files._id" -> 1))
+        
         source.collection("uploads.files").ensureIndex(MongoDBObject("uploadDate" -> -1))
+        source.collection("uploads.files").ensureIndex(MongoDBObject("tags" -> 1))
         source.collection("uploadquery.files").ensureIndex(MongoDBObject("uploadDate" -> -1))
+                
         source.collection("previews.files").ensureIndex(MongoDBObject("uploadDate" -> -1, "file_id" -> 1))
         source.collection("previews.files").ensureIndex(MongoDBObject("uploadDate" -> -1, "section_id" -> 1))
+
+        source.collection("textures.files").ensureIndex(MongoDBObject("file_id" -> 1))
+        source.collection("tiles.files").ensureIndex(MongoDBObject("preview_id" -> 1, "filename" -> 1,"level" -> 1))
+        
         source.collection("sections").ensureIndex(MongoDBObject("uploadDate" -> -1, "file_id" -> 1))
-        source.collection("extractor.servers").ensureIndex(MongoDBObject("server" -> ""))
-        source.collection("extractor.names").ensureIndex(MongoDBObject("name" -> ""))
-        source.collection("extractor.inputtypes").ensureIndex(MongoDBObject("inputType" -> ""))
+        
         source.collection("dtsrequests").ensureIndex(MongoDBObject("startTime" -> -1, "endTime" -> -1))
+        source.collection("versus.descriptors").ensureIndex(MongoDBObject("preview_id" -> 1, "file_id" -> 1 )) 
       }
 
     }

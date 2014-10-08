@@ -229,7 +229,7 @@ def uploadExtract() = SecuredAction(parse.multipartFormData, authorization = Wit
 
               // TODO RK need to replace unknown with the server name
               val key = "unknown." + "file." + fileType.replace(".", "_").replace("/", ".")
-              val host = Utils.baseUrl(request)
+              val host = Utils.baseUrl(request) + request.path.replaceAll("extraction/upload$", "")
               val id = f.id
 	          current.plugin[RabbitmqPlugin].foreach{_.extract(ExtractorMessage(id, id, host, key, Map.empty, f.length.toString, null, flags))}
               /***** Inserting DTS Requests   **/  
@@ -350,6 +350,11 @@ def uploadExtract() = SecuredAction(parse.multipartFormData, authorization = Wit
 								  fileType = "ambiguous/mov";
 							  }
 		            
+		            if(nameOfFile.startsWith("MEDICI2DATASET_")){
+		            	nameOfFile = nameOfFile.replaceFirst("MEDICI2DATASET_","")
+		            	files.renameFile(f.id, nameOfFile)
+		            }
+		            
 		            current.plugin[FileDumpService].foreach{_.dump(DumpOfFile(uploadedFile.ref.file, f.id.toString, nameOfFile))}
 		            
 		            // TODO RK need to replace unknown with the server name
@@ -365,8 +370,7 @@ def uploadExtract() = SecuredAction(parse.multipartFormData, authorization = Wit
 	                val domain=request.domain
 	                val keysHeader=request.headers.keys
 	                //request.
-	                Logger.debug("---\n \n")
-	            
+	                Logger.debug("---\n \n")	            
             
                 Logger.debug("clientIP:"+clientIP+ "   domain:= "+domain+ "  keysHeader="+ keysHeader.toString +"\n")
                 Logger.debug("Origin: "+request.headers.get("Origin") + "  Referer="+ request.headers.get("Referer")+ " Connections="+request.headers.get("Connection")+"\n \n")
@@ -398,14 +402,8 @@ def uploadExtract() = SecuredAction(parse.multipartFormData, authorization = Wit
 		            }
 	            }
 	            
-        
-
 	             current.plugin[VersusPlugin].foreach{ _.indexFile(f.id, fileType) }
 	            
-
-
-
-	             
 	             //add file to RDF triple store if triple store is used
 	             if(fileType.equals("application/xml") || fileType.equals("text/xml")){
 		             play.api.Play.configuration.getString("userdfSPARQLStore").getOrElse("no") match{      
@@ -544,6 +542,11 @@ def uploadExtract() = SecuredAction(parse.multipartFormData, authorization = Wit
 			            else if(filename.toLowerCase().endsWith(".mov")){
 									  fileType = "ambiguous/mov";
 								  }
+		                  
+		                  if(filename.startsWith("MEDICI2DATASET_")){
+		                	  filename = filename.replaceFirst("MEDICI2DATASET_","")
+		                			  files.renameFile(f.id, filename)
+		                  }
 		                  
 		                  if(toBeCurated)
 		                    current.plugin[FileDumpService].foreach{_.dump(DumpOfFile(localfile, f.id.toString, filename))}
@@ -773,6 +776,11 @@ def uploadExtract() = SecuredAction(parse.multipartFormData, authorization = Wit
 							  fileType = "ambiguous/mov";
 						  }
              
+             if(nameOfFile.startsWith("MEDICI2DATASET_")){
+	              nameOfFile = nameOfFile.replaceFirst("MEDICI2DATASET_","")
+	              files.renameFile(f.id, nameOfFile)
+	            }
+             
              current.plugin[FileDumpService].foreach{_.dump(DumpOfFile(uploadedFile.ref.file, f.id.toString, nameOfFile))}
             
             // TODO RK need to replace unknown with the server name
@@ -876,6 +884,11 @@ def uploadExtract() = SecuredAction(parse.multipartFormData, authorization = Wit
 							  fileType = "ambiguous/mov";
 						  }
             
+            if(nameOfFile.startsWith("MEDICI2DATASET_")){
+	              nameOfFile = nameOfFile.replaceFirst("MEDICI2DATASET_","")
+	              files.renameFile(f.id, nameOfFile)
+	            }
+            
             current.plugin[FileDumpService].foreach{_.dump(DumpOfFile(uploadedFile.ref.file, f.id.toString, nameOfFile))}
             
             // TODO RK need to replace unknown with the server name
@@ -976,6 +989,11 @@ def uploadExtract() = SecuredAction(parse.multipartFormData, authorization = Wit
 			    else if(nameOfFile.toLowerCase().endsWith(".mov")){
 							  fileType = "ambiguous/mov";
 						  }
+             
+             if(nameOfFile.startsWith("MEDICI2DATASET_")){
+	              nameOfFile = nameOfFile.replaceFirst("MEDICI2DATASET_","")
+	              files.renameFile(f.id, nameOfFile)
+	            }
              
              current.plugin[FileDumpService].foreach{_.dump(DumpOfFile(uploadedFile.ref.file, f.id.toString, nameOfFile))}
             
@@ -1083,6 +1101,11 @@ def uploadExtract() = SecuredAction(parse.multipartFormData, authorization = Wit
 					  else if(nameOfFile.toLowerCase().endsWith(".mov")){
 							  fileType = "ambiguous/mov";
 						  }
+	                
+	                if(nameOfFile.startsWith("MEDICI2DATASET_")){
+	                	nameOfFile = nameOfFile.replaceFirst("MEDICI2DATASET_","")
+	                	files.renameFile(f.id, nameOfFile)
+	                }
 	                
 	                current.plugin[FileDumpService].foreach{_.dump(DumpOfFile(uploadedFile.ref.file, f.id.toString, nameOfFile))}
 				  	  

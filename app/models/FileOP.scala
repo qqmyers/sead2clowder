@@ -68,21 +68,5 @@ object FileOP {
     jpreviews
   }
   
-  
-  
-  /**
-   * Returns Versus Descriptors from metadata field for a file
-   * 
-   */
-  
-  def extractVersusDescriptors(id:UUID): JsValue= {
-    val vDes=files.getVersusMetadata(id)
-    if(vDes==null){
-       Json.arr()
-    }else{
-      vDes
-    }
-         
-  }
+ }
 
-}

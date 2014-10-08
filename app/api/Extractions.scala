@@ -45,7 +45,6 @@ import models.File
 import play.api.libs.json.JsObject
 import play.api.Play.configuration
 import com.wordnik.swagger.annotations.{ApiOperation, Api}
-import services.ExtractorMessage
 import scala.concurrent.Future
 import scala.util.control._
 import javax.activation.MimetypesFileTypeMap
@@ -131,13 +130,18 @@ class Extractions @Inject() (
                   } else if (nameOfFile.toLowerCase().endsWith(".mov")) {
                     fileType = "ambiguous/mov";
                   }
+                  
+                  if(nameOfFile.startsWith("MEDICI2DATASET_")){
+					        	nameOfFile = nameOfFile.replaceFirst("MEDICI2DATASET_","")
+					        	files.renameFile(f.id, nameOfFile)
+                  }
 
                   current.plugin[FileDumpService].foreach {
                     _.dump(DumpOfFile(uploadedFile.ref.file, f.id.toString, nameOfFile))
                   }
 
                   val key = "unknown." + "file." + fileType.replace(".", "_").replace("/", ".")
-                  val host = Utils.baseUrl(request)
+                  val host = Utils.baseUrl(request) + request.path.replaceAll("api/extractions/upload_file$", "")
 
                   /** Insert DTS Requests   **/
 
@@ -317,11 +321,16 @@ class Extractions @Inject() (
 							  fileType = "ambiguous/mov";
 						  }
                   
+                  if(filename.startsWith("MEDICI2DATASET_")){
+		            	filename = filename.replaceFirst("MEDICI2DATASET_","")
+		            	files.renameFile(f.id, filename)
+		            }
+                  
                   if(toBeCurated)
                     current.plugin[FileDumpService].foreach{_.dump(DumpOfFile(localfile, f.id.toString, filename))}
                   
                   val key = "unknown." + "file." + fileType.replace(".", "_").replace("/", ".")
-                  val host = Utils.baseUrl(request)
+                  val host = Utils.baseUrl(request) + request.path.replaceAll("api/extractions/upload_url$", "")
                   current.plugin[RabbitmqPlugin].foreach { _.extract(ExtractorMessage(id, id, host, key, Map.empty, f.length.toString, null, flags)) }
                   Logger.debug("After RabbitmqPlugin")
 
@@ -420,7 +429,7 @@ class Extractions @Inject() (
             case Some(file) => {
               val fileType = file.contentType
               val key = "unknown." + "file." + fileType.replace(".", "_").replace("/", ".")
-              val host = Utils.baseUrl(request)
+              val host = Utils.baseUrl(request) + request.path.replaceAll("api/extractions/[A-Za-z0-9_+]*/submit$", "") 
               current.plugin[RabbitmqPlugin].foreach { _.extract(ExtractorMessage(id, id, host, key, Map.empty, file.length.toString, null, "")) }
               Ok("Sent for Extraction. check the status")
             }
@@ -524,12 +533,15 @@ class Extractions @Inject() (
 
                   val jpreviews = FileOP.extractPreviews(id)
 
-                 // val vdescriptors = FileOP.extractVersusDescriptors(id)
-                  val vdescriptors = ""
+                  val vdescriptors=files.getVersusMetadata(id) match {
+                  													case Some(vd)=>api.routes.Files.getVersusMetadataJSON(id).toString
+                  													case None=> ""
+                  													}
+                  
                   Logger.debug("jtags: " + jtags.toString)
                   Logger.debug("jpreviews: " + jpreviews.toString)
 
-                  Ok(Json.obj("file_id" -> id.stringify, "filename" -> file.filename, "Status" -> status, "tags" -> jtags, "previews" -> jpreviews, "versus descriptors" -> vdescriptors))
+                  Ok(Json.obj("file_id" -> id.stringify, "filename" -> file.filename, "Status" -> status, "tags" -> jtags, "previews" -> jpreviews, "versus descriptors url" -> vdescriptors))
                 } //end of yield
 
               } //end of some file
@@ -692,3 +704,4 @@ def getJsonArray(list: List[JsObject]): JsArray = {
   
 
 }
+
