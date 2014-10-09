@@ -48,7 +48,12 @@ public class FilesUtils {
                 	zipFile.close();
                 	mainFileType = "model/sfm-zipped";
                 	return mainFileType;
-                } 
+                }
+                if(fileName.toLowerCase().contains("__slides")){
+                	zipFile.close();
+                	mainFileType = "multi/video-presentation-zipped";
+                	return mainFileType;
+                }
             }
             zipFile.close();
 		} catch (IOException e) {
