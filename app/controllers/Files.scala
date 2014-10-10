@@ -220,6 +220,11 @@ class Files @Inject() (files: FileService, datasets: DatasetService, queries: Qu
 							  fileType = "ambiguous/mov";
 						  }
 	            
+	            if(nameOfFile.startsWith("MEDICI2MULTISPECTRAL_")){
+					        	nameOfFile = nameOfFile.replaceFirst("MEDICI2MULTISPECTRAL_","")
+					        	FileDAO.renameFile(f.id.toString, nameOfFile)
+				}
+	            
 	            current.plugin[FileDumpService].foreach{_.dump(DumpOfFile(uploadedFile.ref.file, f.id.toString, nameOfFile))}
 	            
 	            // TODO RK need to replace unknown with the server name
@@ -423,6 +428,11 @@ class Files @Inject() (files: FileService, datasets: DatasetService, queries: Qu
 							  fileType = "ambiguous/mov";
 						  }
              
+             if(nameOfFile.startsWith("MEDICI2MULTISPECTRAL_")){
+					        	nameOfFile = nameOfFile.replaceFirst("MEDICI2MULTISPECTRAL_","")
+					        	FileDAO.renameFile(f.id.toString, nameOfFile)
+				}
+             
              current.plugin[FileDumpService].foreach{_.dump(DumpOfFile(uploadedFile.ref.file, f.id.toString, nameOfFile))}
             
             // TODO RK need to replace unknown with the server name
@@ -524,6 +534,11 @@ class Files @Inject() (files: FileService, datasets: DatasetService, queries: Qu
 			    else if(nameOfFile.toLowerCase().endsWith(".mov")){
 							  fileType = "ambiguous/mov";
 						  }
+            
+            if(nameOfFile.startsWith("MEDICI2MULTISPECTRAL_")){
+					        	nameOfFile = nameOfFile.replaceFirst("MEDICI2MULTISPECTRAL_","")
+					        	FileDAO.renameFile(f.id.toString, nameOfFile)
+				}
             
             current.plugin[FileDumpService].foreach{_.dump(DumpOfFile(uploadedFile.ref.file, f.id.toString, nameOfFile))}
             
@@ -628,6 +643,11 @@ class Files @Inject() (files: FileService, datasets: DatasetService, queries: Qu
 			    else if(nameOfFile.toLowerCase().endsWith(".mov")){
 							  fileType = "ambiguous/mov";
 						  }
+             
+             if(nameOfFile.startsWith("MEDICI2MULTISPECTRAL_")){
+					        	nameOfFile = nameOfFile.replaceFirst("MEDICI2MULTISPECTRAL_","")
+					        	FileDAO.renameFile(f.id.toString, nameOfFile)
+				}
              
              current.plugin[FileDumpService].foreach{_.dump(DumpOfFile(uploadedFile.ref.file, f.id.toString, nameOfFile))}
             
@@ -735,6 +755,11 @@ class Files @Inject() (files: FileService, datasets: DatasetService, queries: Qu
 					  else if(nameOfFile.toLowerCase().endsWith(".mov")){
 							  fileType = "ambiguous/mov";
 						  }
+	                
+	                if(nameOfFile.startsWith("MEDICI2MULTISPECTRAL_")){
+					        	nameOfFile = nameOfFile.replaceFirst("MEDICI2MULTISPECTRAL_","")
+					        	FileDAO.renameFile(f.id.toString, nameOfFile)
+	                }
 	                
 	                current.plugin[FileDumpService].foreach{_.dump(DumpOfFile(uploadedFile.ref.file, f.id.toString, nameOfFile))}
 				  	  
