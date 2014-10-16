@@ -1222,3 +1222,7 @@ table {
   text-align: center;
   padding-top: 10px;
 }
+
+div.sandbox_header {
+	display:none !important;
+}
