@@ -97,7 +97,7 @@ class ElasticsearchPlugin(application: Application) extends Plugin {
       case Some(x) => {
         Logger.info("Searching ElasticSearch for " + query)
         val response = x.prepareSearch(index)
-          .setTypes("file", "dataset")
+          .setTypes("file", "dataset","collection")
           .setSearchType(SearchType.DFS_QUERY_THEN_FETCH)
           // .setQuery(QueryBuilders.matchQuery("_all", query))
           .setQuery(QueryBuilders.queryString(query))
