@@ -432,8 +432,8 @@ class Datasets @Inject()(
 							  fileType = "ambiguous/mov";
 					        }
 					        
-					        if(nameOfFile.startsWith("MEDICI2DATASET_")){
-					        	nameOfFile = nameOfFile.replaceFirst("MEDICI2DATASET_","")
+					        if(nameOfFile.startsWith("MEDICI2ZIPPED_")){
+					        	nameOfFile = nameOfFile.replaceFirst("MEDICI2ZIPPED_","")
 					        	files.renameFile(f.id, nameOfFile)
 							}
 				            else if(nameOfFile.startsWith("MEDICI2MULTISPECTRAL_")){
