@@ -16,6 +16,8 @@ import models.{UUID, Dataset}
 import scala.collection.mutable.ListBuffer
 import scala.util.parsing.json.JSONArray
 import java.text.SimpleDateFormat
+import org.elasticsearch.action.index.IndexResponse
+import org.elasticsearch.client.Client
 
 /**
  * Elasticsearch plugin.
@@ -25,51 +27,107 @@ import java.text.SimpleDateFormat
  */
 class ElasticsearchPlugin(application: Application) extends Plugin {
 
-  var node: Node = null
-  var client: TransportClient = null
   val comments: CommentService = DI.injector.getInstance(classOf[CommentService])
   val datasets: DatasetService = DI.injector.getInstance(classOf[DatasetService])
   val collections: CollectionService = DI.injector.getInstance(classOf[CollectionService])
+  var client: Option[TransportClient] = null
+  var node: Option[Node] = null
 
-  override def onStart() {
-    val configuration = application.configuration
-    try {
-      var nameOfCluster = play.api.Play.configuration.getString("elasticsearchSettings.clusterName").getOrElse("medici")
-      var serverAddress = play.api.Play.configuration.getString("elasticsearchSettings.serverAddress").getOrElse("localhost")
-      var serverPort = play.api.Play.configuration.getInt("elasticsearchSettings.serverPort").getOrElse(9300)
-      
-      node = nodeBuilder().clusterName(nameOfCluster).client(true).node()
-      val settings = ImmutableSettings.settingsBuilder()
-      settings.put("client.transport.sniff", true)
-      settings.build();
-      client = new TransportClient(settings)
-      client.addTransportAddress(new InetSocketTransportAddress(serverAddress, serverPort))
+  	override def onStart() {
+	    val configuration = application.configuration
+	    try {
+	    	var nameOfCluster = play.api.Play.configuration.getString("elasticsearchSettings.clusterName").getOrElse("medici")
+	    	var serverAddress = play.api.Play.configuration.getString("elasticsearchSettings.serverAddress").getOrElse("localhost")
+	    	var serverPort = play.api.Play.configuration.getInt("elasticsearchSettings.serverPort").getOrElse(9300)
+	    	
+	      node = Some(nodeBuilder().clusterName(nameOfCluster).client(true).node())
+	      Logger.debug("--- ElasticSearch Node is being created----")
+	      node match {
+	        case Some(n) => {
+	          //client = Some(n.client())
+	          val settings = ImmutableSettings.settingsBuilder()
+			  settings.put("client.transport.sniff", true)
+			  settings.build();
+			  client = Some(new TransportClient(settings))
+	          Logger.debug("--- ElasticSearch Client is being created----")
+	          client match {
+	            case Some(x) => {                           
+			      x.addTransportAddress(new InetSocketTransportAddress(serverAddress, serverPort))
+	              Logger.debug("Index \"data\"  is being created if it does not exist ---")
+	              val indexExists = x.admin().indices().prepareExists("data").execute().actionGet().isExists()
+	              if (!indexExists) {
+	                x.admin().indices().prepareCreate("data").execute().actionGet()
+	              }
+	            }
+	            case None => {
+	              Logger.error("Error connecting to elasticsearch: No Client Created")
+	            }
+	          }
+	          Logger.info("ElasticsearchPlugin has started")
+	        }
+	        case None => {
+	          Logger.error("Error connecting to elasticsearch: No Node Created")
+	        }
+	      } //node match
+	    } catch {
+	      case nn: NoNodeAvailableException => {
+	        Logger.error("Error connecting to elasticsearch: " + nn)
+	        client match {
+	          case Some(x) => x.close
+	          case None => None
+	        }
+	        client = None
+	        node match {
+	          case Some(x) => x.close
+	          case None => None
+	        }
+	        node = None
+	        
+	        throw nn
+	      }
 
-      client.prepareIndex("data", "file")
-      client.prepareIndex("data", "dataset")
-      client.prepareIndex("data", "collection")
+	      case ex: Throwable => {
+	        Logger.error("Unknown exception connecting to elasticsearch")
+	        client match {
+	          case Some(x) => x.close
+	          case None => None
+	        }
+	        client = None
+	        node match {
+	          case Some(x) => x.close
+	          case None => None
+	        }
+	        node = None
 
-      Logger.info("ElasticsearchPlugin has started")
-    } catch {
-      case nn: NoNodeAvailableException => Logger.error("Error connecting to elasticsearch: " + nn)
-      case _: Throwable => Logger.error("Unknown exception connecting to elasticsearch")
-    }
-  }
+	        throw ex
+	      }
+	    }
+	 }
 
   def search(index: String, query: String): SearchResponse = {
-    Logger.info("Searching ElasticSearch for " + query)
+		    Logger.info("Searching ElasticSearch for " + query)
 
-    val response = client.prepareSearch(index)
-      .setTypes("file","dataset","collection")
-      .setSearchType(SearchType.DFS_QUERY_THEN_FETCH)
-      .setQuery(QueryBuilders.queryString(query))
-      .setFrom(0).setSize(60).setExplain(true)
-      .execute()
-      .actionGet()
+		    client match {
+		      case Some(x) => {
+		        Logger.info("Searching ElasticSearch for " + query)
+		        val response = x.prepareSearch(index)
+		          .setTypes("file", "dataset","collection")
+		          .setSearchType(SearchType.DFS_QUERY_THEN_FETCH)
+		          // .setQuery(QueryBuilders.matchQuery("_all", query))
+		          .setQuery(QueryBuilders.queryString(query))
+		          .setFrom(0).setSize(60).setExplain(true)
+		          .execute()
+		          .actionGet()
 
-    Logger.info("Search hits: " + response.getHits().getTotalHits())
-    response
-  }
+		        Logger.info("Search hits: " + response.getHits().getTotalHits())
+		        response
+		      }
+		      case None => {
+		        Logger.error("Could not call search because we are not connected.")
+		        new SearchResponse()
+		      }
+		    }
+	}
 
   /**
    * Index document using an arbitrary map of fields.
@@ -79,20 +137,34 @@ class ElasticsearchPlugin(application: Application) extends Plugin {
       .startObject()
     fields.map(fv => builder.field(fv._1, fv._2))
     builder.endObject()
-    val response = client.prepareIndex(index, docType, id.stringify)
-      .setSource(builder)
-      .execute()
-      .actionGet()
-    Logger.info("Indexing document: " + response.getId())
+
+    client match {
+      case Some(x) => {
+        val builder = jsonBuilder()
+          .startObject()
+        fields.map(fv => builder.field(fv._1, fv._2))
+        builder.endObject()
+        val response = x.prepareIndex(index, docType, id.toString)
+          .setSource(builder)
+          .execute()
+          .actionGet()
+        Logger.info("Indexing document: " + response.getId())
+      }
+      case None => Logger.error("Could not call index because we are not connected.")
+    }
   }
 
-  def delete(index: String, docType: String, id: String) {    
-    val response = client.prepareDelete(index, docType, id)
-      .execute()
-      .actionGet()
-    Logger.info("Deleting document: " + response.getId())
-  }
+  def delete(index: String, docType: String, id: String) {
+    client match {
+      case Some(x) => {
+        val response = x.prepareDelete(index, docType, id).execute().actionGet()
+        Logger.info("Deleting document: " + response.getId())
 
+      }
+      case None => Logger.error("Could not call index because we are not connected.")
+    }
+
+  }
 
   def indexDataset(dataset: Dataset) {
     var tagListBuffer = new ListBuffer[String]()
@@ -144,8 +216,14 @@ class ElasticsearchPlugin(application: Application) extends Plugin {
   }
 
   override def onStop() {
-    client.close()
-    node.close()
+    client match {
+      case Some(x) => x.close
+    }
+    client = None
+    node match {
+      case Some(x) => x.close
+    }
+    node = None
     Logger.info("ElasticsearchPlugin has stopped")
   }
 }

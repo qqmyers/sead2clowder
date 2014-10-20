@@ -24,6 +24,8 @@ class Search @Inject() (files: FileService, datasets: DatasetService, collection
         var filesFound = ListBuffer.empty[models.File]
         var datasetsFound = ListBuffer.empty[models.Dataset]
         var collectionsFound = ListBuffer.empty[models.Collection]
+        		
+        var serviceConnected = true
 
         if (query != "") {
 
@@ -31,56 +33,72 @@ class Search @Inject() (files: FileService, datasets: DatasetService, collection
           
           result match {
             case Some(searchResponse) => {
-              for (hit <- searchResponse.getHits().getHits()) {
-                Logger.debug("Computing search result " + hit.getId())
-                Logger.info("Fields: ")
-                for ((key, value) <- mapAsScalaMap(hit.getFields())) {
-                  Logger.info(value.getName + " = " + value.getValue())
-                }
-                if (hit.getType() == "file") {
-                  files.get(UUID(hit.getId())) match {
-                    case Some(file) => {
-                      Logger.debug("FILES:hits.hits._id: Search result found file " + hit.getId());
-                      Logger.debug("FILES:hits.hits._source: Search result found dataset " + hit.getSource().get("datasetId"))
-                      //Logger.debug("Search result found file " + hit.getId()); files += file
-
-                      filesFound += file
-
-                    }
-                    case None => Logger.debug("File not found " + hit.getId())
-                   }
-                  } else if (hit.getType() == "dataset") {
-                    Logger.debug("DATASETS:hits.hits._source: Search result found dataset " + hit.getSource().get("name"))
-                    Logger.debug("DATASETS:Dataset.id=" + hit.getId());
-                    datasets.get(UUID(hit.getId())) match {
-                      case Some(dataset) =>
-                        Logger.debug("Search result found dataset" + hit.getId()); datasetsFound += dataset
-                      case None => {
-                        Logger.debug("Dataset not found " + hit.getId())
-                        //Redirect(routes.Datasets.dataset(hit.getId))
-                      }
-                    }
+            	try{
+                    searchResponse.getHits() != null
                   }
-                else if (hit.getType() == "collection") {
-                  Logger.debug("COLLECTIONS:hits.hits._source: Search result found collection " + hit.getSource().get("name"))
-                  Logger.debug("COLLECTIONS:Collection.id=" + hit.getId())
-                  
-                  collections.get(UUID(hit.getId())) match {
-                    case Some(collection) =>
-                      Logger.debug("Search result found collection" + hit.getId()); collectionsFound += collection
-                    case None => {
-                      Logger.debug("Collection not found " + hit.getId())
+                  catch{
+                    case ex: NullPointerException =>{ //ElasticSearch not connected
+                      serviceConnected = false
                     }
                   }
                   
-                }
+                  serviceConnected match{
+                    case false =>{	//ElasticSearch not connected              		
+                    }
+                    case true =>{	
+		              for (hit <- searchResponse.getHits().getHits()) {
+		                Logger.debug("Computing search result " + hit.getId())
+		                Logger.info("Fields: ")
+		                for ((key, value) <- mapAsScalaMap(hit.getFields())) {
+		                  Logger.info(value.getName + " = " + value.getValue())
+		                }
+		                if (hit.getType() == "file") {
+		                  files.get(UUID(hit.getId())) match {
+		                    case Some(file) => {
+		                      Logger.debug("FILES:hits.hits._id: Search result found file " + hit.getId());
+		                      Logger.debug("FILES:hits.hits._source: Search result found dataset " + hit.getSource().get("datasetId"))
+		                      //Logger.debug("Search result found file " + hit.getId()); files += file
+		
+		                      filesFound += file
+		
+		                    }
+		                    case None => Logger.debug("File not found " + hit.getId())
+		                   }
+		                  } else if (hit.getType() == "dataset") {
+		                    Logger.debug("DATASETS:hits.hits._source: Search result found dataset " + hit.getSource().get("name"))
+		                    Logger.debug("DATASETS:Dataset.id=" + hit.getId());
+		                    datasets.get(UUID(hit.getId())) match {
+		                      case Some(dataset) =>
+		                        Logger.debug("Search result found dataset" + hit.getId()); datasetsFound += dataset
+		                      case None => {
+		                        Logger.debug("Dataset not found " + hit.getId())
+		                        //Redirect(routes.Datasets.dataset(hit.getId))
+		                      }
+		                    }
+		                  }
+		                else if (hit.getType() == "collection") {
+		                  Logger.debug("COLLECTIONS:hits.hits._source: Search result found collection " + hit.getSource().get("name"))
+		                  Logger.debug("COLLECTIONS:Collection.id=" + hit.getId())
+		                  
+		                  collections.get(UUID(hit.getId())) match {
+		                    case Some(collection) =>
+		                      Logger.debug("Search result found collection" + hit.getId()); collectionsFound += collection
+		                    case None => {
+		                      Logger.debug("Collection not found " + hit.getId())
+		                    }
+		                  }
+		                  
+		                }
+		              }
+		             }
+                  }
               }
-             }
               case None => Logger.debug("Search returned no results")
               
             }
         }
         
+        if(serviceConnected){
           val filesChecker = services.DI.injector.getInstance(classOf[api.Files])
           val datasetsChecker = services.DI.injector.getInstance(classOf[api.Datasets])
           val collectionsChecker = services.DI.injector.getInstance(classOf[api.Collections])
@@ -118,12 +136,15 @@ class Search @Inject() (files: FileService, datasets: DatasetService, collection
 		        
 		        Ok(fullJSON)
 	        }
-	      } 
- 
+	      }
+        }
+        else{
+            Ok("Text search service not connected.")
+          } 
       }
      case None => {
-       Logger.debug("Search plugin not enabled")
-          Ok(views.html.pluginNotEnabled("Text search"))
+    	 Logger.debug("Search plugin not enabled")
+         Ok("Text search plugin not enabled.")
        }
     }
   }

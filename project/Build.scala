@@ -11,7 +11,7 @@ object ApplicationBuild extends Build {
     "com.novus" %% "salat" % "1.9.5" exclude("org.scala-stm", "scala-stm_2.10.0") exclude("play", "*"),
     "ws.securesocial" %% "securesocial" % "2.1.3" exclude("org.scala-stm", "scala-stm_2.10.0") exclude("play", "*"),
     "com.rabbitmq" % "amqp-client" % "3.0.0" exclude("play", "*"),
-    "org.elasticsearch" % "elasticsearch" % "0.90.2" exclude("play", "*"),
+    "org.elasticsearch" % "elasticsearch" % "1.3.4" exclude("play", "*"),
     "com.spatial4j" % "spatial4j" % "0.3" exclude("play", "*"),
     "org.mongodb" %% "casbah" % "2.6.3" exclude("play", "*"),
     "postgresql" % "postgresql" % "9.1-901.jdbc4" exclude("play", "*"),
@@ -62,6 +62,11 @@ object ApplicationBuild extends Build {
 
   val main = play.Project(appName, appVersion, appDependencies).settings(
     lessEntryPoints <<= baseDirectory(customLessEntryPoints),
+    //connectInput in Test := true,
+   // Keys.fork in Test := false,
+    //javaOptions in Test += "-Dconfig.file=conf/test.conf",
+    javaOptions in Test += "-Dconfig.file=" + Option(System.getProperty("config.file")).getOrElse("conf/application.conf"),
+    //javaOptions in Test ++= Option(System.getProperty("config.file")).map("-Dconfig.file=" + _).toSeq,
     testOptions in Test := Nil, // overwrite spec2 config to use scalatest instead
     routesImport += "models._",
     routesImport += "Binders._",
@@ -71,6 +76,8 @@ object ApplicationBuild extends Build {
     resolvers += "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots",
     resolvers += "Aduna" at "http://maven-us.nuxeo.org/nexus/content/repositories/public/",
     resolvers += "Forth" at "http://139.91.183.63/repository",
+    resolvers += "NCSA" at "https://opensource.ncsa.illinois.edu/nexus/content/repositories/thirdparty",   
     resolvers += "opencastproject" at "http://repository.opencastproject.org/nexus/content/repositories/public"
+   
   ).settings(net.virtualvoid.sbt.graph.Plugin.graphSettings: _*)
 }
