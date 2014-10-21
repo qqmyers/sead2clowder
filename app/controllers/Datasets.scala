@@ -466,6 +466,11 @@ class Datasets @Inject()(
 							  fileType = "ambiguous/mov";
 					        }
 					        
+					        if(nameOfFile.startsWith("MEDICI2DATASET_")){
+					        	nameOfFile = nameOfFile.replaceFirst("MEDICI2DATASET_","")
+					        	files.renameFile(f.id, nameOfFile)
+					        }
+					        
 					        current.plugin[FileDumpService].foreach{_.dump(DumpOfFile(uploadedFile.ref.file, f.id.toString, nameOfFile))}
 					        
 					    	// TODO RK need to replace unknown with the server name
@@ -688,6 +693,11 @@ class Datasets @Inject()(
 				            else if(filename.toLowerCase().endsWith(".mov")){
 										  fileType = "ambiguous/mov";
 									  }
+			                  
+			                  if(filename.startsWith("MEDICI2DATASET_")){
+					        	filename = filename.replaceFirst("MEDICI2DATASET_","")
+					        	files.renameFile(f.id, filename)
+			                  }
 			                  
 			                  if(toBeCurated)
 			                    current.plugin[FileDumpService].foreach{_.dump(DumpOfFile(localfile, f.id.toString, filename))}

@@ -61,6 +61,9 @@ import play.api.libs.json.JsObject
 import play.api.Play.configuration
 import com.wordnik.swagger.annotations.{ApiOperation, Api}
 
+import services.ExtractorMessage
+import scala.util.parsing.json.JSONArray
+
 import controllers.Previewers
 import scala.concurrent.Future
  
@@ -360,11 +363,16 @@ class Files @Inject()(
 							  fileType = "ambiguous/mov";
 						  }
 	            
+	            if(nameOfFile.startsWith("MEDICI2DATASET_")){
+					        	nameOfFile = nameOfFile.replaceFirst("MEDICI2DATASET_","")
+					        	files.renameFile(f.id, nameOfFile)
+				}
+	            
 	            current.plugin[FileDumpService].foreach{_.dump(DumpOfFile(uploadedFile.ref.file, f.id.toString, nameOfFile))}
 
                   val key = "unknown." + "file." + fileType.replace(".", "_").replace("/", ".")
                   // TODO RK : need figure out if we can use https
-                  val host = "http://" + request.host + request.path.replaceAll("api/files$", "").replaceAll("/api/files/withFlags/.*$", "")
+                  val host = Utils.baseUrl(request) + request.path.replaceAll("api/files$", "").replaceAll("/api/files/withFlags/.*$", "")
                   
                   /*---- Insert DTS Request to database---*/  
 
@@ -548,6 +556,11 @@ class Files @Inject()(
 	          else if(nameOfFile.toLowerCase().endsWith(".mov")){
 							  fileType = "ambiguous/mov";
 						  }
+              
+              if(nameOfFile.startsWith("MEDICI2DATASET_")){
+		        	nameOfFile = nameOfFile.replaceFirst("MEDICI2DATASET_","")
+		        	files.renameFile(f.id, nameOfFile)
+              }
 	              
               current.plugin[FileDumpService].foreach{_.dump(DumpOfFile(uploadedFile.ref.file, f.id.toString, nameOfFile))}
               
@@ -1870,4 +1883,5 @@ class Files @Inject()(
 }
 
 object MustBreak extends Exception {}
+
 
