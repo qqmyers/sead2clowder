@@ -1,6 +1,7 @@
 package services
 
 import play.api.{ Plugin, Logger, Application }
+import play.api.Play.current
 import org.elasticsearch.node.NodeBuilder._
 import org.elasticsearch.node.Node
 import org.elasticsearch.common.settings.ImmutableSettings
@@ -34,7 +35,9 @@ class ElasticsearchPlugin(application: Application) extends Plugin {
   override def onStart() {
     val configuration = application.configuration
     try {
-      node = Some(nodeBuilder().clusterName("medici").client(true).node())
+    	var nameOfCluster = play.api.Play.configuration.getString("elasticsearchSettings.clusterName").getOrElse("medici")	
+    	
+      node = Some(nodeBuilder().clusterName(nameOfCluster).client(true).node())
       Logger.debug("--- ElasticSearch Node is being created----")
       node match {
         case Some(n) => {
