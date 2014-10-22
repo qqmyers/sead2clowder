@@ -219,8 +219,5 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
     }
   }
   
-  
-  
-  
 }
 

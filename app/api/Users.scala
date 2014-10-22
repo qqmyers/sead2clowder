@@ -63,9 +63,12 @@ class Users @Inject() (users: UserAccessRightsService, files: FileService, datas
    * Upgrade or demote a user's access rights to a file
    */
   @ApiOperation(value = "Upgrade or demote a user's access rights to a file",
-      notes = "",
+            notes = """Accepted JSON:{<br/>
+&emsp;&emsp;"userFullName": The full name the target user uses in Medici<br/>
+&emsp;&emsp;"userEmail": The email the target user uses to log in to Medici<br/>
+&emsp;&emsp;"newPermissionLevel": Can be "view", "modify", "administrate" or "noaccess"}""",
       responseClass = "None", httpMethod = "POST")
-  def modifyRightsToFile(id: UUID) = SecuredAction(authorization=WithPermission(Permission.AdministrateFiles), resourceId = Some(id)) { 
+  def modifyRightsToFile(fileId: UUID) = SecuredAction(authorization=WithPermission(Permission.AdministrateFiles), resourceId = Some(fileId)) { 
     request =>
       Logger.debug("Setting user access rights")
       (request.body \ "userFullName").asOpt[String].map { fullName =>
@@ -73,7 +76,7 @@ class Users @Inject() (users: UserAccessRightsService, files: FileService, datas
             (request.body \ "newPermissionLevel").asOpt[String].map { newPermissionLevel =>
               users.findByEmailAndFullName(email, fullName) match{
                 case Some(user) =>{
-                  users.setPermissionLevel(user, id.stringify, "file", newPermissionLevel)
+                  users.setPermissionLevel(user, fileId.stringify, "file", newPermissionLevel)
                   Ok("Permissions for user to file set to chosen level.")
                 }
                 case None =>{
@@ -101,9 +104,12 @@ class Users @Inject() (users: UserAccessRightsService, files: FileService, datas
    * Upgrade or demote a user's access rights to a dataset
    */
   @ApiOperation(value = "Upgrade or demote a user's access rights to a dataset",
-      notes = "",
+            notes = """Accepted JSON:{<br/>
+&emsp;&emsp;"userFullName": The full name the target user uses in Medici<br/>
+&emsp;&emsp;"userEmail": The email the target user uses to log in to Medici<br/>
+&emsp;&emsp;"newPermissionLevel": Can be "view", "modify", "administrate" or "noaccess"}""",
       responseClass = "None", httpMethod = "POST")
-  def modifyRightsToDataset(id: UUID) = SecuredAction(authorization=WithPermission(Permission.AdministrateDatasets), resourceId = Some(id)) { 
+  def modifyRightsToDataset(datasetId: UUID) = SecuredAction(authorization=WithPermission(Permission.AdministrateDatasets), resourceId = Some(datasetId)) { 
     request =>
       Logger.debug("Setting user access rights")
       (request.body \ "userFullName").asOpt[String].map { fullName =>
@@ -111,7 +117,7 @@ class Users @Inject() (users: UserAccessRightsService, files: FileService, datas
             (request.body \ "newPermissionLevel").asOpt[String].map { newPermissionLevel =>
               users.findByEmailAndFullName(email, fullName) match{
                 case Some(user) =>{
-                  users.setPermissionLevel(user, id.stringify, "dataset", newPermissionLevel)
+                  users.setPermissionLevel(user, datasetId.stringify, "dataset", newPermissionLevel)
                   Ok("Permissions for user to dataset set to chosen level.")
                 }
                 case None =>{
@@ -138,9 +144,12 @@ class Users @Inject() (users: UserAccessRightsService, files: FileService, datas
    * Upgrade or demote a target user's access rights to all files in a dataset the requester has administrate rights on
    */
   @ApiOperation(value = "Upgrade or demote a target user's access rights to all files in a dataset the requester has administrate rights on",
-      notes = "",
+            notes = """Accepted JSON:{<br/>
+&emsp;&emsp;"userFullName": The full name the target user uses in Medici<br/>
+&emsp;&emsp;"userEmail": The email the target user uses to log in to Medici<br/>
+&emsp;&emsp;"newPermissionLevel": Can be "view", "modify", "administrate" or "noaccess"}""",
       responseClass = "None", httpMethod = "POST")
-  def modifyRightsToDatasetFiles(id: UUID) = SecuredAction(authorization=WithPermission(Permission.AdministrateDatasets), resourceId = Some(id)) {    
+  def modifyRightsToDatasetFiles(datasetId: UUID) = SecuredAction(authorization=WithPermission(Permission.AdministrateDatasets), resourceId = Some(datasetId)) {    
     request => 
       Logger.debug("Setting user access rights")
       (request.body \ "userFullName").asOpt[String].map { fullName =>
@@ -148,7 +157,7 @@ class Users @Inject() (users: UserAccessRightsService, files: FileService, datas
             (request.body \ "newPermissionLevel").asOpt[String].map { newPermissionLevel =>
               users.findByEmailAndFullName(email, fullName) match{
                 case Some(targetUser) =>{
-                 datasets.get(id) match{
+                 datasets.get(datasetId) match{
                    case Some(theDataset)=>{
                 	   val filesChecker = services.DI.injector.getInstance(classOf[api.Files])
 			          request.user match{
@@ -197,9 +206,12 @@ class Users @Inject() (users: UserAccessRightsService, files: FileService, datas
    * Upgrade or demote a target user's access rights to all datasets in a collection the requester has administrate rights on
    */
   @ApiOperation(value = "Upgrade or demote a target user's access rights to all datasets in a collection the requester has administrate rights on",
-      notes = "",
+            notes = """Accepted JSON:{<br/>
+&emsp;&emsp;"userFullName": The full name the target user uses in Medici<br/>
+&emsp;&emsp;"userEmail": The email the target user uses to log in to Medici<br/>
+&emsp;&emsp;"newPermissionLevel": Can be "view", "modify", "administrate" or "noaccess"}""",
       responseClass = "None", httpMethod = "POST")
-  def modifyRightsToCollectionDatasets(id: UUID) = SecuredAction(authorization=WithPermission(Permission.AdministrateCollections), resourceId = Some(id)) { 
+  def modifyRightsToCollectionDatasets(collectionId: UUID) = SecuredAction(authorization=WithPermission(Permission.AdministrateCollections), resourceId = Some(collectionId)) { 
     request =>
       Logger.debug("Setting user access rights")
       (request.body \ "userFullName").asOpt[String].map { fullName =>
@@ -207,7 +219,7 @@ class Users @Inject() (users: UserAccessRightsService, files: FileService, datas
             (request.body \ "newPermissionLevel").asOpt[String].map { newPermissionLevel =>
               users.findByEmailAndFullName(email, fullName) match{
                 case Some(targetUser) =>{
-                 collections.get(id) match{  
+                 collections.get(collectionId) match{  
                    case Some(theCollection)=>{
                 	   val datasetsChecker = services.DI.injector.getInstance(classOf[api.Datasets])
                 	   val filesChecker = services.DI.injector.getInstance(classOf[api.Files])
@@ -260,9 +272,12 @@ class Users @Inject() (users: UserAccessRightsService, files: FileService, datas
    * Upgrade or demote a user's access rights to a collection
    */
   @ApiOperation(value = "Upgrade or demote a user's access rights to a collection",
-      notes = "",
+             notes = """Accepted JSON:{<br/>
+&emsp;&emsp;"userFullName": The full name the target user uses in Medici<br/>
+&emsp;&emsp;"userEmail": The email the target user uses to log in to Medici<br/>
+&emsp;&emsp;"newPermissionLevel": Can be "view", "modify", "administrate" or "noaccess"}""",
       responseClass = "None", httpMethod = "POST")
-  def modifyRightsToCollection(id: UUID) = SecuredAction(authorization=WithPermission(Permission.AdministrateCollections), resourceId = Some(id)) { 
+  def modifyRightsToCollection(collectionId: UUID) = SecuredAction(authorization=WithPermission(Permission.AdministrateCollections), resourceId = Some(collectionId)) { 
     request =>
       Logger.debug("Setting user access rights")
       (request.body \ "userFullName").asOpt[String].map { fullName =>
@@ -270,7 +285,7 @@ class Users @Inject() (users: UserAccessRightsService, files: FileService, datas
             (request.body \ "newPermissionLevel").asOpt[String].map { newPermissionLevel =>
               users.findByEmailAndFullName(email, fullName) match{
                 case Some(user) =>{
-                  users.setPermissionLevel(user, id.stringify, "collection", newPermissionLevel)
+                  users.setPermissionLevel(user, collectionId.stringify, "collection", newPermissionLevel)
                   Ok("Permissions for user to collection set to chosen level.")
                 }
                 case None =>{

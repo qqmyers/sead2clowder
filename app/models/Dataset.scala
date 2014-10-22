@@ -31,4 +31,3 @@ case class Dataset(
   notesHTML: Option[String] = None
 )
 
-

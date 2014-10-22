@@ -32,8 +32,7 @@ case class File(
     isPublic: Option[Boolean] = Some(false),
     licenseData: LicenseData = new LicenseData()
     )
-
-  
+ 
 case class Versus(
   fileId: UUID,
   descriptors: Map[String,Any]= Map.empty
