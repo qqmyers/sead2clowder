@@ -61,6 +61,7 @@ object Permission extends Enumeration {
 		DeleteFiles,
 		AdministrateFiles,
 		ListFiles,
+		ExtractMetadata, 
 		AddFilesMetadata,
 		ShowFilesMetadata,			
 		ShowFile,					
@@ -344,3 +345,5 @@ case class WithPermission(permission: Permission, resourceId: Option[UUID] = Non
 		}
 	}
 }
+
+

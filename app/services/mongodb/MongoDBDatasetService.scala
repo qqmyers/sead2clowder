@@ -1278,3 +1278,7 @@ object LicenseData extends ModelCompanion[LicenseData, ObjectId] {
     case Some(x) => new SalatDAO[LicenseData, ObjectId](collection = x.collection("licensedata")) {}
   }
 }
+
+
+
+

@@ -28,7 +28,6 @@ class ExtractionInfo @Inject() (extractors: ExtractorService, dtsrequests: Extra
   /**
    * Directs currently running extractor's server IPs to the webpage
    */
-
   def getExtractorServersIP() = SecuredAction(authorization = WithPermission(Permission.Admin)) { implicit request =>
     Async {
       for {

@@ -10,7 +10,6 @@
 10000:securesocial.core.providers.UsernamePasswordProvider
 #10001:services.VersusPlugin
 #10002:services.ElasticsearchPlugin
-#9200:services.ElasticsearchPlugin
 #10003:securesocial.core.providers.TwitterProvider
 #10004:securesocial.core.providers.GoogleProvider
 #10005:services.PostgresPlugin
