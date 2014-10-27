@@ -1,4 +1,4 @@
-@(datasets: List[models.Dataset], prev: String, next: String, limit: Int, listView: String, rightsForUser: Option[models.UserPermissions])(implicit user: Option[securesocial.core.Identity])
+@(datasets: List[models.Dataset], comments: Map[UUID, Int], prev: String, next: String, limit: Int, listView: String, rightsForUser: Option[models.UserPermissions])(implicit user: Option[securesocial.core.Identity])
 
 @import services.{DI, AppConfigurationService}
 @import controllers.Datasets 
@@ -83,7 +83,12 @@
                   <li class="list-group-item">
                       <span class="glyphicon glyphicon glyphicon-file" title="@dataset.files.size files"></span> @dataset.files.size
                       <span class="glyphicon glyphicon glyphicon-tags" title="@dataset.tags.size tags"></span>  @dataset.tags.size
-                      <span class="glyphicon glyphicon glyphicon-list" title="@dataset.userMetadata.keys.size metadata fields"></span>  @dataset.userMetadata.keys.size
+                      <span class="glyphicon glyphicon glyphicon-list" title="@(dataset.metadata.keys.size + dataset.userMetadata.keys.size) metadata fields"></span>  @(dataset.metadata.keys.size + dataset.userMetadata.keys.size)
+                      <span class="glyphicon glyphicon glyphicon-comment" title="@(comments.get(dataset.id)) comments"></span>  @(comments.get(dataset.id))
+                      @if(services.DI.injector.getInstance(classOf[controllers.Datasets]).checkAccessForDatasetUsingRightsList(dataset, user, "modify", rightsForUser)){
+                      		<a href="#" onclick="removeDataset('@(dataset.id.toString)',event)" class="btn btn-link" style="text-align:right" title="Delete">
+							<span class="glyphicon glyphicon-trash"></span></a>
+                      }
                   </li>
               </ul>
 			</div>

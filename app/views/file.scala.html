@@ -129,7 +129,6 @@
 								@for(i <- pvs.indices) {
 							  		<div class="tab-pane previewDiv" id="previewer_@(f.id.toString)_@i" data-previewId="@(pvs(i)._1)" data-previewerId="@(pvs(i)._2)"></div>
 							  		@showPreview(f.id.toString + "_" + i, pvs(i), f.filename, f.contentType, f.id.toString)
-
 								}
 					  			<script type="text/javascript">
 									$(function () {
@@ -729,9 +728,8 @@
     			$(function() {
     				setTimeout(function(){checkForNewPreviews()}, 1000);
     			});
-    		</script> 
-
-	</div>
+    		</script>
+    	</div>
 
 		@if(!user.isDefined) {
      	   <script language="javascript">
@@ -744,6 +742,7 @@
 	     			$(".requiresLogin:not(.requiresLoginCommunity)").css("display","none");
 	       		</script>
        		}
+
 }
 }
 }

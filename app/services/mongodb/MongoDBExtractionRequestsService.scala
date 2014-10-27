@@ -1,4 +1,4 @@
-package services
+package services.mongodb
 import org.bson.types.ObjectId
 import java.util.Date
 import play.api.Play.current
@@ -17,6 +17,8 @@ import com.mongodb.casbah.Imports._
 import com.mongodb.WriteConcern
 import services.mongodb.MongoContext.context
 import services.mongodb.MongoSalatPlugin
+import services.ExtractionRequestsService
+import services.ExtractionService
 import java.text.SimpleDateFormat
 
 import javax.inject.{Singleton, Inject}

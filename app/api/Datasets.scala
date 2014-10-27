@@ -254,7 +254,7 @@ class Datasets @Inject()(
         }
       }
   }
-  
+
   @ApiOperation(value = "Detach file from dataset",
       notes = "File is not deleted, only separated from the selected dataset. If the file is an XML metadata file, the metadata are removed from the dataset.",
       responseClass = "None", httpMethod = "POST")
@@ -1322,9 +1322,7 @@ class Datasets @Inject()(
       }
     }
   }
-  
 
-  
 }
 
 object ActivityFound extends Exception {}

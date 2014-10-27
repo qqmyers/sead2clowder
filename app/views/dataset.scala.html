@@ -93,6 +93,8 @@
 @defining(services.DI.injector.getInstance(classOf[controllers.Datasets]).checkAccessForDatasetUsingRightsList(dataset, user, "administrate", rightsForUser)){authenticatedDatasetAdministrate=>
 	<script type="text/javascript" src="//ajax.googleapis.com/ajax/libs/swfobject/2.2/swfobject.js"></script>
 	<script src="@routes.Assets.at("javascripts/tinymce/tinymce.min.js")" type="text/javascript"></script>
+	<script src="@routes.Assets.at("javascripts/errorRedirect.js")" type="text/javascript"></script>
+    <script src="@routes.Assets.at("javascripts/updateLicenseInfo.js")" language="javascript"></script>
 	<script>
 		tinymce.init({selector:'.notesArea',
 	    	theme: "modern",
@@ -540,19 +542,19 @@
 							        }
 
 						        if(j <= tableLength)	    
-							        $("#datasetFilesTable tbody tr:nth-child("+j+")").before("<tr><td class='file-list-cell'><a href='"+   window.location.protocol + "//" + window.location.hostname + (window.location.port ? ':' + window.location.port: '')   +"/files/"+fileId+"'>"+respJSON[i].filename+"</a>"
+							        $("#datasetFilesTable tbody tr:nth-child("+j+")").before("<tr><td class='file-list-cell'><a href='"+  window.location.protocol + "//" + window.location.hostname + (window.location.port ? ':' + window.location.port: '')+"/files/"+fileId+"'>"+respJSON[i].filename+"</a>"
 							        		+ "&nbsp;&nbsp;&nbsp;&nbsp;</td><td><a href='#' style='font-style:italic;' onclick='detachFile(\""+fileId+"\",\""+respJSON[i].filename+"\",event)'>Detach</a>"
 							        		+ "&nbsp;&nbsp;&nbsp;&nbsp;</td><td><a href='#' style='font-style:italic;' title='Delete File' onclick='removeFile(\""+fileId+"\",event,true)'><span class=\"glyphicon glyphicon-trash\"></span></a></td></tr>"
 							        		);
 						        else if(tableLength > 0)
-						        	$("#datasetFilesTable tbody tr:nth-child("+(j-1)+")").after("<tr><td class='file-list-cell'><a href='"+  window.location.protocol + "//" + window.location.hostname + (window.location.port ? ':' + window.location.port: '')  +"/files/"+fileId+"'>"+respJSON[i].filename+"</a>"
+						        	$("#datasetFilesTable tbody tr:nth-child("+(j-1)+")").after("<tr><td class='file-list-cell'><a href='"+  window.location.protocol + "//" + window.location.hostname + (window.location.port ? ':' + window.location.port: '')+"/files/"+fileId+"'>"+respJSON[i].filename+"</a>"
 							        		+ "&nbsp;&nbsp;&nbsp;&nbsp;</td><td><a href='#' style='font-style:italic;' onclick='detachFile(\""+fileId+"\",\""+respJSON[i].filename+"\",event)'>Detach</a>"
 							        		+ "&nbsp;&nbsp;&nbsp;&nbsp;</td><td><a href='#' style='font-style:italic;' title='Delete File' onclick='removeFile(\""+fileId+"\",event,true)'><span class=\"glyphicon glyphicon-trash\"></span></a></td></tr>"
 							        		);
 						        else{
 						        	if($("#datasetFilesTable tbody").length == 0)
 						        		$("#datasetFilesTable").append("<tbody></tbody>");
-						        	$("#datasetFilesTable tbody").append("<tr><td class='file-list-cell'><a href='"+  window.location.protocol + "//" + window.location.hostname + (window.location.port ? ':' + window.location.port: '')  +"/files/"+fileId+"'>"+respJSON[i].filename+"</a>"
+						        	$("#datasetFilesTable tbody").append("<tr><td class='file-list-cell'><a href='"+  window.location.protocol + "//" + window.location.hostname + (window.location.port ? ':' + window.location.port: '')+"/files/"+fileId+"'>"+respJSON[i].filename+"</a>"
 							        		+ "&nbsp;&nbsp;&nbsp;&nbsp;</td><td><a href='#' style='font-style:italic;' onclick='detachFile(\""+fileId+"\",\""+respJSON[i].filename+"\",event)'>Detach</a>"
 							        		+ "&nbsp;&nbsp;&nbsp;&nbsp;</td><td><a href='#' style='font-style:italic;' title='Delete File' onclick='removeFile(\""+fileId+"\",event,true)'><span class=\"glyphicon glyphicon-trash\"></span></a></td></tr>"
 							        		);
@@ -774,7 +776,6 @@
 					</button>
 					<span style="color:red;display:none;margin-top:10px;font-size:14px;font-family:Helvetica Neue,Helvetica,Arial,sans-serif" id="doesNotExistErrorFiles" >File does not exist or already added.</span>
 				</div>
-					<script src="@routes.Assets.at("javascripts/book.js")" type="text/javascript"></script>	
 					<script src="@routes.Assets.at("javascripts/combobox.js")" type="text/javascript"></script>
 					<script>
 						$("#filesAddSelect").combobox();

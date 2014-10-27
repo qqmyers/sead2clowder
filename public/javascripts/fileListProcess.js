@@ -7,11 +7,19 @@ function removeFile(fileId,event, reloadPage){
 	     });
 	request.done(function (response, textStatus, jqXHR){
         console.log("Response " + response);
+        var upNodes;
+        //Has the user clicked on an icon in the link field, or elsewhere in the link field?
         if($(event.target).is("span")){
-        	$(event.target.parentNode.parentNode.parentNode).remove();
+        	upNodes = $(event.target.parentNode.parentNode.parentNode);
+        }else{
+        	upNodes = $(event.target.parentNode.parentNode);
         }
-        else{
-        	$(event.target.parentNode.parentNode).remove();
+        
+        //Did the user click on a list item or on a tile?
+        if(upNodes.is("tr")){
+        	upNodes.remove();
+        }else{
+        	upNodes.parent().parent().remove();
         }
         
         if(reloadPage == true)

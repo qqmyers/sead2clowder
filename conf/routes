@@ -87,7 +87,8 @@ GET      /collection/:id                                                     @co
 
 # Tags
 GET     /tags/search                      @controllers.Tags.search(tag)
-GET     /tags/cloud                       @controllers.Tags.tagCloud 
+GET     /tags/cloud                       @controllers.Tags.tagCloud
+GET     /tags/list                        @controllers.Tags.tagList
 
 # Authentication
 GET      /loginTest                                                          controllers.Authentication.login
@@ -102,7 +103,7 @@ GET      /advanced                                                           @co
 GET      /SearchByText                                                       @controllers.Search.SearchByText(query: String ?= "")
 POST     /uploadquery                                                        @controllers.Search.uploadquery	
 GET      /searchbyURL                                                        @controllers.Search.searchbyURL(query:String?="")
-GET      /searchbyfeature                                                    @controllers.Search.searchMultimediaIndex(section_id: UUID)
+GET      /searchbyfeature/:section_id                                        @controllers.Search.searchMultimediaIndex(section_id: UUID)
 GET      /files/:id/similar                                                  @controllers.Search.findSimilarFile(id: UUID)
 GET      /queries/:id/similar                                                @controllers.Search.findSimilar(id: UUID)
 
@@ -157,7 +158,7 @@ POST  	 /admin/index/:id/build     @controllers.Admin.buildIndex(id:String)
 DELETE   /admin/index/:id/delete    @controllers.Admin.deleteIndex(id:String)
 DELETE  /admin/index/:id            @controllers.Admin.deleteIndex(id:String)
 DELETE 	/admin/index/deleteAll		@controllers.Admin.deleteAllIndexes
-POST    /admin/theme                                                         @controllers.Admin.setTheme
+POST    /admin/theme                @controllers.Admin.setTheme
 
 GET		/adminScreen/addAdmin		@controllers.Admin.newAdmin
 GET		/adminScreen/listAdmins		@controllers.Admin.listAdmins
@@ -199,8 +200,8 @@ POST    /api/files/withFlags/:flags                             @api.Files.uploa
 POST	/api/files/searchusermetadata							@api.Files.searchFilesUserMetadata
 POST	/api/files/searchmetadata								@api.Files.searchFilesGeneralMetadata
 POST	/api/files/setIsPublic/:id								@api.Files.setIsPublic(id:UUID)
-POST    /api/uploadToDataset/:id                        		@api.Files.uploadToDataset(id: UUID, showPreviews: String ?= "DatasetLevel", originalZipFile: String ?= "", fileIsPublic: String ?= "false", flags: String ?= "")
-POST    /api/uploadToDataset/withFlags/:id/:flags               @api.Files.uploadToDataset(id: UUID, showPreviews: String ?= "DatasetLevel", originalZipFile: String ?= "", fileIsPublic: String ?= "false", flags: String) 
+POST    /api/uploadToDataset/withFlags/:id/:flags               @api.Files.uploadToDataset(id: UUID, showPreviews: String ?= "DatasetLevel", originalZipFile: String ?= "", fileIsPublic: String ?= "false", flags: String)
+POST    /api/uploadToDataset/:id                        		@api.Files.uploadToDataset(id: UUID, showPreviews: String ?= "DatasetLevel", originalZipFile: String ?= "", fileIsPublic: String ?= "false", flags: String ?= "") 
 POST	/api/files/uploadIntermediate/:idAndFlags				@api.Files.uploadIntermediate(idAndFlags)
 
 POST	/api/files/sendJob/:fileId/:fileType					@api.Files.sendJob(fileId: UUID,fileType)
@@ -255,7 +256,6 @@ GET     /api/queries/:id				                        @api.Files.downloadquery(id:
 # DANGER
 GET     /api/delete-data                    					api.Admin.deleteAllData
 
-
 POST	/api/remove-admin										api.Admin.removeAdmin
 POST	/api/changeAppearance									api.Admin.submitAppearance
 POST    /api/setViewNoLoggedIn                                  api.Admin.setViewNoLoggedIn
@@ -265,7 +265,7 @@ POST	/api/dumpDatasetsMd										@api.Datasets.dumpDatasetsMetadata
 POST	/api/dumpDatasetGroupings								@api.Datasets.dumpDatasetGroupings
 
 
-POST    /api/collections                                        @api.Collections.createCollection()
+POST    /api/collections                                        					@api.Collections.createCollection()
 GET		/api/collections/list														@api.Collections.listCollections
 POST	/api/collections/setIsPublic/:id											@api.Collections.setIsPublic(id: UUID)
 POST	/api/collections/:coll_id/datasets/:ds_id									@api.Collections.attachDataset(coll_id: UUID, ds_id: UUID)
@@ -345,8 +345,7 @@ DELETE	/api/sections/:id/tags			                        @api.Sections.removeTags
 
 POST    /api/geostreams/datapoints           api.Geostreams.addDatapoint
 GET     /api/geostreams/datapoints/:id       api.Geostreams.getDatapoint(id: String)
-GET     /api/geostreams/datapoints           api.Geostreams.searchDatapoints(since: Option[String] ?= None, until: Option[String] ?= None, geocode: Option[String] ?= None,  stream_id: Option[String] ?= None, sources: List[String] ?= List.empty, attributes: List[String] ?= List.empty, format: String ?= "json")
-
+GET     /api/geostreams/datapoints           api.Geostreams.searchDatapoints(since: Option[String] ?= None, until: Option[String] ?= None, geocode: Option[String] ?= None,  stream_id: Option[String] ?= None, sensor_id: Option[String] ?= None, sources: List[String] ?= List.empty, attributes: List[String] ?= List.empty, format: String ?= "json")
 
 POST    /api/geostreams/sensors			     api.Geostreams.createSensor
 GET     /api/geostreams/sensors/update       api.Geostreams.updateStatisticsStreamSensor()

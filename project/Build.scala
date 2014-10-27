@@ -51,7 +51,8 @@ object ApplicationBuild extends Build {
     "postgresql" % "postgresql" % "8.1-407.jdbc3" exclude("play", "*"),
     "org.postgresql" % "com.springsource.org.postgresql.jdbc4" % "8.3.604" exclude("play", "*"),
     "org.springframework" % "spring" % "2.5.6" exclude("play", "*"),
-    "org.scalatestplus" % "play_2.10" % "1.0.0" % "test" exclude("play", "*")
+    "org.scalatestplus" % "play_2.10" % "1.0.0" % "test" exclude("play", "*"),
+    "org.irods.jargon" % "jargon-core" % "3.3.3-beta1" exclude("play", "*")
   )
 
   // Only compile the bootstrap bootstrap.less file and any other *.less file in the stylesheets directory 
@@ -72,7 +73,9 @@ object ApplicationBuild extends Build {
     resolvers += "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots",
     resolvers += "Aduna" at "http://maven-us.nuxeo.org/nexus/content/repositories/public/",
     resolvers += "Forth" at "http://139.91.183.63/repository",
+    resolvers += "NCSA" at "https://opensource.ncsa.illinois.edu/nexus/content/repositories/thirdparty",   
     resolvers += "opencastproject" at "http://repository.opencastproject.org/nexus/content/repositories/public"
+   
   ).settings(net.virtualvoid.sbt.graph.Plugin.graphSettings: _*)
 }
 

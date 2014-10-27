@@ -324,10 +324,12 @@ class MongoDBCollectionService @Inject() (datasets: DatasetService, appConfigura
               datasets.addCollection(dataset.id, collection.id)
               datasets.index(dataset.id)
               index(collection.id)
+
               if(collection.thumbnail_id.isEmpty && !dataset.thumbnail_id.isEmpty){ 
                   Collection.dao.collection.update(MongoDBObject("_id" -> new ObjectId(collection.id.stringify)), 
                   $set("thumbnail_id" -> dataset.thumbnail_id.get), false, false, WriteConcern.Safe)
               }
+
               Logger.debug("Adding dataset to collection completed")
             }
             else{
@@ -406,10 +408,12 @@ class MongoDBCollectionService @Inject() (datasets: DatasetService, appConfigura
           datasets.index(dataset.id)
         }
         Collection.remove(MongoDBObject("_id" -> new ObjectId(collection.id.stringify)))
+
         current.plugin[ElasticsearchPlugin].foreach {
           _.delete("data", "collection", collection.id.stringify)
         }
         current.plugin[AdminsNotifierPlugin].foreach{_.sendAdminsNotification("Collection","removed",collection.id.stringify, collection.name)}
+
         Success
       }
       case None => Success
@@ -449,7 +453,7 @@ class MongoDBCollectionService @Inject() (datasets: DatasetService, appConfigura
 	    case None =>
     }  
   }
-  
+
 
   def index(id: UUID) {
 	    Collection.findOneById(new ObjectId(id.stringify)) match {

@@ -11,7 +11,8 @@ import services.FileService
 import services.DatasetService
 import services.CollectionService
 import services.UserAccessRightsService
-import play.api.Logger
+import play.api.Play.configuration
+import play.api.{Plugin, Logger, Application}
 
  /**
   * A request that adds the User for the current call

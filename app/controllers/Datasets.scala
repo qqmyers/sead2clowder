@@ -129,6 +129,17 @@ class Datasets @Inject()(
 	        }
 	      }
 	      
+	      val commentMap = datasetList.map{dataset =>
+	        var allComments = comments.findCommentsByDatasetId(dataset.id)
+	        dataset.files.map { file =>
+	          allComments ++= comments.findCommentsByFileId(file.id)
+	          sections.findByFileId(file.id).map { section =>
+	            allComments ++= comments.findCommentsBySectionId(section.id)
+	          }
+	        }
+	        dataset.id -> allComments.size
+	      }.toMap
+	      
 	      //Modifications to decode HTML entities that were stored in an encoded fashion as part 
 	      //of the datasets names or descriptions
 	      val aBuilder = new StringBuilder()
@@ -136,11 +147,10 @@ class Datasets @Inject()(
 	          decodeDatasetElements(aDataset)
 	      }
 	      
-	      Ok(views.html.datasetList(datasetList, prev, next, limit, listView, rightsForUser))
+	      Ok(views.html.datasetList(datasetList, commentMap, prev, next, limit, listView, rightsForUser))
 	  }
 
   
-
   /**
    * Dataset.	
    */
@@ -247,6 +257,7 @@ class Datasets @Inject()(
 	    }
 	  }
 
+
   /**
    * 3D Dataset.
    */
@@ -347,6 +358,7 @@ class Datasets @Inject()(
       case None => {Logger.error("Error getting dataset" + id); InternalServerError}
     }
   }
+
   
   /**
    * Utility method to modify the elements in a dataset that are encoded when submitted and stored. These elements
@@ -361,7 +373,7 @@ class Datasets @Inject()(
       dataset.name = StringEscapeUtils.unescapeHtml(dataset.name)
       dataset.description = StringEscapeUtils.unescapeHtml(dataset.description)
   }
-  
+
   /**
    * Dataset by section.
    */
@@ -534,14 +546,14 @@ class Datasets @Inject()(
 						             case _ => {}
 					             }
 				             }
-		 			    	
+
 		 			    	/*---- Insert DTS Request to the database   ----*/
 
 		 			    	val clientIP=request.remoteAddress
 		 			    	val serverIP= request.host
 		 			    	dtsrequests.insertRequest(serverIP,clientIP, f.filename, id, fileType, f.length,f.uploadDate)
 			    			/*--------------------------------------------*/
-		 			    	
+
 				            // redirect to dataset page
 				            Redirect(routes.Datasets.dataset(dt.id))
 				            current.plugin[AdminsNotifierPlugin].foreach{_.sendAdminsNotification("Dataset","added",dt.id.toString, dt.name)}
@@ -814,7 +826,6 @@ class Datasets @Inject()(
 	            }
 	            case _ => {
 	              //Existing file selected	          
-	          
 	              //Can't have both an existing file and a file from a URL
 			      request.body.asFormUrlEncoded.get("fileURL").get(0).trim().equals("") match{
 			        case true => {

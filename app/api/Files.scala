@@ -61,7 +61,6 @@ import play.api.libs.json.JsObject
 import play.api.Play.configuration
 import com.wordnik.swagger.annotations.{ApiOperation, Api}
 
-import services.ExtractorMessage
 import scala.util.parsing.json.JSONArray
 
 import controllers.Previewers
@@ -299,6 +298,7 @@ class Files @Inject()(
 	      request.body.file("File").map { f =>        
 	          var nameOfFile = f.filename
 	          var flags = flagsFromPrevious
+
 	          if(nameOfFile.toLowerCase().endsWith(".ptm")){
 		          	  var thirdSeparatorIndex = nameOfFile.indexOf("__")
 		              if(thirdSeparatorIndex >= 0){
@@ -346,7 +346,7 @@ class Files @Inject()(
 	            				  if(fileType.equals("multi/files-ptm-zipped")){
 	            				    fileType = "multi/files-zipped";
 	            				  }
-	            				  
+
 					        	  var thirdSeparatorIndex = nameOfFile.indexOf("__")
 					              if(thirdSeparatorIndex >= 0){
 					                var firstSeparatorIndex = nameOfFile.indexOf("_")
@@ -357,7 +357,6 @@ class Files @Inject()(
 					              }
 					        	  files.setContentType(f.id, fileType)
 					          }
-	            	
 	            }
 	            else if(nameOfFile.toLowerCase().endsWith(".mov")){
 							  fileType = "ambiguous/mov";
@@ -371,7 +370,7 @@ class Files @Inject()(
 	            current.plugin[FileDumpService].foreach{_.dump(DumpOfFile(uploadedFile.ref.file, f.id.toString, nameOfFile))}
 
                   val key = "unknown." + "file." + fileType.replace(".", "_").replace("/", ".")
-                  // TODO RK : need figure out if we can use https
+
                   val host = Utils.baseUrl(request) + request.path.replaceAll("api/files$", "").replaceAll("/api/files/withFlags/.*$", "")
                   
                   /*---- Insert DTS Request to database---*/  
@@ -388,7 +387,7 @@ class Files @Inject()(
 	            current.plugin[RabbitmqPlugin].foreach{_.extract(ExtractorMessage(id, id, host, key, Map.empty, f.length.toString, null, flags))}
 	            
 	            val dateFormat = new SimpleDateFormat("dd/MM/yyyy")
-	            	            
+
 	            //for metadata files
 	            if(fileType.equals("application/xml") || fileType.equals("text/xml")){
 	              val xmlToJSON = FilesUtils.readXMLgetJSON(uploadedFile.ref.file)
@@ -493,6 +492,7 @@ class Files @Inject()(
         request.body.file("File").map { f =>
           		var nameOfFile = f.filename
 	            var flags = flagsFromPrevious
+
 	            if(nameOfFile.toLowerCase().endsWith(".ptm")){
 	            	  var thirdSeparatorIndex = nameOfFile.indexOf("__")
 		              if(thirdSeparatorIndex >= 0){
@@ -568,6 +568,7 @@ class Files @Inject()(
 	          val key = "unknown." + "file." + fileType.replace(".", "_").replace("/", ".")
 	          
 	          val host = Utils.baseUrl(request) + request.path.replaceAll("api/uploadToDataset/[A-Za-z0-9_]*$", "")
+
 	          /*----- Insert DTS Requests  -------*/
 	          val clientIP = request.remoteAddress
 	          val serverIP = request.host
@@ -599,6 +600,7 @@ class Files @Inject()(
               }
                            
               // add file to dataset   
+
               // TODO create a service instead of calling salat directly
               val theFile = files.get(f.id)
               if(theFile.isEmpty){
@@ -607,9 +609,8 @@ class Files @Inject()(
               }
               else{
             	  datasets.addFile(dataset.id, theFile.get)
-
 	              datasets.index(dataset_id)
-			      	
+
             	  // TODO RK need to replace unknown with the server name and dataset type
             	  val dtkey = "unknown." + "dataset." + "unknown"
 
@@ -652,7 +653,7 @@ class Files @Inject()(
     }
   }
   
-
+//////////////////////////////////////////////
   /**
    * Upload intermediate file of extraction chain using multipart form enconding and continue chaining.
    */
@@ -859,7 +860,7 @@ class Files @Inject()(
           }
 
           Ok(toJson(Map("status" -> "success")))
-      }
+    }
 
   def jsonFile(file: File): JsValue = {
     toJson(Map("id" -> file.id.toString, "filename" -> file.filename, "content-type" -> file.contentType, "date-created" -> file.uploadDate.toString(), "size" -> file.length.toString,
@@ -1591,7 +1592,8 @@ class Files @Inject()(
 	      }
 	  }
 	  
-	   @ApiOperation(value = "Get Versus metadata of the resource described by the file",
+	  
+	  @ApiOperation(value = "Get Versus metadata of the resource described by the file",
           notes = "",
           responseClass = "None", httpMethod = "GET")
     def getVersusMetadataJSON(id: UUID) = SecuredAction(parse.anyContent, authorization = WithPermission(Permission.ShowFilesMetadata)) {
@@ -1622,17 +1624,16 @@ class Files @Inject()(
 	  def removeFile(id: UUID) = SecuredAction(parse.anyContent, authorization=WithPermission(Permission.DeleteFiles), resourceId = Some(id)) { request =>
 	    files.get(id)  match {
 	      case Some(file) => {
-	        files.removeFile(id)
-	        current.plugin[VersusPlugin].foreach {        
-	        	_.removeFromIndexes(id)        
-	        }
-	        current.plugin[ElasticsearchPlugin].foreach {
-	        	_.delete("data", "file", id.stringify)
-	        }
-
-	        accessRights.removeResourceRightsForAll(id.stringify, "file")
-
-	        Logger.debug(file.filename)
+	          Logger.debug("Deleting file: " + file.filename)
+	          files.removeFile(id)
+	          current.plugin[VersusPlugin].foreach {        
+	            _.removeFromIndexes(id)        
+	          }
+	          current.plugin[ElasticsearchPlugin].foreach {
+	            _.delete("data", "file", id.stringify)
+	          }
+	          
+	          accessRights.removeResourceRightsForAll(id.stringify, "file")
 
 	        //remove file from RDF triple store if triple store is used
 		        configuration.getString("userdfSPARQLStore").getOrElse("no") match {

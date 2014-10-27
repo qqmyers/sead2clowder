@@ -18,6 +18,7 @@ import play.api.mvc.WithFilters
 import play.filters.gzip.GzipFilter
 import akka.actor.Cancellable
 
+
 /**
  * Configure application. Ensure mongo indexes if mongo plugin is enabled.
  *

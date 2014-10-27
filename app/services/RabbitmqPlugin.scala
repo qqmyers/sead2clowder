@@ -41,7 +41,9 @@ import play.api.libs.concurrent.Execution.Implicits._
  */
 class RabbitmqPlugin(application: Application) extends Plugin {
 
+
   val files: FileService =  DI.injector.getInstance(classOf[FileService]) 
+
   var extractQueue: Option[ActorRef] = None
   
   var channel:Channel=null
@@ -258,7 +260,7 @@ class SendingActor(channel: Channel, exchange: String, replyQueueName: String) e
         val msg = Json.toJson(msgMap.toMap)
         Logger.info(msg.toString())
         // correlation id used for rpc call
-        val corrId = java.util.UUID.randomUUID().toString()
+        val corrId = java.util.UUID.randomUUID().toString()  // TODO switch to models.UUID?
         // setup properties
         val basicProperties = new BasicProperties().builder()
         	.contentType("application\\json")
