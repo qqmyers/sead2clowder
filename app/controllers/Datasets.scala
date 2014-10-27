@@ -483,6 +483,11 @@ class Datasets @Inject()(
 					        	files.renameFile(f.id, nameOfFile)
 					        }
 					        
+					        if(nameOfFile.startsWith("MEDICI2MULTISPECTRAL_")){
+					        	nameOfFile = nameOfFile.replaceFirst("MEDICI2MULTISPECTRAL_","")
+					        	files.renameFile(f.id, nameOfFile)
+					        }
+					        
 					        current.plugin[FileDumpService].foreach{_.dump(DumpOfFile(uploadedFile.ref.file, f.id.toString, nameOfFile))}
 					        
 					    	// TODO RK need to replace unknown with the server name
@@ -708,6 +713,10 @@ class Datasets @Inject()(
 			                  
 			                  if(filename.startsWith("MEDICI2DATASET_")){
 					        	filename = filename.replaceFirst("MEDICI2DATASET_","")
+					        	files.renameFile(f.id, filename)
+			                  }
+			                  if(filename.startsWith("MEDICI2MULTISPECTRAL_")){
+					        	filename = filename.replaceFirst("MEDICI2MULTISPECTRAL_","")
 					        	files.renameFile(f.id, filename)
 			                  }
 			                  

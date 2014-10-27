@@ -365,6 +365,10 @@ class Files @Inject()(
 	            if(nameOfFile.startsWith("MEDICI2DATASET_")){
 					        	nameOfFile = nameOfFile.replaceFirst("MEDICI2DATASET_","")
 					        	files.renameFile(f.id, nameOfFile)
+	            }
+	            if(nameOfFile.startsWith("MEDICI2MULTISPECTRAL_")){
+					        	nameOfFile = nameOfFile.replaceFirst("MEDICI2MULTISPECTRAL_","")
+					        	files.renameFile(f.id, nameOfFile)
 				}
 	            
 	            current.plugin[FileDumpService].foreach{_.dump(DumpOfFile(uploadedFile.ref.file, f.id.toString, nameOfFile))}
@@ -556,12 +560,16 @@ class Files @Inject()(
 	          else if(nameOfFile.toLowerCase().endsWith(".mov")){
 							  fileType = "ambiguous/mov";
 						  }
-              
+  
               if(nameOfFile.startsWith("MEDICI2DATASET_")){
 		        	nameOfFile = nameOfFile.replaceFirst("MEDICI2DATASET_","")
 		        	files.renameFile(f.id, nameOfFile)
+              } 
+              if(nameOfFile.startsWith("MEDICI2MULTISPECTRAL_")){
+					        	nameOfFile = nameOfFile.replaceFirst("MEDICI2MULTISPECTRAL_","")
+					        	files.renameFile(f.id, nameOfFile)
               }
-	              
+              
               current.plugin[FileDumpService].foreach{_.dump(DumpOfFile(uploadedFile.ref.file, f.id.toString, nameOfFile))}
               
 	          // TODO RK need to replace unknown with the server name

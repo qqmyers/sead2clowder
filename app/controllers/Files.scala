@@ -292,6 +292,10 @@ def uploadExtract() = SecuredAction(parse.multipartFormData, authorization = Wit
 	              nameOfFile = nameOfFile.replaceFirst("MEDICI2DATASET_","")
 	              files.renameFile(f.id, nameOfFile)
 	            }
+	        	if(nameOfFile.startsWith("MEDICI2MULTISPECTRAL_")){
+	              nameOfFile = nameOfFile.replaceFirst("MEDICI2MULTISPECTRAL_","")
+	              files.renameFile(f.id, nameOfFile)
+	            }
 	            
 	          current.plugin[FileDumpService].foreach{_.dump(DumpOfFile(uploadedFile.ref.file, f.id.toString, nameOfFile))}
 
@@ -444,6 +448,10 @@ user match {
 	              nameOfFile = nameOfFile.replaceFirst("MEDICI2DATASET_","")
 	              files.renameFile(f.id, nameOfFile)
 	            }
+	        	if(nameOfFile.startsWith("MEDICI2MULTISPECTRAL_")){
+	        		nameOfFile = nameOfFile.replaceFirst("MEDICI2MULTISPECTRAL_","")
+	        		files.renameFile(f.id, nameOfFile)
+			    }
 	        	
 	            current.plugin[FileDumpService].foreach{_.dump(DumpOfFile(uploadedFile.ref.file, f.id.toString, nameOfFile))}
 	            
@@ -643,6 +651,10 @@ user match {
 	                  
 	                  if(filename.startsWith("MEDICI2DATASET_")){
 	                	  filename = filename.replaceFirst("MEDICI2DATASET_","")
+	                	  files.renameFile(f.id, filename)
+	                  }
+	                  if(filename.startsWith("MEDICI2MULTISPECTRAL_")){
+	                	  filename = filename.replaceFirst("MEDICI2MULTISPECTRAL_","")
 	                	  files.renameFile(f.id, filename)
 	                  }
 	                  
@@ -877,9 +889,13 @@ user match {
 						  }
              
              if(nameOfFile.startsWith("MEDICI2DATASET_")){
-	              nameOfFile = nameOfFile.replaceFirst("MEDICI2DATASET_","")
-	              files.renameFile(f.id, nameOfFile)
+				              nameOfFile = nameOfFile.replaceFirst("MEDICI2DATASET_","")
+				              files.renameFile(f.id, nameOfFile)
 	            }
+             if(nameOfFile.startsWith("MEDICI2MULTISPECTRAL_")){
+					        	nameOfFile = nameOfFile.replaceFirst("MEDICI2MULTISPECTRAL_","")
+					        	files.renameFile(f.id, nameOfFile)
+				}
              
              current.plugin[FileDumpService].foreach{_.dump(DumpOfFile(uploadedFile.ref.file, f.id.toString, nameOfFile))}
             
@@ -989,10 +1005,19 @@ user match {
 							  fileType = "ambiguous/mov";
 						  }
             
+            if(nameOfFile.startsWith("MEDICI2MULTISPECTRAL_")){
+					        	nameOfFile = nameOfFile.replaceFirst("MEDICI2MULTISPECTRAL_","")
+					        	files.renameFile(f.id, nameOfFile)
+				}
+            
             if(nameOfFile.startsWith("MEDICI2DATASET_")){
 	              nameOfFile = nameOfFile.replaceFirst("MEDICI2DATASET_","")
 	              files.renameFile(f.id, nameOfFile)
 	            }
+            if(nameOfFile.startsWith("MEDICI2MULTISPECTRAL_")){
+	                	  nameOfFile = nameOfFile.replaceFirst("MEDICI2MULTISPECTRAL_","")
+	                	  files.renameFile(f.id, nameOfFile)
+	         }
             
             current.plugin[FileDumpService].foreach{_.dump(DumpOfFile(uploadedFile.ref.file, f.id.toString, nameOfFile))}
             
@@ -1099,10 +1124,19 @@ user match {
 							  fileType = "ambiguous/mov";
 						  }
              
+             if(nameOfFile.startsWith("MEDICI2MULTISPECTRAL_")){
+					        	nameOfFile = nameOfFile.replaceFirst("MEDICI2MULTISPECTRAL_","")
+					        	files.renameFile(f.id, nameOfFile)
+				}
+             
              if(nameOfFile.startsWith("MEDICI2DATASET_")){
 	              nameOfFile = nameOfFile.replaceFirst("MEDICI2DATASET_","")
 	              files.renameFile(f.id, nameOfFile)
 	            }
+             if(nameOfFile.startsWith("MEDICI2MULTISPECTRAL_")){
+	                	  nameOfFile = nameOfFile.replaceFirst("MEDICI2MULTISPECTRAL_","")
+	                	  files.renameFile(f.id, nameOfFile)
+	         }
              
              current.plugin[FileDumpService].foreach{_.dump(DumpOfFile(uploadedFile.ref.file, f.id.toString, nameOfFile))}
             
@@ -1224,6 +1258,11 @@ user match {
 				    	nameOfFile = nameOfFile.replaceFirst("MEDICI2DATASET_","")
 				    	files.renameFile(f.id, nameOfFile)
 				    }
+	                
+	                if(nameOfFile.startsWith("MEDICI2MULTISPECTRAL_")){
+					        	nameOfFile = nameOfFile.replaceFirst("MEDICI2MULTISPECTRAL_","")
+					        	files.renameFile(f.id, nameOfFile)
+	                }
 	                
 	                current.plugin[FileDumpService].foreach{_.dump(DumpOfFile(uploadedFile.ref.file, f.id.toString, nameOfFile))}
 				  	  
