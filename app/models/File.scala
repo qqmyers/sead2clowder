@@ -2,7 +2,7 @@ package models
 
 import java.util.Date
 import securesocial.core.Identity
-
+import api.{WithPermission, Permission}
 
 /**
  * Uploaded files.
@@ -31,7 +31,24 @@ case class File(
 	notesHTML: Option[String] = None,
     isPublic: Option[Boolean] = Some(false),
     licenseData: LicenseData = new LicenseData()
-    )
+    ){
+	
+	/**
+   * Utility method to check a given file and a given identity for permissions from the license 
+   * to allow the raw bytes to be downloaded. 
+   * 
+   * @param anIdentity An Option, possibly containing the securesocial information for a user
+   * 
+   * @return A boolean, true if the license allows the bytes to be downloaded, false otherwise
+   *   
+   */
+  def checkLicenseForDownload(anIdentity: Option[Identity]): Boolean = {
+    licenseData.isDownloadAllowed || (anIdentity match {
+      case Some(x) => WithPermission(Permission.DownloadFiles).isAuthorized(x) || licenseData.isRightsOwner(x.fullName)
+      case None => false
+    })
+  }
+}
  
 case class Versus(
   fileId: UUID,

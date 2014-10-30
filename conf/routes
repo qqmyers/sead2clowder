@@ -6,6 +6,8 @@
 #OPTIONS        /*path                                                       @controllers.Application.options(path)
 OPTIONS        /*path                                                       api.ApiHelp.options(path)
 
+GET  /*path/                                                                 @controllers.Application.untrail(path: String)
+
 # Home page
 GET      /                                                                   @controllers.Application.index
 
@@ -38,19 +40,16 @@ GET      /extractions/supported_input_types        				   			@controllers.Extrac
 GET     /bookmarklet														@controllers.ExtractionInfo.getBookmarkletPage()
 GET     /bookmarklet.js                                                     @controllers.Application.bookmarklet
 
-
-# Files
-GET		/files					          @controllers.Files.list(when: String ?= "", date: String ?= "", size: Int ?= 10, listView: String ?= "list")
-GET		/files/new					      @controllers.Files.uploadFile
-
 #This may not require; This is only for testing. It will change in subsequent version
 GET     /extraction/form                  @controllers.Files.extractFile
 POST    /extraction/upload                @controllers.Files.uploadExtract()
 #End
 
+# Files
+GET		/files					          @controllers.Files.list(when: String ?= "", date: String ?= "", size: Int ?= 10, listView: String ?= "list")
+GET		/files/new					      @controllers.Files.uploadFile
 GET     /files/metadataSearch          	  @controllers.Files.metadataSearch
 GET     /files/generalMetadataSearch      @controllers.Files.generalMetadataSearch
-
 GET		/files/:id					      @controllers.Files.file(id: UUID)
 GET		/files/:id/blob			          @controllers.Files.download(id: UUID)
 #GET     /queries/:id/blob				  @controllers.Files.downloadquery(id: UUID)
@@ -84,11 +83,13 @@ GET      /collections                                                        @co
 GET      /collections/new                                                    @controllers.Collections.newCollection
 POST     /collection/submit                                                  @controllers.Collections.submit
 GET      /collection/:id                                                     @controllers.Collections.collection(id: UUID)
+GET      /collections/:collection_id/previews                                           @controllers.Collections.previews(collection_id: UUID)
 
 # Tags
 GET     /tags/search                      @controllers.Tags.search(tag)
 GET     /tags/cloud                       @controllers.Tags.tagCloud
 GET     /tags/list                        @controllers.Tags.tagList
+
 
 # Authentication
 GET      /loginTest                                                          controllers.Authentication.login
@@ -106,6 +107,8 @@ GET      /searchbyURL                                                        @co
 GET      /searchbyfeature/:section_id                                        @controllers.Search.searchMultimediaIndex(section_id: UUID)
 GET      /files/:id/similar                                                  @controllers.Search.findSimilarFile(id: UUID)
 GET      /queries/:id/similar                                                @controllers.Search.findSimilar(id: UUID)
+POST 	/queries/similarWeightedIndexes						@controllers.Search.findSimilarWeightedIndexes()
+
 
 # Previewers
 GET      /previewers/list                                                    controllers.Previewers.list
@@ -204,14 +207,17 @@ POST    /api/uploadToDataset/withFlags/:id/:flags               @api.Files.uploa
 POST    /api/uploadToDataset/:id                        		@api.Files.uploadToDataset(id: UUID, showPreviews: String ?= "DatasetLevel", originalZipFile: String ?= "", fileIsPublic: String ?= "false", flags: String ?= "") 
 POST	/api/files/uploadIntermediate/:idAndFlags				@api.Files.uploadIntermediate(idAndFlags)
 
+
+POST	/api/files/uploadIntermediate/:idAndFlags				@api.Files.uploadIntermediate(idAndFlags)
 POST	/api/files/sendJob/:fileId/:fileType					@api.Files.sendJob(fileId: UUID,fileType)
 GET		/api/files/getRDFURLsForFile/:id						@api.Files.getRDFURLsForFile(id: UUID)
 GET		/api/files/rdfUserMetadata/:id							@api.Files.getRDFUserMetadata(id: UUID, mappingNum: String ?= "1")
 POST	/api/files/:fileId/remove								@api.Files.removeFile(fileId: UUID) 
 GET     /api/files/:id/metadata           						@api.Files.get(id: UUID)
 POST    /api/files/:id/metadata           						@api.Files.addMetadata(id: UUID)
+POST    /api/files/:id/versus_metadata                          @api.Files.addVersusMetadata(id:UUID) 
 POST    /api/files/:id/usermetadata	  							@api.Files.addUserMetadata(id: UUID)
-POST    /api/files/:id/versus_metadata                          @api.Files.addVersusMetadata(id:UUID)
+GET     /api/files/:id/versus_metadata                          @api.Files.getVersusMetadataJSON(id:UUID)
 GET     /api/files/:id/technicalmetadatajson           			@api.Files.getTechnicalMetadataJSON(id: UUID)
 GET     /api/files/:id/xmlmetadatajson           				@api.Files.getXMLMetadataJSON(id: UUID)
 GET     /api/files/:id/usermetadatajson           				@api.Files.getUserMetadataJSON(id: UUID)
@@ -223,8 +229,10 @@ DELETE	/api/files/:id											@api.Files.removeFile(id: UUID)
 GET     /api/files/:id/tags                                     @api.Files.getTags(id: UUID)
 POST    /api/files/:id/tags                                     @api.Files.addTags(id: UUID)
 POST    /api/files/:id/tags/remove                              @api.Files.removeTags(id: UUID)
-DELETE	/api/files/:id/tags                              		@api.Files.removeTags(id: UUID)
+
 POST    /api/files/:id/tags/remove_all                          @api.Files.removeAllTags(id: UUID)
+DELETE	/api/files/:id/tags                              		@api.Files.removeTags(id: UUID)
+POST    /api/files/:id/license                                	@api.Files.updateLicense(id: UUID)
 GET     /api/files/:id/extracted_metadata                       @api.Files.extract(id:UUID)
 POST    /api/files/:id/license                                	@api.Files.updateLicense(id: UUID)
 
@@ -264,7 +272,6 @@ POST	/api/dumpFilesMd										@api.Files.dumpFilesMetadata
 POST	/api/dumpDatasetsMd										@api.Datasets.dumpDatasetsMetadata
 POST	/api/dumpDatasetGroupings								@api.Datasets.dumpDatasetGroupings
 
-
 POST    /api/collections                                        					@api.Collections.createCollection()
 GET		/api/collections/list														@api.Collections.listCollections
 POST	/api/collections/setIsPublic/:id											@api.Collections.setIsPublic(id: UUID)
@@ -273,6 +280,7 @@ POST	/api/collections/:coll_id/datasetsRemove/:ds_id/:ignoreNotFound				@api.Col
 DELETE	/api/collections/:coll_id/datasets/:ds_id									@api.Collections.removeDataset(coll_id: UUID, ds_id: UUID, ignoreNotFound ?= "True")
 POST	/api/collections/:coll_id/remove											@api.Collections.removeCollection(coll_id: UUID)
 GET		/api/collections/:coll_id/getDatasets										@api.Datasets.listInCollection(coll_id: UUID)
+POST    /api/collections/:c_id/previews/:p_id     						            @api.Collections.attachPreview(c_id: UUID, p_id: UUID)
 DELETE	/api/collections/:coll_id													@api.Collections.removeCollection(coll_id: UUID)
 
 GET    	/api/datasets					  							@api.Datasets.list
@@ -306,7 +314,7 @@ POST    /api/datasets/:id/tags/remove_all                       	@api.Datasets.r
 DELETE 	/api/datasets/:id/tags 										@api.Datasets.removeTags(id: UUID)
 
 POST    /api/datasets/:id/editing                                   @api.Datasets.updateInformation(id: UUID)
-POST    /api/datasets/:id/license                                   @api.Datasets.updateLicense(id: UUID)
+POST    /api/datasets/:id/license                                   @api.Datasets.updateLicense(id: UUID)  
 
 GET		/api/datasets/:id/isBeingProcessed							@api.Datasets.isBeingProcessed(id: UUID)
 GET		/api/datasets/:id/getPreviews								@api.Datasets.getPreviews(id: UUID)
@@ -314,9 +322,8 @@ POST	/api/datasets/:ds_id/files/:file_id							@api.Datasets.attachExistingFile(
 GET 	/api/datasets/:id				 							@api.Datasets.datasetFilesList(id: UUID)
 DELETE	/api/datasets/:id											@api.Datasets.deleteDataset(id: UUID)
 
-#GET     /api/previews/:preview_id/textures/dataset/:datasetid/json					@api.Previews.downloadPreview(preview_id: UUID, datasetid: UUID)      INSECURE!
-#GET     /api/previews/:preview_id/textures/dataset/:dataset_id//:filename			@api.Files.downloadByDatasetAndFilename(dataset_id: UUID, filename, preview_id: UUID) INSECURE!
-
+GET     /api/previews/:preview_id/textures/dataset/:datasetid/json					@api.Previews.downloadPreview(preview_id: UUID, datasetid: UUID)
+GET     /api/previews/:preview_id/textures/dataset/:dataset_id//:filename			@api.Files.downloadByDatasetAndFilename(dataset_id: UUID, filename, preview_id: UUID)
 GET		/api/previews/:dzi_id_dir/:level/:filename									@api.Previews.getTile(dzi_id_dir, level, filename)
 POST    /api/previews/:dzi_id/tiles/:tile_id/:level     							@api.Previews.attachTile(dzi_id: UUID, tile_id: UUID, level)
 POST    /api/previews/:id/metadata        											@api.Previews.uploadMetadata(id: UUID)
@@ -327,6 +334,7 @@ POST    /api/previews/:id/annotationDelete/:file_id        							@api.Previews.
 GET     /api/previews/:id/annotationsList        									@api.Previews.listAnnotations(id: UUID)
 GET     /api/previews/:id                 											@api.Previews.download(id: UUID)
 POST    /api/previews                     											@api.Previews.upload(iipKey: String ?= "")
+
 
 POST     /api/indexes                                                        @api.Indexes.index
 POST     /api/indexes/features                                               @api.Indexes.features
@@ -341,11 +349,19 @@ POST    /api/sections/:id/tags/remove                           @api.Sections.re
 POST    /api/sections/:id/tags/remove_all                       @api.Sections.removeAllTags(id: UUID)
 DELETE	/api/sections/:id/tags			                        @api.Sections.removeTags(id: UUID)
 
+
 # geostreaming
 
 POST    /api/geostreams/datapoints           api.Geostreams.addDatapoint
+GET     /api/geostreams/datapoints           api.Geostreams.searchDatapoints(operator = "", since: Option[String] ?= None, until: Option[String] ?= None, geocode: Option[String] ?= None,  stream_id: Option[String] ?= None, sensor_id: Option[String] ?= None, sources: List[String] ?= List.empty, attributes: List[String] ?= List.empty, format: String ?= "json", semi: Option[String])
+GET     /api/geostreams/datapoints/averages  api.Geostreams.searchDatapoints(operator = "averages", since: Option[String] ?= None, until: Option[String] ?= None, geocode: Option[String] ?= None,  stream_id: Option[String] ?= None, sensor_id: Option[String] ?= None, sources: List[String] ?= List.empty, attributes: List[String] ?= List.empty, format: String ?= "json", semi: Option[String])
+GET     /api/geostreams/datapoints/trends    api.Geostreams.searchDatapoints(operator = "trends", since: Option[String] ?= None, until: Option[String] ?= None, geocode: Option[String] ?= None,  stream_id: Option[String] ?= None, sensor_id: Option[String] ?= None, sources: List[String] ?= List.empty, attributes: List[String] ?= List.empty, format: String ?= "json", semi: Option[String])
+GET     /api/geostreams/datapoints/bin/:time/:depth api.Geostreams.binDatapoints(time, depth: Double, raw: Boolean ?= false, since: Option[String] ?= None, until: Option[String] ?= None, geocode: Option[String] ?= None,  stream_id: Option[String] ?= None, sensor_id: Option[String] ?= None, sources: List[String] ?= List.empty, attributes: List[String] ?= List.empty)
 GET     /api/geostreams/datapoints/:id       api.Geostreams.getDatapoint(id: String)
-GET     /api/geostreams/datapoints           api.Geostreams.searchDatapoints(since: Option[String] ?= None, until: Option[String] ?= None, geocode: Option[String] ?= None,  stream_id: Option[String] ?= None, sensor_id: Option[String] ?= None, sources: List[String] ?= List.empty, attributes: List[String] ?= List.empty, format: String ?= "json")
+
+GET     /api/geostreams/cache                api.Geostreams.cacheListAction
+GET     /api/geostreams/cache/invalidate     api.Geostreams.cacheInvalidateAction
+GET     /api/geostreams/cache/:id            api.Geostreams.cacheFetchAction(id)
 
 POST    /api/geostreams/sensors			     api.Geostreams.createSensor
 GET     /api/geostreams/sensors/update       api.Geostreams.updateStatisticsStreamSensor()

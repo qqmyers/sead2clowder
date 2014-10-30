@@ -5,6 +5,7 @@ import java.io.BufferedOutputStream
 import java.io.OutputStream
 import java.net.URL
 import java.net.HttpURLConnection
+
 import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.io.BufferedWriter
@@ -13,15 +14,13 @@ import java.io.FileReader
 import java.io.ByteArrayInputStream
 
 import java.util.Date
+import java.text.SimpleDateFormat
 
 import java.util.ArrayList 
 import scala.collection.mutable.MutableList 
 
-import java.text.SimpleDateFormat
-
 import org.bson.types.ObjectId
 
-import com.mongodb.WriteConcern
 import com.mongodb.casbah.Imports._
 
 import models._
@@ -46,14 +45,9 @@ import jsonutils.JsonUtil
 import services._
 import fileutils.FilesUtils
 
-import controllers.Previewers
-
 import play.api.libs.json.JsString
-import scala.Some
 import services.DumpOfFile
-import services.ExtractorMessage
 import play.api.mvc.ResponseHeader
-import scala.util.parsing.json.JSONArray
 import models.Preview
 import play.api.mvc.SimpleResult
 import models.File
@@ -64,6 +58,9 @@ import com.wordnik.swagger.annotations.{ApiOperation, Api}
 import scala.util.parsing.json.JSONArray
 
 import controllers.Previewers
+
+import javax.imageio.ImageIO
+
 import scala.concurrent.Future
  
 import scala.util.control._
@@ -77,7 +74,7 @@ import securesocial.core.Identity
  * @author Luigi Marini
  *
  */
-@Api(value = "/files", listingPath = "/api-docs.json/files", description = "A file is the raw bytes plus metadata.")
+@Api(value = "/files", listingPath = "/api-docs.json/files", description = "A file is the raw bytes plus metadata.")  
 class Files @Inject()(
   files: FileService,
   datasets: DatasetService,
@@ -128,7 +125,7 @@ class Files @Inject()(
 
       Ok(toJson(list))
     }
-  
+
 
   def downloadByDatasetAndFilename(datasetId: UUID, filename: String, preview_id: UUID) =
     SecuredAction(parse.anyContent, authorization = WithPermission(Permission.DownloadFiles), resourceId = datasets.getFileId(datasetId, filename)) {
@@ -145,50 +142,65 @@ class Files @Inject()(
   @ApiOperation(value = "Download file",
       notes = "Can use Chunked transfer encoding if the HTTP header RANGE is set.",
       responseClass = "None", httpMethod = "GET")
-  def download(id: UUID) =
-    SecuredAction(parse.anyContent, authorization = WithPermission(Permission.DownloadFiles), resourceId = Some(id)) {
-      request =>
+  def download(id: UUID) = SecuredAction(parse.anyContent, authorization = WithPermission(Permission.DownloadFiles), resourceId = Some(id)) { request =>
+    files.get(id) match {
+      case Some(file) => {
+        //Check the license type before doing anything.
+        if (file.checkLicenseForDownload(request.user)) {
+          files.getBytes(id) match {
+            case Some((inputStream, filename, contentType, contentLength)) => {
+              request.headers.get(RANGE) match {
+                // user requested a range of an image
+                case Some(value) => {
+                  val range: (Long, Long) = value.substring("bytes=".length).split("-") match {
+                    case x if x.length == 1 => (x.head.toLong, contentLength - 1)
+                    case x => (x(0).toLong, x(1).toLong)
+                  }
 
-        files.getBytes(id) match {
-          case Some((inputStream, filename, contentType, contentLength)) => {
-
-            request.headers.get(RANGE) match {
-              case Some(value) => {
-                val range: (Long, Long) = value.substring("bytes=".length).split("-") match {
-                  case x if x.length == 1 => (x.head.toLong, contentLength - 1)
-                  case x => (x(0).toLong, x(1).toLong)
+                  range match {
+                    case (start, end) =>
+                      inputStream.skip(start)
+                      SimpleResult(
+                        header = ResponseHeader(PARTIAL_CONTENT,
+                          Map(
+                            CONNECTION -> "keep-alive",
+                            ACCEPT_RANGES -> "bytes",
+                            CONTENT_RANGE -> "bytes %d-%d/%d".format(start, end, contentLength),
+                            CONTENT_LENGTH -> (end - start + 1).toString,
+                            CONTENT_TYPE -> contentType
+                          )
+                        ),
+                        body = Enumerator.fromStream(inputStream)
+                      )
+                  }
                 }
-
-                range match {
-                  case (start, end) =>
-                    inputStream.skip(start)
-                    SimpleResult(
-                      header = ResponseHeader(PARTIAL_CONTENT,
-                        Map(
-                          CONNECTION -> "keep-alive",
-                          ACCEPT_RANGES -> "bytes",
-                          CONTENT_RANGE -> "bytes %d-%d/%d".format(start, end, contentLength),
-                          CONTENT_LENGTH -> (end - start + 1).toString,
-                          CONTENT_TYPE -> contentType
-                        )
-                      ),
-                      body = Enumerator.fromStream(inputStream)
-                    )
+                // return full image
+                case None => {
+                  Ok.chunked(Enumerator.fromStream(inputStream))
+                    .withHeaders(CONTENT_TYPE -> contentType)
+                    .withHeaders(CONTENT_DISPOSITION -> ("attachment; filename=" + filename))
                 }
-              }
-              case None => {
-                Ok.chunked(Enumerator.fromStream(inputStream))
-                  .withHeaders(CONTENT_TYPE -> contentType)
-                  .withHeaders(CONTENT_DISPOSITION -> ("attachment; filename=" + filename))
               }
             }
-          }
-          case None => {
-            Logger.error("Error getting file" + id)
-            NotFound
+            case None => {
+              Logger.error("Error getting file" + id)
+              NotFound
+            }
           }
         }
+        else {
+          //Case where the checkLicenseForDownload fails
+          Logger.error("The file is not able to be downloaded")
+          BadRequest("The license for this file does not allow it to be downloaded.")
+        }
+      }
+      case None => {
+        //Case where the file could not be found
+        Logger.info(s"Error getting the file with id $id.")
+        BadRequest("Invalid file ID")
+      }
     }
+  }
 
   /**
    *
@@ -259,7 +271,7 @@ class Files @Inject()(
         Logger.debug(s"Updating previews.files $id with $doc")
         Ok(toJson("success"))
     }
-  
+
   /**
    * Add Versus metadata to file: use by Versus Extractor
    * REST enpoint:POST api/files/:id/versus_metadata
@@ -272,8 +284,10 @@ class Files @Inject()(
         case Some(file) => {
           Logger.debug("******ADD Versus Metadata:*****")
           val list = request.body \ ("versus_descriptors")
+                    
           //files.addVersusMetadata(id, list)
           files.addVersusMetadata(id, request.body)
+          
           Ok("Added Versus Descriptor")
         }
         case None => {
@@ -283,7 +297,6 @@ class Files @Inject()(
       }
 
     }
-
 
   /**
    * Upload file using multipart form enconding.
@@ -374,7 +387,6 @@ class Files @Inject()(
 	            current.plugin[FileDumpService].foreach{_.dump(DumpOfFile(uploadedFile.ref.file, f.id.toString, nameOfFile))}
 
                   val key = "unknown." + "file." + fileType.replace(".", "_").replace("/", ".")
-
                   val host = Utils.baseUrl(request) + request.path.replaceAll("api/files$", "").replaceAll("/api/files/withFlags/.*$", "")
                   
                   /*---- Insert DTS Request to database---*/  
@@ -416,7 +428,7 @@ class Files @Inject()(
 	            }
 	            
 	            Ok(toJson(Map("id"->id.stringify)))
-	            current.plugin[AdminsNotifierPlugin].foreach{_.sendAdminsNotification("File","added",id.stringify, nameOfFile)}
+	            current.plugin[AdminsNotifierPlugin].foreach{_.sendAdminsNotification(Utils.baseUrl(request),"File","added",id.stringify, nameOfFile)}
 	            Ok(toJson(Map("id"->id.stringify)))
 	          }
 	          case None => {
@@ -433,6 +445,7 @@ class Files @Inject()(
       }
   }
 
+  
   /**
    * Send job for file preview(s) generation at a later time.
    */
@@ -464,7 +477,6 @@ class Files @Inject()(
             flags = flags + "+nopreviews"
 
           val key = "unknown." + "file." + fileType.replace("__", ".")
-          
           val host = Utils.baseUrl(request) + request.path.replaceAll("api/files/sendJob/[A-Za-z0-9_]*/.*$", "")
 
           // TODO replace null with None
@@ -520,7 +532,6 @@ class Files @Inject()(
          }
           var realUserName = realUser.fullName	
           val file = files.save(new FileInputStream(f.ref.file), nameOfFile, f.contentType, realUser, showPreviews, realUser.fullName.equals("Anonymous User")||fileIsPublic.toLowerCase.equals("true"))
-
           val uploadedFile = f         
           
           // submit file for extraction
@@ -608,7 +619,6 @@ class Files @Inject()(
               }
                            
               // add file to dataset   
-
               // TODO create a service instead of calling salat directly
               val theFile = files.get(f.id)
               if(theFile.isEmpty){
@@ -639,7 +649,8 @@ class Files @Inject()(
 
               //sending success message
               Ok(toJson(Map("id" -> id)))
-              current.plugin[AdminsNotifierPlugin].foreach{_.sendAdminsNotification("File","added",id, nameOfFile)}
+              current.plugin[AdminsNotifierPlugin].foreach{
+                _.sendAdminsNotification(Utils.baseUrl(request), "File","added",id, nameOfFile)}
               Ok(toJson(Map("id" -> id)))
              }
             }
@@ -698,17 +709,16 @@ class Files @Inject()(
                   }
 
                   val key = "unknown." + "file." + fileType.replace(".", "_").replace("/", ".")
+
                   val host = Utils.baseUrl(request) + request.path.replaceAll("api/files/uploadIntermediate/[A-Za-z0-9_+]*$", "")
                   
                   val id = f.id
-                  // TODO replace null with None
                   // index the file using Versus
                   current.plugin[VersusPlugin].foreach{ _.index(f.id.toString,fileType) }
-                  
+                  // TODO replace null with None
                   current.plugin[RabbitmqPlugin].foreach {
                     _.extract(ExtractorMessage(UUID(originalId), id, host, key, Map.empty, f.length.toString, null, flags))
                   }
-                  
                   Ok(toJson(Map("id" -> id.stringify)))
                 }
                 case None => {
@@ -1017,6 +1027,7 @@ class Files @Inject()(
         case None => BadRequest(toJson("File not found " + file_id))
       }
   }
+  
 
   /**
    * Find geometry file for given 3D file and geometry filename.
@@ -1056,6 +1067,7 @@ class Files @Inject()(
                     }
                   }
                   case None => {
+                    //IMPORTANT: Setting CONTENT_LENGTH header here introduces bug!                  
                     Ok.chunked(Enumerator.fromStream(inputStream))
                       .withHeaders(CONTENT_TYPE -> contentType)
                       .withHeaders(CONTENT_DISPOSITION -> ("attachment; filename=" + filename))
@@ -1066,11 +1078,13 @@ class Files @Inject()(
               case None => Logger.error("No geometry file found: " + geometry.id); InternalServerError("No geometry file found")
 
             }
-
           }
           case None => Logger.error("Geometry file not found"); InternalServerError
         }
     }
+  
+  
+  
 
   /**
    * Find texture file for given 3D file and texture filename.
@@ -1110,7 +1124,8 @@ class Files @Inject()(
                     }
                   }
                   case None => {
-                    Ok.stream(Enumerator.fromStream(inputStream))
+                    //IMPORTANT: Setting CONTENT_LENGTH header here introduces bug!
+                    Ok.chunked(Enumerator.fromStream(inputStream))
                       .withHeaders(CONTENT_TYPE -> contentType)
                       //.withHeaders(CONTENT_LENGTH -> contentLength.toString)
                       .withHeaders(CONTENT_DISPOSITION -> ("attachment; filename=" + filename))
@@ -1121,7 +1136,6 @@ class Files @Inject()(
               case None => Logger.error("No texture file found: " + texture.id.toString()); InternalServerError("No texture found")
 
             }
-
           }
           case None => Logger.error("Texture file not found"); InternalServerError
         }
@@ -1169,9 +1183,8 @@ class Files @Inject()(
 	&emsp;&emsp;"licenseUrl": URL of the license<br/>
 	&emsp;&emsp;"allowDownload": Can anyone but the author download the file?(relevant only for Limited license, must be boolean)}""",
       responseClass = "None", httpMethod = "POST")
-  def updateLicense(id: UUID) = 
-    SecuredAction(parse.json, authorization = WithPermission(Permission.UpdateLicenseFiles), resourceId = Some(id)) {    
-    implicit request =>
+  def updateLicense(id: UUID) = SecuredAction(parse.json, authorization = WithPermission(Permission.UpdateLicenseFiles), resourceId = Some(id)) {  
+    implicit request =>      
       if (UUID.isValid(id.stringify)) {         
 
           //Set up the vars we are looking for
@@ -1355,7 +1368,7 @@ class Files @Inject()(
     }
   }
 
-  /**
+    /**
    * REST endpoint: POST: Adds tags to a file.
    * Tag's (name, userId, extractor_id) tuple is used as a unique key.
    * In other words, the same tag names but diff userId or extractor_id are considered as diff tags,
@@ -1524,43 +1537,54 @@ class Files @Inject()(
       toJson(Map("pv_id" -> pvId.stringify, "p_id" -> pId, "p_path" -> controllers.routes.Assets.at(pPath).toString,
         "p_main" -> pMain, "pv_route" -> pvRoute, "pv_contenttype" -> pvContentType, "pv_length" -> pvLength.toString))
   }
+  
 
   @ApiOperation(value = "Get file previews",
       notes = "Return the currently existing previews of the selected file (full description, including paths to preview files, previewer names etc).",
       responseClass = "None", httpMethod = "GET")
   def getPreviews(id: UUID) = SecuredAction(parse.anyContent, authorization = WithPermission(Permission.ShowFile), resourceId = Some(id)) {
-	    request =>
-	      files.get(id) match {
-	        case Some(file) => {
+      request =>
+        files.get(id) match {
+          case Some(file) => {
 
-	          val previewsFromDB = previews.findByFileId(file.id)
-	          val previewers = Previewers.findPreviewers
-	          //Logger.info("Number of previews " + previews.length);
-	          val files = List(file)
-	          val previewslist = for (f <- files; if (!f.showPreviews.equals("None"))) yield {
-	            val pvf = for (p <- previewers; pv <- previewsFromDB; if (p.contentType.contains(pv.contentType))) yield {
-	              (pv.id.toString, p.id, p.path, p.main, api.routes.Previews.download(pv.id).toString, pv.contentType, pv.length)
-	            }
-	            if (pvf.length > 0) {
-	              (file -> pvf)
-	            } else {
-	              val ff = for (p <- previewers; if (p.contentType.contains(file.contentType))) yield {
-	                (file.id.toString, p.id, p.path, p.main, controllers.routes.Files.file(file.id) + "/blob", file.contentType, file.length)
-	              }
-	              (file -> ff)
-	            }
-	          }
+            val previewsFromDB = previews.findByFileId(file.id)
+            val previewers = Previewers.findPreviewers
+            //Logger.info("Number of previews " + previews.length);
+            val files = List(file)
+            //NOTE Should the following code be unified somewhere since it is duplicated in Datasets and Files for both api and controllers
+            val previewslist = for (f <- files; if (!f.showPreviews.equals("None"))) yield {
+              val pvf = for (p <- previewers; pv <- previewsFromDB; if (p.contentType.contains(pv.contentType))) yield {
+                (pv.id.toString, p.id, p.path, p.main, api.routes.Previews.download(pv.id).toString, pv.contentType, pv.length)
+              }
+              if (pvf.length > 0) {
+                (file -> pvf)
+              } else {
+                val ff = for (p <- previewers; if (p.contentType.contains(file.contentType))) yield {
+                    //Change here. If the license allows the file to be downloaded by the current user, go ahead and use the 
+                    //file bytes as the preview, otherwise return the String null and handle it appropriately on the front end
+                    if (f.checkLicenseForDownload(request.user)) {
+                        (file.id.toString, p.id, p.path, p.main, controllers.routes.Files.file(file.id) + "/blob", file.contentType, file.length)
+                    }
+                    else {
+                        (f.id.toString, p.id, p.path, p.main, "null", f.contentType, f.length)
+                    }
+                }
+                (file -> ff)
+              }
+            }
 
-	          Ok(jsonPreviewsFiles(previewslist.asInstanceOf[List[(models.File, Array[(java.lang.String, String, String, String, java.lang.String, String, Long)])]]))
-	        }
-	        case None => {
-	          Logger.error("Error getting file" + id);
-	          InternalServerError
-	        }
-	      }
-	  }  
-  
-      @ApiOperation(value = "Get metadata of the resource described by the file that were input as XML",
+            Ok(jsonPreviewsFiles(previewslist.asInstanceOf[List[(models.File, Array[(java.lang.String, String, String, String, java.lang.String, String, Long)])]]))
+          }
+          case None => {
+            Logger.error("Error getting file" + id);
+            InternalServerError
+          }
+        }
+
+    } 
+
+
+    @ApiOperation(value = "Get metadata of the resource described by the file that were input as XML",
 	      notes = "",
 	      responseClass = "None", httpMethod = "GET")
 	  def getXMLMetadataJSON(id: UUID) = SecuredAction(parse.anyContent, authorization=WithPermission(Permission.ShowFilesMetadata), resourceId = Some(id)) { request =>
@@ -1625,7 +1649,7 @@ class Files @Inject()(
           }
         }
     }
-  
+
 	  @ApiOperation(value = "Delete file",
 		      notes = "Cascading action (removes file from any datasets containing it and deletes its previews, metadata and thumbnail).",
 		      responseClass = "None", httpMethod = "POST")
@@ -1643,6 +1667,7 @@ class Files @Inject()(
 	          
 	          accessRights.removeResourceRightsForAll(id.stringify, "file")
 
+
 	        //remove file from RDF triple store if triple store is used
 		        configuration.getString("userdfSPARQLStore").getOrElse("no") match {
 	            case "yes" => {
@@ -1656,7 +1681,7 @@ class Files @Inject()(
 	        
 	                
 	        Ok(toJson(Map("status"->"success")))
-	        current.plugin[AdminsNotifierPlugin].foreach{_.sendAdminsNotification("File","removed",id.stringify, file.filename)}
+	        current.plugin[AdminsNotifierPlugin].foreach{_.sendAdminsNotification(Utils.baseUrl(request), "File","removed",id.stringify, file.filename)}
 	        Ok(toJson(Map("status"->"success")))
 	      }
 	      case None => Ok(toJson(Map("status" -> "success")))
@@ -1799,7 +1824,6 @@ class Files @Inject()(
     }
   }
 
-
   def setNotesHTML(id: UUID) = SecuredAction(authorization=WithPermission(Permission.CreateNotesFiles), resourceId = Some(id))  { implicit request =>
 	  request.user match {
 	    case Some(identity) => {
@@ -1897,5 +1921,3 @@ class Files @Inject()(
 }
 
 object MustBreak extends Exception {}
-
-

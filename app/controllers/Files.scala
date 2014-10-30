@@ -75,31 +75,46 @@ class Files @Inject() (
         val previewsFromDB = previews.findByFileId(file.id)
         Logger.debug("Previews available: " + previewsFromDB) 
         val previewers = Previewers.findPreviewers
+        //NOTE Should the following code be unified somewhere since it is duplicated in Datasets and Files for both api and controllers
         val previewsWithPreviewer = {
-          val pvf = for (p <- previewers; pv <- previewsFromDB; if (!file.showPreviews.equals("None")) && (p.contentType.contains(pv.contentType))) yield {
+          val pvf = for (
+            p <- previewers; pv <- previewsFromDB;
+            if (!p.collection);
+            if (!file.showPreviews.equals("None")) && (p.contentType.contains(pv.contentType))
+          ) yield {
             (pv.id.toString, p.id, p.path, p.main, api.routes.Previews.download(pv.id).toString, pv.contentType, pv.length)
           }
           if (pvf.length > 0) {
             Map(file -> pvf)
           } else {
-            val ff = for (p <- previewers; if (!file.showPreviews.equals("None")) && (p.contentType.contains(file.contentType))) yield {
-              (file.id.toString, p.id, p.path, p.main, routes.Files.file(file.id) + "/blob", file.contentType, file.length)
+            val ff = for (
+              p <- previewers;
+              if (!p.collection);
+              if (!file.showPreviews.equals("None")) && (p.contentType.contains(file.contentType))
+            ) yield {
+              if (file.checkLicenseForDownload(user)) {
+                (file.id.toString, p.id, p.path, p.main, routes.Files.file(file.id) + "/blob", file.contentType, file.length)
+              }
+              else {
+                (file.id.toString, p.id, p.path, p.main, "null", file.contentType, file.length)
+              }
             }
             Map(file -> ff)
           }
         }
         Logger.debug("Previewers available: " + previewsWithPreviewer) 
 
+        // add sections to file
         val sectionsByFile = sections.findByFileId(file.id)
         Logger.debug("Sections: " + sectionsByFile)
         val sectionsWithPreviews = sectionsByFile.map { s =>
-        	val p = previews.findBySectionId(s.id)
-        	if(p.length>0)
+          val p = previews.findBySectionId(s.id)
+          if(p.length>0)
         		s.copy(preview = Some(p(0)))
         	else
         		s.copy(preview = None)
         }
-        Logger.debug("Sections available: " + sectionsWithPreviews)
+        Logger.debug("Sections available: " + sectionsWithPreviews) 
 
         //Search whether file is currently being processed by extractor(s)
         var isActivity = false
@@ -346,7 +361,7 @@ def uploadExtract() = SecuredAction(parse.multipartFormData, authorization = Wit
 	                        
 	            // redirect to extract page
 	            Ok(views.html.extract(f.id))
-	            current.plugin[AdminsNotifierPlugin].foreach{_.sendAdminsNotification("File","added",f.id.stringify, nameOfFile)}
+	            current.plugin[AdminsNotifierPlugin].foreach{_.sendAdminsNotification(Utils.baseUrl(request),"File","added",f.id.stringify, nameOfFile)}
 	            Ok(views.html.extract(f.id))
 	          	          
 	          }
@@ -369,7 +384,6 @@ def uploadExtract() = SecuredAction(parse.multipartFormData, authorization = Wit
  
 
 }*/
-
 
   /**
    * Upload file.
@@ -481,8 +495,8 @@ user match {
               // TODO replace null with None
 	            current.plugin[RabbitmqPlugin].foreach{_.extract(ExtractorMessage(id, id, host, key, Map.empty, f.length.toString, null, flags))}
 
-	            
-	            val dateFormat = new SimpleDateFormat("dd/MM/yyyy")
+	            val dateFormat = new SimpleDateFormat("dd/MM/yyyy") 
+
 	            
 	            //for metadata files
 	            if(fileType.equals("application/xml") || fileType.equals("text/xml")){
@@ -500,7 +514,7 @@ user match {
 		              _.index("data", "file", id, List(("filename",f.filename), ("contentType", f.contentType), ("author", identity.fullName), ("uploadDate", dateFormat.format(new Date())), ("datasetId",""),("datasetName","")))
 		            }
 	            }
-	            
+      
 	          current.plugin[VersusPlugin].foreach{ _.indexFile(f.id, fileType) }
 	             
 	             //add file to RDF triple store if triple store is used
@@ -512,9 +526,9 @@ user match {
 	             }
 	                        
 	            // redirect to file page]
-
 	            Redirect(routes.Files.file(f.id))
-	            current.plugin[AdminsNotifierPlugin].foreach{_.sendAdminsNotification("File","added",f.id.stringify, nameOfFile)}
+	            current.plugin[AdminsNotifierPlugin].foreach{
+                	_.sendAdminsNotification(Utils.baseUrl(request), "File","added",f.id.stringify, nameOfFile)}
 	            Redirect(routes.Files.file(f.id))
 	         }
 	         case None => {
@@ -711,7 +725,7 @@ user match {
 	                  // redirect to file page
 	                  if(toBeCurated){
 	                    Redirect(routes.Files.file(f.id))
-	                    current.plugin[AdminsNotifierPlugin].foreach{_.sendAdminsNotification("File","added",f.id.stringify, filename)}
+	                    current.plugin[AdminsNotifierPlugin].foreach{_.sendAdminsNotification(Utils.baseUrl(request),"File","added",f.id.stringify, filename)}
 	                  }
 	                  Redirect(routes.Files.file(f.id))
 	                }
@@ -749,46 +763,70 @@ user match {
   /**
    * Download file using http://en.wikipedia.org/wiki/Chunked_transfer_encoding
    */
-  def download(id: UUID) = SecuredAction(authorization = WithPermission(Permission.DownloadFiles), resourceId = Some(id)) { request =>
-    files.getBytes(id) match {
-      case Some((inputStream, filename, contentType, contentLength)) => {
-        request.headers.get(RANGE) match {
-          case Some(value) => {
-            val range: (Long, Long) = value.substring("bytes=".length).split("-") match {
-              case x if x.length == 1 => (x.head.toLong, contentLength - 1)
-              case x => (x(0).toLong, x(1).toLong)
-            }
-	            range match { case (start,end) =>
+  def download(id: UUID) = SecuredAction(authorization = WithPermission(Permission.DownloadFiles), resourceId = Some(id)) { request =>    
+      if (UUID.isValid(id.stringify)) {
+          //Check the license type before doing anything. 
+          files.get(id) match {
+              case Some(file) => {                                                                                                             
+                  if (file.checkLicenseForDownload(request.user)) {
+                      files.getBytes(id) match {
+                      case Some((inputStream, filename, contentType, contentLength)) => {
+                          request.headers.get(RANGE) match {
+                          case Some(value) => {
+                              val range: (Long, Long) = value.substring("bytes=".length).split("-") match {
+                              case x if x.length == 1 => (x.head.toLong, contentLength - 1)
+                              case x => (x(0).toLong, x(1).toLong)
+                          }
+                          range match { case (start,end) =>
 
-                inputStream.skip(start)
-                import play.api.mvc.{ SimpleResult, ResponseHeader }
-                SimpleResult(
-                  header = ResponseHeader(PARTIAL_CONTENT,
-                    Map(
-                      CONNECTION -> "keep-alive",
-                      ACCEPT_RANGES -> "bytes",
-                      CONTENT_RANGE -> "bytes %d-%d/%d".format(start, end, contentLength),
-                      CONTENT_LENGTH -> (end - start + 1).toString,
-                      CONTENT_TYPE -> contentType
-                    )
-                  ),
-                  body = Enumerator.fromStream(inputStream)
-                )
-            }
-          }
-          case None => {
-	            Ok.chunked(Enumerator.fromStream(inputStream))
-              .withHeaders(CONTENT_TYPE -> contentType)
-              .withHeaders(CONTENT_DISPOSITION -> ("attachment; filename=" + filename))
+                          inputStream.skip(start)
+                          import play.api.mvc.{ SimpleResult, ResponseHeader }
+                          SimpleResult(
+                                  header = ResponseHeader(PARTIAL_CONTENT,
+                                          Map(
+                                                  CONNECTION -> "keep-alive",
+                                                  ACCEPT_RANGES -> "bytes",
+                                                  CONTENT_RANGE -> "bytes %d-%d/%d".format(start, end, contentLength),
+                                                  CONTENT_LENGTH -> (end - start + 1).toString,
+                                                  CONTENT_TYPE -> contentType
+                                                  )
+                                          ),
+                                          body = Enumerator.fromStream(inputStream)
+                                  )
+                          }
+                          }
+                          case None => {
+                              Ok.chunked(Enumerator.fromStream(inputStream))
+                              .withHeaders(CONTENT_TYPE -> contentType)
+                              .withHeaders(CONTENT_DISPOSITION -> ("attachment; filename=" + filename))
 
+                          }
+                          }
+                      }
+                      case None => {
+                          Logger.error("Error getting file" + id)
+                          BadRequest("Invalid file ID")
+                      }
+                      }   
+                  }
+                  else {
+                      //Case where the checkLicenseForDownload fails
+                      Logger.error("The file is not able to be downloaded")
+                      BadRequest("The license for this file does not allow it to be downloaded.")
+                  }
+              }
+              case None => {
+                  //Case where the file could not be found
+                  Logger.info(s"Error getting the file with id $id.")
+                  BadRequest("Invalid file ID")
+              }
           }
-        }
+               
       }
-      case None => {
-        Logger.error("Error getting file" + id)
-        NotFound
+      else {
+          Logger.error(s"The given id $id is not a valid ObjectId.")
+          BadRequest(toJson(s"The given id $id is not a valid ObjectId."))
       }
-    }
   }
 
   def thumbnail(id: UUID) = SecuredAction(authorization=WithPermission(Permission.ShowFile)) { implicit request =>
@@ -1023,6 +1061,7 @@ user match {
             
             // TODO RK need to replace unknown with the server name
             val key = "unknown." + "file."+ fileType.replace("/", ".")
+
             val host = Utils.baseUrl(request) + request.path.replaceAll("upload$", "")
             
             val id = f.id
@@ -1031,7 +1070,8 @@ user match {
             // TODO replace null with None
             current.plugin[RabbitmqPlugin].foreach{_.extract(ExtractorMessage(id, id, host, key, Map.empty, f.length.toString, null, flags))}
             
-            val dateFormat = new SimpleDateFormat("dd/MM/yyyy")
+            val dateFormat = new SimpleDateFormat("dd/MM/yyyy") 
+
             
             //for metadata files
 	            if(fileType.equals("application/xml") || fileType.equals("text/xml")){
@@ -1142,6 +1182,7 @@ user match {
             
             // TODO RK need to replace unknown with the server name
             val key = "unknown." + "file."+ fileType.replace(".","_").replace("/", ".")
+
             val host = Utils.baseUrl(request) + request.path.replaceAll("upload$", "")
             val id = f.id
 
@@ -1268,6 +1309,7 @@ user match {
 				  	  
 					  // TODO RK need to replace unknown with the server name
 					  val key = "unknown." + "file."+ fileType.replace(".", "_").replace("/", ".")
+
 							  val host = Utils.baseUrl(request) + request.path.replaceAll("uploaddnd/[A-Za-z0-9_]*$", "")
 							  val id = f.id
 							  
@@ -1287,13 +1329,12 @@ user match {
 					                val serverIP= request.host
 						            dtsrequests.insertRequest(serverIP,clientIP, f.filename, id, fileType, f.length,f.uploadDate)
 						      
-						      /****************************/ 
+						      /****************************/
 
 							  current.plugin[RabbitmqPlugin].foreach{_.extract(ExtractorMessage(id, id, host, key, Map.empty, f.length.toString, dataset_id, flags))}
-					  
+
 					  val dateFormat = new SimpleDateFormat("dd/MM/yyyy")
 
-					  
 					  //for metadata files
 					  if(fileType.equals("application/xml") || fileType.equals("text/xml")){
 						  		  val xmlToJSON = FilesUtils.readXMLgetJSON(uploadedFile.ref.file)

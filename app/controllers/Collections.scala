@@ -5,6 +5,7 @@ import play.api.data.Forms._
 import models.{UUID, Collection}
 import java.util.Date
 import play.api.Logger
+import play.api.Play.current
 import java.text.SimpleDateFormat
 import views.html.defaultpages.badRequest
 import play.api.libs.json.JsValue
@@ -20,11 +21,13 @@ import securesocial.core.Identity
 import services.AppConfigurationService
 import models.UserPermissions
 import models.Dataset
+import services._
+
 
 object ThumbnailFound extends Exception {}
 
 @Singleton
-class Collections @Inject()(datasets: DatasetService, collections: CollectionService, accessRights: UserAccessRightsService, appConfiguration: AppConfigurationService) extends SecuredController {
+class Collections @Inject()(datasets: DatasetService, collections: CollectionService, previewsService: PreviewService, accessRights: UserAccessRightsService, appConfiguration: AppConfigurationService) extends SecuredController {
 
   /**
    * New dataset form.
@@ -102,6 +105,7 @@ class Collections @Inject()(datasets: DatasetService, collections: CollectionSer
     toJson(Map("id" -> collection.id.toString, "name" -> collection.name, "description" -> collection.description, "created" -> collection.created.toString))
   }
 
+  
   /**
    * Create collection.
    */
@@ -131,7 +135,7 @@ class Collections @Inject()(datasets: DatasetService, collections: CollectionSer
 	                    
 	          // redirect to collection page
 	          Redirect(routes.Collections.collection(collection.id))
-	          current.plugin[AdminsNotifierPlugin].foreach{_.sendAdminsNotification("Collection","added",collection.id.toString,collection.name)}
+	          current.plugin[AdminsNotifierPlugin].foreach{_.sendAdminsNotification(Utils.baseUrl(request), "Collection","added",collection.id.toString,collection.name)}
 	          Redirect(routes.Collections.collection(collection.id))
 	        })
 	      }
@@ -162,7 +166,21 @@ class Collections @Inject()(datasets: DatasetService, collections: CollectionSer
 		        }
           }
           
-          Ok(views.html.collectionofdatasets(datasetsInCollection, collection, rightsForUser))
+          // only show previewers that have a matching preview object associated with collection
+          Logger.debug("Num previewers " + Previewers.findCollectionPreviewers.size)
+          for (p <- Previewers.findCollectionPreviewers) Logger.debug("Previewer " + p)
+          val filteredPreviewers = for (
+            previewer <- Previewers.findCollectionPreviewers;
+            preview <- previewsService.findByCollectionId(id);
+            if (previewer.collection);
+            if (previewer.supportedPreviews.contains(preview.preview_type.get))
+          ) yield {
+            previewer
+          }
+          Logger.debug("Num previewers " + filteredPreviewers.size)
+          filteredPreviewers.map(p => Logger.debug(s"Filtered previewers for collection $id $p.id"))
+          
+          Ok(views.html.collectionofdatasets(datasetsInCollection, collection, filteredPreviewers.toList, rightsForUser))
         }
         case None => {
           Logger.error("Error getting collection " + id); BadRequest("Collection not found")
@@ -250,6 +268,19 @@ class Collections @Inject()(datasets: DatasetService, collections: CollectionSer
     }
   }
   
+  def previews(collection_id: UUID) = SecuredAction(authorization = WithPermission(Permission.ShowCollection), resourceId = Some(collection_id)) {
+    implicit request =>
+      collections.get(collection_id) match {
+        case Some(collection) => {
+          val previewsByCol = previewsService.findByCollectionId(collection_id)
+          Ok(views.html.collectionPreviews(collection_id.toString, previewsByCol, Previewers.findCollectionPreviewers))
+        }
+        case None => {
+          Logger.error("Error getting collection " + collection_id);
+          BadRequest("Collection not found")
+        }
+      }
+  }
 
 }
 

@@ -50,7 +50,7 @@ import scala.util.control._
 import javax.activation.MimetypesFileTypeMap
 import java.util.Calendar
 import api.WithPermission
-import controllers.Utils
+import controllers.Utils 
 
 
 /**
@@ -391,7 +391,7 @@ class Extractions @Inject() (
 
                   if(toBeCurated){
                     Ok(toJson(Map("id"->id.stringify)))
-                    current.plugin[AdminsNotifierPlugin].foreach{_.sendAdminsNotification("File","added",id.stringify, filename)}
+                    current.plugin[AdminsNotifierPlugin].foreach{_.sendAdminsNotification(Utils.baseUrl(request),"File","added",id.stringify, filename)}
                   }
                   Ok(toJson(Map("id" -> id.toString)))
                 }
@@ -550,7 +550,7 @@ class Extractions @Inject() (
                   													case Some(vd)=>api.routes.Files.getVersusMetadataJSON(id).toString
                   													case None=> ""
                   													}
-                  
+
                   Logger.debug("jtags: " + jtags.toString)
                   Logger.debug("jpreviews: " + jpreviews.toString)
 

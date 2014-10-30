@@ -11,4 +11,5 @@ case class Collection(
   created: Date,
   datasets: List[Dataset] = List.empty,
   thumbnail_id: Option[String] = None,
-  isPublic: Option[Boolean] = Some(false))
+  isPublic: Option[Boolean] = Some(false),
+  previews: List[Preview] = List.empty)

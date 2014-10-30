@@ -779,9 +779,11 @@ class MongoDBFileService @Inject() (
       }
       case None => Logger.error("Error getting file" + id)
     }
-  }*/
-
-  /*convert list of JsObject to JsArray*/
+    Some(vdArray)
+  }  
+  */
+ 
+   /*convert list of JsObject to JsArray*/
   def getJsonArray(list: List[JsObject]): JsArray = {
     list.foldLeft(JsArray())((acc, x) => acc ++ Json.arr(x))
   }
@@ -1195,6 +1197,7 @@ object FileDAO extends ModelCompanion[File, ObjectId] {
     case Some(x) => new SalatDAO[File, ObjectId](collection = x.collection("uploads.files")) {}
   }
 }
+
 
 object VersusDAO extends ModelCompanion[Versus,ObjectId]{
     val dao = current.plugin[MongoSalatPlugin] match {

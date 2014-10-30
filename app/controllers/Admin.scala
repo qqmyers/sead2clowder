@@ -26,6 +26,7 @@ import play.api.libs.concurrent.Promise
 
 import play.api.data.Form
 import play.api.data.Forms._
+import javax.inject.{Inject, Singleton}
 
 import javax.inject.{Inject, Singleton}
 

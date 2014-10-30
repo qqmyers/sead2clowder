@@ -329,7 +329,6 @@ class MongoDBCollectionService @Inject() (datasets: DatasetService, appConfigura
                   Collection.dao.collection.update(MongoDBObject("_id" -> new ObjectId(collection.id.stringify)), 
                   $set("thumbnail_id" -> dataset.thumbnail_id.get), false, false, WriteConcern.Safe)
               }
-
               Logger.debug("Adding dataset to collection completed")
             }
             else{
@@ -369,7 +368,7 @@ class MongoDBCollectionService @Inject() (datasets: DatasetService, appConfigura
 	        		  createThumbnail(collection.id)
 	        	  }		                        
 	          }
-              
+
               Logger.info("Removing dataset from collection completed")
             }
             else{
@@ -412,8 +411,6 @@ class MongoDBCollectionService @Inject() (datasets: DatasetService, appConfigura
         current.plugin[ElasticsearchPlugin].foreach {
           _.delete("data", "collection", collection.id.stringify)
         }
-        current.plugin[AdminsNotifierPlugin].foreach{_.sendAdminsNotification("Collection","removed",collection.id.stringify, collection.name)}
-
         Success
       }
       case None => Success

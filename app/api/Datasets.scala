@@ -8,9 +8,6 @@ import com.wordnik.swagger.annotations.ApiOperation
 import models._
 import play.api.Logger
 import play.api.libs.json.JsValue
-import play.api.libs.json.JsResult
-import play.api.libs.json.JsSuccess
-import play.api.libs.json.JsError
 import play.api.libs.json.Json
 import play.api.libs.json.Json._
 import jsonutils.JsonUtil
@@ -33,6 +30,9 @@ import models.File
 import play.api.Play.configuration
 import securesocial.core.Identity
 import controllers.Utils
+import play.api.libs.json.JsResult
+import play.api.libs.json.JsSuccess
+import play.api.libs.json.JsError
 
 /**
  * Dataset API.
@@ -159,24 +159,18 @@ class Datasets @Inject()(
                               _.index("data", "dataset", UUID(id),
                                 List(("name", d.name), ("description", d.description)))
                             }
-                       }
-                       Ok(toJson(Map("id" -> id)))
-                       current.plugin[AdminsNotifierPlugin].foreach{_.sendAdminsNotification("Dataset","added",id, name)} 
-                       Ok(toJson(Map("id" -> id)))
-		      	     }
-		      	     case None => Ok(toJson(Map("status" -> "error")))
-		      	   }
-      	        case None => BadRequest(toJson("Bad file_id = " + file_id))
-      	      }
-      	   }.getOrElse {
-      		  BadRequest(toJson("Missing parameter [file_id]"))
-      	   }
-      	  }.getOrElse {
-      		BadRequest(toJson("Missing parameter [description]"))
-      	  }
-    }.getOrElse {
-      BadRequest(toJson("Missing parameter [name]"))
-    }
+                          }
+                          Ok(toJson(Map("id" -> id)))
+                          current.plugin[AdminsNotifierPlugin].foreach{_.sendAdminsNotification(Utils.baseUrl(request),"Dataset","added",id, name)} 
+                          Ok(toJson(Map("id" -> id)))
+                        }
+                        case None => Ok(toJson(Map("status" -> "error")))
+                      }
+                    case None => BadRequest(toJson("Bad file_id = " + file_id))
+                  }
+              }.getOrElse(BadRequest(toJson("Missing parameter [file_id]")))
+          }.getOrElse(BadRequest(toJson("Missing parameter [description]")))
+      }.getOrElse(BadRequest(toJson("Missing parameter [name]")))
   }
   
   @ApiOperation(value = "Set whether a dataset is open for public viewing.",
@@ -778,7 +772,9 @@ class Datasets @Inject()(
         case TagCheck_Dataset => {
         	datasets.removeTags(id, userOpt, extractorOpt, tagsCleaned)
         	datasets.index(id)
+
           }
+
         case TagCheck_Section => sections.removeTags(id, userOpt, extractorOpt, tagsCleaned)
       }
       Ok(Json.obj("status" -> "success"))
@@ -888,7 +884,8 @@ class Datasets @Inject()(
         datasets.get(id) match {
           case Some(dataset) => {
             datasets.removeAllTags(id)
-            datasets.index(id)
+            datasets.index(id) 
+
             Ok(Json.obj("status" -> "success"))
           }
           case None => {
@@ -1064,6 +1061,7 @@ class Datasets @Inject()(
           val innerFiles = dataset.files map {f => files.get(f.id).get}
           val datasetWithFiles = dataset.copy(files = innerFiles)
           val previewers = Previewers.findPreviewers
+          //NOTE Should the following code be unified somewhere since it is duplicated in Datasets and Files for both api and controllers
           val previewslist = for (f <- datasetWithFiles.files; if (f.showPreviews.equals("DatasetLevel"))) yield {
             val pvf = for (p <- previewers; pv <- f.previews; if (p.contentType.contains(pv.contentType))) yield {
               (pv.id.toString, p.id, p.path, p.main, api.routes.Previews.download(pv.id).toString, pv.contentType, pv.length)
@@ -1072,7 +1070,14 @@ class Datasets @Inject()(
               (f -> pvf)
             } else {
               val ff = for (p <- previewers; if (p.contentType.contains(f.contentType))) yield {
-                (f.id.toString, p.id, p.path, p.main, controllers.routes.Files.file(f.id) + "/blob", f.contentType, f.length)
+                //Change here. If the license allows the file to be downloaded by the current user, go ahead and use the 
+                //file bytes as the preview, otherwise return the String null and handle it appropriately on the front end
+                if (f.checkLicenseForDownload(request.user)) {
+                    (f.id.toString, p.id, p.path, p.main, controllers.routes.Files.file(f.id) + "/blob", f.contentType, f.length)
+                }
+                else {
+                    (f.id.toString, p.id, p.path, p.main, "null", f.contentType, f.length)
+                }
               }
               (f -> ff)
             }
@@ -1104,12 +1109,11 @@ class Datasets @Inject()(
           }
           for(file <- dataset.files)
         	  files.index(file.id)
-          
-
+        	  
           accessRights.removeResourceRightsForAll(id.stringify, "dataset")
 
           Ok(toJson(Map("status" -> "success")))
-          current.plugin[AdminsNotifierPlugin].foreach{_.sendAdminsNotification("Dataset","removed",dataset.id.stringify, dataset.name)}
+          current.plugin[AdminsNotifierPlugin].foreach{_.sendAdminsNotification(Utils.baseUrl(request),"Dataset","removed",dataset.id.stringify, dataset.name)}
           Ok(toJson(Map("status"->"success")))
         }
         case None => Ok(toJson(Map("status" -> "success")))
@@ -1203,6 +1207,7 @@ class Datasets @Inject()(
       case None => {Logger.error("Error finding dataset" + id); InternalServerError}      
     }
   }
+
   def getUserMetadataJSON(id: UUID) = SecuredAction(parse.anyContent, authorization=WithPermission(Permission.ShowDatasetsMetadata), resourceId = Some(id)) { request =>
     datasets.get(id)  match {
       case Some(dataset) => {
@@ -1233,7 +1238,7 @@ class Datasets @Inject()(
 	    case None =>
 	      Logger.error(("No user identity found in the request, request body: " + request.body))
 	      BadRequest(toJson("No user identity found in the request, request body: " + request.body))
-	  }
+	    }
     }
   
   def dumpDatasetGroupings = SecuredAction(parse.anyContent, authorization=WithPermission(Permission.Admin)) { request =>

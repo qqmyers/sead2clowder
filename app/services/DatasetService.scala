@@ -82,7 +82,6 @@ trait DatasetService {
 
   def modifyRDFOfMetadataChangedDatasets()
   
-
   def dumpAllDatasetGroupings(): List[String]
   
   def dumpAllDatasetMetadata(): List[String]
@@ -205,3 +204,4 @@ trait DatasetService {
   def setIsPublic(datasetId: UUID, isPublic: Boolean)
 
 }
+

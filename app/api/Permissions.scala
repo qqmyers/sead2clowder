@@ -34,6 +34,7 @@ object Permission extends Enumeration {
 		CreateCollections,
 		DeleteCollections,
 		AdministrateCollections,
+    	EditCollection,
 		ListCollections,
 		ShowCollection,             
 		CreateDatasets,
@@ -346,5 +347,4 @@ case class WithPermission(permission: Permission, resourceId: Option[UUID] = Non
 		}
 	}
 }
-
 

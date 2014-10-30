@@ -64,13 +64,7 @@
 			<button class="usr_md_submit btn rdfbtn" type="button">Get as RDF</button>
 		}
 	</div>
-	
-	@if(!xmlMetadata.isEmpty) {
-		<h5>XML metadata:</h5>		
-		@for(i <- 0 until xmlMetadata.length){								
-			@printLevel(xmlMetadata(i).xmlMetadata)
-		}
-	}
+
 			
 </form>
 <script language="javascript">

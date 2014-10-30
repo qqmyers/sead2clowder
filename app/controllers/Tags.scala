@@ -1,6 +1,8 @@
 package controllers
 
+import models.Dataset
 import models.Tag
+
 import api.WithPermission
 import api.Permission
 import scala.collection.mutable.ListBuffer
