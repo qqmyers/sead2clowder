@@ -10,6 +10,9 @@ import securesocial.core.Authorization
 import securesocial.core.SecureSocial
 import securesocial.core.SocialUser
 import securesocial.core.IdentityId
+import securesocial.core.UserService 
+import securesocial.core.providers.UsernamePasswordProvider
+import org.mindrot.jbcrypt._
 import models.UUID
 
 /**
@@ -41,8 +44,8 @@ trait ApiController extends Controller {
               Unauthorized("Not authenticated")
           }
           case None => {
-            SecureSocial.currentUser(request) match { // calls from browser
-              case Some(identity) => {
+            SecureSocial.currentUser(request) match { 
+              case Some(identity) => { //User cookie
                 if(identity.fullName.equals("Anonymous User")){
                   Unauthorized("Not authorized")
                 }
@@ -59,10 +62,45 @@ trait ApiController extends Controller {
                 }
               }
               case None => {
-                if (authorization.isAuthorized(null))
-                  f(RequestWithUser(None, request))
-                else
-                  Unauthorized("Not authorized")
+                request.queryString.get("username") match {
+                  case Some(username)=>{	//Username + password
+                    request.queryString.get("password") match {
+	                  case Some(password)=>{
+	                    val theUsername = username(0)
+	                    val thePassword = password(0)
+	                    UserService.findByEmailAndProvider(theUsername, UsernamePasswordProvider.UsernamePassword) match {
+	                      case Some(identity) => {
+	                        identity.passwordInfo match {
+	                          case Some(pInfo)=>{
+		                        if (BCrypt.checkpw(thePassword, pInfo.password)){
+		                        	f(RequestWithUser(Some(identity), request))
+		                        }
+		                        else{
+		                        	Unauthorized("Wrong password")
+		                        }
+	                          }
+	                          case None =>{
+	                            InternalServerError("Password validation error") //Not reporting the exact cause to not expose possible security vulnerabilities
+	                          }
+	                        }
+	                      }
+	                      case None =>{
+	                        Unauthorized("User not found")
+	                      } 
+	                    }	                    
+	                  }
+	                  case None=>{
+	                    Unauthorized("No password entered")
+	                  }
+                    }
+                  }
+                  case None=>{	
+                    if (authorization.isAuthorized(null))
+	                  f(RequestWithUser(None, request))
+	                else
+	                  Unauthorized("Not authorized")
+                  }
+                }
               }
             }
           }
