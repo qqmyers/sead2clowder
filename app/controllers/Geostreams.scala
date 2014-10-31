@@ -17,7 +17,12 @@ object Geostreams extends Controller with SecuredController {
   
   def browse() = SecuredAction(authorization=WithPermission(Permission.SearchSensors)) { implicit request =>
     implicit val user = request.user
-    Ok(views.html.geostreams())
+    Ok(views.html.geostreams.map())
+  }
+
+  def listSensors()= SecuredAction(authorization=WithPermission(Permission.SearchSensors)) { implicit request =>
+    implicit val user = request.user
+    Ok(views.html.geostreams.sensors())
   }
   
 }
