@@ -3,7 +3,9 @@
 	
 	console.log("Updating tab " + Configuration.tab);
 	
-	var pathJs = window.location.protocol + "//" + window.location.hostname + (window.location.port ? ':' + window.location.port: '') + Configuration.jsPath + "/";
+	var hostAddress = window.location.protocol + "//" + window.location.hostname + (window.location.port ? ':' + window.location.port: '');
+	var pathJs = hostAddress + Configuration.jsPath + "/";
+	pathImagesZoomit = hostAddress + Configuration.imagesPath + "/";
 	
 	var width = 750;
 	var height = 550;
