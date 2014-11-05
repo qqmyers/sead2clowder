@@ -12,10 +12,9 @@
 	var areRestDatasetsVisible = false;
 
 	function addDataset(datasetId, event){
-		var request = $.ajax({
-		       type: 'POST',
-		       url: window.location.protocol + "//" + window.location.hostname + (window.location.port ? ':' + window.location.port: '')+"/api/collections/"+collectionId+"/datasets/"+datasetId
-		     });
+		var request = jsRoutes.api.Collections.attachDataset(collectionId, datasetId).ajax({
+			type: 'POST'
+		});
 		request.done(function (response, textStatus, jqXHR){
 	        console.log("Response " + response);	        
 	        //Remove selected dataset from datasets not in collection.
@@ -69,20 +68,17 @@
 	        currentFirstDatasets = 1;
 		});	
 		request.fail(function (jqXHR, textStatus, errorThrown){
-    		console.error(
-        		"The following error occured: "+
-        		textStatus, errorThrown		            
-    			);
-    		alert("ERROR: " + errorThrown +". Dataset not added to collection. The collection or dataset was possibly removed from the system." );
- 			});
+			console.error("The following error occured: "+textStatus, errorThrown);
+	        var errMsg = "You must be logged in to add a dataset to a collection.";
+	        alert("The dataset was not added to the collection due to : " + errorThrown);  		
+ 		});
 		
 	}
 	
 	function removeDataset(datasetId, event){
-		var request = $.ajax({
-		       type: 'POST',
-		       url: window.location.protocol + "//" + window.location.hostname + (window.location.port ? ':' + window.location.port: '')+"/api/collections/"+collectionId+"/datasetsRemove/"+datasetId+"/False"
-		     });
+		var request = jsRoutes.api.Collections.removeDataset(collectionId, datasetId).ajax({
+			type: 'POST'
+		});
 		request.done(function (response, textStatus, jqXHR){
 	        console.log("Response " + response);
 	        
@@ -143,12 +139,10 @@
 	      }       
 		});  	
 		request.fail(function (jqXHR, textStatus, errorThrown){
-    		console.error(
-        		"The following error occured: "+
-        		textStatus, errorThrown		            
-    			);
-    		alert("ERROR: " + errorThrown +". Dataset not removed from collection. The collection was possibly removed from the system." );
- 			});	
+			console.error("The following error occured: "+textStatus, errorThrown);
+	        var errMsg = "You must be logged in to remove a dataset from a collection.";
+	        alert("The dataset was not removed from the collection due to : " + errorThrown);
+ 		});	
 	}
 	
 	function findPos(reqNode){
@@ -298,14 +292,11 @@
 		        return false;
  			});
 			request.fail(function (jqXHR, textStatus, errorThrown){
-        		console.error(
-            		"The following error occured: "+
-            		textStatus, errorThrown		            
-        			);
-        		alert("ERROR: " + errorThrown +". The collection was possibly removed." );
-        		
+				console.error("The following error occured: "+textStatus, errorThrown);
+		        var errMsg = "You must be logged in to add a dataset to a collection.";
+		        alert("The dataset was not added to the collection due to : " + errorThrown);       		        		
         		return false;
-     			});		 
+     		});		 
 	 });
 	 $('body').on('click','#hideAddDatasetBtn',function(e){
 		 $('#addPagerPrev').css('visibility','hidden');

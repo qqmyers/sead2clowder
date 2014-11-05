@@ -1,3 +1,7 @@
+//Functions to edit comments
+//
+//Referenced by comment.scala.html
+//
 function editComment(commentId, commentText, reloadPage){
 	
 	if(reloadPage === undefined) reloadPage = false;
@@ -19,11 +23,13 @@ function editComment(commentId, commentText, reloadPage){
 
      
      request.fail(function (jqXHR, textStatus, errorThrown){
-        console.error(
-            "The following error occured: "+
-            textStatus, errorThrown            
-        );
-        alert("Editing the comment failed. " + textStatus + " and " + errorThrown);
+    	 console.error("The following error occured: " + textStatus, errorThrown);
+         var errMsg = "You must be logged in to edit a comment.";                                
+         alert("The comment was not edited due to : " + errorThrown);
+         else {
+        	 var responseText = jqXHR.responseText;
+        	 alert(responseText);
+         }
      });
     
 	 return false;	

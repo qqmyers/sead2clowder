@@ -3,15 +3,15 @@
  */
 package controllers
 
-import play.api.mvc.Controller
-import play.api.mvc.Action
+import play.api.mvc.{Results, Controller, Action}
 import play.api.Routes
 import securesocial.core.SecureSocial._
-import securesocial.core.SecureSocial
+import securesocial.core.{IdentityProvider, SecureSocial}
 import api.ApiController
 import api.WithPermission
 import api.Permission
 import services.{AppConfigurationService, AppAppearanceService, VersusPlugin}
+import securesocial.core.providers.utils.RoutesHelper
 import play.api.Play.current
 import play.api.libs.concurrent.Execution.Implicits._
 
@@ -49,6 +49,13 @@ class Admin @Inject() (appConfiguration: AppConfigurationService, appAppearance:
     val appConfigGet = appConfiguration.getDefault.get
     implicit val user = request.user
     Ok(views.html.admin(themeId, appAppearanceGet, appConfigGet))
+  }
+  
+  def adminIndex = SecuredAction(authorization = WithPermission(Permission.Admin)) { request =>
+    val themeId = themes.indexOf(getTheme)
+    val appAppearanceGet = appAppearance.getDefault.get
+    implicit val user = request.user
+    Ok(views.html.adminIndex(themeId, appAppearanceGet))
   }
 
   def reindexFiles = SecuredAction(parse.json, authorization = WithPermission(Permission.AddIndex)) { request =>
@@ -268,7 +275,6 @@ class Admin @Inject() (appConfiguration: AppConfigurationService, appAppearance:
   //Delete a specific index in Versus
   def deleteIndex(id: String)=SecuredAction(authorization=WithPermission(Permission.Admin)){
     request =>
-      
     Async{  
       current.plugin[VersusPlugin] match {
      
@@ -300,7 +306,7 @@ class Admin @Inject() (appConfiguration: AppConfigurationService, appAppearance:
 
       Async {
         current.plugin[VersusPlugin] match {
-
+        	
           case Some(plugin) => {
 
             var deleteAllResponse = plugin.deleteAllIndexes()
@@ -371,8 +377,8 @@ class Admin @Inject() (appConfiguration: AppConfigurationService, appAppearance:
       case None => {
         Logger.error("Error getting application configuration!"); InternalServerError
       }
-      
-    }  
+      case None => Unauthorized("Not authorized")
+    }
   }
 
 }

@@ -11,6 +11,8 @@ import services.FileService
 import services.DatasetService
 import services.CollectionService
 import play.api.Logger
+import play.api.Play.configuration
+import play.api.{Plugin, Logger, Application}
 
  /**
   * A request that adds the User for the current call
@@ -29,6 +31,7 @@ object Permission extends Enumeration {
 		Admin,
 		CreateCollections,
 		DeleteCollections,
+		EditCollection,
 		ListCollections,
 		ShowCollection,
 		CreateDatasets,
@@ -38,6 +41,7 @@ object Permission extends Enumeration {
 		SearchDatasets,
 		AddDatasetsMetadata,
 		ShowDatasetsMetadata,
+		ShowTags,
 		CreateTagsDatasets,
 		DeleteTagsDatasets,
 		UpdateDatasetInformation,

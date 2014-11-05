@@ -9,9 +9,6 @@ import com.wordnik.swagger.annotations.ApiOperation
 import models._
 import play.api.Logger
 import play.api.libs.json.JsValue
-import play.api.libs.json.JsResult
-import play.api.libs.json.JsSuccess
-import play.api.libs.json.JsError
 import play.api.libs.json.Json
 import play.api.libs.json.Json._
 import jsonutils.JsonUtil
@@ -33,6 +30,9 @@ import scala.Some
 import models.File
 import play.api.Play.configuration
 import controllers.Utils
+import play.api.libs.json.JsResult
+import play.api.libs.json.JsSuccess
+import play.api.libs.json.JsError
 
 /**
  * Dataset API.
@@ -116,10 +116,11 @@ class Datasets @Inject()(
                                 List(("name", d.name), ("description", d.description)))
                             }
                        }
-                       Ok(toJson(Map("id" -> id)))
-                       current.plugin[AdminsNotifierPlugin].foreach{_.sendAdminsNotification("Dataset","added",id, name)} 
-                       Ok(toJson(Map("id" -> id)))
 
+					   Ok(toJson(Map("id" -> id)))
+                       current.plugin[AdminsNotifierPlugin].foreach {
+                         _.sendAdminsNotification(Utils.baseUrl(request), "Dataset","added",id, name)}
+                       Ok(toJson(Map("id" -> id)))
 		      	     }
 		      	     case None => Ok(toJson(Map("status" -> "error")))
 		      	   }
@@ -141,34 +142,32 @@ class Datasets @Inject()(
       responseClass = "None", httpMethod = "POST")
   def attachExistingFile(dsId: UUID, fileId: UUID) = SecuredAction(parse.anyContent,
     authorization = WithPermission(Permission.CreateDatasets), resourceId = Some(dsId)) {
-	request =>
-     datasets.get(dsId) match {
-      case Some(dataset) => {
-        files.get(fileId) match {
-          case Some(file) => {
-            if (!files.isInDataset(file, dataset)) {
-	            datasets.addFile(dsId, file)	            
-	            files.index(fileId)
-	            if (!file.xmlMetadata.isEmpty){
+    request =>
+      datasets.get(dsId) match {
+        case Some(dataset) => {
+          files.get(fileId) match {
+            case Some(file) => {
+              if (!files.isInDataset(file, dataset)) {
+                datasets.addFile(dsId, file)
+                files.index(fileId)
+                if (!file.xmlMetadata.isEmpty)
                   datasets.index(dsId)
-	            }	            
-       
-	            if(dataset.thumbnail_id.isEmpty && !file.thumbnail_id.isEmpty){
-		                        datasets.updateThumbnail(dataset.id, UUID(file.thumbnail_id.get))
-		                        
-		                        for(collectionId <- dataset.collections){
-		                          collections.get(UUID(collectionId)) match{
-		                            case Some(collection) =>{
-		                            	if(collection.thumbnail_id.isEmpty){ 
-		                            		collections.updateThumbnail(collection.id, UUID(file.thumbnail_id.get))
-		                            	}
-		                            }
-		                            case None=>{}
-		                          }
-		                        }
-	            }
-	            
-	            //add file to RDF triple store if triple store is used
+                if(dataset.thumbnail_id.isEmpty && !file.thumbnail_id.isEmpty){
+                      datasets.updateThumbnail(dataset.id, UUID(file.thumbnail_id.get))
+                      
+                      for(collectionId <- dataset.collections){
+                        collections.get(UUID(collectionId)) match{
+                          case Some(collection) =>{
+                          	if(collection.thumbnail_id.isEmpty){ 
+                          		collections.updateThumbnail(collection.id, UUID(file.thumbnail_id.get))
+                          	}
+                          }
+                          case None=> Logger.debug(s"No collection found with id $collectionId")
+                        }
+                      }
+                  }
+
+                //add file to RDF triple store if triple store is used
                 if (file.filename.endsWith(".xml")) {
                   configuration.getString("userdfSPARQLStore").getOrElse("no") match {
                     case "yes" => rdfsparql.linkFileToDataset(fileId, dsId)
@@ -939,6 +938,7 @@ class Datasets @Inject()(
           val innerFiles = dataset.files map {f => files.get(f.id).get}
           val datasetWithFiles = dataset.copy(files = innerFiles)
           val previewers = Previewers.findPreviewers
+          //NOTE Should the following code be unified somewhere since it is duplicated in Datasets and Files for both api and controllers
           val previewslist = for (f <- datasetWithFiles.files; if (f.showPreviews.equals("DatasetLevel"))) yield {
             val pvf = for (p <- previewers; pv <- f.previews; if (p.contentType.contains(pv.contentType))) yield {
               (pv.id.toString, p.id, p.path, p.main, api.routes.Previews.download(pv.id).toString, pv.contentType, pv.length)
@@ -947,7 +947,14 @@ class Datasets @Inject()(
               (f -> pvf)
             } else {
               val ff = for (p <- previewers; if (p.contentType.contains(f.contentType))) yield {
-                (f.id.toString, p.id, p.path, p.main, controllers.routes.Files.file(f.id) + "/blob", f.contentType, f.length)
+                //Change here. If the license allows the file to be downloaded by the current user, go ahead and use the 
+                //file bytes as the preview, otherwise return the String null and handle it appropriately on the front end
+                if (f.checkLicenseForDownload(request.user)) {
+                    (f.id.toString, p.id, p.path, p.main, controllers.routes.Files.file(f.id) + "/blob", f.contentType, f.length)
+                }
+                else {
+                    (f.id.toString, p.id, p.path, p.main, "null", f.contentType, f.length)
+                }
               }
               (f -> ff)
             }
@@ -981,7 +988,7 @@ class Datasets @Inject()(
         	  files.index(file.id)
           
           Ok(toJson(Map("status" -> "success")))
-          current.plugin[AdminsNotifierPlugin].foreach{_.sendAdminsNotification("Dataset","removed",dataset.id.stringify, dataset.name)}
+          current.plugin[AdminsNotifierPlugin].foreach{_.sendAdminsNotification(Utils.baseUrl(request), "Dataset","removed",dataset.id.stringify, dataset.name)}
           Ok(toJson(Map("status"->"success")))
         }
         case None => Ok(toJson(Map("status" -> "success")))
@@ -1034,7 +1041,6 @@ class Datasets @Inject()(
 
     return xmlFile
   }
-
   
   @ApiOperation(value = "Get URLs of dataset's RDF metadata exports",
       notes = "URLs of metadata exported as RDF from XML files contained in the dataset, as well as the URL used to export the dataset's user-generated metadata as RDF.",
@@ -1075,6 +1081,7 @@ class Datasets @Inject()(
       case None => {Logger.error("Error finding dataset" + id); InternalServerError}      
     }
   }
+
   def getUserMetadataJSON(id: UUID) = SecuredAction(parse.anyContent, authorization=WithPermission(Permission.ShowDatasetsMetadata)) { request =>
     datasets.get(id)  match {
       case Some(dataset) => {

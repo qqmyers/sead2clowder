@@ -1,10 +1,10 @@
 function removeFile(fileId,event, reloadPage){
 	if(reloadPage === undefined) reloadPage = false;
-	
-	var request = $.ajax({
-	       type: 'POST',
-	       url: window.location.protocol + "//" + window.location.hostname + (window.location.port ? ':' + window.location.port: '')+"/api/files/"+fileId+"/remove"
-	     });
+
+	var request = jsRoutes.api.Files.removeFile(fileId).ajax({
+		type: 'POST'
+	});
+
 	request.done(function (response, textStatus, jqXHR){
         console.log("Response " + response);
         if($(event.target).is("span")){
@@ -18,10 +18,8 @@ function removeFile(fileId,event, reloadPage){
         	location.reload(true);
     });
 	request.fail(function (jqXHR, textStatus, errorThrown){
-		console.error(
-    		"The following error occured: "+
-    		textStatus, errorThrown		            
-			);
-		alert("ERROR: " + errorThrown +". File not removed. Maybe it was already removed." );
-			});	
+        console.error("The following error occured: " + textStatus, errorThrown);
+        var errMsg = "You must be logged in to delete a file from the system.";        
+        alert("The file was not deleted from the system due to : " + errorThrown);
+	});	
 }

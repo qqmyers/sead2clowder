@@ -30,9 +30,9 @@
 		     });
 		     
 		     request.fail(function (jqXHR, textStatus, errorThrown){
-		        console.error(
-		            "The following error occured: "+textStatus, errorThrown      
-		        );
+		    	 console.error("The following error occured: "+textStatus, errorThrown);
+                 var errMsg = "You must be logged in to change the theme.";                    
+                 alert("The theme was not changed due to : " + errorThrown);
 		     });
 		   });
 	});

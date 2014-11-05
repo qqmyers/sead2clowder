@@ -1,10 +1,9 @@
 function removeDataset(datasetId,event, reloadPage){
 	if(reloadPage === undefined) reloadPage = false;
 	
-	var request = $.ajax({
-	       type: 'POST',
-	       url: window.location.protocol + "//" + window.location.hostname + (window.location.port ? ':' + window.location.port: '')+"/api/datasets/"+datasetId+"/remove"
-	     });
+	var request = jsRoutes.api.Datasets.deleteDataset(datasetId).ajax({
+		type: 'POST'
+	});
 	request.done(function (response, textStatus, jqXHR){
         console.log("Response " + response);
         if($(event.target).is("span")){
@@ -18,10 +17,9 @@ function removeDataset(datasetId,event, reloadPage){
         	location.reload(true);
     });
 	request.fail(function (jqXHR, textStatus, errorThrown){
-		console.error(
-    		"The following error occured: "+
-    		textStatus, errorThrown		            
-			);
-		alert("ERROR: " + errorThrown +". Dataset not removed. Maybe it was already removed." );
-			});	
+		console.error("The following error occured: "+textStatus, errorThrown);
+        var errMsg = "You must be logged in to remove a dataset from the system.";
+        alert("The dataset was not removed due to : " + errorThrown); 
+		
+	});	
 }
