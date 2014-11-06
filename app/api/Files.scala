@@ -1009,7 +1009,7 @@ class Files @Inject()(
    * Find texture file for given 3D file and texture filename.
    */
   def getTexture(three_d_file_id: UUID, filename: String) =
-    SecuredAction(parse.anyContent, authorization = WithPermission(Permission.ShowFile), resourceId = Some(three_d_file_id)) {
+    SecuredAction(parse.anyContent, authorization = WithPermission(Permission.PublicOpen)) {
       request =>
         threeD.findTexture(three_d_file_id, filename) match {
           case Some(texture) => {
