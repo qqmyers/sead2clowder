@@ -582,7 +582,6 @@ object Geostreams extends ApiController {
     }
   }
 
-
   def formatResult(data :Iterator[JsObject], format: String) = {
     var status = 0
     Enumerator.generateM(Future[Option[String]] {
@@ -1187,7 +1186,7 @@ object Geostreams extends ApiController {
    * @param data Result to transform
    * @param request request made to server
    */
-  def jsonp(data:String, request: Request[Any]): SimpleResult = {
+  def jsonp(data: String, request: Request[Any]): SimpleResult = {
     jsonp(Enumerator(data), request)
   }
 
@@ -1196,7 +1195,7 @@ object Geostreams extends ApiController {
    * @param data Result to transform
    * @param request request made to server
    */
-  def jsonp(data:JsValue, request: Request[Any]): SimpleResult = {
+  def jsonp(data: JsValue, request: Request[Any]): SimpleResult = {
     jsonp(Enumerator(data.toString), request)
   }
 
@@ -1205,7 +1204,7 @@ object Geostreams extends ApiController {
    * @param data Result to transform
    * @param request request made to server
    */
-  def jsonp(data:Enumerator[String], request: Request[Any]) = {
+  def jsonp(data: Enumerator[String], request: Request[Any]) = {
     request.getQueryString("callback") match {
       case Some(callback) => Ok.chunked(Enumerator(s"$callback(") >>> data >>> Enumerator(");")).as(JAVASCRIPT)
       case None => Ok.chunked(data).as(JSON)
