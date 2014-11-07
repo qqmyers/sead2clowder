@@ -55,6 +55,9 @@
 		}
 		else if("@p._2" === "Oni"){
 		}
+		else if("@p._2" === "Video"){
+			Configuration.originalFileId = "@originalFileId";
+		}
 	</script>
 	<script type="text/javascript" src="@(routes.Assets.at(p._3) + "/" + p._4)"></script>
 }
@@ -160,7 +163,7 @@
 			@if(sections.size > 0) {
 			  	<div class="row border-top" style="padding-top: 10px">
 			  	  <div class="col-md-12">
-				  	<div id="galleria" style="float:left;clear:none;width:600px;height:300px;">
+				  	<div id="galleria_@(f.id.toString)" style="float:left;clear:none;width:600px;height:300px;">
 					  	@sections.map { s =>
 					  		@if(s.preview.isDefined) {					  		
 					  			<img src="@api.routes.Previews.download(s.preview.get.id)"
@@ -258,9 +261,9 @@
 					    Galleria.loadTheme('@routes.Assets.at("javascripts/galleria-classic/galleria.classic.min.js")');
 
 					    // Initialize Galleria and, if for a video, onclick events for going to time of selected image when clicking main image
-					    Galleria.run('#galleria', {					   		
+					    Galleria.run('#galleria_@(f.id.toString)', {					   		
 						        extend: function(options) {
-						          if ($("#ourvideo").length>0) {
+						          if ($("#ourvideo_@(f.id.toString)").length>0) {
 						            Galleria.log(this); // the gallery instance
 						            Galleria.log(options); // the gallery options
 	
@@ -272,31 +275,25 @@
 	
 						                // lets make galleria make the video jump to the time of the selected image when clicking it:
 						                $(e.imageTarget).click(this.proxy(function(){
-						                	var pop = Popcorn("#ourvideo");
+						                	var pop = Popcorn("#ourvideo_@(f.id.toString)");
 						                	pop.currentTime(parseInt(this._data[this._active].description.match(/\d+/)[0]));
 						                }));
 						            });
 						          }
 						        }
 					    });
-
-					    var gallery = $('#galleria').data('galleria');
-
-						Galleria.ready(function(options) {
-
-						    // 'this' is the gallery instance
-						    // 'options' is the gallery options
-
-						    this.bind('image', function(e) {
-						        Galleria.log('Now viewing ' + e.imageTarget.src);
-						    });
-						});
-
-
 				    });
 			    </script>
     			}
     		}
+    		
+    		<script>
+    					Galleria.ready(function(options) {
+						    this.bind('image', function(e) {
+						        Galleria.log('Now viewing ' + e.imageTarget.src);
+						    });
+						});
+    		</script>
     		
     		<div class="row">
                 <div class="col-md-12 border-top col-section">
