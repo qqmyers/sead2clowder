@@ -41,6 +41,10 @@
     float: left;
     cursor: pointer;
 }
+.galleria-image img{
+	cursor: pointer;
+}
+
 .galleria-counter {
     position: absolute;
     bottom: 10px;
