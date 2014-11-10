@@ -52,7 +52,7 @@ class MongoDBAppConfigurationService extends AppConfigurationService {
   }
 
   def adminExists(adminEmail: String): Boolean =  {
-		  !AppConfiguration.findOne(MongoDBObject("admins" -> adminEmail)).nonEmpty
+		  AppConfiguration.findOne(MongoDBObject("admins" -> adminEmail)).nonEmpty
   }
   
   def setViewNoLoggedIn(viewNoLoggedIn: Boolean) = {
