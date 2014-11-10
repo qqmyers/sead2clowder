@@ -181,7 +181,7 @@
 			
 			<!-- sections -->
 			@if(f.sections.size > 0) {	
-			  	<div class="row" style="padding-top: 10px">
+			  	<div class="row" style="padding-top: 10px" id="galleriaRow_@(f.id.toString)">
 			  	  <div class="col-md-6">
 				  	<div id="galleria_@(f.id.toString)" style="float:left;clear:none;width:600px;height:300px;">
 					  	@f.sections.map { s =>
@@ -204,7 +204,7 @@
 				  </div>
 				</div>
 				  
-				<div class="row" style="padding-top: 10px">
+				<div class="row" style="padding-top: 10px" id="sectionsRow_@(f.id.toString)">
 				  <div class="col-md-10">
 				  	<div>
 				  		<h5>Sections</h5>
@@ -832,6 +832,8 @@
                             $("#filePrevContainer_"+fileId).remove();
                             $("#technicalMetadata_"+fileId).remove();
                             $("#fileUserMetadata_"+fileId).remove();
+                            $("#galleriaRow_"+fileId).remove();
+                            $("#sectionsRow_"+fileId).remove();
                         });
                         request.fail(function (jqXHR, textStatus, errorThrown){
                         	console.error("The following error occured: "+textStatus, errorThrown);
