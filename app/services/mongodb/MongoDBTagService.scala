@@ -12,6 +12,9 @@ import com.novus.salat.dao.SalatDAO
 import MongoContext.context
 import play.api.Play.current
 import models.{UUID, Tag}
+import play.api.libs.json.Json._
+import play.api.libs.json.{JsValue, Json}
+import java.text.SimpleDateFormat
 
 /**
  * Created by lmarini on 1/17/14.
@@ -160,6 +163,12 @@ class MongoDBTagService @Inject()(files: FileService, datasets: DatasetService, 
     }
     (not_found, error_str)
   }
+  
+  def toJSON(tag: Tag): JsValue = {
+    toJson(Map("id" -> tag.id.toString, "name" -> tag.name, "userId" -> (if (tag.userId.isDefined) tag.userId.get else "None"),
+        "extractor_id" -> (if (tag.extractor_id.isDefined) tag.extractor_id.get else "Unknown"), "created" -> new SimpleDateFormat("yyyy-MM-dd'T'HH-mm-ss").format(tag.created)))
+  }
+  
 }
 
 object Tag extends ModelCompanion[Tag, ObjectId] {
