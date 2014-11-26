@@ -27,4 +27,9 @@ trait SectionService {
   def removeSection(s: Section)
 
   def insert(json: JsValue): String
+  
+  /**
+   * Get JSON representation with any first preview.
+   */
+  def toJSON(section: Section): JsValue
 }
