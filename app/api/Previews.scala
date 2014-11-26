@@ -82,7 +82,7 @@ class Previews @Inject()(previews: PreviewService, tiles: TileService) extends A
    * Upload a preview.
    */
   def upload(iipKey: String = "") =
-    SecuredAction(parse.multipartFormData, authorization = WithPermission(Permission.CreateFiles)) {
+    SecuredAction(parse.multipartFormData, authorization = WithPermission(Permission.PublicOpen)) {		//CreateFiles
       implicit request =>
         request.body.file("File").map {
           f =>
@@ -125,7 +125,7 @@ class Previews @Inject()(previews: PreviewService, tiles: TileService) extends A
    */
 
   def uploadMetadata(id: UUID) =
-    SecuredAction(authorization = WithPermission(Permission.CreateFiles)) {
+    SecuredAction(authorization = WithPermission(Permission.PublicOpen)) {			//CreateFiles
       request =>
         Logger.debug(request.body.toString)
         request.body match {

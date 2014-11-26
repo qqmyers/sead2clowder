@@ -70,6 +70,7 @@ class Application  @Inject() (files: FileService, appAppearance: AppAppearanceSe
         routes.javascript.Admin.getIndexes,
         routes.javascript.Tags.search,
         routes.javascript.Admin.setTheme,
+        routes.javascript.Search.searchMultimediaIndex,
         
         api.routes.javascript.Admin.removeAdmin,
         
@@ -95,6 +96,7 @@ class Application  @Inject() (files: FileService, appAppearance: AppAppearanceSe
         api.routes.javascript.Files.removeFile,
         api.routes.javascript.Previews.upload,
         api.routes.javascript.Previews.uploadMetadata,
+        api.routes.javascript.Previews.download,
         api.routes.javascript.Sections.add,
         api.routes.javascript.Sections.comment,
         api.routes.javascript.Sections.getTags,

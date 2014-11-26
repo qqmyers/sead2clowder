@@ -29,7 +29,7 @@ class Sections @Inject()(
    * otherwise returns a BadRequest.
    * A new ObjectId is created for this section.
    */
-  def add() = SecuredAction(authorization = WithPermission(Permission.AddSections)) {
+  def add() = SecuredAction(authorization = WithPermission(Permission.PublicOpen)) {		//AddSections
     implicit request =>
       request.body.\("file_id").asOpt[String] match {
         case Some(file_id) => {

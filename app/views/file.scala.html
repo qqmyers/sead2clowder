@@ -68,6 +68,7 @@
 			.adminExists(userOrAnon.email.getOrElse(""))){userIsAdmin=>
 	<script type="text/javascript" src="//ajax.googleapis.com/ajax/libs/swfobject/2.2/swfobject.js"></script>
 	<script src="@routes.Assets.at("javascripts/previews.js")" type="text/javascript"></script>
+	<script src="@routes.Assets.at("javascripts/numUtils.js")" type="text/javascript"></script>
 	<script src="@routes.Assets.at("javascripts/tinymce/tinymce.min.js")" type="text/javascript"></script>
 	<script src="@routes.Assets.at("javascripts/errorRedirect.js")" type="text/javascript"></script>
     <script src="@routes.Assets.at("javascripts/updateLicenseInfo.js")" language="javascript"></script>
@@ -160,13 +161,13 @@
         </div>
 
 			<!-- sections -->
-			@if(sections.size > 0) {
-			  	<div class="row border-top" style="padding-top: 10px">
+			  	<div class="row border-top" id="galleriaTop_@(f.id.toString)" style="padding-top: 10px; display:none;">
 			  	  <div class="col-md-12">
 				  	<div id="galleria_@(f.id.toString)" style="float:left;clear:none;width:600px;height:300px;">
+				  	  @*
 					  	@sections.map { s =>
 					  		@if(s.preview.isDefined) {					  		
-					  			<img src="@api.routes.Previews.download(s.preview.get.id)"
+					  			<img src="@api.routes.Previews.download(s.preview.get.id)"  id="sectionGalleriaImg_@(s.id.toString)"
 					  				class="img-polaroid" height="100px"
 					  			@if(s.startTime.isDefined) {
 					  		 		data-title="Shot" data-description="Starts at @s.startTime seconds."
@@ -180,10 +181,43 @@
 					  		 	></img>
 					  		}
 					  	}
+					  *@
 				  	</div>
 				  </div>
 				</div>
-				<div class="row" style="padding-top: 10px">
+				<script>
+					var galleriaDataArrayCurrent = new Array();
+					@sections.map { s =>
+						@if(s.preview.isDefined) {
+							var thisSectionImg = {};
+							thisSectionImg["image"] = "@api.routes.Previews.download(s.preview.get.id)";
+							@if(s.startTime.isDefined) {
+								thisSectionImg["title"] = "Shot";
+								thisSectionImg["description"] = "Starts at @s.startTime seconds.";
+				  		 	} else {
+				  		 		if (s.area.isDefined) {
+				  		 			thisSectionImg["title"] = "Area";
+									thisSectionImg["description"] = "@s.area.toString";
+				  		 		} else {
+				  		 			thisSectionImg["title"] = "Unknown";
+									thisSectionImg["description"] = "Unknown info";
+				  		 		}
+				  		 	}
+							galleriaDataArrayCurrent.push(thisSectionImg);
+						}
+					}					
+					var galleriaData_@(f.id.toString) = galleriaDataArrayCurrent;
+					if(galleriaDataArrayCurrent.length > 0)
+						$("#galleriaTop_@(f.id.toString)").css("display","block");
+				</script>
+				
+				<div class="row" id="sectionsTop_@(f.id.toString)"
+				@if(sections.size == 0) {
+			  		style="padding-top: 10px; display:none;"
+			  	} else {
+			  		style="padding-top: 10px;"
+			  	}
+			  	>
 				    <div class="col-md-10">
 						<table class="table">
 							<thead>
@@ -196,14 +230,14 @@
 							</thead>
 							<tbody>
 					  		@sections.map { s =>
-					  			<tr>
+					  			<tr id="sectionRow_@(s.id.toString)">
 						  			<td>@(if (s.order > 0) s.order else "")</td>
 						  			<td>
 								  		@if(s.preview.isDefined) {
 								  			<img src="@api.routes.Previews.download(s.preview.get.id)"
 								  				class="img-polaroid" style="max-width: 100px;max-height: 100px;"
 								  			@if(s.startTime.isDefined) {
-								  		 		data-title="Shot" data-description="Starts at @s.startTime seconds." data_time="@s.startTime"
+								  		 		data-title="Shot" data-description="Starts at @s.startTime seconds."
 								  		 	} else {
 								  		 		@if(s.area.isDefined) {
 								  		 			data-title="Area" data-description="@s.area.toString"
@@ -261,7 +295,8 @@
 					    Galleria.loadTheme('@routes.Assets.at("javascripts/galleria-classic/galleria.classic.min.js")');
 
 					    // Initialize Galleria and, if for a video, onclick events for going to time of selected image when clicking main image
-					    Galleria.run('#galleria_@(f.id.toString)', {					   		
+					    Galleria.run('#galleria_@(f.id.toString)', {
+					    		dataSource: galleriaData_@(f.id.toString),
 						        extend: function(options) {
 						          if ($("#ourvideo_@(f.id.toString)").length>0) {
 						            Galleria.log(this); // the gallery instance
@@ -284,7 +319,6 @@
 					    });
 				    });
 			    </script>
-    			}
     		}
     		
     		<script>
@@ -754,8 +788,149 @@
 		        		setTimeout(function(){checkForNewPreviews()}, 1000);
 		     			});
 				}
+    			
+    			function addSection(sectionJSON){
+    				if(sectionJSON.previewId != "None"){
+    					$("#galleriaTop_@(file.id.toString)").css("display","block");
+    				}
+					$("#sectionsTop_@(file.id.toString)").css("display","block");
+								
+					
+					//Formulate new section for sections list
+					var newSection = document.createElement('tr');
+					newSection.setAttribute("id", "sectionRow_"+ sectionJSON.id);
+					var newSectionOrder = document.createElement('td');
+					newSectionOrder.innerHTML = ( isNaN(sectionJSON.order) ? '' : sectionJSON.order);
+					newSection.appendChild(newSectionOrder);
+							
+					var newSectionPreview = document.createElement('td');
+					if(sectionJSON.previewId != "None"){
+						var newSectionImg = document.createElement('img');
+						newSectionImg.setAttribute("src", jsRoutes.api.Previews.download(sectionJSON.previewId).url);
+						newSectionImg.setAttribute("class", "img-polaroid");
+						newSectionImg.setAttribute("style", "max-width: 100px;max-height: 100px;");									
+						if(!isNaN(sectionJSON.startTime)){
+							newSectionImg.setAttribute("data-title", "Shot");
+							newSectionImg.setAttribute("data-description", "Starts at "+sectionJSON.startTime+" seconds.");
+						}else{
+							if(sectionJSON.area != "None"){
+								newSectionImg.setAttribute("data-title", "Area");
+								newSectionImg.setAttribute("data-description", sectionJSON.area);
+							}else{
+								newSectionImg.setAttribute("data-title", "Unknown");
+								newSectionImg.setAttribute("data-description", "Unknown info");
+							}
+						}
+						newSectionPreview.appendChild(newSectionImg);
+					}
+					newSection.appendChild(newSectionPreview);
+					
+					var newSectionInfo = document.createElement('td');
+					if(!isNaN(sectionJSON.startTime)){
+						startTimeInt = parseInt(sectionJSON.startTime);
+						newSectionInfo.innerHTML = Math.floor(startTimeInt/60)+":"+formatNumberLength(startTimeInt % 60,2)
+					}else{
+						if(sectionJSON.area != "None"){
+							newSectionInfo.innerHTML = sectionJSON.area;
+						}else{
+							newSectionInfo.innerHTML = "Unknown info";
+						}
+					}
+					newSection.appendChild(newSectionInfo);
+					
+					var newSectionSearch = document.createElement('td');
+					var newSectionSearchLink = document.createElement('a');
+					newSectionSearchLink.setAttribute("href",jsRoutes.controllers.Search.searchMultimediaIndex(sectionJSON.id).url);
+					newSectionSearchLink.innerHTML = "Similar";
+					newSectionSearch.appendChild(newSectionSearchLink);
+					newSection.appendChild(newSectionSearch);
+					
+					
+					//Formulate new image for Galleria if needed
+					var thisSectionImg = {};
+					if(sectionJSON.previewId != "None"){						
+						thisSectionImg["image"] = jsRoutes.api.Previews.download(sectionJSON.previewId).url;
+						if(!isNaN(sectionJSON.startTime)) {
+							thisSectionImg["title"] = "Shot";
+							thisSectionImg["description"] = "Starts at "+sectionJSON.startTime+" seconds.";
+			  		 	} else {
+			  		 		if (sectionJSON.area != "None") {
+			  		 			thisSectionImg["title"] = "Area";
+								thisSectionImg["description"] = sectionJSON.area;
+			  		 		} else {
+			  		 			thisSectionImg["title"] = "Unknown";
+								thisSectionImg["description"] = "Unknown info";
+			  		 		}
+			  		 	}						
+					}
+					alert(thisSectionImg);
+					
+					
+					//Find the sorted position of the new section in the sections list and (for sections having a preview)
+					//in the Galleria gallery
+					var posInGalleria = 0;
+					var posInList = 0;
+					var currSectionsNum = $("#sectionsTop_@(file.id.toString) tbody > tr").length;
+					if(isNaN(sectionJSON.startTime)){
+						posInGalleria = Galleria.get(0).getDataLength();
+						posInList = currSectionsNum;
+					}
+					else{
+						$("#sectionsTop_@(file.id.toString) tbody > tr").each(function(currIndex) {
+							var minutesSeconds = $(this).children('td')[2].innerHTML.split(":") 
+			        	    if(parseInt(sectionJSON.startTime) < parseInt(minutesSeconds[0])*60+parseInt(minutesSeconds[1])){
+			        	    	 return false;
+			        	    }else{
+			        	    	posInList++;
+			        	    	if($(this).find('img').length == 1)
+			        	    		posInGalleria++;
+			        	    }
+				         });
+					}
+					alert(posInGalleria);
+					
+					
+					//Add new section to sections list and (if needed) Galleria
+					if(sectionJSON.previewId != "None"){
+						Galleria.get(0).splice(posInGalleria, 0, thisSectionImg);
+					}
+					
+					if(posInList == 0)
+						$("#sectionsTop_@(file.id.toString) tbody").prepend(newSection);
+					else if(posInList == currSectionsNum)
+						$("#sectionsTop_@(file.id.toString) tbody").append(newSection);
+					else
+						$("#sectionsTop_@(file.id.toString) tbody > tr:eq("+posInList+")").before(newSection);					
+
+    			}
+    			
+    			function checkForNewSections(){
+    				var request = $.ajax({
+					       type: 'GET',
+					       url: "@api.routes.Files.getSections(file.id)",
+					       contentType: "application/json"
+					     });
+    				request.done(function (respJSON){
+						for(var i = 0; i < respJSON.length; i++){
+							if($("#sectionRow_"+respJSON[i].id).length == 0){
+								addSection(respJSON[i]);	
+							}
+						}
+						setTimeout("checkForNewSections();", 5000);
+		     		});
+				  request.fail(function (jqXHR, textStatus, errorThrown){
+	        			console.error(
+	            			"The following error occured: "+
+	            			textStatus, errorThrown
+	        			);
+	        			//alert("ERROR: " + errorThrown +". Did not check for new sections." );
+	        			setTimeout(function(){checkForNewSections()}, 5000);
+	     			});
+    			}
+    			
     			$(function() {
     				setTimeout(function(){checkForNewPreviews()}, 1000);
+    				setTimeout(function(){checkForNewSections()}, 5000);
     			});
     		</script>
 	
