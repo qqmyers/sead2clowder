@@ -75,6 +75,7 @@ class Files @Inject()(
   extractions: ExtractionService,
   dtsrequests:ExtractionRequestsService,
   previews: PreviewService,
+  sections: SectionService,
   threeD: ThreeDService,
   sqarql: RdfSPARQLService,
   thumbnails: ThumbnailService) extends ApiController {
@@ -1526,7 +1527,35 @@ class Files @Inject()(
             InternalServerError
           }
         }
-    }  
+    }
+  
+  @ApiOperation(value = "Get file sections",
+      notes = "Return the sections of the selected file extracted so far (full description).",
+      responseClass = "None", httpMethod = "GET")
+  def getSections(id: UUID) = SecuredAction(parse.anyContent, authorization = WithPermission(Permission.ShowFile)) {
+      request =>
+        files.get(id) match {
+          case Some(file) => {
+
+            val sectionsByFile = sections.findByFileId(file.id)
+            val sectionsWithPreviews = sectionsByFile.map { s =>
+        	val p = previews.findBySectionId(s.id)
+        	if(p.length>0)
+        		s.copy(preview = Some(p(0)))
+        	else
+        		s.copy(preview = None)
+            }
+            Logger.debug("Sections available: " + sectionsWithPreviews)
+            
+            val list = sectionsWithPreviews.map(sections.toJSON(_))
+            Ok(toJson(list))
+          }
+          case None => {
+            Logger.error("Error getting file" + id);
+            InternalServerError
+          }
+        }
+    }
 
     @ApiOperation(value = "Get metadata of the resource described by the file that were input as XML",
         notes = "",
