@@ -45,7 +45,7 @@
 
   	    	  $("#connectionMeasuring_"+fileId).remove();
   	    	  $(useTab).append(			  
-  	    	     "<video width='750px' id='vid_"+videosIds[usedVersion]+"' controls><source src='" + jsRoutes.api.Previews.download(videosIds[usedVersion]).url  + "'></source></video>"
+  	    	     "<video width='750px' id='ourvideo_"+Configuration.originalFileId+"' controls><source src='" + jsRoutes.api.Previews.download(videosIds[usedVersion]).url  + "'></source></video>"
   	    	  );    		    			    	
   	    	 },
   	    	 error: function(jqXHR, textStatus, errorThrown) { 
