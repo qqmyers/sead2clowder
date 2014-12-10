@@ -1,6 +1,6 @@
 package services.mongodb
 
-import services.{PreviewService, SectionService, CommentService}
+import services.{PreviewService, SectionService, CommentService, TagService}
 import models.{UUID, Tag, Comment, Section}
 import javax.inject.{Inject, Singleton}
 import java.util.Date
@@ -11,13 +11,15 @@ import play.api.Logger
 import com.mongodb.casbah.commons.MongoDBObject
 import com.mongodb.casbah.WriteConcern
 import com.mongodb.casbah.Imports._
+import play.api.libs.json.Json._ 
+import play.api.libs.json.JsString 
 import play.api.libs.json.{JsValue, Json}
 
 /**
  * Created by lmarini on 2/17/14.
  */
 @Singleton
-class MongoDBSectionService @Inject() (comments: CommentService, previews: PreviewService) extends SectionService {
+class MongoDBSectionService @Inject() (comments: CommentService, previews: PreviewService, tags: TagService) extends SectionService {
   
   def listSections(): List[Section] = {
     SectionDAO.findAll.toList
@@ -87,6 +89,14 @@ class MongoDBSectionService @Inject() (comments: CommentService, previews: Previ
     SectionDAO.dao.collection.save(doc)
     id.toString
   }
+  
+  def toJSON(section: Section): JsValue = {
+    toJson(Map[String, JsValue]("id" -> JsString(section.id.toString), "file_id" -> JsString(section.file_id.toString), "order" -> JsString((if (section.order >= 0) section.order.toString else "None")),
+      "startTime" -> JsString((if (section.startTime.isDefined) section.startTime.get.toString else "None")), "endTime" -> JsString((if (section.endTime.isDefined) section.endTime.get.toString else "None")),
+      "area" -> JsString((if (section.area.isDefined) section.area.get.toString else "None")), "previewId" -> JsString((if (section.preview.isDefined) section.preview.get.id.toString else "None")),
+      "tags" -> toJson(for (tag <- section.tags) yield tags.toJSON(tag)) ))
+  }
+  
 }
 
 object SectionDAO extends ModelCompanion[Section, ObjectId] {

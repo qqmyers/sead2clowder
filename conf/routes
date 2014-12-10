@@ -196,6 +196,7 @@ POST    /api/files/:id/tags/remove_all                          @api.Files.remov
 POST    /api/files/:id/previews/:p_id     						@api.Files.attachPreview(id: UUID, p_id: UUID)
 GET		/api/files/:id/listpreviews		  						@api.Files.filePreviewsList(id: UUID)
 GET		/api/files/:id/getPreviews								@api.Files.getPreviews(id: UUID)
+GET		/api/files/:id/getSections								@api.Files.getSections(id: UUID)
 GET		/api/files/:id/isBeingProcessed							@api.Files.isBeingProcessed(id: UUID)
 #GET		/api/files/:three_d_file_id/:filename			    @api.Files.getGeometry(three_d_file_id: UUID, filename)
 GET		/api/files/:three_d_file_id/:filename					@api.Files.getTexture(three_d_file_id: UUID, filename)

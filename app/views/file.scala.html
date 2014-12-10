@@ -59,6 +59,9 @@
 		else if("@p._2" === "Multispectral"){
 			Configuration.multispectralIframe = "@(routes.Assets.at("javascripts/previewers/multispectral/multispectralIframe.html"))";
 		}
+		else if("@p._2" === "Video" || "@p._2" === "Video"){
+			Configuration.originalFileId = "@originalFileId";
+		}
 	</script>
 	<script type="text/javascript" src="@(routes.Assets.at(p._3) + "/" + p._4)"></script>
 }
@@ -168,7 +171,7 @@
 			@if(sections.size > 0) {	
 			  	<div class="row" style="padding-top: 10px">
 			  	  <div class="col-md-6">
-				  	<div id="galleria" style="float:left;clear:none;width:600px;height:300px;">
+				  	<div id="galleria_@(f.id.toString)" style="float:left;clear:none;width:600px;height:300px;">
 					  	@sections.map { s =>
 					  		@if(s.preview.isDefined) {
 					  			<img src="@api.routes.Previews.download(s.preview.get.id)"
@@ -205,13 +208,13 @@
 							<tbody>
 					  		@sections.map { s =>
 					  			<tr>
-						  			<td>@s.order</td>
+						  			<td>@(if (s.order > 0) s.order else "")</td>
 						  			<td>
 								  		@if(s.preview.isDefined) {
 								  			<img src="@api.routes.Previews.download(s.preview.get.id)"
 								  				class="img-polaroid" style="max-width: 100px;max-height: 100px;" 
 								  			@if(s.startTime.isDefined) {
-								  		 		data-title="Shot" data-description="Starts at @s.startTime seconds."
+								  		 		data-title="Shot" data-description="Starts at @s.startTime seconds." data_time="@s.startTime"
 								  		 	} else {
 								  		 		@if(s.area.isDefined) {
 								  		 			data-title="Area" data-description="@s.area.toString"
@@ -243,55 +246,67 @@
 
 				<script src="http://popcornjs.org/code/dist/popcorn-complete.min.js" type="text/javascript"></script>
 				<script>
-				    document.addEventListener("DOMContentLoaded", function () {
-						if ($("#ourvideo").length>0) {				    
-					        var pop = Popcorn("#ourvideo");
+// 				    document.addEventListener("DOMContentLoaded", function () {
+// 						if ($("#ourvideo").length>0) {
+// 					        var pop = Popcorn("#ourvideo");
 					       
-							@sections.map { s =>
-					  			@if(s.startTime.isDefined) {
-							   		pop.code({
-								        start: @s.startTime,
-								        onStart: function() {
-								          var frame = @s.order - 1;
-								          console.log("Jumping to " + frame + " " + @s.startTime); 
-								          $('#galleria').data('galleria').show(frame);
-								        },
-								        onEnd: function() {
-								          //console.log("end");   
-								       }
-								    });
-								}
-						    }
-						}					    
-				    });
+// 							@sections.map { s =>
+// 					  			@if(s.startTime.isDefined) {
+// 							   		pop.code({
+// 								        start: @s.startTime,
+// 								        onStart: function() {
+// 								          var frame = @s.order - 1;
+// 								          console.log("Jumping to " + frame + " " + @s.startTime);
+// 								          $('#galleria').data('galleria').show(frame);
+// 								        },
+// 								        onEnd: function() {
+// 								       }
+// 								    });
+// 								}
+// 						    }
+// 						}
+// 				    });
 		         </script>
 													
-			    <script src="@routes.Assets.at("javascripts/galleria-1.2.9.js")" type="text/javascript"></script>
 			    <script>
 			    	$(function() {
 					    // Load the classic theme
 					    Galleria.loadTheme('@routes.Assets.at("javascripts/galleria-classic/galleria.classic.min.js")');
 					
-					    // Initialize Galleria
-					    Galleria.run('#galleria');
+					    // Initialize Galleria and, if for a video, onclick events for going to time of selected image when clicking main image
+					    Galleria.run('#galleria_@(f.id.toString)', {					   		
+						        extend: function(options) {
+						          if ($("#ourvideo_@(f.id.toString)").length>0) {
+						            Galleria.log(this); // the gallery instance
+						            Galleria.log(options); // the gallery options
 					    
-					    var gallery = $('#galleria').data('galleria');
+						            // listen to when an image is shown
+						            this.bind('image', function(e) {
 					    
-						Galleria.ready(function(options) {
+						                Galleria.log(e); // the event object may contain custom objects, in this case the main image
+						                Galleria.log(e.imageTarget); // the current image
 						
-						    // 'this' is the gallery instance
-						    // 'options' is the gallery options
-						
-						    this.bind('image', function(e) {
-						        Galleria.log('Now viewing ' + e.imageTarget.src);
-						    });
-						});
-				      	 
-				      	
+						                // lets make galleria make the video jump to the time of the selected image when clicking it:
+						                $(e.imageTarget).click(this.proxy(function(){
+						                	var pop = Popcorn("#ourvideo_@(f.id.toString)");
+						                	pop.currentTime(parseInt(this._data[this._active].description.match(/\d+/)[0]));
+						                }));
+						            });
+						          }
+						        }
+					    });
 				    });
 			    </script>
     			}
     		}
+						
+    		<script>
+    					Galleria.ready(function(options) {
+						    this.bind('image', function(e) {
+						        Galleria.log('Now viewing ' + e.imageTarget.src);
+						    });
+						});
+    		</script>
 
 			@if(!file.metadata.isEmpty) {
 					<div id='technicalMetadata_@(file.id)'>
