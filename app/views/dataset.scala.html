@@ -7,6 +7,7 @@
 @import com.mongodb.casbah.Imports.DBObject
 @import services.{DI, AppConfigurationService, UserAccessRightsService}
 @import securesocial.core.{SocialUser, IdentityId, AuthenticationMethod}
+@import play.api.Play.current 
 @implicitFieldConstructor = @{ FieldConstructor(twitterBootstrapInput.f) }
 
 	@printLevel(metadata: scala.collection.immutable.Map[String,Any]) = {		
@@ -123,6 +124,8 @@
 		Configuration.jsPath = "@(routes.Assets.at("javascripts"))";
 		Configuration.imagesPath = "@(routes.Assets.at("images"))";
 		Configuration.stylesheetsPath = "@(routes.Assets.at("stylesheets"))";
+		Configuration.presentationsMediumQualityLimit = @(play.api.Play.configuration.getInt("presentationPreviewsSettings.mediumQualityLimit").getOrElse(0));
+		Configuration.presentationsHighQualityLimit = @(play.api.Play.configuration.getInt("presentationPreviewsSettings.highQualityLimit").getOrElse(0));
     </script>
     <script>
     	window.onload = function() {
