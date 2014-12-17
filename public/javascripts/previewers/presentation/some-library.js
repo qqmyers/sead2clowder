@@ -9,8 +9,10 @@
   var useTab = Configuration.tab;
   var referenceUrl = Configuration.url;
   var fileId = Configuration.id;
+  var origFileId = Configuration.originalFileId;
   
   $(useTab).append("<br/>");
+  $(useTab).append("<span style='display:none;' id='ourvideopresentation_"+origFileId+"'>");
   $(useTab).append("<p id='connectionMeasuring_"+Configuration.id+"'>Please wait while we gauge your Web connection speed to decide which quality version to show you.</p>");
   
   var mediumQualityLimit = (Configuration.presentationsMediumQualityLimit > 0 ? Configuration.presentationsMediumQualityLimit : 256) * 1000;
@@ -45,7 +47,7 @@
 
   	    	  $("#connectionMeasuring_"+fileId).remove();
   	    	  $(useTab).append(			  
-  	    	     "<video width='750px' id='ourvideo_"+Configuration.originalFileId+"' controls><source src='" + jsRoutes.api.Previews.download(videosIds[usedVersion]).url  + "'></source></video>"
+  	    	     "<video width='750px' id='ourvideo_"+origFileId+"' controls><source src='" + jsRoutes.api.Previews.download(videosIds[usedVersion]).url  + "'></source></video>"
   	    	  );    		    			    	
   	    	 },
   	    	 error: function(jqXHR, textStatus, errorThrown) { 

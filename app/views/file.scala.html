@@ -276,7 +276,7 @@
 					    // Initialize Galleria and, if for a video, onclick events for going to time of selected image when clicking main image
 					    Galleria.run('#galleria_@(f.id.toString)', {					   		
 						        extend: function(options) {
-						          if ($("#ourvideo_@(f.id.toString)").length>0) {
+						          if ($("#ourvideo_@(f.id.toString)").length + $("#ourvideopresentation_@(f.id.toString)").length >0) {
 						            Galleria.log(this); // the gallery instance
 						            Galleria.log(options); // the gallery options
 					    
