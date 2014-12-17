@@ -31,6 +31,7 @@ class Datasets @Inject()(
   collections: CollectionService,
   comments: CommentService,
   sections: SectionService,
+  previewsService: PreviewService,
   extractions: ExtractionService,
   accessRights: UserAccessRightsService,
   sparql: RdfSPARQLService,
@@ -164,8 +165,17 @@ class Datasets @Inject()(
 	            case ActivityFound =>
 	          }
 
+	          var filesInDatasetWithSections: List[File] = List.empty
+	          for (f <- filesInDataset) {
+	        	    val sectionsByFile = sections.findByFileId(UUID(f.id.toString))
+			        val sectionsWithPreviews = sectionsByFile.map { s =>
+			          val p = previewsService.findBySectionId(s.id)
+			          s.copy(preview = Some(p(0)))
+			        }
+	        	    filesInDatasetWithSections = filesInDatasetWithSections :+ f.copy(sections = sectionsWithPreviews)
+	          }
 
-	          val datasetWithFiles = dataset.copy(files = filesInDataset)
+	          val datasetWithFiles = dataset.copy(files = filesInDatasetWithSections)
 	          val previewers = Previewers.findPreviewers
 	          val previewslist = for (f <- datasetWithFiles.files) yield {
 	            val pvf = for (p <- previewers; pv <- f.previews; if (f.showPreviews.equals("DatasetLevel")) && (p.contentType.contains(pv.contentType))) yield {
