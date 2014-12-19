@@ -19,7 +19,9 @@ import javax.inject.Inject
 import java.util.Date
 import scala.sys.SystemProperties
 import securesocial.core.Identity
-
+import play.api.libs.ws.WS
+import play.api.libs.ws.Response
+import scala.concurrent.Future
 
 /**
  * Manage files.
@@ -52,7 +54,8 @@ class Files @Inject() (
    * File info.
    */
   def file(id: UUID) = SecuredAction(authorization = WithPermission(Permission.ShowFile)) { implicit request =>
-    implicit val user = request.user
+   Async {
+    implicit val user = request.user   
     Logger.info("GET file with id " + id)
     files.get(id) match {
       case Some(file) => {
@@ -87,19 +90,17 @@ class Files @Inject() (
           }
         }
         Logger.debug("Previewers available: " + previewsWithPreviewer)
-
-
         // add sections to file
         val sectionsByFile = sections.findByFileId(file.id)
         Logger.debug("Sections: " + sectionsByFile)
         val sectionsWithPreviews = sectionsByFile.map { s =>
-          val p = previews.findBySectionId(s.id)
-          if(p.length>0)
+        	val p = previews.findBySectionId(s.id)
+        	if(p.length>0)
         		s.copy(preview = Some(p(0)))
         	else
         		s.copy(preview = None)
         }
-        Logger.debug("Sections available: " + sectionsWithPreviews) 
+        Logger.debug("Sections available: " + sectionsWithPreviews)
 
         //Search whether file is currently being processed by extractor(s)
         var isActivity = false
@@ -122,15 +123,47 @@ class Files @Inject() (
         
         val isRDFExportEnabled = current.plugin[RDFExportService].isDefined
         
-        Ok(views.html.file(file, id.stringify, commentsByFile, previewsWithPreviewer, sectionsWithPreviews, isActivity, fileDataset, datasetsOutside, userMetadata, isRDFExportEnabled))
+        //get all possible output formats for this content type 
+        Logger.debug("content type = " + file.contentType)
+        
+        //for content type with multiple parts (application/pdf) get the ending part (pdf)
+        val ct = file.contentType
+        val endingIndex =(ct.replace("/", ".").lastIndexOf(".")) + 1
+        val contentTypeEnding = ct.substring(endingIndex, ct.length)
+        Logger.debug("content type ends in " + contentTypeEnding)            
+        //get possible output formats for the file's input type 
+       
+
+       
+        
+        
+        var outputs: Future[Response] = null         
+        outputs = WS.url("http://dap1.ncsa.illinois.edu:8184/inputs/" + contentTypeEnding).get()    
+        
+        ////////////
+//        var downloadRoute = "routes.Files.download(UUID(" + id.stringify + "), gif)";
+        var downloadRoute = "/files/downloadAsFormat/" + id.stringify + "/gif"
+        ///////////////////
+        //val outputs:Future[Response] = WS.url("http://localhost:8184/inputs/" + contentTypeEnding).get()
+        //future array of results
+        var farray = outputs.map(_.body.split("\n"))
+        farray.map(_.map(el=>Logger.debug("possibe output format = " + el)))
+        var outputsListFuture = farray.map(a=>a.toList)           
+        for { 
+          outputsList<-outputsListFuture
+        } yield {
+          Ok(views.html.file(file, id.stringify, commentsByFile, previewsWithPreviewer, sectionsWithPreviews, isActivity, fileDataset, datasetsOutside, userMetadata, isRDFExportEnabled, outputsList))
+        }
       }
       case None => {
         val error_str = "The file with id " + id + " is not found."
         Logger.error(error_str)
-        NotFound(toJson(error_str))
+        //NotFound(toJson(error_str))
+        Future(NotFound(toJson(error_str)))  
         }
     }
-  }
+   }//end of Async {
+  }  
   
   /**
    * List a specific number of files before or after a certain date.
@@ -557,6 +590,74 @@ def uploadExtract() = SecuredAction(parse.multipartFormData, authorization = Wit
           BadRequest(toJson(s"The given id $id is not a valid ObjectId."))
       }
   }
+  
+  def downloadAs(id: UUID, format: String) = SecuredAction(authorization = WithPermission(Permission.DownloadFiles)) { request =>    
+      if (UUID.isValid(id.stringify)) {
+          //Check the license type before doing anything. 
+          files.get(id) match {
+              case Some(file) => {                                                                                                             
+                  if (file.checkLicenseForDownload(request.user)) {
+                      files.getBytes(id) match {
+                      case Some((inputStream, filename, contentType, contentLength)) => {
+                          request.headers.get(RANGE) match {
+                          case Some(value) => {
+                              val range: (Long, Long) = value.substring("bytes=".length).split("-") match {
+                              case x if x.length == 1 => (x.head.toLong, contentLength - 1)
+                              case x => (x(0).toLong, x(1).toLong)
+                          }
+                          range match { case (start,end) =>
+
+                          inputStream.skip(start)
+                          import play.api.mvc.{ SimpleResult, ResponseHeader }
+                          SimpleResult(
+                                  header = ResponseHeader(PARTIAL_CONTENT,
+                                          Map(
+                                                  CONNECTION -> "keep-alive",
+                                                  ACCEPT_RANGES -> "bytes",
+                                                  CONTENT_RANGE -> "bytes %d-%d/%d".format(start, end, contentLength),
+                                                  CONTENT_LENGTH -> (end - start + 1).toString,
+                                                  CONTENT_TYPE -> contentType
+                                                  )
+                                          ),
+                                          body = Enumerator.fromStream(inputStream)
+                                  )
+                          }
+                          }
+                          case None => {
+                              Ok.chunked(Enumerator.fromStream(inputStream))
+                              .withHeaders(CONTENT_TYPE -> contentType)
+                              .withHeaders(CONTENT_DISPOSITION -> ("attachment; filename=" + filename))
+
+                          }
+                          }
+                      }
+                      case None => {
+                          Logger.error("Error getting file" + id)
+                          BadRequest("Invalid file ID")
+                      }
+                      }   
+                  }
+                  else {
+                      //Case where the checkLicenseForDownload fails
+                      Logger.error("The file is not able to be downloaded")
+                      BadRequest("The license for this file does not allow it to be downloaded.")
+                  }
+              }
+              case None => {
+                  //Case where the file could not be found
+                  Logger.info(s"Error getting the file with id $id.")
+                  BadRequest("Invalid file ID")
+              }
+          }
+               
+      }
+      else {
+          Logger.error(s"The given id $id is not a valid ObjectId.")
+          BadRequest(toJson(s"The given id $id is not a valid ObjectId."))
+      }
+  }
+  
+  
 
   def thumbnail(id: UUID) = SecuredAction(authorization=WithPermission(Permission.ShowFile)) { implicit request =>
     thumbnails.getBlob(id) match {

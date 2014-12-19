@@ -10,10 +10,7 @@ import securesocial.core.providers.utils.RoutesHelper
 import play.api.Play.current
 import play.api.libs.concurrent.Execution.Implicits._
 import play.api.libs.concurrent.Promise
-import play.api.libs.json._
-import play.api.libs.json.Json
-import play.api.libs.json.Json._
-import play.api.libs.ws.{WS, Response}
+import play.api.libs.json.{Json, JsValue}
 import models.{AppConfiguration, AppAppearance, VersusIndexTypeName, UUID}
 import play.api.Logger
 import play.api.data.Form
@@ -28,9 +25,7 @@ import scala.concurrent._
  *
  */
 @Singleton
-
 class Admin @Inject() (appConfiguration: AppConfigurationService, appAppearance: AppAppearanceService, sectionIndexInfo: SectionIndexInfoService) extends SecuredController {
-
 
   private val themes = "bootstrap/bootstrap.css" ::
     "bootstrap-amelia.min.css" ::
@@ -38,7 +33,7 @@ class Admin @Inject() (appConfiguration: AppConfigurationService, appAppearance:
 
   def main = SecuredAction(authorization = WithPermission(Permission.Admin)) { request =>
     val themeId = themes.indexOf(getTheme)
-    Logger.debug("Theme id " + themeId)
+    Logger.trace("Theme id " + themeId)
     val appAppearanceGet = appAppearance.getDefault.get
     val appConfigGet = appConfiguration.getDefault.get
     implicit val user = request.user
