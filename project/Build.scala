@@ -12,9 +12,10 @@ import NativePackagerKeys._
 object ApplicationBuild extends Build {
 
   val appName = "medici-play"
+
   val appVersion = "1.0-SNAPSHOT"
-  val scalaVersion = "2.10.4"
-  lazy val root = Project(appName, file(".")).enablePlugins(play.PlayScala)
+
+  scalaVersion := "2.10.4"
 
   val appDependencies = Seq(
     filters,
@@ -63,7 +64,6 @@ object ApplicationBuild extends Build {
     "org.irods.jargon" % "jargon-core" % "3.3.3-beta1"
   )
 
-
   // Only compile the bootstrap bootstrap.less file and any other *.less file in the stylesheets directory 
   def customLessEntryPoints(base: File): PathFinder = (
     (base / "app" / "assets" / "stylesheets" / "bootstrap" * "bootstrap.less") +++
@@ -72,6 +72,8 @@ object ApplicationBuild extends Build {
   )
 
   val main = Project(appName, file(".")).enablePlugins(play.PlayScala).settings(
+    version := appVersion,
+    libraryDependencies ++= appDependencies,
     lessEntryPoints <<= baseDirectory(customLessEntryPoints),
     testOptions in Test := Nil, // overwrite spec2 config to use scalatest instead
     routesImport += "models._",
