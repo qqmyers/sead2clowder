@@ -55,6 +55,8 @@ import org.apache.commons.io.FileUtils
 import play.api.libs.MimeTypes
 import play.api.http.ContentTypes
 import java.io.InputStream
+import scala.concurrent.Await
+import scala.concurrent.duration.Duration
 
 
 /**
@@ -310,7 +312,7 @@ class Extractions @Inject() (
     notes = " A list of status of all extractors responsible for extractions on the file and the final status of extraction job",
     responseClass = "None", httpMethod = "GET")
   def checkExtractorsStatus(id: UUID) = SecuredAction(parse.anyContent, authorization = WithPermission(Permission.ShowFile)) { implicit request =>
-    Async {
+//    Async {
       current.plugin[RabbitmqPlugin] match {
 
         case Some(plugin) => {
@@ -322,28 +324,35 @@ class Extractions @Inject() (
                   (elist._1, elist._2)
               }
               //Get the bindings
-              var blist = plugin.getBindings()
-              for {
-                rkeyResponse <- blist
-              } yield {
-                val status = computeStatus(rkeyResponse, file, l)
+			  //Change from Blocking to Non-Blocking  
+              var blist = Await.result(plugin.getBindings(),Duration.Inf)
+//              var blist = plugin.getBindings()
+//              for {
+//                rkeyResponse <- blist
+//              } yield {
+//                val status = computeStatus(rkeyResponse, file, l)
+//                l += "Status" -> status
+//                Logger.debug(" CheckStatus: l.toString : " + l.toString)
+//                Ok(toJson(l.toMap))
+//              } //end of yield
+                val status = computeStatus(blist, file, l)
                 l += "Status" -> status
                 Logger.debug(" CheckStatus: l.toString : " + l.toString)
                 Ok(toJson(l.toMap))
-              } //end of yield
-
             } //end of some file
             case None => {
-              Future(Ok("no file"))
+//              Future(Ok("no file"))
+            	Ok("no file")
             }
           } //end of match file
         }
 
         case None => {
-          Future(Ok("No Rabbitmq Service"))
+//          Future(Ok("No Rabbitmq Service"))
+        	Ok("No Rabbitmq Service")
         }
       }
-    } //Async ends
+//    } //Async ends
   }
 
   /**
@@ -357,7 +366,7 @@ class Extractions @Inject() (
     notes = " Retruns Status of extractions and metadata extracted so far ",
     responseClass = "None", httpMethod = "GET")
   def fetch(id: UUID) = SecuredAction(parse.anyContent, authorization = WithPermission(Permission.ShowFile)) { implicit request =>
-    Async {
+//    Async {
       current.plugin[RabbitmqPlugin] match {
 
         case Some(plugin) => {
@@ -369,14 +378,27 @@ class Extractions @Inject() (
                 val l = extractions.getExtractorList(file.id) map {
                   elist => (elist._1, elist._2)
                 }
-
-                var blist = plugin.getBindings()
-
-                for {
-                  rkeyResponse <- blist
-                } yield {
-
-                  val status = computeStatus(rkeyResponse, file, l)
+			    //Change from Blocking to Non-Blocking                  
+                var blist = Await.result(plugin.getBindings(),Duration.Inf)
+//                var blist = plugin.getBindings()
+//
+//                for {
+//                  rkeyResponse <- blist
+//                } yield {
+//
+//                  val status = computeStatus(rkeyResponse, file, l)
+//                  val jtags = FileOP.extractTags(file)
+//                  val jpreviews = FileOP.extractPreviews(id)
+//                  val vdescriptors=files.getVersusMetadata(id) match {
+//                  													case Some(vd)=>api.routes.Files.getVersusMetadataJSON(id).toString
+//                  													case None=> ""
+//                  													}
+//                  Logger.debug("jtags: " + jtags.toString)
+//                  Logger.debug("jpreviews: " + jpreviews.toString)
+//
+//                  Ok(Json.obj("file_id" -> id.stringify, "filename" -> file.filename, "Status" -> status, "tags" -> jtags, "previews" -> jpreviews, "versus descriptors url" -> vdescriptors))
+//                } //end of yield
+                  val status = computeStatus(blist, file, l)
                   val jtags = FileOP.extractTags(file)
                   val jpreviews = FileOP.extractPreviews(id)
                   val vdescriptors=files.getVersusMetadata(id) match {
@@ -387,28 +409,30 @@ class Extractions @Inject() (
                   Logger.debug("jpreviews: " + jpreviews.toString)
 
                   Ok(Json.obj("file_id" -> id.stringify, "filename" -> file.filename, "Status" -> status, "tags" -> jtags, "previews" -> jpreviews, "versus descriptors url" -> vdescriptors))
-                } //end of yield
 
               } //end of some file
               case None => {
                 val error_str = "The file with id " + id + " is not found."
                 Logger.error(error_str)
-                Future(NotFound(toJson(error_str)))
+//                Future(NotFound(toJson(error_str)))
+                NotFound(toJson(error_str))
               }
             } //end of match file
           } else {
             val error_str = "The given id " + id + " is not a valid ObjectId."
             Logger.error(error_str)
-            Future(BadRequest(Json.toJson(error_str)))
+//            Future(BadRequest(Json.toJson(error_str)))
+            BadRequest(Json.toJson(error_str))
           }
 
         }
 
         case None => {
-          Future(Ok("No Rabbitmq Service"))
+//          Future(Ok("No Rabbitmq Service"))
+        	Ok("No Rabbitmq Service")
         }
       }
-    } //Async 
+//    } //Async 
   }
 
   def computeStatus(response: Response, file: models.File, l: scala.collection.mutable.Map[String, String]): String = {

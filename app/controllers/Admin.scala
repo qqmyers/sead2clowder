@@ -14,21 +14,19 @@ import securesocial.core.providers.utils.RoutesHelper
 import services.{AppConfigurationService, VersusPlugin}
 import play.api.Play.current
 import play.api.libs.concurrent.Execution.Implicits._
-
 import models.AppConfiguration
 import models.AppAppearance
 import play.api.libs.json.Json
 import play.api.libs.json.Json._
 import play.api.Logger
-
 import scala.concurrent._
 import play.api.libs.ws.WS
 import play.api.libs.ws.Response
 import play.api.libs.concurrent.Promise
 import javax.inject.{Inject, Singleton}
-
 import play.api.data.Form
 import play.api.data.Forms._
+import scala.concurrent.duration.Duration
 
 /**
  * Administration pages.
@@ -74,27 +72,29 @@ class Admin @Inject() (appConfiguration: AppConfigurationService) extends Secure
   def getAdapters() = SecuredAction(authorization = WithPermission(Permission.Admin)) {
     request =>
 
-      Async {
+//      Async {
         current.plugin[VersusPlugin] match {
 
           case Some(plugin) => {
-
-            var adapterListResponse = plugin.getAdapters()
-
-            for {
-              adapterList <- adapterListResponse
-            } yield {
-              Ok(adapterList.json)
-            }
-
+        	//Change to Non-Blocking
+            var adapterListResponse = Await.result(plugin.getAdapters(),Duration.Inf)  
+//            var adapterListResponse = plugin.getAdapters()
+//
+//            for {
+//              adapterList <- adapterListResponse
+//            } yield {
+//              Ok(adapterList.json)
+//            }
+            Ok(adapterListResponse.json)		
           } //case some
 
           case None => {
-            Future(Ok("No Versus Service"))
+//            Future(Ok("No Versus Service"))
+            Ok("No Versus Service")
           }
         } //match
 
-      } //Async
+//      } //Async
 
   }
 
@@ -102,28 +102,30 @@ class Admin @Inject() (appConfiguration: AppConfigurationService) extends Secure
   def getExtractors() = SecuredAction(authorization = WithPermission(Permission.Admin)) {
     request =>
 
-      Async {
+//      Async {
         current.plugin[VersusPlugin] match {
 
           case Some(plugin) => {
-
-            var extractorListResponse = plugin.getExtractors()
-
-            for {
-              extractorList <- extractorListResponse
-            } yield {
-              Ok(extractorList.json)
-            }
+        	//Change to Non-Blocking
+            var extractorListResponse = Await.result(plugin.getExtractors(),Duration.Inf)  
+//            var extractorListResponse = plugin.getExtractors()
+//
+//            for {
+//              extractorList <- extractorListResponse
+//            } yield {
+//              Ok(extractorList.json)
+//            }
             //Ok(adapterListResponse)
-
+            Ok(extractorListResponse.json)
           } //case some
 
           case None => {
-            Future(Ok("No Versus Service"))
+//            Future(Ok("No Versus Service"))
+        	  Ok("No Versus Service")
           }
         } //match
 
-      } //Async
+//      } //Async
 
   }
   
@@ -131,28 +133,30 @@ class Admin @Inject() (appConfiguration: AppConfigurationService) extends Secure
   def getMeasures() = SecuredAction(authorization=WithPermission(Permission.Admin)){
      request =>
       
-    Async{  
+//    Async{  
     	current.plugin[VersusPlugin] match {
      
         case Some(plugin)=>{
-        	 
-        	var measureListResponse= plugin.getMeasures()
-        	 
-        	for{
-        	  measureList<-measureListResponse
-        	}yield{
-        	 Ok(measureList.json)
-        	}
+			// Change from Blocking to Non-Blocking            
+        	var measureListResponse= Await.result(plugin.getMeasures(),Duration.Inf)  
+//        	var measureListResponse= plugin.getMeasures()
+//        	 
+//        	for{
+//        	  measureList<-measureListResponse
+//        	}yield{
+//        	 Ok(measureList.json)
+//        	}
         	 //Ok(adapterListResponse)
-        	         
+        	Ok(measureListResponse.json) 
             }//case some
          
 		 case None=>{
-		      Future(Ok("No Versus Service"))
+//		      Future(Ok("No Versus Service"))
+		    Ok("No Versus Service")
 		       }     
 		 } //match
     
-   } //Async
+//   } //Async
         
   }
 
@@ -160,34 +164,36 @@ class Admin @Inject() (appConfiguration: AppConfigurationService) extends Secure
   def getIndexers() = SecuredAction(authorization = WithPermission(Permission.Admin)) {
     request =>
 
-      Async {
+//      Async {
         current.plugin[VersusPlugin] match {
 
           case Some(plugin) => {
-
-            var indexerListResponse = plugin.getIndexers()
-
-            for {
-              indexerList <- indexerListResponse
-            } yield {
-              Ok(indexerList.json)
-            }
-
+			// Change from Blocking to Non-Blocking  
+            var indexerListResponse = Await.result(plugin.getIndexers(),Duration.Inf)
+//            var indexerListResponse = plugin.getIndexers()
+//
+//            for {
+//              indexerList <- indexerListResponse
+//            } yield {
+//              Ok(indexerList.json)
+//            }
+			Ok(indexerListResponse.json)
           } //case some
 
           case None => {
-            Future(Ok("No Versus Service"))
+//            Future(Ok("No Versus Service"))
+        	Ok("No Versus Service")
           }
         } //match
 
-      } //Async
+//      } //Async
 
   }
 
   // Get adapter, extractor,measure and indexer value and send it to VersusPlugin to send a create index request to Versus 
   def createIndex() = SecuredAction(parse.json, authorization = WithPermission(Permission.Admin)) {
     implicit request =>
-      Async {
+//      Async {
         current.plugin[VersusPlugin] match {
 
           case Some(plugin) => {
@@ -197,106 +203,126 @@ class Admin @Inject() (appConfiguration: AppConfigurationService) extends Secure
             val measure = (request.body \ "measure").as[String]
             val indexer = (request.body \ "indexer").as[String]
             Logger.debug("Form Parameters: " + adapter + " " + extractor + " " + measure + " " + indexer);
-            var reply = plugin.createIndex(adapter, extractor, measure, indexer)
-            for (response <- reply) yield Ok(response.body)
+			// Change from Blocking to Non-Blocking  
+            var reply = Await.result(plugin.createIndex(adapter, extractor, measure, indexer),Duration.Inf)    	
+//            var reply = plugin.createIndex(adapter, extractor, measure, indexer)
+//            for (response <- reply) yield Ok(response.body)
+            Ok(reply.body)
           } //case some
 
           case None => {
-            Future(Ok("No Versus Service"))
+//            Future(Ok("No Versus Service"))
+            Ok("No Versus Service")
           }
         } //match
 
-      } //Async
+//      } //Async
   }
 
   //Get list the of indexes from Versus 
   def getIndexes() = SecuredAction(authorization = WithPermission(Permission.Admin)) {
     request =>
 
-      Async {
+//      Async {
         current.plugin[VersusPlugin] match {
 
           case Some(plugin) => {
            Logger.debug("::::Inside getIndexes()::::")
-            var indexListResponse = plugin.getIndexes()
+			// Change from Blocking to Non-Blocking  
+            var indexListResponse = Await.result(plugin.getIndexes(),Duration.Inf)              
+//            var indexListResponse = plugin.getIndexes()
+//
+//            for {
+//              indexList <- indexListResponse
+//            } yield {
+//             if(indexList.body.isEmpty())
+//              { 
+//                Logger.debug(":::::::::::No:indexList.json")
+//                Ok("No Index")
+//                
+//              }
+//                else{
+//                  Ok(indexList.json)
+//                }
+//            }
+			if(indexListResponse.body.isEmpty())
+			{ 
+				Logger.debug(":::::::::::No:indexList.json")
+				Ok("No Index")
 
-            for {
-              indexList <- indexListResponse
-            } yield {
-             if(indexList.body.isEmpty())
-              { 
-                Logger.debug(":::::::::::No:indexList.json")
-                Ok("No Index")
-                
-              }
-                else{
-                  Ok(indexList.json)
-                }
-            }
+			}
+			else{
+				Ok(indexListResponse.json)
+			}
 
           } //case some
 
           case None => {
-            Future(Ok("No Versus Service"))
+//            Future(Ok("No Versus Service"))
+			Ok("No Versus Service")
           }
         } //match
 
-      } //Async
+//      } //Async
   }
 
   //build a specific index in Versus
   def buildIndex(id: String) = SecuredAction(authorization = WithPermission(Permission.Admin)) {
     request =>
 
-      Async {
+//      Async {
         current.plugin[VersusPlugin] match {
 
           case Some(plugin) => {
-
-            var buildResponse = plugin.buildIndex(id)
-
-            for {
-              buildRes <- buildResponse
-            } yield {
-              Ok(buildRes.body)
-            }
-
+			// Change from Blocking to Non-Blocking  
+            var buildResponse = Await.result(plugin.buildIndex(id),Duration.Inf) 
+//            var buildResponse = plugin.buildIndex(id)
+//
+//            for {
+//              buildRes <- buildResponse
+//            } yield {
+//              Ok(buildRes.body)
+//            }
+			Ok(buildResponse.body)
           } //case some
 
           case None => {
-            Future(Ok("No Versus Service"))
+//            Future(Ok("No Versus Service"))
+			Ok("No Versus Service")
           }
         } //match
 
-      }
+//      }
 
   }
   
   //Delete a specific index in Versus
   def deleteIndex(id: String)=SecuredAction(authorization=WithPermission(Permission.Admin)){
     request =>
-    Async{  
+//    Async{  
       current.plugin[VersusPlugin] match {
      
         case Some(plugin)=>{
-        	 
-        	var deleteIndexResponse= plugin.deleteIndex(id)
-        	 
-        	for{
-        	  deleteIndexRes<-deleteIndexResponse
-        	}yield{
-        	 Ok(deleteIndexRes.body)
-        	}
-        	 
+			// Change from Blocking to Non-Blocking  
+            var deleteIndexResponse = Await.result(plugin.deleteIndex(id),Duration.Inf)         	 
+//        	var deleteIndexResponse= plugin.deleteIndex(id)
+//        	 
+//        	for{
+//        	  deleteIndexRes<-deleteIndexResponse
+//        	}yield{
+//        	 Ok(deleteIndexRes.body)
+//        	}
+        	Ok(deleteIndexResponse.body)
         	         
             }//case some
          
 		 case None=>{
-		      Future(Ok("No Versus Service"))
+//		      Future(Ok("No Versus Service"))
+			Ok("No Versus Service")		   
 		       }     
 		 } //match
     
-    }
+//    }
   }
 
   //Delete all indexes in Versus
@@ -304,27 +330,29 @@ class Admin @Inject() (appConfiguration: AppConfigurationService) extends Secure
   def deleteAllIndexes() = SecuredAction(authorization = WithPermission(Permission.Admin)) {
     request =>
 
-      Async {
+//      Async {
         current.plugin[VersusPlugin] match {
         	
           case Some(plugin) => {
-
-            var deleteAllResponse = plugin.deleteAllIndexes()
-
-            for {
-              deleteAllRes <- deleteAllResponse
-            } yield {
-              Ok(deleteAllRes.body)
-            }
-
+			// Change from Blocking to Non-Blocking  
+			var deleteAllResponse = Await.result(plugin.deleteAllIndexes,Duration.Inf) 
+//            var deleteAllResponse = plugin.deleteAllIndexes()
+//
+//            for {
+//              deleteAllRes <- deleteAllResponse
+//            } yield {
+//              Ok(deleteAllRes.body)
+//            }
+			Ok(deleteAllResponse.body)
           } //case some
 
           case None => {
-            Future(Ok("No Versus Service"))
+//            Future(Ok("No Versus Service"))
+			Ok("No Versus Service")            
           }
         } //match
 
-      }
+//      }
   }
   
   def setTheme() = SecuredAction(parse.json, authorization = WithPermission(Permission.Admin)) { implicit request =>

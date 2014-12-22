@@ -1058,7 +1058,8 @@ class Files @Inject()(
                   }
                   case None => {
                     //IMPORTANT: Setting CONTENT_LENGTH header here introduces bug! 
-                    Ok.stream(Enumerator.fromStream(inputStream))
+                    Ok.chunked(Enumerator.fromStream(inputStream))
+                    //Ok.stream()
                       .withHeaders(CONTENT_TYPE -> contentType)
                       //.withHeaders(CONTENT_LENGTH -> contentLength.toString)
                       .withHeaders(CONTENT_DISPOSITION -> ("attachment; filename=" + filename))

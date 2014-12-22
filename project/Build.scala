@@ -1,11 +1,20 @@
 import sbt._
 import Keys._
-import play.Project._
+import play.Play.autoImport._
+import PlayKeys._
+import play.PlayScala
+import play.twirl.sbt.Import.TwirlKeys
+//import play.Project._
+import com.typesafe.sbt.packager.Keys._
+import com.typesafe.sbt.SbtNativePackager._
+import NativePackagerKeys._
 
 object ApplicationBuild extends Build {
 
   val appName = "medici-play"
   val appVersion = "1.0-SNAPSHOT"
+  val scalaVersion = "2.10.4"
+  lazy val root = Project(appName, file(".")).enablePlugins(play.PlayScala)
 
   val appDependencies = Seq(
     filters,
@@ -62,12 +71,12 @@ object ApplicationBuild extends Build {
     (base / "app" / "assets" / "stylesheets" * "*.less")
   )
 
-  val main = play.Project(appName, appVersion, appDependencies).settings(
+  val main = Project(appName, file(".")).enablePlugins(play.PlayScala).settings(
     lessEntryPoints <<= baseDirectory(customLessEntryPoints),
     testOptions in Test := Nil, // overwrite spec2 config to use scalatest instead
     routesImport += "models._",
     routesImport += "Binders._",
-    templatesImport += "org.bson.types.ObjectId",
+    TwirlKeys.templateImports += "org.bson.types.ObjectId",
     resolvers += Resolver.url("sbt-plugin-releases", url("http://repo.scala-sbt.org/scalasbt/sbt-plugin-releases/"))(Resolver.ivyStylePatterns),
     resolvers += Resolver.url("sbt-plugin-snapshots", url("http://repo.scala-sbt.org/scalasbt/sbt-plugin-snapshots/"))(Resolver.ivyStylePatterns),
     resolvers += "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots",
