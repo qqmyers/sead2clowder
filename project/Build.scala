@@ -14,9 +14,9 @@ object ApplicationBuild extends Build {
   val appName = "medici-play"
 
   val appVersion = "1.0-SNAPSHOT"
-
+ sourcePositionMappers := Nil
   scalaVersion := "2.10.4"
-
+  //lazy val root = (project in file(".")).enablePlugins(PlayScala)
   val appDependencies = Seq(
     filters,
     "com.novus" %% "salat" % "1.9.5" exclude("org.scala-stm", "scala-stm_2.10.0"),
@@ -74,8 +74,11 @@ object ApplicationBuild extends Build {
   val main = Project(appName, file(".")).enablePlugins(play.PlayScala).settings(
     version := appVersion,
     libraryDependencies ++= appDependencies,
+    libraryDependencies += ws,
+    libraryDependencies += "com.github.scala-incubator.io" %% "scala-io-file" % "0.4.2",
     lessEntryPoints <<= baseDirectory(customLessEntryPoints),
     testOptions in Test := Nil, // overwrite spec2 config to use scalatest instead
+    //routesImport ++= Seq("scala.binders._"),
     routesImport += "models._",
     routesImport += "Binders._",
     TwirlKeys.templateImports += "org.bson.types.ObjectId",
