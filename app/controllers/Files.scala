@@ -22,6 +22,8 @@ import securesocial.core.Identity
 import play.api.libs.ws.WS
 import play.api.libs.ws.Response
 import scala.concurrent.Future
+import util.Utility
+import java.net.URL
 
 /**
  * Manage files.
@@ -136,13 +138,14 @@ class Files @Inject() (
 
        
         
-        
+        val polyglotInputsURL: String = play.api.Play.configuration.getString("polyglotInputsURL").getOrElse("")
         var outputs: Future[Response] = null         
-        outputs = WS.url("http://dap1.ncsa.illinois.edu:8184/inputs/" + contentTypeEnding).get()    
+        outputs = WS.url(polyglotInputsURL + contentTypeEnding).get()    
+            
         
         ////////////
 //        var downloadRoute = "routes.Files.download(UUID(" + id.stringify + "), gif)";
-        var downloadRoute = "/files/downloadAsFormat/" + id.stringify + "/gif"
+       // var downloadRoute = "/files/downloadAsFormat/" + id.stringify + "/gif"
         ///////////////////
         //val outputs:Future[Response] = WS.url("http://localhost:8184/inputs/" + contentTypeEnding).get()
         //future array of results
@@ -591,70 +594,86 @@ def uploadExtract() = SecuredAction(parse.multipartFormData, authorization = Wit
       }
   }
   
-  def downloadAs(id: UUID, format: String) = SecuredAction(authorization = WithPermission(Permission.DownloadFiles)) { request =>    
-      if (UUID.isValid(id.stringify)) {
-          //Check the license type before doing anything. 
-          files.get(id) match {
-              case Some(file) => {                                                                                                             
-                  if (file.checkLicenseForDownload(request.user)) {
-                      files.getBytes(id) match {
-                      case Some((inputStream, filename, contentType, contentLength)) => {
-                          request.headers.get(RANGE) match {
-                          case Some(value) => {
-                              val range: (Long, Long) = value.substring("bytes=".length).split("-") match {
-                              case x if x.length == 1 => (x.head.toLong, contentLength - 1)
-                              case x => (x(0).toLong, x(1).toLong)
-                          }
-                          range match { case (start,end) =>
-
-                          inputStream.skip(start)
-                          import play.api.mvc.{ SimpleResult, ResponseHeader }
-                          SimpleResult(
-                                  header = ResponseHeader(PARTIAL_CONTENT,
-                                          Map(
-                                                  CONNECTION -> "keep-alive",
-                                                  ACCEPT_RANGES -> "bytes",
-                                                  CONTENT_RANGE -> "bytes %d-%d/%d".format(start, end, contentLength),
-                                                  CONTENT_LENGTH -> (end - start + 1).toString,
-                                                  CONTENT_TYPE -> contentType
-                                                  )
-                                          ),
-                                          body = Enumerator.fromStream(inputStream)
-                                  )
-                          }
-                          }
-                          case None => {
-                              Ok.chunked(Enumerator.fromStream(inputStream))
-                              .withHeaders(CONTENT_TYPE -> contentType)
-                              .withHeaders(CONTENT_DISPOSITION -> ("attachment; filename=" + filename))
-
-                          }
-                          }
-                      }
-                      case None => {
-                          Logger.error("Error getting file" + id)
-                          BadRequest("Invalid file ID")
-                      }
-                      }   
-                  }
-                  else {
-                      //Case where the checkLicenseForDownload fails
-                      Logger.error("The file is not able to be downloaded")
-                      BadRequest("The license for this file does not allow it to be downloaded.")
-                  }
-              }
-              case None => {
-                  //Case where the file could not be found
-                  Logger.info(s"Error getting the file with id $id.")
-                  BadRequest("Invalid file ID")
-              }
-          }
+ def downloadAsFormat(id:UUID, outputFormat:String) = SecuredAction( authorization = WithPermission(Permission.DownloadFiles)) { request =>    
+ 
+    Logger.debug("123 controllers files download as format top, outputFormat = " 
+         + outputFormat + ", id = " + id)
+  
+    if (UUID.isValid(id.stringify)) {
+      files.get(id) match {
+        case Some(file) => {  
+          Logger.debug("controllers files download got file")                  
+            //get bytes for file to be converted
+            files.getBytes(id) match {
+              case Some((inputStream, filename, contentType, contentLength)) => {
+                //got the bytes - send over to polyglot to make post request
+                //===============================================================
+                //start of -  polyglot conversion
+               var convertedFileStream: InputStream = null
+              try{
+                Logger.debug("about to convert file... " + file.id)             
                
+                Logger.debug("about to call Utility.postFile")
+                
+                val polyglotConvertURL: String = play.api.Play.configuration.getString("polyglotConvertURL").getOrElse("")
+                
+                
+                val resultURL:String = Utility.postFile(polyglotConvertURL + outputFormat, file.filename, inputStream, "text/plain");
+                //to do - check that file exists at the resulting link
+                Utility.pause(10000)
+                
+                //=================
+                //use utility method to download file from URL               
+                Utility.downloadFile("", "test_output"+"."+outputFormat, resultURL, true)
+          
+             
+
+                val lastSeparatorIndex = file.filename.replace("_", ".").lastIndexOf(".")
+                val outputFileName = file.filename.substring(0, lastSeparatorIndex) + "." + outputFormat 
+
+                           
+                //=================================== 
+                //try to download bytes from URL
+                Logger.debug("Get the bytes form url... before opening connection, resultURL = " + resultURL)
+                convertedFileStream = new URL(resultURL).openStream()  
+
+               
+                
+                 Logger.debug("download fileas format...  GOT NO RANGE - downloading file from url")
+                 
+
+                 Ok.chunked(Enumerator.fromStream(convertedFileStream))
+                              .withHeaders(CONTENT_TYPE -> "some-content-Type")
+                              .withHeaders(CONTENT_DISPOSITION -> ("attachment; filename="+outputFileName))
+
+                
+              } catch {
+              case e: Exception =>
+                println(e.printStackTrace())
+                BadRequest(toJson("Conversion failed"))
+            } finally {
+                //if (convertedFileStream != null)
+                  //convertedFileStream.close
+           } //end of finally
+              }//end of case Some
+              case None => {
+                Logger.error("Error getting file " + id)
+                BadRequest("File with this id not found")
+              }
+            }            
+        }
+        case None => {
+          //Case where the file could not be found
+          Logger.info(s"Error getting the file with id $id.")
+          BadRequest("Invalid file ID")
+        }
       }
-      else {
-          Logger.error(s"The given id $id is not a valid ObjectId.")
-          BadRequest(toJson(s"The given id $id is not a valid ObjectId."))
-      }
+               
+    }
+    else {
+      Logger.error(s"888 The given id $id is not a valid ObjectId.")
+      BadRequest(toJson(s"The given id $id is not a valid ObjectId."))
+    }
   }
   
   

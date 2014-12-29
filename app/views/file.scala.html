@@ -173,30 +173,23 @@
              
             <span class="glyphicon glyphicon-save"></span>
           </button>
-          <ul class="dropdown-menu" role="menu">
-            
-            
-            @outputFormats.map { f =>
-                     
-            <li id="doc"  onclick="return downloadFileAs('@routes.Files.downloadAs(UUID(id), doc)'  );" > 
-                <a href="#">@f</a>
-            </li>
-             }       
-        
-            
-                
+          <ul class="dropdown-menu" role="menu">           
+            @outputFormats.map { outputFrmt =>
+           <li id="doc"  
+           onclick="return downloadFileAs('@routes.Files.downloadAsFormat(UUID(id), outputFrmt)'  );" > 
+                <a href="#">@outputFrmt</a>
+            </li>          
+             }                 
           </ul>
         </div>
       </div>            
     </div>
   </div>
         
-        
-        
         <script>
-        function downloadFileAs(rr) {
-           console.log("downloadFileAs - route = "+rr );
-           
+        function downloadFileAs(downloadRoute) {
+           console.log("downloadFileAs - route = "+downloadRoute ); 
+           window.open(downloadRoute, '_blank');          
         }
         </script>
 
