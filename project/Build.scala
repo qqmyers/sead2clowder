@@ -1,7 +1,7 @@
 import com.typesafe.sbt.packager.Keys._
 import sbt._
 import Keys._
-import play.Project._
+//import play.Project._
 import com.typesafe.sbt.SbtNativePackager._
 import NativePackagerKeys._
 import com.typesafe.sbt.SbtLicenseReport.autoImportImpl._
@@ -10,11 +10,17 @@ import com.typesafe.sbt.license.LicenseInfo
 import com.typesafe.sbt.license.DepModuleInfo
 import com.typesafe.sbt.license.Html
 
+import play.Play.autoImport._
+import play.PlayImport.PlayKeys._
+import play.PlayScala
+import play.twirl.sbt.Import.TwirlKeys
+
+
 object ApplicationBuild extends Build {
 
   val appName = "medici-play"
   val version = "2.0.0"
-
+  scalaVersion := "2.10.4"
   def appVersion: String = {
     if (gitBranchName == "master") {
       version
@@ -109,14 +115,17 @@ object ApplicationBuild extends Build {
     (base / "app" / "assets" / "stylesheets" * "*.less")
   )
 
-  val main = play.Project(appName, appVersion, appDependencies).settings(
+  val main = Project(appName, file(".")).enablePlugins(play.PlayScala).settings(
     offline := true,
+    libraryDependencies ++= appDependencies,
+    libraryDependencies += ws,
+    libraryDependencies += "com.github.scala-incubator.io" %% "scala-io-file" % "0.4.2",
     lessEntryPoints <<= baseDirectory(customLessEntryPoints),
     javaOptions in Test += "-Dconfig.file=" + Option(System.getProperty("config.file")).getOrElse("conf/application.conf"),
     testOptions in Test += Tests.Argument(TestFrameworks.ScalaTest, "-u", "target/scalatest-reports"),
     routesImport += "models._",
     routesImport += "Binders._",
-    templatesImport += "org.bson.types.ObjectId",
+    TwirlKeys.templateImports += "org.bson.types.ObjectId",    
     resolvers += Resolver.url("sbt-plugin-releases", url("http://repo.scala-sbt.org/scalasbt/sbt-plugin-releases/"))(Resolver.ivyStylePatterns),
     resolvers += Resolver.url("sbt-plugin-snapshots", url("http://repo.scala-sbt.org/scalasbt/sbt-plugin-snapshots/"))(Resolver.ivyStylePatterns),
     resolvers += "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots",

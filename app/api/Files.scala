@@ -166,7 +166,8 @@ class Files @Inject()(
 		                }
 		              }
 		              case None => {
-		                Ok.chunked(Enumerator.fromStream(inputStream))
+//		                Ok.chunked(Enumerator.fromStream(inputStream))
+                        Ok.chunked(Enumerator.fromStream(inputStream))		                
 		                  .withHeaders(CONTENT_TYPE -> contentType)
 		                  .withHeaders(CONTENT_DISPOSITION -> ("attachment; filename=" + filename))
 		              }

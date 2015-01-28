@@ -21,7 +21,8 @@ import services.ExtractionRequestsService
 import models.ExtractionInfoSetUp
 import play.api.libs.json._
 import java.util.Calendar
-
+import scala.concurrent.duration.Duration
+import scala.concurrent.Await
 
 class ExtractionInfo @Inject() (extractors: ExtractorService, dtsrequests: ExtractionRequestsService) extends SecuredController {
 
@@ -30,12 +31,27 @@ class ExtractionInfo @Inject() (extractors: ExtractorService, dtsrequests: Extra
    */
 
   def getExtractorServersIP() = SecuredAction(authorization = WithPermission(Permission.Public)) { implicit request =>
-    Async {
-      for {
-        x <- ExtractionInfoSetUp.updateExtractorsInfo()
-        status <- x
-      } yield {
-
+//    Async {
+//      for {
+//        x <- ExtractionInfoSetUp.updateExtractorsInfo()
+//        status <- x
+//      } yield {
+//
+//        Logger.debug("Update Status:" + status)
+//        val list_servers = extractors.getExtractorServerIPList()
+//        var jarr = new JsArray()
+//        var list_servers1=List[String]()
+//        list_servers.map {
+//          ls =>
+//            Logger.debug("Server Name:  " + ls.substring(1, ls.size-1))
+//            jarr = jarr :+ (Json.parse(ls))
+//            list_servers1=ls.substring(1, ls.size-1)::list_servers1
+//            }
+//        Logger.debug("Json array for list of extractors server ips----" + jarr.toString)
+//        Ok(views.html.extractorsServersIP(list_servers1,list_servers1.size))
+//      }
+        //Change to Non-Blocking    
+        var status = Await.result(ExtractionInfoSetUp.updateExtractorsInfo(),Duration.Inf)
         Logger.debug("Update Status:" + status)
         val list_servers = extractors.getExtractorServerIPList()
         var jarr = new JsArray()
@@ -47,9 +63,7 @@ class ExtractionInfo @Inject() (extractors: ExtractorService, dtsrequests: Extra
             list_servers1=ls.substring(1, ls.size-1)::list_servers1
             }
         Logger.debug("Json array for list of extractors server ips----" + jarr.toString)
-        Ok(views.html.extractorsServersIP(list_servers1,list_servers1.size))
-      }
-    }
+        Ok(views.html.extractorsServersIP(list_servers1,list_servers1.size)) 
   }
   
 /**

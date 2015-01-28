@@ -15,7 +15,7 @@ import javax.inject.{Inject, Singleton}
 
 import play.api.data.Form
 import play.api.data.Forms._
-
+import scala.concurrent.duration.Duration
 /**
  * Administration pages.
  *
@@ -53,27 +53,30 @@ class Admin @Inject() (sectionIndexInfo: SectionIndexInfoService) extends Secure
   def getAdapters() = SecuredAction(authorization = WithPermission(Permission.Admin)) {
     request =>
 
-      Async {
+//      Async {
         current.plugin[VersusPlugin] match {
 
           case Some(plugin) => {
-
-            var adapterListResponse = plugin.getAdapters()
-
-            for {
-              adapterList <- adapterListResponse
-            } yield {
-              Ok(adapterList.json)
-            }
-
+        	//Change to Non-Blocking
+            var adapterListResponse = Await.result(plugin.getAdapters(),Duration.Inf)  
+//            var adapterListResponse = plugin.getAdapters()
+//
+//            for {
+//              adapterList <- adapterListResponse
+//            } yield {
+//              Ok(adapterList.json)
+//            }
+            Ok(adapterListResponse.json)		
           } //case some
 
           case None => {
-            Future(Ok("No Versus Service"))
+//            Future(Ok("No Versus Service"))
+            Ok("No Versus Service")
           }
         } //match
 
-      } //Async
+//      } //Async
+
 
   }
 
@@ -81,28 +84,30 @@ class Admin @Inject() (sectionIndexInfo: SectionIndexInfoService) extends Secure
   def getExtractors() = SecuredAction(authorization = WithPermission(Permission.Admin)) {
     request =>
 
-      Async {
+//      Async {
         current.plugin[VersusPlugin] match {
 
           case Some(plugin) => {
-
-            var extractorListResponse = plugin.getExtractors()
-
-            for {
-              extractorList <- extractorListResponse
-            } yield {
-              Ok(extractorList.json)
-            }
+        	//Change to Non-Blocking
+            var extractorListResponse = Await.result(plugin.getExtractors(),Duration.Inf)  
+//            var extractorListResponse = plugin.getExtractors()
+//
+//            for {
+//              extractorList <- extractorListResponse
+//            } yield {
+//              Ok(extractorList.json)
+//            }
             //Ok(adapterListResponse)
-
+            Ok(extractorListResponse.json)
           } //case some
 
           case None => {
-            Future(Ok("No Versus Service"))
+//            Future(Ok("No Versus Service"))
+        	  Ok("No Versus Service")
           }
         } //match
 
-      } //Async
+//      } //Async
 
   }
   
@@ -110,28 +115,31 @@ class Admin @Inject() (sectionIndexInfo: SectionIndexInfoService) extends Secure
   def getMeasures() = SecuredAction(authorization=WithPermission(Permission.Admin)){
      request =>
       
-    Async{  
+//    Async{  
     	current.plugin[VersusPlugin] match {
      
         case Some(plugin)=>{
-        	 
-        	var measureListResponse= plugin.getMeasures()
-        	 
-        	for{
-        	  measureList<-measureListResponse
-        	}yield{
-        	 Ok(measureList.json)
-        	}
+			// Change from Blocking to Non-Blocking            
+        	var measureListResponse= Await.result(plugin.getMeasures(),Duration.Inf)  
+//        	var measureListResponse= plugin.getMeasures()
+//        	 
+//        	for{
+//        	  measureList<-measureListResponse
+//        	}yield{
+//        	 Ok(measureList.json)
+//        	}
         	 //Ok(adapterListResponse)
-        	         
+        	Ok(measureListResponse.json) 
             }//case some
          
 		 case None=>{
-		      Future(Ok("No Versus Service"))
+//		      Future(Ok("No Versus Service"))
+		    Ok("No Versus Service")
 		       }     
 		 } //match
     
-   } //Async
+//   } //Async
+        
         
   }
 
@@ -139,27 +147,30 @@ class Admin @Inject() (sectionIndexInfo: SectionIndexInfoService) extends Secure
   def getIndexers() = SecuredAction(authorization = WithPermission(Permission.Admin)) {
     request =>
 
-      Async {
+//      Async {
         current.plugin[VersusPlugin] match {
 
           case Some(plugin) => {
-
-            var indexerListResponse = plugin.getIndexers()
-
-            for {
-              indexerList <- indexerListResponse
-            } yield {
-              Ok(indexerList.json)
-            }
-
+			// Change from Blocking to Non-Blocking  
+            var indexerListResponse = Await.result(plugin.getIndexers(),Duration.Inf)
+//            var indexerListResponse = plugin.getIndexers()
+//
+//            for {
+//              indexerList <- indexerListResponse
+//            } yield {
+//              Ok(indexerList.json)
+//            }
+			Ok(indexerListResponse.json)
           } //case some
 
           case None => {
-            Future(Ok("No Versus Service"))
+//            Future(Ok("No Versus Service"))
+        	Ok("No Versus Service")
           }
         } //match
 
-      } //Async
+//      } //Async
+
 
   }
 
@@ -170,7 +181,7 @@ class Admin @Inject() (sectionIndexInfo: SectionIndexInfoService) extends Secure
    */ 
    def createIndex() = SecuredAction(parse.json, authorization = WithPermission(Permission.Admin)) {
      implicit request =>
-       Async {
+//       Async {
          current.plugin[VersusPlugin] match {
            case Some(plugin) => {
              Logger.trace("Contr.Admin.CreateIndex()")
@@ -190,15 +201,17 @@ class Admin @Inject() (sectionIndexInfo: SectionIndexInfoService) extends Secure
              if (indexName != null && indexName.length !=0){
              	indexIdFuture.map(sectionIndexInfo.insertName(_, indexName))
              }           
-              Future(Ok("Index created successfully"))     
+//              Future(Ok("Index created successfully"))  
+             Ok("Index created successfully")
            } //end of case some plugin
 
            case None => {
-             Future(Ok("No Versus Service"))
+//             Future(Ok("No Versus Service"))
+             Ok("No Versus Service")
            }
          } //match
 
-       } //Async
+//       } //Async
    }
    
   /**
@@ -207,21 +220,22 @@ class Admin @Inject() (sectionIndexInfo: SectionIndexInfoService) extends Secure
    */
   def getIndexes() = SecuredAction(authorization = WithPermission(Permission.Admin)) {
     request =>
-      Async {        
+//      Async {        
         current.plugin[VersusPlugin] match {
           case Some(plugin) => {
            Logger.trace(" Admin.getIndexes()")
-            var indexListResponse = plugin.getIndexes()
-            for {
-              indexList <- indexListResponse
-            } yield {
-            	if(indexList.body.isEmpty())
+//            var indexListResponse = plugin.getIndexes()
+           var indexListResponse = Await.result(plugin.getIndexes(),Duration.Inf) 
+//            for {
+//              indexList <- indexListResponse
+//            } yield {
+            	if(indexListResponse.body.isEmpty())
             	{ 
             		Ok(Json.toJson(""))
             	}
                 else{
                   var finalJson :JsValue=null
-                  val jsArray = indexList.json
+                  val jsArray = indexListResponse.json
                   //make sure we got correctly formatted list of values
                   jsArray.validate[List[VersusIndexTypeName]].fold(
                 		  // Handle the case for invalid incoming JSON.
@@ -251,14 +265,15 @@ class Admin @Inject() (sectionIndexInfo: SectionIndexInfoService) extends Secure
                 		  ) //end of fold                
                 		  Ok(finalJson)
                 	}
-            }
+//            }
           } //case some
 
           case None => {
-            Future(Ok("No Versus Service"))
+//            Future(Ok("No Versus Service"))
+            Ok("No Versus Service")
           }
         } //match
-      } //Async
+//      } //Async
   }
  
 
@@ -266,51 +281,60 @@ class Admin @Inject() (sectionIndexInfo: SectionIndexInfoService) extends Secure
   def buildIndex(id: String) = SecuredAction(authorization = WithPermission(Permission.Admin)) {
     request =>
            Logger.trace("Inside Admin.buildIndex(), index = " + id)
-      Async {
+//      Async {
         current.plugin[VersusPlugin] match {
+
           case Some(plugin) => {
-            var buildResponse = plugin.buildIndex(UUID(id))
-            for {
-              buildRes <- buildResponse
-            } yield {
-              Ok(buildRes.body)
-            }
+			// Change from Blocking to Non-Blocking  
+            var buildResponse = Await.result(plugin.buildIndex(UUID(id)),Duration.Inf) 
+//            var buildResponse = plugin.buildIndex(id)
+//
+//            for {
+//              buildRes <- buildResponse
+//            } yield {
+//              Ok(buildRes.body)
+//            }
+			Ok(buildResponse.body)
           } //case some
 
           case None => {
-            Future(Ok("No Versus Service"))
+//            Future(Ok("No Versus Service"))
+			Ok("No Versus Service")
           }
         } //match
 
-      }
+//      }
 
   }
   
   //Delete a specific index in Versus
   def deleteIndex(id: String)=SecuredAction(authorization=WithPermission(Permission.Admin)){
     request =>
-    Async{  
+//    Async{  
       current.plugin[VersusPlugin] match {
      
         case Some(plugin)=>{
-        	 
-        	var deleteIndexResponse= plugin.deleteIndex(UUID(id))
-        	 
-        	for{
-        	  deleteIndexRes<-deleteIndexResponse
-        	}yield{
-        	 Ok(deleteIndexRes.body)
-        	}
-        	 
+			// Change from Blocking to Non-Blocking  
+            var deleteIndexResponse = Await.result(plugin.deleteIndex(UUID(id)),Duration.Inf)         	 
+//        	var deleteIndexResponse= plugin.deleteIndex(id)
+//        	 
+//        	for{
+//        	  deleteIndexRes<-deleteIndexResponse
+//        	}yield{
+//        	 Ok(deleteIndexRes.body)
+//        	}
+        	Ok(deleteIndexResponse.body)
         	         
             }//case some
          
 		 case None=>{
-		      Future(Ok("No Versus Service"))
+//		      Future(Ok("No Versus Service"))
+			Ok("No Versus Service")		   
 		       }     
 		 } //match
     
-    }
+//    } 
+   
   }
 
   //Delete all indexes in Versus
@@ -318,27 +342,29 @@ class Admin @Inject() (sectionIndexInfo: SectionIndexInfoService) extends Secure
   def deleteAllIndexes() = SecuredAction(authorization = WithPermission(Permission.Admin)) {
     request =>
 
-      Async {
+//      Async {
         current.plugin[VersusPlugin] match {
         	
           case Some(plugin) => {
-
-            var deleteAllResponse = plugin.deleteAllIndexes()
-
-            for {
-              deleteAllRes <- deleteAllResponse
-            } yield {
-              Ok(deleteAllRes.body)
-            }
-
+			// Change from Blocking to Non-Blocking  
+			var deleteAllResponse = Await.result(plugin.deleteAllIndexes,Duration.Inf) 
+//            var deleteAllResponse = plugin.deleteAllIndexes()
+//
+//            for {
+//              deleteAllRes <- deleteAllResponse
+//            } yield {
+//              Ok(deleteAllRes.body)
+//            }
+			Ok(deleteAllResponse.body)
           } //case some
 
           case None => {
-            Future(Ok("No Versus Service"))
+//            Future(Ok("No Versus Service"))
+			Ok("No Versus Service")            
           }
         } //match
 
-      }
+//      }
   }
   
   def setTheme() = SecuredAction(parse.json, authorization = WithPermission(Permission.Admin)) { implicit request =>

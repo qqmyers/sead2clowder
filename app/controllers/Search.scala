@@ -23,6 +23,8 @@ import scala.Some
 import api.WithPermission
 import util.SearchResult
 import models.UUID
+import scala.concurrent.duration.Duration
+import scala.concurrent.Await
 
 /**
  * Text search.
@@ -243,36 +245,49 @@ class Search @Inject() (
    * GET the query file from a URL and compare within the database and show the result   
    * */
   def searchbyURL(queryURL: String)=SecuredAction(authorization=WithPermission(Permission.SearchDatasets)) { implicit request =>
-   	Async{         
+//   	Async{         
    	  current.plugin[VersusPlugin] match {    		
     	case Some(plugin)=>{      	  
-    		val futureFutureListResults = for {
-    			indexList<-plugin.getIndexesAsFutureList()
-    		} yield { 	      				
-    			val resultListOfFutures=indexList.map{
-    				index=>    
-    				  plugin.queryIndexForURL(queryURL, index.id).map{
-    				    queryResult=>
-    				      (index, queryResult)
-    				  }    								  
-    			}  	
-    			//convert list of futures into a Future[list]
-    			scala.concurrent.Future.sequence(resultListOfFutures)
-           	}//End yield- outer for    	           
-    		for{
-    			futureListResults<-futureFutureListResults
-    			listOfResults<-futureListResults   			    		
-    		} yield {
-    		  //added a placeholder for UUID, to work with the new version of template
-    		  Ok(views.html.multimediaSearchResults(queryURL, null, listOfResults))     
-    		}              
+//    		val futureFutureListResults = for {
+//    			indexList<-plugin.getIndexesAsFutureList()
+//    		} yield { 	      				
+//    			val resultListOfFutures=indexList.map{
+//    				index=>    
+//    				  plugin.queryIndexForURL(queryURL, index.id).map{
+//    				    queryResult=>
+//    				      (index, queryResult)
+//    				  }    								  
+//    			}  	
+//    			//convert list of futures into a Future[list]
+//    			scala.concurrent.Future.sequence(resultListOfFutures)
+//           	}//End yield- outer for
+        		//Change to Non-Blocking    	  
+   				var indexListResponse = Await.result(plugin.getIndexesAsFutureList(),Duration.Inf)
+   					val resultListOfFutures=indexListResponse.map{
+   						index=>    
+   								plugin.queryIndexForURL(queryURL, index.id).map{
+   										queryResult=>
+   										  (index, queryResult)
+   									}    								  
+   							}  	
+   							//convert list of futures into a Future[list]
+   					var listofResults = Await.result(scala.concurrent.Future.sequence(resultListOfFutures),Duration.Inf)        		
+//    		for{
+//    			futureListResults<-futureFutureListResults
+//    			listOfResults<-futureListResults   			    		
+//    		} yield {
+//    		  //added a placeholder for UUID, to work with the new version of template
+//    		  Ok(views.html.multimediaSearchResults(queryURL, null, listOfResults))     
+//    		}            
+   			Ok(views.html.multimediaSearchResults(queryURL, null, listofResults))		
         } //case some
                     
         case None => {
-          Future(Ok("No Versus Service"))
+//          Future(Ok("No Versus Service"))
+          Ok("No Versus Service")
         }
       } //match            
-    } //Async
+//    } //Async
   }
 
   /** 
@@ -280,7 +295,7 @@ class Search @Inject() (
    **/
   def findSimilar(fileID:UUID)=SecuredAction(authorization=WithPermission(Permission.SearchDatasets)) { implicit request => 	
    	Logger.debug("Finding similar files")
-    Async{ 
+//    Async{ 
    		//query file will be stored in MultimediaQueryService
    		//in controllers/Files -> uploadSelectQuery
    		var contentTypeStr="";
@@ -289,39 +304,53 @@ class Search @Inject() (
    				contentTypeStr=contentType;
    				current.plugin[VersusPlugin] match {    		
    					case Some(plugin)=>{          	
-   						val futureFutureListResults = for {    	  
-   							indexList<-plugin.getIndexesForContentTypeAsFutureList(contentTypeStr)
-   						} yield { 	      				
-   							val resultListOfFutures=indexList.map{
+//   						val futureFutureListResults = for {    	  
+//   							indexList<-plugin.getIndexesForContentTypeAsFutureList(contentTypeStr)
+//   						} yield { 	      				
+//   							val resultListOfFutures=indexList.map{
+//   								index=>    
+//   									plugin.queryIndexForNewFile(fileID, index.id).map{
+//   										queryResult=>(index, queryResult)
+//   									}    								  
+//   							}  	
+//   							//convert list of futures into a Future[list]
+//   							scala.concurrent.Future.sequence(resultListOfFutures)    			
+//   						}//End yield
+   					    //Change to Non-Blocking
+   						var indexListResponse = Await.result(plugin.getIndexesForContentTypeAsFutureList(contentTypeStr),Duration.Inf)
+   								val resultListOfFutures=indexListResponse.map{
    								index=>    
    									plugin.queryIndexForNewFile(fileID, index.id).map{
    										queryResult=>(index, queryResult)
    									}    								  
    							}  	
    							//convert list of futures into a Future[list]
-   							scala.concurrent.Future.sequence(resultListOfFutures)    			
-   						}//End yield    		
-    		
-   						for{
-   							futureListResults<-futureFutureListResults
-   							listOfResults<-futureListResults      		
-   						} yield {  
-   							Ok(views.html.multimediaSearchResults(filename, fileID, listOfResults))             		
-   						}    		            
+   							var listofResults = Await.result(scala.concurrent.Future.sequence(resultListOfFutures),Duration.Inf)       						
+		
+   						
+//   						for{
+//   							futureListResults<-futureFutureListResults
+//   							listOfResults<-futureListResults      		
+//   						} yield {  
+//   							Ok(views.html.multimediaSearchResults(filename, fileID, listOfResults))             		
+//   						}    
+   							Ok(views.html.multimediaSearchResults(filename, fileID, listofResults))   
    					} //end of case Some(plugin)   
 
    					case None => {
-   						Future(Ok("No Versus Service"))
+//   						Future(Ok("No Versus Service"))
+   					  Ok("No Versus Service")
    					}
    				} //current.plugin[VersusPlugin] match  
    			}//case Some((inputStream...
    			
    			case None=>{
    				Logger.debug("File with id " +fileID +" not found")
-   				Future(Ok("File with id " +fileID +" not found"))
+//   				Future(Ok("File with id " +fileID +" not found"))
+   				Ok("File with id " +fileID +" not found")
    			}
    		}//end of queries.get(imageID) match 
-    } //Async
+//    } //Async
   }
   
   /**      
@@ -335,7 +364,7 @@ class Search @Inject() (
   	//
     Logger.debug("Finding similar file for " + inputFileId)
     
-  Async{       	   
+//  Async{       	   
   		//file will be stored in FileService
    	   	var contentTypeStr="";
    	   	files.getBytes(inputFileId) match {
@@ -343,39 +372,53 @@ class Search @Inject() (
    	   			contentTypeStr = contentType
    	   			current.plugin[VersusPlugin] match {    		
    	   				case Some(plugin)=>{      	  
-   	   					val futureFutureListResults = for {
-   	   						indexList<-plugin.getIndexesForContentTypeAsFutureList(contentTypeStr)
-   	   					} yield { 	      				
-   	   						val resultListOfFutures=indexList.map{
-   	   							index=>    
-   	   								plugin.queryIndexForExistingFile(inputFileId, index.id).map{
-   	   									queryResult=>  (index, queryResult)
-   	   								}    								  
-   	   						}  	
-   	   						//convert list of futures into a Future[list]
-   	   						scala.concurrent.Future.sequence(resultListOfFutures)
-   	   					}//End yield- outer for    	
-    		
-   	   					for{
-   	   						futureListResults<-futureFutureListResults
-   	   						listOfResults<-futureListResults      		
-   	   					} yield {     			             
-   	   						Ok(views.html.multimediaSearchResults(filename, inputFileId,  listOfResults))          
-   	   					}    		             
+//   	   					val futureFutureListResults = for {
+//   	   						indexList<-plugin.getIndexesForContentTypeAsFutureList(contentTypeStr)
+//   	   					} yield { 	      				
+//   	   						val resultListOfFutures=indexList.map{
+//   	   							index=>    
+//   	   								plugin.queryIndexForExistingFile(inputFileId, index.id).map{
+//   	   									queryResult=>  (index, queryResult)
+//   	   								}    								  
+//   	   						}  	
+//   	   						//convert list of futures into a Future[list]
+//   	   						scala.concurrent.Future.sequence(resultListOfFutures)
+//   	   					}//End yield- outer for    	
+   	   					//Change to Non-Blocking
+   	   						var indexListResponse = Await.result(plugin.getIndexesForContentTypeAsFutureList(contentTypeStr),Duration.Inf)
+   								val resultListOfFutures=indexListResponse.map{
+   								index=>    
+   									plugin.queryIndexForExistingFile(inputFileId, index.id).map{
+   										queryResult=>(index, queryResult)
+   									}    								  
+   							}  	
+   							//convert list of futures into a Future[list]
+   							var listofResults = Await.result(scala.concurrent.Future.sequence(resultListOfFutures),Duration.Inf)      	   				  
+   	   				  
+//   	   					for{
+//   	   						futureListResults<-futureFutureListResults
+//   	   						listOfResults<-futureListResults      		
+//   	   					} yield {     			             
+//   	   						Ok(views.html.multimediaSearchResults(filename, inputFileId,  listOfResults))          
+//   	   					}
+   	   					Ok(views.html.multimediaSearchResults(filename, inputFileId, listofResults)) 
    	   				} //end of case Some(plugin)                   
 
    	   				case None => {
-   	   					Future(Ok("No Versus Service"))
+//   	   					Future(Ok("No Versus Service"))
+   	   				  Ok("No Versus Service")
    	   				}
    	   			} //current.plugin[VersusPlugin] match  
    			}//case Some((inputStream...
    			
    			case None=>{
    				Logger.debug("Could not find similar for file id " +inputFileId )
-   				Future(Ok("Could not find similar for file id " +inputFileId ))
+//   				Future(Ok("Could not find similar for file id " +inputFileId ))
+   				Ok("Could not find similar for file id " +inputFileId )
+   				
    			}
    		}//end of files.getBytes(inputFileId) match 
-    } //Async
+//    } //Async
   }
      
 
@@ -456,7 +499,7 @@ class Search @Inject() (
       implicit request => 	
        Logger.debug("top of findSimilarWeightedIndexes")
      
-       Async {     
+//       Async {     
         Logger.debug("Search.findSimilarWeightedIndexes request data parts = " + request.body.dataParts.toString  )  
         //using a helper method to validate input and get weights
          val (inputErrors, errorMessage, weights) = validateInput(request.body.dataParts)
@@ -480,11 +523,43 @@ class Search @Inject() (
    							plugin.queryIndexSorted(fileId.stringify, indexId.stringify)   						  
    						}
    						//change a list of futures into a future list
-   						var futureListResults = scala.concurrent.Future.sequence(queryResults)   		   								
+        	//Change to Non-Blocking
+   	  					var maps = Await.result(scala.concurrent.Future.sequence(queryResults),Duration.Inf)   		   								
    						
-   						for{
-   						  maps<- futureListResults
-   						}yield{   						  
+//   						for{
+//   						  maps<- futureListResults
+//   						}yield{   						  
+//   							Logger.debug("list of maps = " + maps + "\nlength of maps = " + maps.length)  							
+//   							
+//   							//Calling helper method to merge all the maps. The magic happens here.
+//   							var mergedMaps = mergeMaps(maps, weights)   										
+//   							
+//   							val mergedResult = for {
+//   								(fileURL, prox)<-mergedMaps
+//   							  } yield{   							    	
+//   								Logger.debug("Search.findSimilarWeightedIndexes: fileURL = " + fileURL + ", prox = " + prox)   	   								
+//   								val begin = fileURL.lastIndexOf("/");                       
+//   								val end = fileURL.lastIndexOf("?")
+//   								val result_id_str = fileURL.substring(begin + 1, end);
+//   								val result_id = UUID(result_id_str);
+//   								Logger.debug("result_id = " + result_id)   
+//   								var oneFileName=""
+//   								var oneThumbnlId=""
+//   								files.get(result_id) match {
+//   									case Some(file)=>{
+//   										oneFileName = file.filename
+//   										oneThumbnlId=file.thumbnail_id.getOrElse("")
+//   									}
+//   									case None=>{}      							    			
+//   								}    
+//   							    (result_id, oneFileName, oneThumbnlId, prox) 							  
+//   							  }
+//   							  Logger.debug("total merged result is = " + mergedResult)
+//   							  //sort by combined proximity values
+//   							  var sortedMergedResults= mergedResult.toList sortBy{_._4}
+//   							  Logger.debug("sorted merged Results = " + sortedMergedResults)   							 
+//   							  Ok(views.html.multimediaSearchResultsCombined(filename, sortedMergedResults))    							 
+//   						}//end of yield   			
    							Logger.debug("list of maps = " + maps + "\nlength of maps = " + maps.length)  							
    							
    							//Calling helper method to merge all the maps. The magic happens here.
@@ -514,23 +589,28 @@ class Search @Inject() (
    							  //sort by combined proximity values
    							  var sortedMergedResults= mergedResult.toList sortBy{_._4}
    							  Logger.debug("sorted merged Results = " + sortedMergedResults)   							 
-   							  Ok(views.html.multimediaSearchResultsCombined(filename, sortedMergedResults))    							 
-   						}//end of yield   					
+   							  Ok(views.html.multimediaSearchResultsCombined(filename, sortedMergedResults))    		
+   						
    					} //end of case Some(plugin)   
    					case None => {
-   						Future(Ok("No Versus Service"))
+//   						Future(Ok("No Versus Service"))
+   					  Ok("No Versus Service")
    					}
    				} //current.plugin[VersusPlugin] match  
    			}//case Some((inputStream...
    			
    			case None=>{
    				Logger.debug("File with id " +fileId +" not found")
-   				Future(Ok("File with id " +fileId +" not found"))
+//   				Future(Ok("File with id " +fileId +" not found"))
+   				Ok("File with id " +fileId +" not found")
    			}
    		}//end of queries.get(imageID) match 
        }//end of if no validation errors
-         else {Future(Ok("Form validation errors: " + errorMessage))}
-    } //Async
+         else {
+//           Future(Ok("Form validation errors: " + errorMessage))
+           Ok("Form validation errors: " + errorMessage)
+           }
+//    } //Async
   }
      
 
