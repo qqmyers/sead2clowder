@@ -370,21 +370,21 @@ class Datasets @Inject()(
   /**
    * 3D Dataset.
    */
-  def datasetThreeDim(id: String) = SecuredAction(authorization=WithPermission(Permission.ShowDataset), resourceId = Some(UUID(id))) { implicit request =>
+  def datasetThreeDim(id: UUID) = SecuredAction(authorization=WithPermission(Permission.ShowDataset)) { implicit request =>
     implicit val user = request.user    
     Previewers.findPreviewers.foreach(p => Logger.info("Previewer found " + p.id))
-    Services.datasets.get(id)  match {
+    datasets.get(id)  match {
       case Some(dataset) => {
-        val files = dataset.files map { f =>{
-        		FileDAO.get(f.id.toString).get
+        val filesInDataset = dataset.files map { f =>{
+        		files.get(f.id).get
         	}
         }
         
         //Search whether dataset is currently being processed by extractor(s)
         var isActivity = false
         try{
-        	for(f <- files){
-        		Extraction.findIfBeingProcessed(f.id) match{
+        	for(f <- filesInDataset){
+        		extractions.findIfBeingProcessed(f.id) match{
         			case false => 
         			case true => { 
         				isActivity = true
@@ -397,44 +397,44 @@ class Datasets @Inject()(
         }
         
         
-        val datasetWithFiles = dataset.copy(files = files)
+        val datasetWithFiles = dataset.copy(files = filesInDataset)
         val previewers = Previewers.findPreviewers
         val previewslist = for(f <- datasetWithFiles.files) yield {          
           val pvf = for(p <- previewers ; pv <- f.previews; if (f.showPreviews.equals("DatasetLevel")) && (p.contentType.contains(pv.contentType))) yield { 
-            (pv.id.toString, p.id, p.path, p.main, api.routes.Previews.download(pv.id.toString).toString, pv.contentType, pv.length)
+            (pv.id.toString, p.id, p.path, p.main, api.routes.Previews.download(pv.id).toString, pv.contentType, pv.length)
           }         
           if (pvf.length > 0) {
             (f -> pvf)
           } else {
   	        val ff = for(p <- previewers ; if (f.showPreviews.equals("DatasetLevel")) && (p.contentType.contains(f.contentType))) yield {
-  	          (f.id.toString, p.id, p.path, p.main, routes.Files.download(f.id.toString).toString, f.contentType, f.length)
+  	          (f.id.toString, p.id, p.path, p.main, routes.Files.download(f.id).toString, f.contentType, f.length)
   	        }
   	        (f -> ff)
           }
         }
         val previews = Map(previewslist:_*)
-        val metadata = Dataset.getMetadata(id)
+        val metadata = datasets.getMetadata(id)
         Logger.debug("Metadata: " + metadata)
         for (md <- metadata) {
           Logger.debug(md.toString)
         }       
-        val userMetadata = Dataset.getUserMetadata(id)
+        val userMetadata = datasets.getUserMetadata(id)
         Logger.debug("User metadata: " + userMetadata.toString)
         
-        val collectionsOutside = Collection.listOutsideDataset(id).sortBy(_.name)
-        val collectionsInside = Collection.listInsideDataset(id).sortBy(_.name)
-        val filesOutside = FileDAO.listOutsideDataset(id).sortBy(_.filename)
+        val collectionsOutside = collections.listOutsideDataset(id).sortBy(_.name)
+        val collectionsInside = collections.listInsideDataset(id).sortBy(_.name)
+        val filesOutside = files.listOutsideDataset(id).sortBy(_.filename)
         
-        var comments = Comment.findCommentsByDatasetId(id)
-        files.map { file =>
-          comments ++= Comment.findCommentsByFileId(file.id.toString())
-          SectionDAO.findByFileId(file.id).map { section =>
-            comments ++= Comment.findCommentsBySectionId(section.id.toString())
+        var commentsByDataset = comments.findCommentsByDatasetId(id)
+        filesInDataset.map { file =>
+          commentsByDataset ++= comments.findCommentsByFileId(file.id)
+          sections.findByFileId(UUID(file.id.toString)).map { section =>
+          commentsByDataset ++= comments.findCommentsBySectionId(section.id)
           } 
         }
-        comments = comments.sortBy(_.posted)
+        commentsByDataset = commentsByDataset.sortBy(_.posted)
         
-        Ok(views.html.datasetThreeDim(datasetWithFiles, comments, previews, metadata, userMetadata, isActivity, collectionsOutside, collectionsInside, filesOutside))
+        Ok(views.html.datasetThreeDim(datasetWithFiles, commentsByDataset, previews, metadata, userMetadata, isActivity, collectionsOutside, collectionsInside, filesOutside))
       }
       case None => {Logger.error("Error getting dataset" + id); InternalServerError}
     }

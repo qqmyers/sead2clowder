@@ -74,7 +74,7 @@ GET     /datasets/generalMetadataSearch   @controllers.Datasets.generalMetadataS
 GET		/datasets/:id					  @controllers.Datasets.dataset(id: UUID)
 GET     /datasets_by_section/:id          @controllers.Datasets.datasetBySection(id: UUID)
 POST    /dataset/submit                   @controllers.Datasets.submit
-GET	/3d_datasets/:id		  @controllers.Datasets.datasetThreeDim(id)
+GET	/3d_datasets/:id		  @controllers.Datasets.datasetThreeDim(id: UUID)
 
 # Collections
 GET      /collections                                                        @controllers.Collections.list(when: String ?= "", date: String ?= "", size: Int ?= 12, mode: String ?= "tile")
