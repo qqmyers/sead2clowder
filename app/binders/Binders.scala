@@ -1,3 +1,5 @@
+package binders
+
 import models.UUID
 import play.api.mvc._
 import com.mongodb.casbah.Imports._
