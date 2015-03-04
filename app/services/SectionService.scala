@@ -28,6 +28,8 @@ trait SectionService {
 
   def insert(json: JsValue): String
   
+  def setDescription(id: UUID, descr: String)
+  
   /**
    * Get JSON representation with any first preview.
    */

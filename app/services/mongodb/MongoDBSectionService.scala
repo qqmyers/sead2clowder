@@ -90,9 +90,14 @@ class MongoDBSectionService @Inject() (comments: CommentService, previews: Previ
     id.toString
   }
   
+  def setDescription(id: UUID, descr: String) {
+	    SectionDAO.update(MongoDBObject("_id" -> new ObjectId(id.stringify)), $set("description" -> Some(descr)), false, false, WriteConcern.Safe)    
+  }
+  
   def toJSON(section: Section): JsValue = {
     toJson(Map[String, JsValue]("id" -> JsString(section.id.toString), "file_id" -> JsString(section.file_id.toString), "order" -> JsString((if (section.order >= 0) section.order.toString else "None")),
       "startTime" -> JsString((if (section.startTime.isDefined) section.startTime.get.toString else "None")), "endTime" -> JsString((if (section.endTime.isDefined) section.endTime.get.toString else "None")),
+      "description" -> JsString((if (section.description.isDefined) section.description.get else "None")),
       "area" -> JsString((if (section.area.isDefined) section.area.get.toString else "None")), "previewId" -> JsString((if (section.preview.isDefined) section.preview.get.id.toString else "None")),
       "tags" -> toJson(for (tag <- section.tags) yield tags.toJSON(tag)) ))
   }
