@@ -944,7 +944,7 @@ function clearConfigTabAnnotations(prNum){
 
 	     console.log("WebSocket is supported by your Browser!");
 	     // Opening a websocket
-	     webSocket = new WebSocket(pathWs+"/ws/"+ Configuration.id);
+	     webSocket = new WebSocket(pathWs+"/ws/3dleap/"+ Configuration.id);
 	     webSocket.onopen = function()
 	     {
 		console.log("Websocket connection is now open...");

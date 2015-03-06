@@ -10,7 +10,7 @@ GET  /*path/                                                                 @co
 
 # Home page
 GET      /                                                                   @controllers.Application.index
-GET     /ws/:datasetId                    				     @controllers.Application.webSocket(datasetId)
+GET     /ws/3dleap/:datasetId                    				     @controllers.Application.webSocket(datasetId)
 
 # Map static resources from the /public folder to the /assets URL path
 #GET      /documentation/api/*testFile                                        controllers.Assets.at(path="/public/docs/api", testFile)
