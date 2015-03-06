@@ -4,6 +4,8 @@ import services.UserService
 import services.MetadataInfo.metadataInfo
 import play.api.data.Form
 import play.api.data.Forms._
+import api.WithPermission
+import api.Permission
 import models.Info
 import play.api.Logger
 import javax.inject.Inject
@@ -242,29 +244,29 @@ class Profile @Inject()(users: UserService) extends  SecuredController {
     )
   }
   
-  def userMetadataDef_files_nodes = SecuredAction() {  implicit request =>
-    // request.user is an Option, and user.email is also an Option, but in a SecuredAction, the user must be present, and same for the user's email, so just use ".get" and not checking the none-ness below.
+  // request.user is an Option, user.email too. Permission.GetUser requires a valid user login, so the user must be present, and same for the user's email, so just use ".get" and not checking the none-ness below.
+  def userMetadataDef_files_nodes = SecuredAction(authorization = WithPermission(Permission.GetUser)) {  implicit request =>
     val email  = request.user.get.email.get
     val modeluser = users.findByEmail(email).get
     val per_user = modeluser.userMetadataDef_files_nodes.getOrElse("")
     val global = metadataInfo.getProperty[String]("userMetadataDef_files_nodes", "").trim
     Ok(List(global, per_user).mkString("\n").trim)
   }
-  def userMetadataDef_files_relas = SecuredAction() {  implicit request =>
+  def userMetadataDef_files_relas = SecuredAction(authorization = WithPermission(Permission.GetUser)) {  implicit request =>
     val email  = request.user.get.email.get
     val modeluser = users.findByEmail(email).get
     val per_user = modeluser.userMetadataDef_files_relas.getOrElse("")
     val global = metadataInfo.getProperty[String]("userMetadataDef_files_relas", "").trim
     Ok(List(global, per_user).mkString("\n").trim)
   }
-  def userMetadataDef_datasets_nodes = SecuredAction() {  implicit request =>
+  def userMetadataDef_datasets_nodes = SecuredAction(authorization = WithPermission(Permission.GetUser)) {  implicit request =>
     val email  = request.user.get.email.get
     val modeluser = users.findByEmail(email).get
     val per_user = modeluser.userMetadataDef_datasets_nodes.getOrElse("")
     val global = metadataInfo.getProperty[String]("userMetadataDef_datasets_nodes", "").trim
     Ok(List(global, per_user).mkString("\n").trim)
    }
-  def userMetadataDef_datasets_relas = SecuredAction() {  implicit request =>
+  def userMetadataDef_datasets_relas = SecuredAction(authorization = WithPermission(Permission.GetUser)) {  implicit request =>
     val email  = request.user.get.email.get
     val modeluser = users.findByEmail(email).get
     val per_user = modeluser.userMetadataDef_datasets_relas.getOrElse("")
