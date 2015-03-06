@@ -1,6 +1,7 @@
 package controllers
 
 import services.UserService
+import services.MetadataInfo.metadataInfo
 import play.api.data.Form
 import play.api.data.Forms._
 import models.Info
@@ -18,7 +19,8 @@ class Profile @Inject()(users: UserService) extends  SecuredController {
       "institution" -> optional(text),
       "orcidID" -> optional(text),
       "pastprojects" -> optional(text),
-      "position" -> optional(text)
+      "position" -> optional(text),
+      "userMetadataDefUrl" -> optional(text)
     )(Info.apply)(Info.unapply)
   )
 
@@ -32,6 +34,7 @@ class Profile @Inject()(users: UserService) extends  SecuredController {
     var orcidID: Option[String] = None
     var pastprojects: Option[String] = None
     var position: Option[String] = None
+    var userMetadataDefUrl: Option[String] = None
     user match {
       case Some(x) => {
         print(x.email.toString())
@@ -52,30 +55,13 @@ class Profile @Inject()(users: UserService) extends  SecuredController {
                   }
                   case None => avatarUrl = None
                 }
-                muser.biography match {
-                  case Some(filledOut) => biography = Option(filledOut)
-                  case None => biography = None
-                }
-                muser.currentprojects match {
-                  case Some(filledOut) => currentprojects = Option(filledOut)
-                  case None => currentprojects = None
-                }
-                muser.institution match {
-                  case Some(filledOut) => institution = Option(filledOut)
-                  case None => institution = None
-                }
-                muser.orcidID match {
-                  case Some(filledOut) => orcidID = Option(filledOut)
-                  case None => orcidID = None
-                }
-                muser.pastprojects match {
-                  case Some(filledOut) => pastprojects = Option(filledOut)
-                  case None => pastprojects = None
-                }
-                muser.position match {
-                  case Some(filledOut) => position = Option(filledOut)
-                  case None => position = None
-                }
+                biography = muser.biography
+                currentprojects = muser.currentprojects
+                institution = muser.institution
+                orcidID = muser.orcidID
+                pastprojects = muser.pastprojects
+                position = muser.position
+                userMetadataDefUrl = muser.userMetadataDefUrl
 
                 val newbioForm = bioForm.fill(Info(
                   avatarUrl,
@@ -84,7 +70,8 @@ class Profile @Inject()(users: UserService) extends  SecuredController {
                   institution,
                   orcidID,
                   pastprojects,
-                  position
+                  position,
+                  userMetadataDefUrl
                 ))
                 Ok(views.html.editProfile(newbioForm))
               }
@@ -184,6 +171,39 @@ class Profile @Inject()(users: UserService) extends  SecuredController {
     }
   }
 
+  def retrieveUserMetadataDefs(email: String, url: String) = {
+
+    import play.api.libs.ws._
+    import scala.concurrent.Future
+    implicit val context = scala.concurrent.ExecutionContext.Implicits.global
+
+    // Reset to empty if the URL is blank.
+    if (url.isEmpty) {
+      users.updateUserField(email, "userMetadataDef_files_nodes", "")
+      users.updateUserField(email, "userMetadataDef_files_relas", "")
+      users.updateUserField(email, "userMetadataDef_datasets_nodes", "")
+      users.updateUserField(email, "userMetadataDef_datasets_relas", "")
+    } else {
+      val url_files_nodes    = url + "/files/nodes.txt"
+      val url_files_relas    = url + "/files/relationships.txt"
+      val url_datasets_nodes = url + "/datasets/nodes.txt"
+      val url_datasets_relas = url + "/datasets/relationships.txt"
+
+      WS.url(url_files_nodes).get().map { response =>
+        users.updateUserField(email, "userMetadataDef_files_nodes", response.body.trim)
+      }
+      WS.url(url_files_relas).get().map { response =>
+        users.updateUserField(email, "userMetadataDef_files_relas", response.body.trim)
+      }
+      WS.url(url_datasets_nodes).get().map { response =>
+        users.updateUserField(email, "userMetadataDef_datasets_nodes", response.body.trim)
+      }
+      WS.url(url_datasets_relas).get().map { response =>
+        users.updateUserField(email, "userMetadataDef_datasets_relas", response.body.trim)
+      }
+    }
+  }
+
   def submitChanges = SecuredAction() {  implicit request =>
     implicit val user  = request.user
     bioForm.bindFromRequest.fold(
@@ -205,6 +225,9 @@ class Profile @Inject()(users: UserService) extends  SecuredController {
                     users.updateUserField(addr.toString(), "orcidID", form.orcidID)
                     users.updateUserField(addr.toString(), "pastprojects", form.pastprojects)
                     users.updateUserField(addr.toString(), "position", form.position)
+                    val url = form.userMetadataDefUrl.getOrElse("").trim
+                    users.updateUserField(addr.toString(), "userMetadataDefUrl", url)
+                    retrieveUserMetadataDefs(addr.toString(), url)
                     Redirect(routes.Profile.viewProfile(email))
                   }
                 }
@@ -219,4 +242,34 @@ class Profile @Inject()(users: UserService) extends  SecuredController {
     )
   }
   
+  def userMetadataDef_files_nodes = SecuredAction() {  implicit request =>
+    // request.user is an Option, and user.email is also an Option, but in a SecuredAction, the user must be present, and same for the user's email, so just use ".get" and not checking the none-ness below.
+    val email  = request.user.get.email.get
+    val modeluser = users.findByEmail(email).get
+    val per_user = modeluser.userMetadataDef_files_nodes.getOrElse("")
+    val global = metadataInfo.getProperty[String]("userMetadataDef_files_nodes", "").trim
+    Ok(List(global, per_user).mkString("\n").trim)
+  }
+  def userMetadataDef_files_relas = SecuredAction() {  implicit request =>
+    val email  = request.user.get.email.get
+    val modeluser = users.findByEmail(email).get
+    val per_user = modeluser.userMetadataDef_files_relas.getOrElse("")
+    val global = metadataInfo.getProperty[String]("userMetadataDef_files_relas", "").trim
+    Ok(List(global, per_user).mkString("\n").trim)
+  }
+  def userMetadataDef_datasets_nodes = SecuredAction() {  implicit request =>
+    val email  = request.user.get.email.get
+    val modeluser = users.findByEmail(email).get
+    val per_user = modeluser.userMetadataDef_datasets_nodes.getOrElse("")
+    val global = metadataInfo.getProperty[String]("userMetadataDef_datasets_nodes", "").trim
+    Ok(List(global, per_user).mkString("\n").trim)
+   }
+  def userMetadataDef_datasets_relas = SecuredAction() {  implicit request =>
+    val email  = request.user.get.email.get
+    val modeluser = users.findByEmail(email).get
+    val per_user = modeluser.userMetadataDef_datasets_relas.getOrElse("")
+    val global = metadataInfo.getProperty[String]("userMetadataDef_datasets_relas", "").trim
+    Ok(List(global, per_user).mkString("\n").trim)
+  }
+
 }

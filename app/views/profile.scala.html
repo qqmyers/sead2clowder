@@ -75,6 +75,39 @@
             }
             case None => {}
           }
+          @profile.userMetadataDefUrl match{
+            case Some(info) => {
+              @if(! info.isEmpty) {
+              <h4>User Metadata Definition URL</h4>
+              <p>@info</p>
+              }
+            }
+            case None => {}
+          }
+          @profile.userMetadataDef_files_nodes match{
+            case Some(info) => {
+              <h5><a href="@controllers.routes.Profile.userMetadataDef_files_nodes">User Metadata Definition: files, allowed nodes</a></h5>
+            }
+            case None => {}
+          }
+          @profile.userMetadataDef_files_relas match{
+            case Some(info) => {
+              <h5><a href="@controllers.routes.Profile.userMetadataDef_files_relas">User Metadata Definition: files, allowed relationships</a></h5>
+            }
+            case None => {}
+          }
+          @profile.userMetadataDef_datasets_nodes match{
+            case Some(info) => {
+              <h5><a href="@controllers.routes.Profile.userMetadataDef_datasets_nodes">User Metadata Definition: datasets, allowed nodes</a></h5>
+            }
+            case None => {}
+          }
+          @profile.userMetadataDef_datasets_relas match{
+            case Some(info) => {
+              <h5><a href="@controllers.routes.Profile.userMetadataDef_datasets_relas">User Metadata Definition: datasets, allowed relationships</a></h5>
+            }
+            case None => {}
+          }
 
         </div>
       </td> 

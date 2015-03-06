@@ -9,7 +9,7 @@
 	
 	window["allowedNodes"+topId] = new Array();	
 	$.ajax({
-	       url: window["modelIp"+topId] + '/user_metadata_model_allowedNodes.txt',
+	       url: window["modelIp_nodes"+topId],
 	       async:false,
 		   success: function (data){
 		   		var allowedNodesLines = data.split(/\r\n|\n/);
@@ -23,7 +23,7 @@
 	//CSV file format: Node,Child, Minimum child count, Maximum child count.	
 	window["allowedChildren"+topId] = new Array();	
 	$.ajax({
-	       url: window["modelIp"+topId] + '/user_metadata_model_allowedRelationships.txt',
+	       url: window["modelIp_relas"+topId],
 	       async:false,
 		   success: function (data){
 		   		var allowedChildrenLines = data.split(/\r\n|\n/);

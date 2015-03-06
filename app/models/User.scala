@@ -23,6 +23,11 @@ case class User(
   pastprojects: Option[String] = None,
   position: Option[String] = None,
   friends: Option[List[String]] = None,
+  userMetadataDefUrl: Option[String] = None,
+  userMetadataDef_files_nodes: Option[String] = None,
+  userMetadataDef_files_relas: Option[String] = None,
+  userMetadataDef_datasets_nodes: Option[String] = None,
+  userMetadataDef_datasets_relas: Option[String] = None,
   viewed: Option[List[UUID]] = None) {
 
 
@@ -72,7 +77,8 @@ case class Info(
   institution: Option[String],
   orcidID: Option[String] = None,
   pastprojects: Option[String],
-  position: Option[String]
+  position: Option[String],
+  userMetadataDefUrl: Option[String]
 )
 
 object User {

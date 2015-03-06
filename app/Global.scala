@@ -5,6 +5,7 @@ import play.filters.gzip.GzipFilter
 
 import play.libs.Akka
 import services.AppConfiguration
+import services.MetadataInfo
 import scala.concurrent.duration._
 import play.api.libs.concurrent.Execution.Implicits._
 import models.{ServerStartTime, CORSFilter, ExtractionInfoSetUp}
@@ -27,6 +28,7 @@ object Global extends WithFilters(new GzipFilter(), new Jsonp(), CORSFilter()) w
 
     // set admins
     AppConfiguration.setDefaultAdmins()
+    MetadataInfo.retrieveGlobalUserMetadataDefs
 
     extractorTimer = Akka.system().scheduler.schedule(0 minutes, 5 minutes) {
       ExtractionInfoSetUp.updateExtractorsInfo()

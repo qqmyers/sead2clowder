@@ -43,6 +43,7 @@ class ConfigurationModule extends AbstractModule {
     bind(classOf[ThumbnailService]).to(get("service.thumbnails", "services.mongodb.MongoDBThumbnailService"))
     bind(classOf[TileService]).to(get("service.tiles", "services.mongodb.MongoDBTileService"))
     bind(classOf[SectionIndexInfoService]).to(get("service.sectionIndexInfo", "services.mongodb.MongoDBSectionIndexInfoService"))    
+    bind(classOf[MetadataInfoService]).to(get("service.metadataInfo", "services.mongodb.MongoDBMetadataInfoService"))
  
   }
 

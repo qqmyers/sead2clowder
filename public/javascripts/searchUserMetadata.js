@@ -5,7 +5,7 @@ String.prototype.endsWith = function(str)
 	var allowedNodes = new Array();
 	if(searchFor == "userMetadata"){
 		$.ajax({
-		       url: modelIp + '/user_metadata_model_allowedNodes.txt',
+		       url: modelIp_nodes,
 		       async:false,
 			   success: function (data){
 			   		var allowedNodesLines = data.split(/\r\n|\n/);
@@ -21,7 +21,7 @@ String.prototype.endsWith = function(str)
 	var allowedChildren = new Array();
 	if(searchFor == "userMetadata"){
 		$.ajax({
-		       url: modelIp + '/user_metadata_model_allowedRelationships.txt',
+		       url: modelIp_relas,
 		       async:false,
 			   success: function (data){
 			   		var allowedChildrenLines = data.split(/\r\n|\n/);
