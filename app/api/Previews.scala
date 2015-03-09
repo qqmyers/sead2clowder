@@ -233,7 +233,7 @@ class Previews @Inject()(previews: PreviewService, tiles: TileService, accessRig
         previews.get(id) match {
           case Some(preview) => {
             checkPreviewAccess(request.user, preview, "view") match{
-              case true=>{Ok(toJson(Map("id" -> preview.id.toString)))}
+              case true=>{Ok(toJson(Map("id" -> preview.id.toString, "contentType" -> preview.contentType)))}
               case false=>{Logger.error("Not authorized");BadRequest("Not authorized")}
             }        	  
           }

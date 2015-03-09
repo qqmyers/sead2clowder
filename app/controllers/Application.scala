@@ -102,6 +102,7 @@ class Application  @Inject() (files: FileService, appAppearance: AppAppearanceSe
         api.routes.javascript.Previews.upload,
         api.routes.javascript.Previews.uploadMetadata,
         api.routes.javascript.Previews.download,
+        api.routes.javascript.Previews.getMetadata,
         api.routes.javascript.Sections.add,
         api.routes.javascript.Sections.comment,
         api.routes.javascript.Sections.getTags,
