@@ -593,74 +593,74 @@ def uploadExtract() = SecuredAction(parse.multipartFormData, authorization = Wit
           BadRequest(toJson(s"The given id $id is not a valid ObjectId."))
       }
   }
-  
- def downloadAsFormat(id:UUID, outputFormat:String) = SecuredAction( authorization = WithPermission(Permission.DownloadFiles)) { request =>    
- 
-    Logger.debug("123 controllers files download as format top, outputFormat = " 
-         + outputFormat + ", id = " + id)
-  
+
+  def downloadAsFormat(id: UUID, outputFormat: String) = SecuredAction(authorization = WithPermission(Permission.DownloadFiles)) { request =>
+
     if (UUID.isValid(id.stringify)) {
       files.get(id) match {
-        case Some(file) => {  
-          Logger.debug("controllers files download got file")                  
-            //get bytes for file to be converted
-            files.getBytes(id) match {
-              case Some((inputStream, filename, contentType, contentLength)) => {
-                //got the bytes - send over to polyglot to make post request
-                //===============================================================
-                //start of -  polyglot conversion
-               var convertedFileStream: InputStream = null
-              try{
-                Logger.debug("about to convert file... " + file.id)             
-               
-                Logger.debug("about to call Utility.postFile")
-                
+        case Some(file) => {
+          Logger.debug("controllers files download got file")
+          //get bytes for file to be converted
+          files.getBytes(id) match {
+            case Some((inputStream, filename, contentType, contentLength)) => {
+              //got the bytes - send over to polyglot to make post request
+              //===============================================================
+              //start of -  polyglot conversion
+              var convertedFileStream: InputStream = null
+              try {
+                Logger.debug("about to convert file... " + file.id)
+
                 val polyglotConvertURL: String = play.api.Play.configuration.getString("polyglotConvertURL").getOrElse("")
-                
-                
-                val resultURL:String = Utility.postFile(polyglotConvertURL + outputFormat, file.filename, inputStream, "text/plain");
-                //to do - check that file exists at the resulting link
-                Utility.pause(10000)
-                
+                val resultURL: String = Utility.postFile(polyglotConvertURL + outputFormat, file.filename, inputStream, "text/plain");
+                Logger.debug("got resultURL = " + resultURL)
+                //check that file exists at the resulting link
+                //TODO: time out and print error message if conversion fails
+                Logger.debug("file at the url - check if exists")
+                var count = 0
+                while (!Utility.existsURL(resultURL)) {
+                  Utility.pause(1000)
+                  count = count + 1
+                  Logger.debug("file at the url does not exist, waiting... count=" + count)
+                  if (count == 6) {
+                    Logger.error("Taking too long to get the converted file. Exiting.")
+                    throw new RuntimeException("Conversion timed out.")
+                  }
+                }
+
+                Logger.debug("file at the url - GOT IT")
+
                 //=================
                 //use utility method to download file from URL               
-                Utility.downloadFile("", "test_output"+"."+outputFormat, resultURL, true)
-          
-             
+                Utility.downloadFile("", "test_output" + "." + outputFormat, resultURL, true)
 
                 val lastSeparatorIndex = file.filename.replace("_", ".").lastIndexOf(".")
-                val outputFileName = file.filename.substring(0, lastSeparatorIndex) + "." + outputFormat 
+                val outputFileName = file.filename.substring(0, lastSeparatorIndex) + "." + outputFormat
 
-                           
                 //=================================== 
                 //try to download bytes from URL
                 Logger.debug("Get the bytes form url... before opening connection, resultURL = " + resultURL)
-                convertedFileStream = new URL(resultURL).openStream()  
+                convertedFileStream = new URL(resultURL).openStream()
 
-               
-                
-                 Logger.debug("download fileas format...  GOT NO RANGE - downloading file from url")
-                 
+                Logger.debug("download fileas format...  GOT NO RANGE - downloading file from url")
 
-                 Ok.chunked(Enumerator.fromStream(convertedFileStream))
-                              .withHeaders(CONTENT_TYPE -> "some-content-Type")
-                              .withHeaders(CONTENT_DISPOSITION -> ("attachment; filename="+outputFileName))
+                Ok.chunked(Enumerator.fromStream(convertedFileStream))
+                  .withHeaders(CONTENT_TYPE -> "some-content-Type")
+                  .withHeaders(CONTENT_DISPOSITION -> ("attachment; filename=" + outputFileName))
 
-                
               } catch {
-              case e: Exception =>
-                println(e.printStackTrace())
-                BadRequest(toJson("Conversion failed"))
-            } finally {
+                case e: Exception =>
+                  println(e.printStackTrace())
+                  BadRequest(toJson("Conversion failed"))
+              } finally {
                 //if (convertedFileStream != null)
-                  //convertedFileStream.close
-           } //end of finally
-              }//end of case Some
-              case None => {
-                Logger.error("Error getting file " + id)
-                BadRequest("File with this id not found")
-              }
-            }            
+                //convertedFileStream.close
+              } //end of finally
+            } //end of case Some
+            case None => {
+              Logger.error("Error getting file " + id)
+              BadRequest("File with this id not found")
+            }
+          }
         }
         case None => {
           //Case where the file could not be found
@@ -668,15 +668,14 @@ def uploadExtract() = SecuredAction(parse.multipartFormData, authorization = Wit
           BadRequest("Invalid file ID")
         }
       }
-               
-    }
-    else {
+
+    } else {
       Logger.error(s"888 The given id $id is not a valid ObjectId.")
       BadRequest(toJson(s"The given id $id is not a valid ObjectId."))
     }
   }
-  
-  
+
+
 
   def thumbnail(id: UUID) = SecuredAction(authorization=WithPermission(Permission.ShowFile)) { implicit request =>
     thumbnails.getBlob(id) match {
