@@ -3,6 +3,7 @@ package controllers
 import play.api.Logger
 import play.api.data.Form
 import play.api.data.Forms._
+import play.api.libs.json.Json
 import play.api.mvc.Cookie
 import java.io.FileInputStream
 import play.api.Play.current
@@ -40,7 +41,8 @@ class Datasets @Inject()(
   dtsrequests:ExtractionRequestsService,
   sparql: RdfSPARQLService,
   users: UserService,
-  previewService: PreviewService) extends SecuredController {
+  previewService: PreviewService,
+  relations: RelationService) extends SecuredController {
 
   object ActivityFound extends Exception {}
 
@@ -344,7 +346,19 @@ class Datasets @Inject()(
 	          
 	          val isRDFExportEnabled = current.plugin[RDFExportService].isDefined
 
-          Ok(views.html.dataset(datasetWithFiles, commentsByDataset, previewslist.toMap, metadata, userMetadata, decodedCollectionsOutside.toList, decodedCollectionsInside.toList, filesOutside, isRDFExportEnabled))
+          // associated sensors
+          var sensors: List[(String, String)]= current.plugin[PostgresPlugin] match {
+            case Some(db) => {
+              val base = play.api.Play.configuration.getString("geostream.dashboard.url").getOrElse("http://localhost:9000")
+              val ids = relations.findTargets(id.stringify, ResourceType.dataset, ResourceType.sensor)
+              db.getDashboardSensorURLs(ids)
+            }
+            case None => List.empty[(String, String)]
+          }
+
+
+          Ok(views.html.dataset(datasetWithFiles, commentsByDataset, previewslist.toMap, metadata, userMetadata,
+            decodedCollectionsOutside.toList, decodedCollectionsInside.toList, filesOutside, isRDFExportEnabled, sensors))
         }
         case None => {
           Logger.error("Error getting dataset" + id); InternalServerError

@@ -1,4 +1,8 @@
-@(dataset: models.Dataset, comments: List[Comment], previews : Map[models.File, Array[(java.lang.String, String, String, String, java.lang.String, String, Long)]], md: Map[String,Any], usrmd: scala.collection.mutable.Map[String,Any], collectionsOutside: List[models.Collection], collectionsInside: List[models.Collection], filesOutside: List[models.File], rdfExported: Boolean)(implicit user: Option[securesocial.core.Identity])
+@(dataset: models.Dataset, comments: List[Comment],
+        previews : Map[models.File, Array[(java.lang.String, String, String, String, java.lang.String, String, Long)]],
+        md: Map[String,Any], usrmd: scala.collection.mutable.Map[String,Any], collectionsOutside: List[models.Collection],
+        collectionsInside: List[models.Collection], filesOutside: List[models.File], rdfExported: Boolean,
+        relatedSensors: List[(String,String)])(implicit user: Option[securesocial.core.Identity])
 
 
 @import helper._
@@ -154,9 +158,9 @@
 			  <div class="tab-content">
 			    <div class="tab-pane active" id="tab1">
 				      @if(user.isDefined) {
-				      	  @commentform(dataset.id.stringify, api.routes.Datasets.comment(dataset.id).toString)
+				      	  @commentform(dataset.id.stringify, "dataset")
 				      }
-			 		  <div class="comment-threads unstyled" id="reply_@dataset.id.toString">
+			 		  <div class="list-unstyled" id="reply_@dataset.id.toString">
 				      	 @comment(comments)
 				      </div> 
 			    </div>
@@ -653,6 +657,11 @@
 			       }
 		      	 }
 			</div>
+
+            @if(play.api.Play.current.plugin[services.PostgresPlugin].isDefined) {
+                @sensors.relatedSensors(relatedSensors, dataset.id.stringify)
+            }
+
 		</div>
 	</div>
 }
