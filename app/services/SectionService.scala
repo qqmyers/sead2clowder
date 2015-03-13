@@ -34,4 +34,9 @@ trait SectionService {
    * Get JSON representation with any first preview.
    */
   def toJSON(section: Section): JsValue
+  
+  /**
+   * Update thumbnail used to represent this section.
+   */
+  def updateThumbnail(sectionId: UUID, thumbnailId: UUID)
 }

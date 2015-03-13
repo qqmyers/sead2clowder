@@ -94,6 +94,14 @@ class MongoDBSectionService @Inject() (comments: CommentService, previews: Previ
 	    SectionDAO.update(MongoDBObject("_id" -> new ObjectId(id.stringify)), $set("description" -> Some(descr)), false, false, WriteConcern.Safe)    
   }
   
+  /**
+   * Update thumbnail used to represent this section.
+   */
+  def updateThumbnail(sectionId: UUID, thumbnailId: UUID) {
+    SectionDAO.update(MongoDBObject("_id" -> new ObjectId(sectionId.stringify)),
+      $set("thumbnail_id" -> thumbnailId.stringify), false, false, WriteConcern.Safe)
+  }
+  
   def toJSON(section: Section): JsValue = {
     toJson(Map[String, JsValue]("id" -> JsString(section.id.toString), "file_id" -> JsString(section.file_id.toString), "order" -> JsString((if (section.order >= 0) section.order.toString else "None")),
       "startTime" -> JsString((if (section.startTime.isDefined) section.startTime.get.toString else "None")), "endTime" -> JsString((if (section.endTime.isDefined) section.endTime.get.toString else "None")),
