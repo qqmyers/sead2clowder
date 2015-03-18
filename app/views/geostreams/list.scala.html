@@ -18,35 +18,9 @@
             <th>Source</th>
             <th>Lat, Long</th>
             <th>Parameters</th>
+            <th>Delete</th>
         </tr>
 	</table>
+
+ <script src="@routes.Assets.at("javascripts/geostreams/sensorsList.js")"></script>
 }
-<script language="javascript">
-   $(function() {
-	   var request = jsRoutes.api.Geostreams.searchSensors().ajax({
-	       type: 'GET',
-	       contentType: "application/json",
-	       dataType: 'json',
-	     });
-
-	     request.done(function (response, textStatus, jqXHR){
-	        response.forEach(function(sensor) {
-	            $('table tr:last').after("<tr> \
-	                <td>" + sensor.id + "</td> \
-	                <td>" + sensor.name + "</td> \
-	                <td>" + sensor.properties.type.id + "</td> \
-	                <td>lat: " + sensor.geometry.coordinates[1] + ", long: " + sensor.geometry.coordinates[0] + "</td> \
-	                <td style='max-height: 100px'><div style='height: 100px; overflow: auto'>" + sensor.parameters.join("<br />") + "</div></td> \
-	                </tr>");
-	        });
-
-	     });
-
-	     request.fail(function (jqXHR, textStatus, errorThrown){
-	        console.error(
-	            "The following error occured: "+
-	            textStatus, errorThrown
-	        );
-	     });
-   });
-</script>
