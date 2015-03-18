@@ -19,11 +19,11 @@ $(function() {
 
     $('.delete-sensor').on('click', function (event) {
       if (confirm("Delete Sensor, all its Streams, and all its Datapoints?")) {
-           var request = jsRoutes.api.Geostreams.deleteSensor().ajax({
+           var request = jsRoutes.api.Geostreams.deleteSensor(event.target.id).ajax({
              type: 'DELETE',
              contentType: "application/json",
              dataType: 'json',
-             data: {}
+             data: '{}'
            });
           request.done(function(response, textStatus, jqXHR) {
             window.location.href = window.location.href;
