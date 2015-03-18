@@ -27,7 +27,11 @@ $(function() {
            });
           request.done(function(response, textStatus, jqXHR) {
             window.location.href = window.location.href;
-          })
+          });
+          request.fail(function(jqXHR, textStatus, errorThrown) {
+            window.alert("Could not delete the sensor.");
+            console.error("Could not delete the sensor: " + textStatus + errorThrown);
+          });
       }
 
     });
