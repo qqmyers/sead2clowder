@@ -7,13 +7,14 @@ $(function() {
 
   request.done(function (response, textStatus, jqXHR){
     response.forEach(function(sensor) {
+      var currentURL = window.location.href;
       $('table tr:last').after("<tr> \
-	                <td>" + sensor.id + "</td> \
+	                <td><a href='" + currentURL + "/" + sensor.id + "'>Sensor " + sensor.id + "</a></td> \
 	                <td>" + sensor.name + "</td> \
 	                <td>" + sensor.properties.type.id + "</td> \
 	                <td>lat: " + sensor.geometry.coordinates[1] + ", long: " + sensor.geometry.coordinates[0] + "</td> \
 	                <td style='max-height: 100px'><div style='height: 100px; overflow: auto'>" + sensor.parameters.join("<br />") + "</div></td> \
-	                <td><div class='btn btn-primary submit delete-sensor' id='" + sensor.id + "'>Delete Sensor #" + sensor.id + "</div> \
+	                <td><div class='btn btn-primary submit delete-sensor' id='" + sensor.id + "'>Delete Sensor #" + sensor.id + "</div></td> \
 	                </tr>");
     });
 
