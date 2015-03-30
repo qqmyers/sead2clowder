@@ -75,6 +75,18 @@ class Users @Inject()(users: UserService) extends ApiController {
     Ok(Json.obj("status" -> "success"))
   }
 
+  @ApiOperation(value = "Generate Token.",
+    responseClass = "None", httpMethod = "POST")
+  def resetToken()= SecuredAction(parse.anyContent, authorization = WithPermission(Permission.Public)) { request =>
+    // TODO use LoggedIn permission
+    request.user match {
+      case Some(user) => {
+        Ok(users.resetToken(user.id))
+      }
+      case None => Unauthorized("Not authorized")
+    }
+  }
+
   def userToJSON(user: User): JsValue = {
     Json.obj("id" -> user.id.stringify,
       "firstName" -> user.firstName,

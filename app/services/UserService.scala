@@ -17,11 +17,18 @@ import util.Direction._
 trait UserService  {
   def get(id: UUID): Option[User]
 
+  def getByKey(key: String): Option[User]
+
   def insert(model: User): Option[String]
 
   def update(model: User)
 
   def delete(id: UUID)
+
+  /**
+   * Reset the token for the given user
+   */
+  def resetToken(id: UUID): String
 
   /**
    * The number of objects that are available based on the filter

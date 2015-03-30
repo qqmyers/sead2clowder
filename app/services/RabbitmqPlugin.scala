@@ -29,7 +29,7 @@ case class ExtractorMessage(
   fileSize: String,
   datasetId: UUID,
   flags: String,
-  secretKey: String = play.api.Play.configuration.getString("commKey").getOrElse(""))
+  secretKey: String)
 
 /**
  * Rabbitmq service.

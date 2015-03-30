@@ -43,8 +43,21 @@
             }
             @profile.institution
           </h5>
-          
+
           <p style="margin-bottom: 24px">@profile.email.getOrElse("")</p>
+
+          @if(ownProfile.isDefined) {
+            <h4>Secret Token</h4>
+            <p><span id="userToken">@profile.secretKey</span> <a href="#" class="btn btn-warning btn-sm" onclick="newToken();">New Token</a></p>
+
+            <script>
+              function newToken() {
+                $.post("@api.routes.Users.resetToken", function(data) {
+                  $("#userToken").html(data);
+                });
+              }
+            </script>
+          }
 
           @profile.orcidID match{
             case Some(info) => {

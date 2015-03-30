@@ -532,7 +532,7 @@ class Datasets @Inject()(
                   val dsId = dataset.id
                   val dsName = dataset.name
 
-                  current.plugin[RabbitmqPlugin].foreach{_.extract(ExtractorMessage(id, id, host, key, Map.empty, f.length.toString, dsId, flags))}
+                  current.plugin[RabbitmqPlugin].foreach{_.extract(ExtractorMessage(id, id, host, key, Map.empty, f.length.toString, dsId, flags, identity.secretKey))}
 
                   val dateFormat = new SimpleDateFormat("dd/MM/yyyy")
 
@@ -567,7 +567,7 @@ class Datasets @Inject()(
 
                   // TODO RK need to replace unknown with the server name and dataset type
                   val dtkey = "unknown." + "dataset."+ "unknown"
-                  current.plugin[RabbitmqPlugin].foreach{_.extract(ExtractorMessage(dsId, dsId, host, dtkey, Map.empty, "0", dsId, ""))}
+                  current.plugin[RabbitmqPlugin].foreach{_.extract(ExtractorMessage(dsId, dsId, host, dtkey, Map.empty, "0", dsId, "", identity.secretKey))}
 
                   //add file to RDF triple store if triple store is used
                   if(fileType.equals("application/xml") || fileType.equals("text/xml")){

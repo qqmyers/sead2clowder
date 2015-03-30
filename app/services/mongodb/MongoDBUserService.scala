@@ -47,8 +47,21 @@ class MongoDBUserService extends services.UserService {
     UserDAO.findOneById(new ObjectId(id.stringify))
   }
 
+  override def getByKey(key: String): Option[User] = {
+    UserDAO.findOne(MongoDBObject("secretKey" -> key))
+  }
+
   override def delete(id: UUID): Unit = {
     UserDAO.remove(MongoDBObject("id" -> id))
+  }
+
+  /**
+   * Reset the token for the given user
+   */
+  def resetToken(id: UUID): String = {
+    val key = _root_.java.util.UUID.randomUUID().toString
+    val result = UserDAO.dao.update(MongoDBObject("_id" -> new ObjectId(id.stringify)), $set("secretKey" -> key))
+    key
   }
 
   /**

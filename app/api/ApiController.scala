@@ -93,23 +93,35 @@ trait ApiController extends Controller {
         }
       }
 
-      // 3) key, this will need to become better, right now it will only accept the one key, when using the
-      //    key it will assume you are anonymous!
+      // 3) key, this is a unique key per person
       if (result.isEmpty) {
         result = request.queryString.get("key").map { key =>
           // TODO this needs to become more secure
-          if (key.length > 0) {
-            if (key(0).equals(play.Play.application().configuration().getString("commKey"))) {
-              if (authorization.isAuthorized(anonymous)) {
-                f(RequestWithUser(Some(anonymous), request))
-              }
-              else
-                Unauthorized("Not authorized")
-            } else {
-              Unauthorized("Not authenticated")
-            }
-          } else {
+          if (key.isEmpty || key.head == "") {
             Unauthorized("Not authenticated")
+          } else {
+            Logger.debug(request.remoteAddress + " " + key)
+            DI.injector.getInstance(classOf[services.UserService]).getByKey(key.head) match {
+              case Some(user) => {
+                if (authorization.isAuthorized(user)) {
+                  f(RequestWithUser(Some(user), request))
+                } else {
+                  Unauthorized("Not authorized")
+                }
+              }
+              case None => {
+                // TODO fall back on original secret key, this code needs to DIE
+                if (key.head.equals(play.Play.application().configuration().getString("commKey"))) {
+                  if (authorization.isAuthorized(anonymous)) {
+                    f(RequestWithUser(Some(anonymous), request))
+                  } else {
+                    Unauthorized("Not authorized")
+                  }
+                } else {
+                  Unauthorized("Not authorized")
+                }
+              }
+            }
           }
         }
       }

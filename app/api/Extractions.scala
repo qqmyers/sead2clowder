@@ -157,7 +157,7 @@ class Extractions @Inject() (
 
                   current.plugin[RabbitmqPlugin].foreach {
                     // TODO replace null with None
-                    _.extract(ExtractorMessage(id, id, host, key, Map.empty, f.length.toString, null, flags))
+                    _.extract(ExtractorMessage(id, id, host, key, Map.empty, f.length.toString, null, flags, user.secretKey))
                   }
 
                   //for metadata files
@@ -237,7 +237,7 @@ class Extractions @Inject() (
 
                   val host = Utils.baseUrl(request)
 
-                  current.plugin[RabbitmqPlugin].foreach { _.extract(ExtractorMessage(id, id, host, key, Map.empty, f.length.toString, null, "")) }
+                  current.plugin[RabbitmqPlugin].foreach { _.extract(ExtractorMessage(id, id, host, key, Map.empty, f.length.toString, null, "", user.secretKey)) }
                   /*--- Insert DTS Requests  ---*/
                   val clientIP = request.remoteAddress
                   val serverIP = request.host
@@ -299,7 +299,7 @@ class Extractions @Inject() (
                     val key = "unknown." + "file." + fileType.replace(".", "_").replace("/", ".")
                     val host = Utils.baseUrl(request)
                     Logger.debug("---hostURL------" + host);
-                    current.plugin[RabbitmqPlugin].foreach { _.extract(ExtractorMessage(id, id, host, key, Map.empty, f.length.toString, null, "")) }
+                    current.plugin[RabbitmqPlugin].foreach { _.extract(ExtractorMessage(id, id, host, key, Map.empty, f.length.toString, null, "", user.secretKey)) }
                     /*--- Insert DTS Requests  ---*/
                     val clientIP = request.remoteAddress
                     val serverIP = request.host
@@ -352,7 +352,7 @@ class Extractions @Inject() (
               val fileType = file.contentType
               val key = "unknown." + "file." + fileType.replace(".", "_").replace("/", ".")
               val host = Utils.baseUrl(request)
-              current.plugin[RabbitmqPlugin].foreach { _.extract(ExtractorMessage(id, id, host, key, Map.empty, file.length.toString, null, "")) }
+              current.plugin[RabbitmqPlugin].foreach { _.extract(ExtractorMessage(id, id, host, key, Map.empty, file.length.toString, null, "", request.user.get.secretKey)) }
               Ok("Sent for Extraction. check the status")
             }
             case None =>

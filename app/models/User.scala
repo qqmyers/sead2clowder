@@ -21,6 +21,7 @@ trait User extends Identity {
   def position: Option[String]
   def friends: Option[List[String]]
   def viewed: Option[List[UUID]]
+  def secretKey: String
 
   /**
    * Get the avatar URL for this user's profile
@@ -98,7 +99,8 @@ case class MediciUser(
   pastprojects: List[String] = List.empty,
   position: Option[String] = None,
   friends: Option[List[String]] = None,
-  viewed: Option[List[UUID]] = None
+  viewed: Option[List[UUID]] = None,
+  secretKey: String = ""
   ) extends User
 
 case class Info(

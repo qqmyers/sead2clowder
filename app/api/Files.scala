@@ -380,7 +380,7 @@ class Files @Inject()(
                   current.plugin[VersusPlugin].foreach{ _.index(f.id.toString,fileType) }
 
                   // TODO replace null with None 
-	            current.plugin[RabbitmqPlugin].foreach{_.extract(ExtractorMessage(id, id, host, key, Map.empty, f.length.toString, null, flags))}
+	            current.plugin[RabbitmqPlugin].foreach{_.extract(ExtractorMessage(id, id, host, key, Map.empty, f.length.toString, null, flags, user.secretKey))}
 
 	            
 	            val dateFormat = new SimpleDateFormat("dd/MM/yyyy")
@@ -489,7 +489,7 @@ class Files @Inject()(
 
           // TODO replace null with None
           current.plugin[RabbitmqPlugin].foreach {
-            _.extract(ExtractorMessage(id, id, host, key, Map.empty, theFile.length.toString, null, flags))
+            _.extract(ExtractorMessage(id, id, host, key, Map.empty, theFile.length.toString, null, flags, request.user.get.secretKey))
           }
 
           Ok(toJson(Map("id" -> id.stringify)))
@@ -593,7 +593,7 @@ class Files @Inject()(
 	              
 	            current.plugin[RabbitmqPlugin].foreach {
                 _.extract(ExtractorMessage(new UUID(id), new UUID(id), host, key, Map.empty, f.length.toString,
-                  dataset_id, flags)) }
+                  dataset_id, flags, user.secretKey)) }
 	          
 	            val dateFormat = new SimpleDateFormat("dd/MM/yyyy")
 	          
@@ -626,7 +626,7 @@ class Files @Inject()(
             	  // TODO RK need to replace unknown with the server name and dataset type
             	  val dtkey = "unknown." + "dataset." + "unknown"
 
-              	  current.plugin[RabbitmqPlugin].foreach { _.extract(ExtractorMessage(dataset_id, dataset_id, host, dtkey, Map.empty, f.length.toString, dataset_id, "")) }
+              	  current.plugin[RabbitmqPlugin].foreach { _.extract(ExtractorMessage(dataset_id, dataset_id, host, dtkey, Map.empty, f.length.toString, dataset_id, "", user.secretKey)) }
 
             	  Logger.info("Uploading Completed")
               
@@ -705,7 +705,7 @@ class Files @Inject()(
                   current.plugin[VersusPlugin].foreach{ _.index(f.id.toString,fileType) }
                   // TODO replace null with None
                   current.plugin[RabbitmqPlugin].foreach {
-                    _.extract(ExtractorMessage(UUID(originalId), id, host, key, Map.empty, f.length.toString, null, flags))
+                    _.extract(ExtractorMessage(UUID(originalId), id, host, key, Map.empty, f.length.toString, null, flags, user.secretKey))
                   }
                   Ok(toJson(Map("id" -> id.stringify)))
                 }

@@ -411,6 +411,7 @@ POST 			/api/users/addUserDatasetView 											@api.Users.addUserDatasetView(e
 
 POST 			/api/users/createNewListInUser 											@api.Users.createNewListInUser(email: String, field: String, fieldList: List[String])															
 
+POST  /api/users/resetToken                     @api.Users.resetToken
 
 # ----------------------------------------------------------------------
 # MEDICI STATUS API

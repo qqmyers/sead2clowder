@@ -34,7 +34,7 @@ class Indexes @Inject() (multimediaSearch: MultimediaQueryService, previews: Pre
 	            val id = p.id
 	            current.plugin[RabbitmqPlugin].foreach{
                 // TODO replace null with None
-	              _.extract(ExtractorMessage(id, id, host, key, Map("section_id"->section_id), p.length.toString, null, ""))}
+	              _.extract(ExtractorMessage(id, id, host, key, Map("section_id"->section_id), p.length.toString, null, "", request.user.get.secretKey))}
 	            var fileType = p.contentType
 	            current.plugin[VersusPlugin].foreach{ _.indexPreview(id,fileType) }
 	            Ok(toJson("success"))
