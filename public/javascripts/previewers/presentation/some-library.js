@@ -2,6 +2,18 @@
 	  console.log("video presentation previewer for " + Configuration.id);  
 	  console.log("Updating tab " + Configuration.tab);
 	  
+	  /*IF
+	  	1)We are in the single file screen AND
+	  	2)The user does not have editing rights
+	  	In that case, we want the button for downloading the original ZIP file to be disabled when we have the merged video ready for download,
+	  	to avoid confusion of general users between downloading the merged video and the original ZIP file.
+	  */
+	  if(Configuration.authenticatedFileModify){
+		  $(document).ready(function() {
+			  $("#downloadButtonFile").css("display","none");
+		  });	  
+	  }
+	  
 	  var hostAddress = window.location.protocol + "//" + window.location.hostname + (window.location.port ? ':' + window.location.port: '');
 	  var pathJs = hostAddress + Configuration.jsPath + "/";
 	  
@@ -29,7 +41,7 @@
 		    	     "</video>"
 		    	  );
 		    	  $(useTab).append("<br/>");
-		    	  $(useTab).append("<a href='" + jsRoutes.api.Previews.download(videosIds[0]).url + "'>Download merged high-quality video.</a>");
+		    	  $(useTab).append("<a class='btn btn-default' href='" + jsRoutes.api.Previews.download(videosIds[0]).url + "'>Download merged high-quality video.</a>");
 		    	 },
 		    	 error: function(jqXHR, textStatus, errorThrown) { 
 		    	        alert("Status: " + textStatus); alert("Error: " + errorThrown); 
