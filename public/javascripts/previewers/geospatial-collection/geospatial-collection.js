@@ -97,8 +97,11 @@
 								console.log("NO - length undefined");
 								return;
 							}
+							if (data[0]["WMS Layer URL"] == undefined)
+								console.log("NO - no wms metadata field");
+								return;
 							if (data[0]["WMS Layer URL"] == "") {
-								console.log("NO - no wms metadata"); 
+								console.log("NO - wms metadata is empty");
 								return;
 							}
 							console.log("YES - it is a geospatial data");
