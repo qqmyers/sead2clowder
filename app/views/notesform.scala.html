@@ -6,11 +6,11 @@
 
 		<form class="form-inline" style="margin-top:20px;">
 			<div id="noteContainer_@id" style="display:block;">
-			  @Html(currentHTML.replaceAll("\t", "").replaceAll("\n", ""))
+			  @Html(currentHTML)
 			</div>
 			@if(hasEditAccess) {	
 				<div id="noteEditor_@id" style="display:none;">
-					<textarea name="content" class="notesArea" id="noteField_@id" style="width:100%;">@currentHTML.replaceAll("\t", "").replaceAll("\n", "")</textarea>
+					<textarea name="content" class="notesArea" id="noteField_@id" style="width:100%;">@currentHTML</textarea>
 				</div>
 				<button class="btn btn-default" onclick="return openForEdit();" style="display:inline;" id="noteEdit_@id">Edit</button>		
 				<button class="btn btn-default" onclick="return postNote('@id', '@posturl');" style="display:none;" id="notePost_@id">Post</button>
@@ -19,11 +19,10 @@
 		</form>
 		@if(hasEditAccess) {
 			<script language="javascript">
-				window["previousHTML"] = '@Html(currentHTML.replaceAll("\t", "").replaceAll("\n", ""))';
+				window["previousHTML"] = "@(Html(currentHTML.replace("\n","").replace("\"","\\\"")))";
 				
 				function postNote(id, posturl) {			
-					var html =  tinyMCE.get('noteField_@id').getContent();					
-								
+					var html =  tinyMCE.get('noteField_@id').getContent();			
 					console.log("Posting " + html + " to " + posturl);
 					var request = $.ajax({
 						url:  posturl,
