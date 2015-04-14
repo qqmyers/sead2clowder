@@ -205,6 +205,18 @@
 					  		}
 					  	}
 				  	</div>
+				  	<script type="text/javascript">
+				  		$(document).ready(function() {
+				  			window["currGalleriaWidth_@(f.id.toString)"]= $("#galleria_@(f.id.toString)").css("width").replace("px","");
+				  			$(window).resize(function(){
+				  				newWidth = $("#galleria_@(f.id.toString)").css("width").replace("px","");
+				  				if(newWidth != window["currGalleriaWidth_@(f.id.toString)"]){
+				  					$("#galleria_@(f.id.toString)").css("height", Math.round(parseInt($("#galleria_@(f.id.toString)").css("height").replace("px",""))*parseInt(newWidth)/parseFloat(window["currGalleriaWidth_@(f.id.toString)"]))+"px" );
+				  					window["currGalleriaWidth_@(f.id.toString)"]=newWidth;
+				  				}		
+				  			});
+				  		});
+				  	</script>
 				  </div>
 				</div>
 				  

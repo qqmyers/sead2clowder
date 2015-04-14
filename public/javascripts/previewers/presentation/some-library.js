@@ -34,7 +34,7 @@
 		    	  var videosIds = data.split("\n");
 		    		
 		    	  $(useTab).append(			  
-		    	     "<video width='750px' id='ourvideo_"+origFileId+"' controls>" +
+		    	     "<video width='100%' id='ourvideo_"+origFileId+"' controls>" +
 		    	     		"<source src='" + jsRoutes.api.Previews.download(videosIds[1]).url  + "' type='video/mp4'></source>" +
 		    	     		"<source src='" + jsRoutes.api.Previews.download(videosIds[2]).url  + "' type='video/webm'></source>"+
 		    	     		"<p>Your browser cannot play MP4 or WebM (maybe no codex), cannot play video.</p>"+
