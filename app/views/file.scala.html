@@ -290,8 +290,8 @@
 					  		<script>
 					  			function fixGalleriaTable(){
 					  				galleriaScenesVisible = $(".scrollTableGalleria tbody tr").length;
-						  			if(galleriaScenesVisible > 2)
-						  				galleriaScenesVisible = 2;					  		
+						  			if(galleriaScenesVisible > 5)
+						  				galleriaScenesVisible = 5;					  		
 						  			$(".scrollTableGalleria tbody").css("height", (parseInt($(".scrollTableGalleria tbody tr").css("height").replace("px",""))*galleriaScenesVisible)+"px");
 					  			}
 					  			fixGalleriaTable();

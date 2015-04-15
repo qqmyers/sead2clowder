@@ -296,8 +296,8 @@
 					  		<script>
 					  			function fixGalleriaTable_@(f.id.toString)(){
 					  				galleriaScenesVisible = $("#scrollTableGalleria_@(f.id.toString) tbody tr").length;
-						  			if(galleriaScenesVisible > 2)
-						  				galleriaScenesVisible = 2;					  		
+						  			if(galleriaScenesVisible > 5)
+						  				galleriaScenesVisible = 5;					  		
 						  			$("#scrollTableGalleria_@(f.id.toString) tbody").css("height", (parseInt($("#scrollTableGalleria_@(f.id.toString) tbody tr").css("height").replace("px",""))*galleriaScenesVisible)+"px");
 					  			}
 					  			fixGalleriaTable_@(f.id.toString)();
