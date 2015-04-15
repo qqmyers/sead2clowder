@@ -182,8 +182,8 @@
 			<!-- sections -->
 			@if(f.sections.size > 0) {	
 			  	<div class="row" style="padding-top: 10px" id="galleriaRow_@(f.id.toString)">
-			  	  <div class="col-md-6">
-				  	<div id="galleria_@(f.id.toString)" style="float:left;clear:none;width:600px;height:300px;">
+			  	  <div class="col-md-12">
+				  	<div id="galleria_@(f.id.toString)" style="float:left;clear:none;width:100%;height:400px;">
 					  	@f.sections.map { s =>
 					  		@if(s.preview.isDefined || s.thumbnail_id.isDefined) {
 					  			@if(s.thumbnail_id.isDefined){
@@ -221,31 +221,31 @@
 				</div>
 				  
 				<div class="row" style="padding-top: 10px" id="sectionsRow_@(f.id.toString)">
-				  <div class="col-md-10">
+				  <div class="col-md-12">
 				  	<div>
 				  		<h5>Sections</h5>
-						<table class="table">
+						<table class="table scrollTableGalleria" id="scrollTableGalleria_@(f.id.toString)">
 							<thead>
 								<tr>
-									<th>#</th>
-									<th>Thumbnail</th>
-									<th>Position</th>
-									<th>Description</th>>
-									<th>Find</th>
+									<th class="galleriaOrder">#</th>
+									<th class="galleriaTheThumbnail">Thumbnail</th>
+									<th class="galleriaPosition">Position</th>
+									<th class="galleriaDescr">Description</th>
+									<th class="galleriaFindSimilar">Find</th>
 								</tr>
 							</thead>
 							<tbody>
 					  		@f.sections.map { s =>
 					  			<tr>
-						  			<td>@(if (s.order > 0) s.order else "")</td>
-						  			<td>
+						  			<td class="galleriaOrder">@(if (s.order > 0) s.order else "")</td>
+						  			<td class="galleriaTheThumbnail">
 								  		@if(s.preview.isDefined || s.thumbnail_id.isDefined) {
 								  			@if(s.thumbnail_id.isDefined){
 								  				<img src="@(routes.Files.thumbnail(UUID(s.thumbnail_id.toString().substring(5,s.thumbnail_id.toString().length-1))))"				  			
 								  			} else {
 								  				<img src="@api.routes.Previews.download(s.preview.get.id)"
 								  			}
-								  				class="img-polaroid" style="max-width: 100px;max-height: 100px;" 
+								  				class="img-polaroid" style="max-width: 100%;" 
 								  			@if(s.startTime.isDefined) {
 								  		 		data-title="Shot" data-description="Starts at @s.startTime seconds."
 								  		 	} else {
@@ -258,7 +258,7 @@
 								  		 	></img>
 								  		 }
 					  				</td>
-						  			 <td>
+						  			 <td class="galleriaPosition">
 						  			 @if(s.startTime.isDefined) {
 						  			 	@(s.startTime.get / 60):@("%02d".format(s.startTime.get % 60))
 						  		 	 } else {
@@ -269,7 +269,7 @@
 						  		 		}
 						  		 	}
 						  			 </td>
-						  			 <td>
+						  			 <td class="galleriaDescr">
 						  			 	<span id="sectiondescr_@(s.id)"  style="display:block;">
 						  			 		@s.description.getOrElse("")
 						  			 	</span>
@@ -289,9 +289,22 @@
 									            </script>
 									     }
 						  			 </td>
-						  			 <td><a href="@routes.Search.searchMultimediaIndex(s.id)">Similar</a></td>
+						  			 <td class="galleriaFindSimilar"><a href="@routes.Search.searchMultimediaIndex(s.id)">Similar</a></td>
 					  			 </tr>
 					  		}
+					  		</tbody>
+					  		<script>
+					  			function fixGalleriaTable_@(f.id.toString)(){
+					  				galleriaScenesVisible = $("#scrollTableGalleria_@(f.id.toString) tbody tr").length;
+						  			if(galleriaScenesVisible > 2)
+						  				galleriaScenesVisible = 2;					  		
+						  			$("#scrollTableGalleria_@(f.id.toString) tbody").css("height", (parseInt($("#scrollTableGalleria_@(f.id.toString) tbody tr").css("height").replace("px",""))*galleriaScenesVisible)+"px");
+					  			}
+					  			fixGalleriaTable_@(f.id.toString)();
+					  			$(window).resize(function(){
+					  				fixGalleriaTable_@(f.id.toString)();
+					  			});
+					  		</script>
 				  		</table>
 				  	</div>
 				  </div>

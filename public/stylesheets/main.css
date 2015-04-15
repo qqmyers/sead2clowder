@@ -443,3 +443,42 @@ textarea, input[type='text'], input[type='password']{
 }
 
 
+
+
+.scrollTableGalleria{
+	width: 100%;
+}
+.scrollTableGalleria thead,.scrollTableGalleria tbody,.scrollTableGalleria tr,.scrollTableGalleria td,.scrollTableGalleria th{
+	display:block;
+}
+.scrollTableGalleria tr:after{
+	content: ' ';
+    display: block;
+    visibility: hidden;
+    clear: both;
+
+}
+.scrollTableGalleria tbody{
+	overflow-y: auto;
+}
+.scrollTableGalleria tbody td, .scrollTableGalleria thead th{
+            float: left;
+}
+.scrollTableGalleria .galleriaOrder{
+	width: 5%;
+}
+.scrollTableGalleria .galleriaTheThumbnail{
+	width: 20%;
+}
+.scrollTableGalleria .galleriaPosition{
+	width: 20%;
+}
+.scrollTableGalleria .galleriaDescr{
+	width: 35%;
+}
+.scrollTableGalleria .galleriaFindSimilar{
+	width: 20%;
+}
+.scrollTableGalleria thead{
+	width:98%;
+}
