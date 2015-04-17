@@ -181,7 +181,8 @@
 					  	@sections.map { s =>
 					  		@if(s.preview.isDefined || s.thumbnail_id.isDefined) {
 					  			@if(s.thumbnail_id.isDefined){
-					  				<img src="@(routes.Files.thumbnail(UUID(s.thumbnail_id.toString().substring(5,s.thumbnail_id.toString().length-1))))"				  			
+					  				<a href="@api.routes.Previews.download(s.preview.get.id)">
+					  					<img src="@(routes.Files.thumbnail(UUID(s.thumbnail_id.toString().substring(5,s.thumbnail_id.toString().length-1))))"				  			
 					  			} else {
 					  				<img src="@api.routes.Previews.download(s.preview.get.id)"
 					  			}					  			
@@ -196,6 +197,9 @@
 					  		 		}
 					  		 	}
 					  		 	></img>
+					  		 	@if(s.thumbnail_id.isDefined){
+					  		 		</a>
+					  		 	}
 					  		}
 					  	}
 				  	</div>
