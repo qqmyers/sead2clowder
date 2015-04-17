@@ -5,12 +5,7 @@ import play.api.mvc.Action
 import play.api.mvc.BodyParser
 import play.api.mvc.Controller
 import play.api.mvc.Result
-import securesocial.core.AuthenticationMethod
-import securesocial.core.Authorization
-import securesocial.core.SecureSocial
-import securesocial.core.SocialUser
-import securesocial.core.IdentityId
-import securesocial.core.UserService 
+import securesocial.core.{AuthenticationMethod, Authorization, IdentityId, SecureSocial, SocialUser, UserService, Authenticator, Identity}
 import securesocial.core.providers.UsernamePasswordProvider
 import org.mindrot.jbcrypt._
 import models.UUID
@@ -44,12 +39,21 @@ trait ApiController extends Controller {
               Unauthorized("Not authenticated")
           }
           case None => {
-            SecureSocial.currentUser(request) match { 
-              case Some(identity) => {   //User cookie
+            var identityOption: Option[Identity] = None
+            val authenticator = SecureSocial.authenticatorFromRequest
+            authenticator match{
+              case Some(authenticator) =>{
+                identityOption = UserService.find(authenticator.identityId)
+              }
+            }
+            
+            identityOption match { 
+              case Some(identity) => {   //User cookie                
                 if(identity.fullName.equals("Anonymous User")){
                   Unauthorized("Not authorized")
                 }
                 else{
+                	Authenticator.save(authenticator.get.touch)
                 	if (authorization.isInstanceOf[WithPermission]){
 	                  var authorPermission = authorization.asInstanceOf[WithPermission]
 	                  if (WithPermission(authorPermission.permission,resourceId).isAuthorized(identity))

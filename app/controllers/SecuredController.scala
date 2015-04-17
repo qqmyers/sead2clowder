@@ -14,15 +14,9 @@ import play.api.mvc.BodyParser
 import play.api.mvc.Controller
 import play.api.mvc.Result
 import play.api.mvc.Results
-import securesocial.core.AuthenticationMethod
-import securesocial.core.Authorization
-import securesocial.core.IdentityProvider
-import securesocial.core.SecureSocial
-import securesocial.core.SocialUser
-import securesocial.core.UserService
+import securesocial.core.{AuthenticationMethod, Authorization, IdentityProvider, IdentityId, SecureSocial, SocialUser, UserService, Authenticator, Identity}
 import securesocial.core.providers.UsernamePasswordProvider
 import securesocial.core.providers.utils.RoutesHelper
-import securesocial.core.IdentityId
 import models.UUID
 import play.api.Play.current
 
@@ -101,31 +95,30 @@ trait SecuredController extends Controller {
 	            }
 	          }
 	          case None => {
-	            SecureSocial.currentUser(request) match { // calls from browser
+	            var identityOption: Option[Identity] = None
+	            val authenticator = SecureSocial.authenticatorFromRequest
+	            authenticator match{
+	              case Some(authenticator) =>{
+	                identityOption = UserService.find(authenticator.identityId)
+	              }
+	            }
+	            
+	            identityOption match { // calls from browser
 	              case Some(identity) => {
 	               if(identity.fullName.equals("Anonymous User")){
 	            	   Unauthorized("Not authorized")
                   }
-                   else{ 
+                   else{
+                    Authenticator.save(authenticator.get.touch)
 	                if (authorization.isInstanceOf[WithPermission]){
 	                  var authorPermission = authorization.asInstanceOf[WithPermission]
 	                  if (WithPermission(authorPermission.permission,resourceId).isAuthorized(identity))
 	                	  f(RequestWithUser(Some(identity), request))
 	                  else
-	                		if(SecureSocial.currentUser.isDefined){  //User logged in but not authorized, so redirect to 'not authorized' page
-		                    	Results.Redirect(routes.Authentication.notAuthorized)
-		                    }
-		                    else{   //User not logged in, so redirect to login page
-		                    	Results.Redirect(RoutesHelper.login.absoluteURL(IdentityProvider.sslEnabled)).flashing("error" -> "You are not authorized.")
-		                    }
+		                    Results.Redirect(routes.Authentication.notAuthorized)
 	                }
 	                else
-	                		if(SecureSocial.currentUser.isDefined){  //User logged in but not authorized, so redirect to 'not authorized' page
-		                    	Results.Redirect(routes.Authentication.notAuthorized)
-		                    }
-		                    else{   //User not logged in, so redirect to login page
-		                    	Results.Redirect(RoutesHelper.login.absoluteURL(IdentityProvider.sslEnabled)).flashing("error" -> "You are not authorized.")
-		                    }
+		                    Results.Redirect(routes.Authentication.notAuthorized)
 	               }
 	              }
 	              case None => {
