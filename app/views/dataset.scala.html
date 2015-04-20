@@ -271,9 +271,7 @@
 						  		 	}
 						  			 </td>
 						  			 <td class="galleriaDescr">
-						  			 	<span id="sectiondescr_@(s.id)"  style="display:block;">
-						  			 		@s.description.getOrElse("")
-						  			 	</span>
+						  			 	<span id="sectiondescr_@(s.id)"  style="display:block;white-space: pre-line;">@s.description.getOrElse("")</span>
 						  			 	@if(authenticatedIndividualResourceModify){
 						  			 			<div id="sectiondescrEditArea_@(s.id)" style="display:none;">
 													<textarea name="sectiondescrText" class="sectionTextBox" id="sectiondescrText_@(s.id)" style="width:100%; height:100px;">@s.description.getOrElse("")</textarea>

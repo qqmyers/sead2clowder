@@ -1,6 +1,6 @@
 // Author: Constantinos Sophocleous
 			function postSectionDescr(id, posturl) {			
-				var theText =  $('#sectiondescrText_'+id).val();
+				var theText =  $('#sectiondescrText_'+id).val();				
 							
 				console.log("Posting " + theText + " to " + posturl);
 				var request = $.ajax({
@@ -11,7 +11,7 @@
 		     	});
 				request.done(function (response, textStatus, jqXHR) { 
 					console.log("Response " + response);
-					window["previousSectiondescr_"+id] =  $('#sectiondescrText_'+id).val(); 
+					window["previousSectiondescr_"+id] =  $('#sectiondescrText_'+id).val();
 					$('#sectiondescr_'+id).text(window["previousSectiondescr_"+id]);									
 					$('#sectiondescrEditArea_'+id).css("display","none");
 					$('#sectiondescr_'+id).css("display","block");
