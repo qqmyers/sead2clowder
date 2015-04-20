@@ -24,6 +24,9 @@ import models.Dataset
 
 object ThumbnailFound extends Exception {}
 
+/**
+ * @author Constantinos Sophocleous
+ */
 @Singleton
 class Collections @Inject()(datasets: DatasetService, collections: CollectionService, accessRights: UserAccessRightsService, appConfiguration: AppConfigurationService) extends SecuredController {
 

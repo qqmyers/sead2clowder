@@ -25,6 +25,8 @@ import com.mongodb.casbah.commons.TypeImports.ObjectId
 import com.mongodb.casbah.WriteConcern
 /**
  * Created by lmarini on 2/17/14.
+ * @author Luigi Marini
+ * @author Constantinos Sophocleous
  */
 @Singleton
 class MongoDBPreviewService @Inject()(files: FileService, tiles: TileService) extends PreviewService {

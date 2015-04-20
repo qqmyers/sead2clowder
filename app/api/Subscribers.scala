@@ -14,6 +14,9 @@ import services.SocialUserService
 import services.DI
 import services.SubscriberService
 
+/**
+ * @author Constantinos Sophocleous
+ */
 object Subscribers extends ApiController {
   
   val socialUserService: SocialUserService = DI.injector.getInstance(classOf[SocialUserService])

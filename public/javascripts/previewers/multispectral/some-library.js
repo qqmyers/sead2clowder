@@ -1,3 +1,4 @@
+// Author: Constantinos Sophocleous
 (function ($, Configuration) {
 	console.log("Gigaimage previewer (multispectral) for " + Configuration.id);
 	

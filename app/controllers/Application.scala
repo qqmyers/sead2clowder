@@ -27,6 +27,7 @@ import api.Permission
  * Main application controller.
  * 
  * @author Luigi Marini
+ * @author Constantinos Sophocleous
  */
 @Singleton
 class Application  @Inject() (files: FileService, appAppearance: AppAppearanceService) extends SecuredController {

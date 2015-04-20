@@ -6,6 +6,8 @@ import play.api.libs.json.JsValue
 
 /**
  * Created by lmarini on 2/27/14.
+ * @author Constantinos Sophocleous
+ * @author Luigi Marini
  */
 trait TileService {
 

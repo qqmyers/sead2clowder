@@ -3,7 +3,9 @@ package services
 import models.UserPermissions
 import securesocial.core.Identity
 
-
+/**
+ * @author Constantinos Sophocleous
+ */
 trait UserAccessRightsService {
   
   /**

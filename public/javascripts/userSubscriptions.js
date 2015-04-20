@@ -1,3 +1,4 @@
+// Author: Constantinos Sophocleous
 function subscribeUser(userIdentifier){
 	
 	var identifierData = {};

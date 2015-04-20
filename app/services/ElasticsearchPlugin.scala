@@ -23,6 +23,7 @@ import org.elasticsearch.client.Client
  * Elasticsearch plugin.
  *
  * @author Luigi Marini
+ * @author Constantinos Sophocleous
  *
  */
 class ElasticsearchPlugin(application: Application) extends Plugin {

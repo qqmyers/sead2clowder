@@ -1,3 +1,4 @@
+// Author: Constantinos Sophocleous
 			function postSectionDescr(id, posturl) {			
 				var theText =  $('#sectiondescrText_'+id).val();
 							

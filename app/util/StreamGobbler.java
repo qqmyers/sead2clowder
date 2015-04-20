@@ -7,6 +7,9 @@ import java.io.InputStreamReader;
 
 import play.Logger;
 
+/**
+ * @author Constantinos Sophocleous
+ */
 public class StreamGobbler  extends Thread {
 
 	protected InputStream is;

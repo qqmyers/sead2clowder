@@ -32,6 +32,7 @@ import services.AppConfigurationService
  * Manage users.
  * 
  * @author Luigi Marini
+ * @author Constantinos Sophocleous
  */
 object Users extends Controller {
   

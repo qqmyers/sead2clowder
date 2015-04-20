@@ -1,3 +1,4 @@
+// Author: Constantinos Sophocleous
 (function ($, Configuration) {
 	console.log("Gigaimage previewer (zoom.it) for " + Configuration.id);
 	

@@ -24,6 +24,7 @@ import models.UserPermissions
  * Manage files.
  *
  * @author Luigi Marini
+ * @author Constantinos Sophocleous
  */
 class Files @Inject() (
   files: FileService,

@@ -12,6 +12,7 @@ import models.UUID
  * Comments on datasets.
  *
  * @author Rob Kooper
+ * @author Constantinos Sophocleous
  */
 class Comments @Inject()(datasets: DatasetService, comments: CommentService) extends ApiController {
 

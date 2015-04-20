@@ -1,3 +1,4 @@
+// Author: Constantinos Sophocleous
 function removeDataset(datasetId,event, reloadPage){
 	if(reloadPage === undefined) reloadPage = false;
 	

@@ -16,7 +16,9 @@ import models.UUID
 import scala.util.Try
 import services.FBNotFoundException
 
-
+/**
+ * @author Constantinos Sophocleous
+ */
 class MongoDBSubscriberService extends SubscriberService {
 
   def findOneByEmail(email: String): Option[Subscriber] = {

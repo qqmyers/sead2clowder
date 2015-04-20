@@ -6,6 +6,9 @@ import javax.mail._
 import javax.mail.internet._
 import javax.activation._
 
+/**
+ * @author Constantinos Sophocleous
+ */
 class MailerPlugin (application: Application) extends Plugin {
 
    val from = play.Play.application().configuration().getString("smtp.from")  

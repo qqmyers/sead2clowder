@@ -4,6 +4,7 @@ package models
  * A portion of a file.
  *
  * @author Luigi Marini
+ * @author Constantinos Sophocleous
  *
  */
 case class Section(

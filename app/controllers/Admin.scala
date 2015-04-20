@@ -33,6 +33,7 @@ import javax.inject.{Inject, Singleton}
  * Administration pages.
  *
  * @author Luigi Marini
+ * @author Constantinos Sophocleous
  *
  */
 @Singleton

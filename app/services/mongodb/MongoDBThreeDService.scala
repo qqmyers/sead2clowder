@@ -18,6 +18,8 @@ import scala.Some
 
 /**
  * Created by lmarini on 2/26/14.
+ * @author Constantinos Sophocleous
+ * @author Luigi Marini
  */
 class MongoDBThreeDService extends ThreeDService {
 

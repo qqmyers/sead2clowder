@@ -1,3 +1,4 @@
+// Author: Constantinos Sophocleous
 function setPermission(fullName, email, resourceType, resourceId, permissionType, callbackName, callback, cbParam1, toSubresources){
 	
 	var setOrder = {};

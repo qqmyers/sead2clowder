@@ -8,6 +8,7 @@ import securesocial.core.Identity
  * Uploaded files.
  *
  * @author Luigi Marini
+ * @author Constantinos Sophocleous
  *
  */
 case class File(

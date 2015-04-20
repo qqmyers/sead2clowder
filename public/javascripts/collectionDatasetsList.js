@@ -1,3 +1,4 @@
+// Author: Constantinos Sophocleous
 	//Counters for DOM node uniqueness.
 	var elementCounterDatasets = 1;
 	var elementCounterAdd = 1;

@@ -35,6 +35,7 @@ import securesocial.core.Identity
  * Dataset API.
  *
  * @author Luigi Marini
+ * @author Constantinos Sophocleous
  *
  */
 @Api(value = "/datasets", listingPath = "/api-docs.json/datasets", description = "A dataset is a container for files and metadata")

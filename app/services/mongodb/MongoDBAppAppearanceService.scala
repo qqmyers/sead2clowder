@@ -8,6 +8,9 @@ import MongoContext.context
 import play.api.Play.current
 import play.api.Logger
 
+/**
+ * @author Constantinos Sophocleous
+ */
 class MongoDBAppAppearanceService extends AppAppearanceService {
 
   def getDefault(): Option[AppAppearance] = {

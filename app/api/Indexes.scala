@@ -14,6 +14,7 @@ import scala.Some
  * Index data.
  * 
  * @author Luigi Marini
+ * @author Constantinos Sophocleous
  *
  */
 @Inject

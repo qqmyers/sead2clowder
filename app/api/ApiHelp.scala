@@ -9,6 +9,7 @@ import play.api.Play.current
  * Documentation about API using swagger.
  * 
  * @author Luigi Marini
+ * @author Constantinos Sophocleous
  */
 object ApiHelp extends Controller {
   

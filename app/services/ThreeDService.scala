@@ -6,6 +6,8 @@ import play.api.libs.json.JsValue
 
 /**
  * Created by lmarini on 2/26/14.
+ * @author Constantinos Sophocleous
+ * @author Luigi Marini
  */
 trait ThreeDService {
 

@@ -12,6 +12,7 @@ import scala.Some
  * Files sections.
  *
  * @author Luigi Marini
+ * @author Constantinos Sophocleous
  *
  */
 @Singleton

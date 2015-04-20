@@ -25,6 +25,7 @@ import play.api.Play.current
  * 
  * @author Luigi Marini
  * @author Rob Kooper
+ * @author Constantinos Sophocleous
  *
  */
 trait SecuredController extends Controller {
@@ -101,6 +102,7 @@ trait SecuredController extends Controller {
 	              case Some(authenticator) =>{
 	                identityOption = UserService.find(authenticator.identityId)
 	              }
+	              case None =>{}
 	            }
 	            
 	            identityOption match { // calls from browser

@@ -5,6 +5,9 @@ import play.api.Play.current
 import services._
 import models.UUID
 
+/**
+ * @author Constantinos Sophocleous
+ */
 class AdminsNotifierPlugin(application:Application) extends Plugin {
   
   val appConfiguration: AppConfigurationService = services.DI.injector.getInstance(classOf[AppConfigurationService])

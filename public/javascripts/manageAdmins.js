@@ -1,3 +1,4 @@
+// Author: Constantinos Sophocleous
 function removeAdmin(email){
 
 	var adminId = {};

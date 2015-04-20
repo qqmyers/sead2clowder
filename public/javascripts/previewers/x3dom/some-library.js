@@ -1,3 +1,4 @@
+// Author: Constantinos Sophocleous
 
     function insertAfter(newElement,targetElement) {
     	var parent = targetElement.parentNode;     

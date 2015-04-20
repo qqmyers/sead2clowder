@@ -28,6 +28,9 @@ import services.DI
 import services.SubscriberService
 import services.FBNotFoundException
 
+/**
+ * @author Constantinos Sophocleous
+ */
 object Subscribers extends SecuredController {
   
   val subscriberService: SubscriberService = DI.injector.getInstance(classOf[SubscriberService])

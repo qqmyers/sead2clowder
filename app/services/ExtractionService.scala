@@ -6,6 +6,8 @@ import models.{UUID, Extraction}
  * Track information about individual extractions.
  *
  * Created by lmarini on 2/21/14.
+ * @author Luigi Marini
+ * @author Constantinos Sophocleous
  */
 trait ExtractionService {
 

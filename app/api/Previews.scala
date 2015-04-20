@@ -20,6 +20,7 @@ import services.{TileService, PreviewService, UserAccessRightsService, FileServi
  * Files and datasets previews.
  *
  * @author Luigi Marini
+ * @author Constantinos Sophocleous
  *
  */
 @Singleton

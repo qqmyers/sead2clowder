@@ -21,6 +21,9 @@ import org.apache.http.client.methods.HttpGet
 import org.apache.http.util.EntityUtils
 import play.api.libs.json.JsObject
 
+/**
+ * @author Constantinos Sophocleous
+ */
 class FacebookService (application: Application) extends Plugin  {
   
   val subscriberService: SubscriberService = DI.injector.getInstance(classOf[SubscriberService])

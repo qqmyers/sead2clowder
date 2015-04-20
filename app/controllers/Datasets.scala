@@ -23,6 +23,7 @@ import securesocial.core.Identity
  * A dataset is a collection of files and streams.
  *
  * @author Luigi Marini
+ * @author Constantinos Sophocleous
  *
  */
 class Datasets @Inject()(

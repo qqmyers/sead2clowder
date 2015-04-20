@@ -22,6 +22,7 @@ case class RequestWithUser[A](user: Option[Identity], request: Request[A]) exten
  * List of all permissions available in Medici
  * 
  * @author Rob Kooper
+ * @author Constantinos Sophocleous
  */
 object Permission extends Enumeration {
 	type Permission = Value

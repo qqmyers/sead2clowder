@@ -5,6 +5,9 @@ import models.UUID
 
 case class FBNotFoundException(msg:String) extends Exception(msg)
 
+/**
+ * @author Constantinos Sophocleous
+ */
 trait SubscriberService {
   
   def findOneByEmail(email: String): Option[Subscriber]

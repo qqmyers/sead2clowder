@@ -14,6 +14,7 @@ import models.UUID
  * New way to wrap actions for authentication so that we have access to Identity.
  *
  * @author Rob Kooper
+ * @author Constantinos Sophocleous
  *
  */
 trait ApiController extends Controller {
@@ -45,6 +46,7 @@ trait ApiController extends Controller {
               case Some(authenticator) =>{
                 identityOption = UserService.find(authenticator.identityId)
               }
+              case None =>{}
             }
             
             identityOption match { 

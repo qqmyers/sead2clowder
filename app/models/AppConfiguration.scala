@@ -4,6 +4,7 @@ package models
  * Tracks application wide configurations.
  *
  * @author Luigi Marini
+ * @author Constantinos Sophocleous
  *
  */
 case class AppConfiguration(

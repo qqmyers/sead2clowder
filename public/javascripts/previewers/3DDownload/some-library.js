@@ -1,3 +1,4 @@
+// Author: Constantinos Sophocleous
 function NavigateToSite(prNum){
     var ddl = document.getElementById("ddlMyList");
     var selectedVal = ddl.options[ddl.selectedIndex].value;

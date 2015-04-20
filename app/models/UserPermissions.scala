@@ -2,6 +2,9 @@ package models
 
 import securesocial.core.Identity
 
+/**
+ * @author Constantinos Sophocleous
+ */
 case class UserPermissions (
 	id: UUID = UUID.generate,
 	email: String,

@@ -1,3 +1,4 @@
+// Author: Constantinos Sophocleous
 function removeCollection(collectionId,event){
 
 	var request = $.ajax({

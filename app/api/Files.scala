@@ -58,6 +58,7 @@ import securesocial.core.Identity
  * Json API for files.
  *
  * @author Luigi Marini
+ * @author Constantinos Sophocleous
  *
  */
 @Api(value = "/files", listingPath = "/api-docs.json/files", description = "A file is the raw bytes plus metadata.")

@@ -24,6 +24,7 @@ import javax.net.ssl._
  * Rabbitmq service.
  *
  * @author Luigi Marini
+ * @author Constantinos Sophocleous
  *
  */
 class RabbitmqPlugin(application: Application) extends Plugin {

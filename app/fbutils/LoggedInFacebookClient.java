@@ -3,6 +3,9 @@ package fbutils;
 import com.restfb.DefaultFacebookClient;
 import com.restfb.FacebookClient.AccessToken;
 
+/**
+ * @author Constantinos Sophocleous
+ */
 public class LoggedInFacebookClient extends DefaultFacebookClient {
 
 	public LoggedInFacebookClient() {

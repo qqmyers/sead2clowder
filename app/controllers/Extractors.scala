@@ -10,6 +10,7 @@ import services.ExtractionService
  * Information about extractors.
  * 
  * @author Luigi Marini
+ * @author Constantinos Sophocleous
  *
  */
 @Singleton

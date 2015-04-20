@@ -33,6 +33,7 @@ import securesocial.core.Identity
  * Use Mongodb to store datasets.
  * 
  * @author Luigi Marini
+ * @author Constantinos Sophocleous
  *
  */
 @Singleton

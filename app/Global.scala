@@ -10,6 +10,7 @@ import services._
  * Configure application. Ensure mongo indexes if mongo plugin is enabled.
  *
  * @author Luigi Marini
+ * @author Constantinos Sophocleous
  */
 object Global extends GlobalSettings {
 

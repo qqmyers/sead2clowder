@@ -11,6 +11,8 @@ import play.api.Play.current
 
 /**
  * Created by lmarini on 2/21/14.
+ * @author Luigi Marini
+ * @author Constantinos Sophocleous
  */
 class MongoDBAppConfigurationService extends AppConfigurationService {
 

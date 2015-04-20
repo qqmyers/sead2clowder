@@ -11,6 +11,9 @@ import play.api.Play.current
 import play.api.Play.configuration
 import models.UUID
 
+/**
+ * @author Constantinos Sophocleous
+ */
 @Singleton
 class Search @Inject() (files: FileService, datasets: DatasetService, collections: CollectionService, sparql: RdfSPARQLService, accessRights: UserAccessRightsService)  extends ApiController {
   /**

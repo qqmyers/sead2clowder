@@ -1,3 +1,4 @@
+// Author: Constantinos Sophocleous
 String.prototype.endsWith = function(str) 
 {return (this.match(str+"$")==str)}
 

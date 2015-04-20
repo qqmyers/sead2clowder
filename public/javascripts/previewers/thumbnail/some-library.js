@@ -1,3 +1,4 @@
+// Authors: Luigi Marini, Rob Kooper, Constantinos Sophocleous
 (function ($, Configuration) {	
 	var prNum = Configuration.tab.replace("#previewer","");
 	window["configs" + prNum] = Configuration;

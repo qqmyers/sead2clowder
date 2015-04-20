@@ -2,6 +2,9 @@ package models
 
 import java.util.Date
 
+/**
+ * @author Constantinos Sophocleous
+ */
 case class Subscriber (
   id: UUID = UUID.generate,
   name: String,

@@ -11,6 +11,8 @@ import com.mongodb.casbah.commons.MongoDBObject
 
 /**
  * Created by lmarini on 2/21/14.
+ * @author Luigi Marini
+ * @author Constantinos Sophocleous
  */
 class MongoDBExtractionService extends ExtractionService {
 

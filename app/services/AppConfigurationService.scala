@@ -6,6 +6,9 @@ import models.AppConfiguration
  * Application wide configuration options.
  *
  * Created by lmarini on 2/21/14.
+ * 
+ * @author Luigi Marini
+ * @author Constantinos Sophocleous
  */
 trait AppConfigurationService {
 

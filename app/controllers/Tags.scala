@@ -14,6 +14,7 @@ import javax.inject.Inject
  * Tagging.
  * 
  * @author Luigi Marini
+ * @author Constantinos Sophocleous
  */
 class Tags @Inject()(datasets: DatasetService, files: FileService, sections: SectionService, accessRights: UserAccessRightsService) extends SecuredController {
 

@@ -7,6 +7,9 @@ import play.api.Logger
 import javax.inject.Inject
 import services.ThreeDService
 
+/**
+ * @author Constantinos Sophocleous
+ */
 class ThreeDTexture @Inject()(threeD: ThreeDService) extends Controller with ApiController {
   
     /**

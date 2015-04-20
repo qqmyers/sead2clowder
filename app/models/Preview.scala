@@ -6,6 +6,7 @@ import com.mongodb.casbah.Imports._
  * Preview bytes and metadata.
  *
  * @author Luigi Marini
+ * @author Constantinos Sophocleous
  */
 case class Preview(
   id: UUID = UUID.generate,
