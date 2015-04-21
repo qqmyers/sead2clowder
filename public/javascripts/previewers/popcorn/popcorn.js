@@ -13,7 +13,7 @@
 	  
 	  var s = document.createElement("script");
 	  s.type = "text/javascript";
-	  s.src = pathJs + "popcorn-complete.min.js";
+	  s.src = pathJs + "popcorn-complete.js";
 	  console.log("Updating tab " + useTab);
 	  $(useTab).append(s);
 	  $(useTab).append("<br/>");
