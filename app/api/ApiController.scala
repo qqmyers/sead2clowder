@@ -16,6 +16,7 @@ import services.DI
  * New way to wrap actions for authentication so that we have access to Identity.
  *
  * @author Rob Kooper
+ * @author Constantinos Sophocleous
  *
  */
 trait ApiController extends Controller {

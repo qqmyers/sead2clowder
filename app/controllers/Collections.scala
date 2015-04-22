@@ -21,6 +21,9 @@ import org.apache.commons.lang.StringEscapeUtils
 
 object ThumbnailFound extends Exception {}
 
+/**
+ * @author Constantinos Sophocleous
+ */
 @Singleton
 class Collections @Inject()(datasets: DatasetService, collections: CollectionService, previewsService: PreviewService) extends SecuredController {  
 

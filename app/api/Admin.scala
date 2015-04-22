@@ -11,6 +11,7 @@ import play.api.Logger
  * Admin endpoints for JSON API.
  *
  * @author Luigi Marini
+ * @author Constantinos Sophocleous
  */
 object Admin extends Controller with ApiController {
 

@@ -26,6 +26,7 @@ import securesocial.core.Identity
  * Manage files.
  *
  * @author Luigi Marini
+ * @author Constantinos Sophocleous
  */
 class Files @Inject() (
   files: FileService,

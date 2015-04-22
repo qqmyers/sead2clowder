@@ -20,6 +20,7 @@ import models.UUID
  * Text search.
  *
  * @author Luigi Marini
+ * @author Constantinos Sophocleous
  */
 class Search @Inject() (
   datasets: DatasetService,

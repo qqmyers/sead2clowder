@@ -20,6 +20,7 @@ import play.api.Play.current
  * Tagging.
  * 
  * @author Luigi Marini
+ * @author Constantinos Sophocleous
  */
 class Tags @Inject()(collections: CollectionService, datasets: DatasetService, files: FileService, sections: SectionService) extends SecuredController {
 

@@ -12,6 +12,7 @@ import api.Permission
  * Login, logout, signup.
  * 
  * @author Luigi Marini
+ * @author Constantinos Sophocleous
  *
  */
 object Authentication extends SecuredController {

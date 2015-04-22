@@ -7,6 +7,9 @@ import play.api.Logger
 import javax.inject.{Inject, Singleton}
 import services.TileService
 
+/**
+ * @author Constantinos Sophocleous
+ */
 @Singleton
 class ZoomIt @Inject()(tiles: TileService) extends Controller with ApiController {
 

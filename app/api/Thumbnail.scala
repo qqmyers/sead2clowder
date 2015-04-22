@@ -7,7 +7,9 @@ import play.api.Logger
 import javax.inject.{Inject, Singleton}
 import services.ThumbnailService
 
-
+/**
+ * @author Constantinos Sophocleous
+ */
 @Singleton
 class Thumbnail @Inject() (thumbnails: ThumbnailService) extends Controller with ApiController {
   

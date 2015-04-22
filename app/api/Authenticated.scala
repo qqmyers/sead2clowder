@@ -22,6 +22,7 @@ import securesocial.core.IdentityId
  * Check in this order: basic authentication, token in url, cookie from browser session.
  * 
  * @author Luigi Marini
+ * @author Constantinos Sophocleous
  *
  */
 case class Authenticated[A](action: Action[A]) extends Action[A] {

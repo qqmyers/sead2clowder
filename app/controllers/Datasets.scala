@@ -28,6 +28,7 @@ import scala.collection.mutable.ListBuffer
  * A dataset is a collection of files and streams.
  *
  * @author Luigi Marini
+ * @author Constantinos Sophocleous
  *
  */
 class Datasets @Inject()(
