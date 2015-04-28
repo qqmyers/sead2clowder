@@ -35,6 +35,7 @@ case class ExtractorMessage(
  * Rabbitmq service.
  *
  * @author Luigi Marini
+ * @author Constantinos Sophocleous
  * @author Rob Kooper
  * @author Smruti Padhy
  */

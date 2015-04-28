@@ -38,7 +38,7 @@ import securesocial.core.Identity
  * Use mongo for both metadata and blobs.
  * 
  * @author Luigi Marini
- *
+ * @author Constantinos Sophocleous
  */
 @Singleton
 class MongoDBFileService @Inject() (

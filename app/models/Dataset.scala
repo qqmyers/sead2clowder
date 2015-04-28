@@ -9,6 +9,7 @@ import securesocial.core.Identity
  *
  *
  * @author Luigi Marini
+ * @author Constantinos Sophocleous
  *
  */
 case class Dataset(

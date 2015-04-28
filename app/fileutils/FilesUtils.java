@@ -13,7 +13,9 @@ import org.json.XML;
 
 import org.apache.commons.io.FileUtils;
 
-
+/**
+ * @author Constantinos Sophocleous
+ */
 public class FilesUtils {
 
 	public static String getMainFileTypeOfZipFile(File compressedFile, String filename, String containerType){

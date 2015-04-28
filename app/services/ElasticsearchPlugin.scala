@@ -20,6 +20,7 @@ import play.api.Play.current
  * Elasticsearch plugin.
  *
  * @author Luigi Marini
+ * @author Constantinos Sophocleous
  *
  */
 class ElasticsearchPlugin(application: Application) extends Plugin {

@@ -4,6 +4,9 @@ import play.api.{ Plugin, Logger, Application }
 import play.api.Play.current
 import models.UUID
 
+/**
+ * @author Constantinos Sophocleous
+ */
 class AdminsNotifierPlugin(application:Application) extends Plugin {
   override def onStart() {
     Logger.debug("Starting Admins Notifier Plugin")

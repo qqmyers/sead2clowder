@@ -25,6 +25,8 @@ import collection.JavaConverters._
 
 /**
  * Created by lmarini on 2/17/14.
+ * @author Luigi Marini
+ * @author Constantinos Sophocleous
  */
 @Singleton
 class MongoDBPreviewService @Inject()(files: FileService, tiles: TileService, storage: ByteStorageService) extends PreviewService {

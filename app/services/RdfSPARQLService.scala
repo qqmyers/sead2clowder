@@ -2,6 +2,9 @@ package services
 
 import models.UUID
 
+/**
+ * @author Constantinos Sophocleous
+ */
 trait RdfSPARQLService {
 
   def addFileToGraph(fileId: UUID, selectedGraph: String = "rdfXMLGraphName"): Null

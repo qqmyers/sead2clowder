@@ -10,6 +10,7 @@ import util.ResourceLister
  *
  * @author Luigi Marini
  * @author Rob Kooper
+ * @author Constantinos Sophocleous
  */
 trait AppConfigurationService {
   /** Adds an additional value to the property with the specified key. */

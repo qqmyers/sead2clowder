@@ -6,6 +6,8 @@ import play.api.libs.json.JsValue
 
 /**
  * Created by lmarini on 2/17/14.
+ * @author Luigi Marini
+ * @author Constantinos Sophocleous
  */
 trait PreviewService {
 

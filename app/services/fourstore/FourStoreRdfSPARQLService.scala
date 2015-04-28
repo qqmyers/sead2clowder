@@ -15,6 +15,9 @@ import services.{RdfSPARQLService, DI, DatasetService}
 import javax.inject.{Inject, Singleton}
 import models.UUID
 
+/**
+ * @author Constantinos Sophocleous
+ */
 @Singleton
 class FourStoreRdfSPARQLService @Inject() (datasets: DatasetService) extends RdfSPARQLService {
 
