@@ -7,9 +7,7 @@ import util.ResourceLister
  * Application wide information regarding metadata, such as
  * user metadata definitions.
  *
- * @author Luigi Marini
- * @author Rob Kooper
- * @author Rui Liu, copied from AppConfigurationService.scala.
+ * @author Rui Liu
  */
 trait MetadataInfoService {
   /** Adds an additional value to the property with the specified key. */
@@ -65,8 +63,8 @@ object MetadataInfo {
     import scala.concurrent.Future
     implicit val context = scala.concurrent.ExecutionContext.Implicits.global
 
-    val url = play.Play.application.configuration.getString("user_metadata_defs.url.global")
-    Logger.debug("In conf file, user_metadata_defs.url.global = " + url)
+    val url = play.Play.application.configuration.getString("userMetadataDefinition.url.global")
+    Logger.debug("In conf file, userMetadataDefinition.url.global = " + url)
     // Per Luigi's suggestion, leave the global defs unchanged if no url configured.
     if (url != null) {
       val url_files_nodes    = url + "/files/nodes.txt"

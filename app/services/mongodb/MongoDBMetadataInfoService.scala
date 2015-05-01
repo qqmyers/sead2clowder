@@ -6,9 +6,7 @@ import com.mongodb.casbah.Imports._
 import play.api.Play.current
 
 /**
- * @author Luigi Marini
- * @author Rob Kooper
- * @author Rui Liu, copied from MongoDBAppConfigurationService.scala.
+ * @author Rui Liu
  */
 class MongoDBMetadataInfoService extends MetadataInfoService {
   def addPropertyValue(key: String, value: AnyRef) {
