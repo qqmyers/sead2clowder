@@ -24,7 +24,7 @@ class Profile @Inject()(users: UserService, institutions: MongoDBInstitutionServ
       "orcidID" -> optional(text),
       "pastprojects" -> list(text),
       "position" -> optional(text),
-      "userMetadataDefUrl" -> optional(text)
+      "userMetadataDefinitionUrl" -> optional(text)
     )(Info.apply)(Info.unapply)
   )
 
@@ -38,7 +38,7 @@ class Profile @Inject()(users: UserService, institutions: MongoDBInstitutionServ
     var orcidID: Option[String] = None
     var pastprojects: List[String] = List.empty
     var position: Option[String] = None
-    var userMetadataDefUrl: Option[String] = None
+    var userMetadataDefinitionUrl: Option[String] = None
     user match {
       case Some(x) => {
         print(x.email.toString())
@@ -65,7 +65,7 @@ class Profile @Inject()(users: UserService, institutions: MongoDBInstitutionServ
                 orcidID = muser.orcidID
                 pastprojects = muser.pastprojects
                 position = muser.position
-                userMetadataDefUrl = muser.userMetadataDefUrl
+                userMetadataDefinitionUrl = muser.userMetadataDefinitionUrl
 
                 val newbioForm = bioForm.fill(Info(
                   avatarUrl,
@@ -75,7 +75,7 @@ class Profile @Inject()(users: UserService, institutions: MongoDBInstitutionServ
                   orcidID,
                   pastprojects,
                   position,
-                  userMetadataDefUrl
+                  userMetadataDefinitionUrl
                 ))
                 var allProjectOptions: List[String] = projects.getAllProjects()
                 var allInstitutionOptions: List[String] = institutions.getAllInstitutions()
@@ -231,8 +231,8 @@ class Profile @Inject()(users: UserService, institutions: MongoDBInstitutionServ
                     users.updateUserField(addr.toString(), "orcidID", form.orcidID)
                     users.updateUserField(addr.toString(), "pastprojects", form.pastprojects)
                     users.updateUserField(addr.toString(), "position", form.position)
-                    val url = form.userMetadataDefUrl.getOrElse("").trim
-                    users.updateUserField(addr.toString(), "userMetadataDefUrl", url)
+                    val url = form.userMetadataDefinitionUrl.getOrElse("").trim
+                    users.updateUserField(addr.toString(), "userMetadataDefinitionUrl", url)
                     retrieveUserMetadataDefs(addr.toString(), url)
                     Redirect(routes.Profile.viewProfile(email))
                   }

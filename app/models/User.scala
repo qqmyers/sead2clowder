@@ -23,7 +23,8 @@ case class User(
   pastprojects: List[String] = List.empty,
   position: Option[String] = None,
   friends: Option[List[String]] = None,
-  userMetadataDefUrl: Option[String] = None,
+  // TODO: BD-628 (pulling in user metadata definitions per space). Below is per user.
+  userMetadataDefinitionUrl: Option[String] = None,
   userMetadataDef_files_nodes: Option[String] = None,
   userMetadataDef_files_relas: Option[String] = None,
   userMetadataDef_datasets_nodes: Option[String] = None,
@@ -96,7 +97,7 @@ case class Info(
   orcidID: Option[String] = None,
   pastprojects: List[String],
   position: Option[String],
-  userMetadataDefUrl: Option[String]
+  userMetadataDefinitionUrl: Option[String]
 )
 
 object User {
