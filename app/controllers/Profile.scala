@@ -177,6 +177,10 @@ class Profile @Inject()(users: UserService, institutions: MongoDBInstitutionServ
     }
   }
 
+  /* Retrieve user metadata definitions for the user,
+   * from the given URL.
+   * Supports only http, https, ws and wss.  This is due to the use of
+   * Play Framework's ScalaWS, considered OK for now. */
   def retrieveUserMetadataDefs(email: String, url: String) = {
 
     import play.api.libs.ws._
