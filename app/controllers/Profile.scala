@@ -181,7 +181,7 @@ class Profile @Inject()(users: UserService, institutions: MongoDBInstitutionServ
    * from the given URL.
    * Supports only http, https, ws and wss.  This is due to the use of
    * Play Framework's ScalaWS, considered OK for now. */
-  def retrieveUserMetadataDefs(email: String, url: String) = {
+  def retrieveUserMetadataDefinitions(email: String, url: String) = {
 
     import play.api.libs.ws._
     import scala.concurrent.Future
@@ -237,7 +237,7 @@ class Profile @Inject()(users: UserService, institutions: MongoDBInstitutionServ
                     users.updateUserField(addr.toString(), "position", form.position)
                     val url = form.userMetadataDefinitionUrl.getOrElse("").trim
                     users.updateUserField(addr.toString(), "userMetadataDefinitionUrl", url)
-                    retrieveUserMetadataDefs(addr.toString(), url)
+                    retrieveUserMetadataDefinitions(addr.toString(), url)
                     Redirect(routes.Profile.viewProfile(email))
                   }
                 }
