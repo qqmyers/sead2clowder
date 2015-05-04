@@ -122,8 +122,8 @@
 	var topId = "generalUserMetadata_@(dataset.id.stringify)"; 
 	window["uploadIp"+topId] = "@api.routes.Datasets.addUserMetadata(dataset.id)";
 	window["rdfIp"+topId] = "@api.routes.Datasets.getRDFUserMetadata(dataset.id)";
-	window["modelIp_nodes"+topId] = "@controllers.routes.Profile.userMetadataDef_datasets_nodes";
-	window["modelIp_relas"+topId] = "@controllers.routes.Profile.userMetadataDef_datasets_relas";
+	window["modelIp_nodes"+topId] = "@controllers.routes.Profile.userMetadataDefinitionDatasetsNodes";
+	window["modelIp_relas"+topId] = "@controllers.routes.Profile.userMetadataDefinitionDatasetsRelationships";
 </script>
 <script src="@routes.Assets.at("javascripts/userMetadata.js")" type="text/javascript"></script>
 @if(!user.isDefined) {

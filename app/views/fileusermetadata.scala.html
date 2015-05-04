@@ -46,8 +46,8 @@
 	var topId = "generalUserMetadata_@(file.id.stringify)"; 
 	window["uploadIp"+topId] = "@api.routes.Files.addUserMetadata(file.id)";
 	window["rdfIp"+topId] = "@api.routes.Files.getRDFUserMetadata(file.id)";
-	window["modelIp_nodes"+topId] = "@controllers.routes.Profile.userMetadataDef_files_nodes";
-	window["modelIp_relas"+topId] = "@controllers.routes.Profile.userMetadataDef_files_relas";
+	window["modelIp_nodes"+topId] = "@controllers.routes.Profile.userMetadataDefinitionFilesNodes";
+	window["modelIp_relas"+topId] = "@controllers.routes.Profile.userMetadataDefinitionFilesRelationships";
 </script>
 <script src="@routes.Assets.at("javascripts/userMetadata.js")" type="text/javascript"></script>
 @if(!user.isDefined) {

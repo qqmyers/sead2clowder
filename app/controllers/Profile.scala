@@ -249,28 +249,28 @@ class Profile @Inject()(users: UserService, institutions: MongoDBInstitutionServ
   }
   
   // request.user is an Option, user.email too. Permission.GetUser requires a valid user login, so the user must be present, and same for the user's email, so just use ".get" and not checking the none-ness below.
-  def userMetadataDef_files_nodes = SecuredAction(authorization = WithPermission(Permission.GetUser)) {  implicit request =>
+  def userMetadataDefinitionFilesNodes = SecuredAction(authorization = WithPermission(Permission.GetUser)) {  implicit request =>
     val email  = request.user.get.email.get
     val modeluser = users.findByEmail(email).get
     val per_user = modeluser.userMetadataDef_files_nodes.getOrElse("")
     val global = metadataInfo.getProperty[String]("userMetadataDef_files_nodes", "").trim
     Ok(List(global, per_user).mkString("\n").trim)
   }
-  def userMetadataDef_files_relas = SecuredAction(authorization = WithPermission(Permission.GetUser)) {  implicit request =>
+  def userMetadataDefinitionFilesRelationships = SecuredAction(authorization = WithPermission(Permission.GetUser)) {  implicit request =>
     val email  = request.user.get.email.get
     val modeluser = users.findByEmail(email).get
     val per_user = modeluser.userMetadataDef_files_relas.getOrElse("")
     val global = metadataInfo.getProperty[String]("userMetadataDef_files_relas", "").trim
     Ok(List(global, per_user).mkString("\n").trim)
   }
-  def userMetadataDef_datasets_nodes = SecuredAction(authorization = WithPermission(Permission.GetUser)) {  implicit request =>
+  def userMetadataDefinitionDatasetsNodes = SecuredAction(authorization = WithPermission(Permission.GetUser)) {  implicit request =>
     val email  = request.user.get.email.get
     val modeluser = users.findByEmail(email).get
     val per_user = modeluser.userMetadataDef_datasets_nodes.getOrElse("")
     val global = metadataInfo.getProperty[String]("userMetadataDef_datasets_nodes", "").trim
     Ok(List(global, per_user).mkString("\n").trim)
    }
-  def userMetadataDef_datasets_relas = SecuredAction(authorization = WithPermission(Permission.GetUser)) {  implicit request =>
+  def userMetadataDefinitionDatasetsRelationships = SecuredAction(authorization = WithPermission(Permission.GetUser)) {  implicit request =>
     val email  = request.user.get.email.get
     val modeluser = users.findByEmail(email).get
     val per_user = modeluser.userMetadataDef_datasets_relas.getOrElse("")

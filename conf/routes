@@ -26,10 +26,10 @@ GET 	/profile/viewProfile												@controllers.Profile.viewProfile(email: Opt
 GET      /profile/editProfile                                                    @controllers.Profile.editProfile
 GET 	/profile/submitChanges                                                 @controllers.Profile.submitChanges
 GET 	/profile/addFriend														@controllers.Profile.addFriend(email: String)
-GET     /profile/metadata/definitions/files/nodes               @controllers.Profile.userMetadataDef_files_nodes
-GET     /profile/metadata/definitions/files/relationships       @controllers.Profile.userMetadataDef_files_relas
-GET     /profile/metadata/definitions/datasets/nodes            @controllers.Profile.userMetadataDef_datasets_nodes
-GET     /profile/metadata/definitions/datasets/relationships    @controllers.Profile.userMetadataDef_datasets_relas
+GET     /profile/metadata/definitions/files/nodes               @controllers.Profile.userMetadataDefinitionFilesNodes
+GET     /profile/metadata/definitions/files/relationships       @controllers.Profile.userMetadataDefinitionFilesRelationships
+GET     /profile/metadata/definitions/datasets/nodes            @controllers.Profile.userMetadataDefinitionDatasetsNodes
+GET     /profile/metadata/definitions/datasets/relationships    @controllers.Profile.userMetadataDefinitionDatasetsRelationships
 
 # Utilities
 GET     /utils/authenticationRequired                        @controllers.RedirectUtility.authenticationRequired
