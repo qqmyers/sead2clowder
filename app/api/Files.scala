@@ -3,8 +3,7 @@ package api
 import java.io.BufferedInputStream
 import java.io.BufferedOutputStream
 import java.io.OutputStream
-import java.net.URL
-import java.net.HttpURLConnection
+import java.net.{URLEncoder, URI, URL, HttpURLConnection}
 
 import java.io.FileInputStream
 import java.io.FileOutputStream
@@ -13,6 +12,7 @@ import java.io.FileWriter
 
 import java.io.FileReader
 import java.io.ByteArrayInputStream
+import javax.mail.internet.MimeUtility
 
 import scala.collection.mutable.MutableList
 
@@ -111,7 +111,7 @@ class Files @Inject()(
   @ApiOperation(value = "List all files", notes = "Returns list of files and descriptions.", responseClass = "None", httpMethod = "GET")
   def list = SecuredAction(parse.anyContent, authorization = WithPermission(Permission.ListFiles)) {
     request =>
-      val list = for (f <- files.listFiles()) yield jsonFile(f)
+      val list = for (f <- files.listFilesNotIntermediate()) yield jsonFile(f)
 
       Ok(toJson(list))
   }
@@ -137,7 +137,7 @@ class Files @Inject()(
       //Check the license type before doing anything. 
       files.get(id) match {
           case Some(file) => {    
-              if (file.checkLicenseForDownload(request.user)) {
+              if (file.licenseData.isDownloadAllowed(request.user)) {
 		        files.getBytes(id) match {            
 		          case Some((inputStream, filename, contentType, contentLength)) => {
 		
@@ -166,9 +166,15 @@ class Files @Inject()(
 		                }
 		              }
 		              case None => {
-		                Ok.chunked(Enumerator.fromStream(inputStream))
+                    val userAgent = request.headers("user-agent")
+                    val filenameStar = if (userAgent.indexOf("MSIE") > -1) {
+                      URLEncoder.encode(filename, "UTF-8")
+                    } else {
+                      MimeUtility.encodeWord(filename)
+                    }
+                    Ok.chunked(Enumerator.fromStream(inputStream))
 		                  .withHeaders(CONTENT_TYPE -> contentType)
-		                  .withHeaders(CONTENT_DISPOSITION -> ("attachment; filename=" + filename))
+                      .withHeaders(CONTENT_DISPOSITION -> ("attachment; filename*=UTF-8''" + filenameStar))
 		              }
 		            }
 		          }
@@ -295,13 +301,13 @@ class Files @Inject()(
   @ApiOperation(value = "Upload file",
       notes = "Upload the attached file using multipart form enconding. Returns file id as JSON object. ID can be used to work on the file using the API. Uploaded file can be an XML metadata file.",
       responseClass = "None", httpMethod = "POST")
-  def upload(showPreviews: String = "DatasetLevel", originalZipFile: String = "") = SecuredAction(parse.multipartFormData, authorization = WithPermission(Permission.CreateFiles)) {
+  def upload(showPreviews: String = "DatasetLevel", originalZipFile: String = "", flagsFromPrevious: String = "") = SecuredAction(parse.multipartFormData, authorization = WithPermission(Permission.CreateFiles)) {
     implicit request =>
       request.user match {
         case Some(user) => {
         	request.body.file("File").map { f =>        
 	          var nameOfFile = f.filename
-	          var flags = ""
+	          var flags = flagsFromPrevious
 	          if(nameOfFile.toLowerCase().endsWith(".ptm")){
 		          	  var thirdSeparatorIndex = nameOfFile.indexOf("__")
 		              if(thirdSeparatorIndex >= 0){
@@ -344,7 +350,11 @@ class Files @Inject()(
 	            		Logger.error(fileType.substring(7))
 	            		InternalServerError(fileType.substring(7))
 	            	}
-	            	if(fileType.equals("imageset/ptmimages-zipped") || fileType.equals("imageset/ptmimages+zipped") ){
+	            	if(fileType.equals("imageset/ptmimages-zipped") || fileType.equals("imageset/ptmimages+zipped") || fileType.equals("multi/files-ptm-zipped")){
+	            				if(fileType.equals("multi/files-ptm-zipped")){
+	            				    fileType = "multi/files-zipped";
+	            				  }
+	            	  
 					        	  var thirdSeparatorIndex = nameOfFile.indexOf("__")
 					              if(thirdSeparatorIndex >= 0){
 					                var firstSeparatorIndex = nameOfFile.indexOf("_")
@@ -356,15 +366,12 @@ class Files @Inject()(
 					        	  files.setContentType(f.id, fileType)
 					          }
 	            }
-	            else if(nameOfFile.toLowerCase().endsWith(".mov")){
-	            			fileType = "ambiguous/mov";
-	            }
 	            
 	            current.plugin[FileDumpService].foreach{_.dump(DumpOfFile(uploadedFile.ref.file, f.id.toString, nameOfFile))}
 
                   val key = "unknown." + "file." + fileType.replace(".", "_").replace("/", ".")
 
-                  val host = Utils.baseUrl(request) + request.path.replaceAll("api/files$", "")
+                  val host = Utils.baseUrl(request) + request.path.replaceAll("api/files$", "").replaceAll("/api/files/withFlags/.*$", "")
 
                   /*---- Insert DTS Request to database---*/  
 
@@ -373,12 +380,13 @@ class Files @Inject()(
                   dtsrequests.insertRequest(serverIP,clientIP, f.filename, id, fileType, f.length,f.uploadDate)
 
                   /*---------------------------------------*/ 
+			            val extra = Map("filename" -> f.filename)
 	            
                   // index the file using Versus
                   current.plugin[VersusPlugin].foreach{ _.index(f.id.toString,fileType) }
 
                   // TODO replace null with None 
-	            current.plugin[RabbitmqPlugin].foreach{_.extract(ExtractorMessage(id, id, host, key, Map.empty, f.length.toString, null, flags))}
+	            current.plugin[RabbitmqPlugin].foreach{_.extract(ExtractorMessage(id, id, host, key, extra, f.length.toString, null, flags))}
 
 	            
 	            val dateFormat = new SimpleDateFormat("dd/MM/yyyy")
@@ -430,6 +438,28 @@ class Files @Inject()(
   
 
   /**
+   * Reindex a file.
+   */
+  @ApiOperation(value = "Reindex a file",
+    notes = "Reindex the existing file.",
+    responseClass = "None", httpMethod = "GET")
+  def reindex(id: UUID) = SecuredAction(parse.anyContent, authorization = WithPermission(Permission.CreateFiles)) {
+    request =>
+      files.get(id) match {
+        case Some(file) => {
+          current.plugin[ElasticsearchPlugin].foreach {
+            _.index(file)
+          }
+          Ok(toJson(Map("status" -> "success")))
+        }
+        case None => {
+          Logger.error("Error getting dataset" + id)
+          BadRequest(toJson(s"The given dataset id $id is not a valid ObjectId."))
+        }
+      }
+  }
+
+    /**
    * Send job for file preview(s) generation at a later time.
    */
   @ApiOperation(value = "(Re)send preprocessing job for file",
@@ -462,10 +492,11 @@ class Files @Inject()(
           val key = "unknown." + "file." + fileType.replace("__", ".")
 
           val host = Utils.baseUrl(request) + request.path.replaceAll("api/files/sendJob/[A-Za-z0-9_]*/.*$", "")
+          val extra = Map("filename" -> theFile.filename)
 
           // TODO replace null with None
           current.plugin[RabbitmqPlugin].foreach {
-            _.extract(ExtractorMessage(id, id, host, key, Map.empty, theFile.length.toString, null, flags))
+            _.extract(ExtractorMessage(id, id, host, key, extra, theFile.length.toString, null, flags))
           }
 
           Ok(toJson(Map("id" -> id.stringify)))
@@ -484,14 +515,14 @@ class Files @Inject()(
   @ApiOperation(value = "Upload a file to a specific dataset",
       notes = "Uploads the file, then links it with the dataset. Returns file id as JSON object. ID can be used to work on the file using the API. Uploaded file can be an XML metadata file to be added to the dataset.",
       responseClass = "None", httpMethod = "POST")
-  def uploadToDataset(dataset_id: UUID, showPreviews: String="DatasetLevel", originalZipFile: String = "") = SecuredAction(parse.multipartFormData, authorization=WithPermission(Permission.CreateDatasets), Some(dataset_id)) { implicit request =>
+  def uploadToDataset(dataset_id: UUID, showPreviews: String="DatasetLevel", originalZipFile: String = "", flagsFromPrevious: String = "") = SecuredAction(parse.multipartFormData, authorization=WithPermission(Permission.CreateDatasets), Some(dataset_id)) { implicit request =>
     request.user match {
      case Some(user) => {
       datasets.get(dataset_id) match {
        case Some(dataset) => {
         request.body.file("File").map { f =>
           var nameOfFile = f.filename
-          var flags = ""
+          var flags = flagsFromPrevious
           if(nameOfFile.toLowerCase().endsWith(".ptm")){
               var thirdSeparatorIndex = nameOfFile.indexOf("__")
               if(thirdSeparatorIndex >= 0){
@@ -535,7 +566,11 @@ class Files @Inject()(
                   Logger.error(fileType.substring(7))
                   InternalServerError(fileType.substring(7))
                 }
-                if (fileType.equals("imageset/ptmimages-zipped") || fileType.equals("imageset/ptmimages+zipped")) {
+                if (fileType.equals("imageset/ptmimages-zipped") || fileType.equals("imageset/ptmimages+zipped") || fileType.equals("multi/files-ptm-zipped")) {
+                  if(fileType.equals("multi/files-ptm-zipped")){
+	            	fileType = "multi/files-zipped";
+	              }
+                  
                   var thirdSeparatorIndex = nameOfFile.indexOf("__")
                     if(thirdSeparatorIndex >= 0){
                       var firstSeparatorIndex = nameOfFile.indexOf("_")
@@ -546,27 +581,26 @@ class Files @Inject()(
                     }
                   files.setContentType(f.id, fileType)
                 }
-	            } else if(nameOfFile.toLowerCase().endsWith(".mov")) {
-                fileType = "ambiguous/mov";
-              }
+	            }
 	              
               current.plugin[FileDumpService].foreach{_.dump(DumpOfFile(uploadedFile.ref.file, f.id.toString, nameOfFile))}
               
               // TODO RK need to replace unknown with the server name
               val key = "unknown." + "file." + fileType.replace(".", "_").replace("/", ".")
 
-              val host = Utils.baseUrl(request) + request.path.replaceAll("api/uploadToDataset/[A-Za-z0-9_]*$", "")
+              val host = Utils.baseUrl(request) + request.path.replaceAll("api/uploadToDataset/[A-Za-z0-9_]*$", "").replaceAll("api/uploadToDataset/withFlags/[A-Za-z0-9_]*/.*$", "")
 	          
               // Insert DTS Requests
               val clientIP = request.remoteAddress
               val serverIP = request.host
               dtsrequests.insertRequest(serverIP, clientIP, f.filename, f.id, fileType, f.length, f.uploadDate)
+		          val extra = Map("filename" -> f.filename)
                       
 			        // index the file using Versus
 			        current.plugin[VersusPlugin].foreach{ _.index(f.id.toString,fileType) }
 	              
 	            current.plugin[RabbitmqPlugin].foreach {
-                _.extract(ExtractorMessage(new UUID(id), new UUID(id), host, key, Map.empty, f.length.toString,
+                _.extract(ExtractorMessage(new UUID(id), new UUID(id), host, key, extra, f.length.toString,
                   dataset_id, flags)) }
 	          
 	            val dateFormat = new SimpleDateFormat("dd/MM/yyyy")
@@ -670,11 +704,9 @@ class Files @Inject()(
                       InternalServerError(fileType.substring(7))
                     }
                   }
-                  else if (f.filename.toLowerCase().endsWith(".mov")) {
-                    fileType = "ambiguous/mov";
-                  }
 
                   val key = "unknown." + "file." + fileType.replace(".", "_").replace("/", ".")
+				          val extra = Map("filename" -> f.filename)
 
                   val host = Utils.baseUrl(request) + request.path.replaceAll("api/files/uploadIntermediate/[A-Za-z0-9_+]*$", "")
                   val id = f.id
@@ -682,7 +714,7 @@ class Files @Inject()(
                   current.plugin[VersusPlugin].foreach{ _.index(f.id.toString,fileType) }
                   // TODO replace null with None
                   current.plugin[RabbitmqPlugin].foreach {
-                    _.extract(ExtractorMessage(UUID(originalId), id, host, key, Map.empty, f.length.toString, null, flags))
+                    _.extract(ExtractorMessage(UUID(originalId), id, host, key, extra, f.length.toString, null, flags))
                   }
                   Ok(toJson(Map("id" -> id.stringify)))
                 }
@@ -976,6 +1008,33 @@ class Files @Inject()(
           }
         }
         case None => BadRequest(toJson("File not found " + file_id))
+      }
+  }
+  
+  
+  /**
+   * Add thumbnail to query file.
+   */
+  @ApiOperation(value = "Add thumbnail to a query image", notes = "Attaches an already-existing thumbnail to a query image.", responseClass = "None", httpMethod = "POST")
+  def attachQueryThumbnail(query_id: UUID, thumbnail_id: UUID) = SecuredAction(parse.anyContent, authorization = WithPermission(Permission.CreateFiles)) {
+    implicit request =>
+      queries.get(query_id) match {
+        case Some(file) => {
+          thumbnails.get(thumbnail_id) match {
+            case Some(thumbnail) => {
+              queries.updateThumbnail(query_id, thumbnail_id)  
+              Ok(toJson(Map("status" -> "success")))
+            }
+            case None => {
+            	Logger.error("Thumbnail not found")
+            	BadRequest(toJson("Thumbnail not found"))
+            }
+          }
+        }
+        case None => {
+          Logger.error("File not found")
+          BadRequest(toJson("Query file not found " + query_id))
+        }
       }
   }
   
@@ -1509,7 +1568,7 @@ class Files @Inject()(
                 val ff = for (p <- previewers; if (p.contentType.contains(file.contentType))) yield {
                     //Change here. If the license allows the file to be downloaded by the current user, go ahead and use the 
                     //file bytes as the preview, otherwise return the String null and handle it appropriately on the front end
-                    if (f.checkLicenseForDownload(request.user)) {
+                    if (f.licenseData.isDownloadAllowed(request.user)) {
                         (file.id.toString, p.id, p.path, p.main, controllers.routes.Files.file(file.id) + "/blob", file.contentType, file.length)
                     }
                     else {
@@ -1603,11 +1662,15 @@ class Files @Inject()(
     request =>
       files.get(id) match {
         case Some(file) => {
-          Logger.debug("Deleting file: " + file.filename)
-          files.removeFile(id)
+          
+           //this stmt has to be before files.removeFile
+          Logger.debug("Deleting file from indexes" + file.filename)
           current.plugin[VersusPlugin].foreach {        
             _.removeFromIndexes(id)        
           }
+          Logger.debug("Deleting file: " + file.filename)
+          files.removeFile(id)
+          
           current.plugin[ElasticsearchPlugin].foreach {
             _.delete("data", "file", id.stringify)
           }

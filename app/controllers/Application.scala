@@ -1,15 +1,10 @@
 package controllers
 
+import api.{Permission, WithPermission}
 import play.api.Routes
-import play.api.mvc.Controller
-import api.Sections
-import api.WithPermission
-import api.Permission
-import models.AppAppearance
 import javax.inject.{Singleton, Inject}
 import play.api.mvc.Action
-import services.FileService
-import services.AppAppearanceService
+import services.{DatasetService, CollectionService, AppConfiguration, FileService}
 import play.api.Logger
 
 /**
@@ -18,10 +13,7 @@ import play.api.Logger
  * @author Luigi Marini
  */
 @Singleton
-class Application  @Inject() (files: FileService) extends SecuredController {
-  
-  val appAppearance: AppAppearanceService = services.DI.injector.getInstance(classOf[AppAppearanceService])
-
+class Application @Inject() (files: FileService, collections: CollectionService, datasets: DatasetService) extends SecuredController {
   /**
    * Redirect any url's that have a trailing /
    * @param path the path minus the slash
@@ -35,10 +27,13 @@ class Application  @Inject() (files: FileService) extends SecuredController {
    * Main page.
    */
   def index = SecuredAction(authorization = WithPermission(Permission.Public)) { request =>
-	implicit val user = request.user
-	val latestFiles = files.latest(5)
-	val appAppearanceGet = appAppearance.getDefault.get
-	Ok(views.html.index(latestFiles, appAppearanceGet.displayedName, appAppearanceGet.welcomeMessage))
+  	implicit val user = request.user
+  	val latestFiles = files.latest(5)
+    val datasetsCount = datasets.count()
+    val filesCount = files.count()
+    val collectionCount = collections.count()
+    Ok(views.html.index(latestFiles, datasetsCount, filesCount, collectionCount,
+      AppConfiguration.getDisplayName, AppConfiguration.getWelcomeMessage))
   }
   
   def options(path:String) = SecuredAction() { implicit request =>
@@ -53,11 +48,11 @@ class Application  @Inject() (files: FileService) extends SecuredController {
     val protocol = Utils.protocol(request)
     Ok(views.html.bookmarklet(request.host, protocol)).as("application/javascript")
   }
-
+  
   /**
    *  Javascript routing.
    */
-  def javascriptRoutes = SecuredAction() { implicit request =>
+  def javascriptRoutes = Action { implicit request =>
     Ok(
       Routes.javascriptRouter("jsRoutes")(
         routes.javascript.Admin.test,
@@ -70,14 +65,21 @@ class Application  @Inject() (files: FileService) extends SecuredController {
         routes.javascript.Admin.getIndexes,
         routes.javascript.Tags.search,
         routes.javascript.Admin.setTheme,
-        
-        api.routes.javascript.Admin.removeAdmin,
-        
+        routes.javascript.Admin.getAdapters,
+        routes.javascript.Admin.getExtractors,
+        routes.javascript.Admin.getMeasures,
+        routes.javascript.Admin.getIndexers,
+        routes.javascript.Datasets.dataset,
+        routes.javascript.Collections.collection,
+        api.routes.javascript.Admin.removeAdmin,        
         api.routes.javascript.Comments.comment,
         api.routes.javascript.Comments.removeComment,
         api.routes.javascript.Comments.editComment,
         api.routes.javascript.Datasets.comment,
+        api.routes.javascript.Datasets.createEmptyDataset,
+        api.routes.javascript.Datasets.attachMultipleFiles,
         api.routes.javascript.Datasets.deleteDataset,
+        api.routes.javascript.Datasets.detachAndDeleteDataset,
         api.routes.javascript.Datasets.getTags,
         api.routes.javascript.Datasets.addTags,
         api.routes.javascript.Datasets.removeTag,
@@ -107,7 +109,9 @@ class Application  @Inject() (files: FileService) extends SecuredController {
         api.routes.javascript.Collections.attachPreview,
         api.routes.javascript.Collections.attachDataset,
         api.routes.javascript.Collections.removeDataset,
-        api.routes.javascript.Collections.removeCollection
+        api.routes.javascript.Collections.removeCollection,
+        api.routes.javascript.Projects.addproject,
+        api.routes.javascript.Institutions.addinstitution
       )
     ).as(JSON) 
   }

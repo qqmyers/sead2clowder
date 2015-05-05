@@ -1,10 +1,9 @@
 package services.mongodb
 
-import services.{TileService, FileService, PreviewService}
+import services.{ByteStorageService, TileService, FileService, PreviewService}
 import com.mongodb.casbah.commons.MongoDBObject
 import java.io.{InputStreamReader, BufferedReader, InputStream}
 import play.api.Logger
-import com.mongodb.casbah.gridfs.GridFS
 import models._
 import org.apache.http.impl.client.DefaultHttpClient
 import org.apache.http.client.methods.HttpPost
@@ -19,7 +18,6 @@ import com.mongodb.casbah.Imports._
 import play.api.libs.json.JsValue
 import javax.inject.{Inject, Singleton}
 import models.Preview
-import scala.Some
 import play.api.libs.json.JsObject
 import com.mongodb.casbah.commons.TypeImports.ObjectId
 import com.mongodb.casbah.WriteConcern
@@ -29,7 +27,7 @@ import collection.JavaConverters._
  * Created by lmarini on 2/17/14.
  */
 @Singleton
-class MongoDBPreviewService @Inject()(files: FileService, tiles: TileService) extends PreviewService {
+class MongoDBPreviewService @Inject()(files: FileService, tiles: TileService, storage: ByteStorageService) extends PreviewService {
 
   def get(previewId: UUID): Option[Preview] = {
     PreviewDAO.findOneById(new ObjectId(previewId.stringify))
@@ -59,34 +57,14 @@ class MongoDBPreviewService @Inject()(files: FileService, tiles: TileService) ex
    * Save blob.
    */
   def save(inputStream: InputStream, filename: String, contentType: Option[String]): String = {
-    val files = current.plugin[MongoSalatPlugin] match {
-      case None => throw new RuntimeException("No MongoSalatPlugin");
-      case Some(x) => x.gridFS("previews")
-    }
-    val mongoFile = files.createFile(inputStream)
-    Logger.debug("Uploading file " + filename)
-    mongoFile.filename = filename
-    var ct = contentType.getOrElse(play.api.http.ContentTypes.BINARY)
-    if (ct == play.api.http.ContentTypes.BINARY) {
-      ct = play.api.libs.MimeTypes.forFileName(filename).getOrElse(play.api.http.ContentTypes.BINARY)
-    }
-    mongoFile.contentType = ct
-    mongoFile.save
-    mongoFile.getAs[ObjectId]("_id").get.toString
+    MongoUtils.writeBlob(inputStream, filename, contentType, Map.empty[String, AnyRef], "previews", "medici2.mongodb.storePreviews").fold("")(_.stringify)
   }
 
   /**
    * Get blob.
    */
   def getBlob(id: UUID): Option[(InputStream, String, String, Long)] = {
-    val files = GridFS(SocialUserDAO.dao.collection.db, "previews")
-    files.findOne(MongoDBObject("_id" -> new ObjectId(id.stringify))) match {
-      case Some(file) => Some(file.inputStream,
-        file.getAs[String]("filename").getOrElse("unknown-name"),
-        file.getAs[String]("contentType").getOrElse("unknown"),
-        file.getAs[Long]("length").getOrElse(0))
-      case None => None
-    }
+    MongoUtils.readBlob(id, "previews", "medici2.mongodb.storePreviews")
   }
 
   /**
@@ -137,7 +115,7 @@ class MongoDBPreviewService @Inject()(files: FileService, tiles: TileService) ex
 
   def removePreview(p: Preview) {
     for (tile <- tiles.get(p.id)) {
-      TileDAO.remove(MongoDBObject("_id" -> new ObjectId(tile.id.stringify)))
+      tiles.remove(tile.id)
     }
     // for IIP server references, also delete the files being referenced on the IIP server they reside
     if (!p.iipURL.isEmpty) {
@@ -186,7 +164,8 @@ class MongoDBPreviewService @Inject()(files: FileService, tiles: TileService) ex
         frameRefReader.close()
       }
 
-    PreviewDAO.remove(MongoDBObject("_id" -> new ObjectId(p.id.stringify)))
+    // finally delete the actual file
+    MongoUtils.removeBlob(p.id, "previews", "medici2.mongodb.storePreviews")
   }
 
   def attachToFile(previewId: UUID, fileId: UUID, extractorId: Option[String], json: JsValue) {
@@ -268,17 +247,8 @@ class MongoDBPreviewService @Inject()(files: FileService, tiles: TileService) ex
     }
   }
   
-    def getExtractorId(id: UUID):Option[String] = {     
-      var extractor_id = getMetadata(id)("extractor_id") match{
-	  	case ex_id=> {
-	  		Logger.debug("MongoDBPreviewService: metadata for preview " + id + " contains extractor id = " + ex_id)
-	  		Some(ex_id.toString)
-	    }
-	  	case none =>{
-	  		Logger.debug("MongoDBPreviewService: metadata  for preview " + id + " DOES NOT contain extractor id")
-	  		None
-	  	}	              
-      }
+    def getExtractorId(id: UUID):String = {     
+      val extractor_id = getMetadata(id)("extractor_id").toString    
       extractor_id
    }
     

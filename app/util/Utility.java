@@ -793,8 +793,12 @@ public class Utility
     char[] char_buffer = new char[1024];
     byte[] byte_buffer = new byte[1024];
     int tmpi;
-    
+      
     try{
+      //add authentication for polyglot    	
+    	//DO NOT check in the password!!!
+    	String userPassword = "browndog.user" + ":" + "twonkIv8";
+        //String encoding = new sun.misc.BASE64Encoder().encode(userPassword.getBytes());
       conn = (HttpURLConnection)new URL(url).openConnection();
       conn.setDoInput(true);
       conn.setDoOutput(true);
@@ -819,7 +823,7 @@ public class Utility
 
       do{
         tmpi = bis.read(byte_buffer, 0, byte_buffer.length);
-        Logger.debug("tmpi4 = " + tmpi);
+        //Logger.debug("tmpi4 = " + tmpi);
         if(tmpi>0) os.write(byte_buffer, 0, tmpi);
       }while(tmpi>=0);
       
@@ -829,7 +833,7 @@ public class Utility
       writer.print("\r\n");
       writer.print("--" + boundary + "--\r\n");
       writer.flush();
-      
+      Logger.debug("utility - upload done. Getting response");
       //Get response
       br = new BufferedReader(new InputStreamReader(conn.getInputStream()));
 

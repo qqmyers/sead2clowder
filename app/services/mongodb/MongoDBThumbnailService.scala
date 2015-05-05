@@ -1,20 +1,18 @@
 package services.mongodb
 
 import java.io.InputStream
+import javax.inject.Inject
 import play.api.Play._
-import scala.Some
 import org.bson.types.ObjectId
-import com.mongodb.casbah.gridfs.GridFS
-import com.mongodb.casbah.commons.MongoDBObject
 import com.novus.salat.dao.{SalatDAO, ModelCompanion}
-import services.ThumbnailService
+import services.{ByteStorageService, ThumbnailService}
 import models.{UUID, Thumbnail}
 import MongoContext.context
 
 /**
  * Created by lmarini on 2/27/14.
  */
-class MongoDBThumbnailService extends ThumbnailService {
+class MongoDBThumbnailService @Inject()(storage: ByteStorageService) extends ThumbnailService {
 
   def get(thumbnailId: UUID): Option[Thumbnail] = {
     Thumbnail.findOneById(new ObjectId(thumbnailId.stringify))
@@ -24,33 +22,18 @@ class MongoDBThumbnailService extends ThumbnailService {
    * Save blob.
    */
   def save(inputStream: InputStream, filename: String, contentType: Option[String]): String = {
-    val files = current.plugin[MongoSalatPlugin] match {
-      case None => throw new RuntimeException("No MongoSalatPlugin");
-      case Some(x) => x.gridFS("thumbnails")
-    }
-    val mongoFile = files.createFile(inputStream)
-    mongoFile.filename = filename
-    var ct = contentType.getOrElse(play.api.http.ContentTypes.BINARY)
-    if (ct == play.api.http.ContentTypes.BINARY) {
-      ct = play.api.libs.MimeTypes.forFileName(filename).getOrElse(play.api.http.ContentTypes.BINARY)
-    }
-    mongoFile.contentType = ct
-    mongoFile.save
-    mongoFile.getAs[ObjectId]("_id").get.toString
+    MongoUtils.writeBlob(inputStream, filename, contentType, Map.empty[String, AnyRef], "thumbnails", "medici2.mongodb.storeThumbnails").fold("")(_.stringify)
   }
 
   /**
    * Get blob.
    */
   def getBlob(id: UUID): Option[(InputStream, String, String, Long)] = {
-    val files = GridFS(SocialUserDAO.dao.collection.db, "thumbnails")
-    files.findOne(MongoDBObject("_id" -> new ObjectId(id.stringify))) match {
-      case Some(file) => Some(file.inputStream,
-        file.getAs[String]("filename").getOrElse("unknown-name"),
-        file.getAs[String]("contentType").getOrElse("unknown"),
-        file.getAs[Long]("length").getOrElse(0))
-      case None => None
-    }
+    MongoUtils.readBlob(id, "thumbnails", "medici2.mongodb.storeThumbnails")
+  }
+
+  def remove(id: UUID): Unit = {
+    MongoUtils.removeBlob(id, "thumbnails", "medici2.mongodb.storeThumbnails")
   }
 }
 
