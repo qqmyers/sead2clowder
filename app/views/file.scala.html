@@ -116,7 +116,7 @@
     <script>
     	window.onload = function() {
     		isPageLoaded = true;
-    	}
+    	}    	
     </script>
 	
 	<div class="page-header">
@@ -310,6 +310,9 @@
 			    	$(function() {
 					    // Load the classic theme
 					    Galleria.loadTheme('@routes.Assets.at("javascripts/galleria-classic/galleria.classic.min.js")');
+					    Galleria.configure({
+					        showInfo: false
+					    });
 					    
 					    galleriaData = [];
 					    @sections.map { s =>
@@ -368,6 +371,7 @@
 						        Galleria.log('Now viewing ' + e.imageTarget.src);						        
 						    });
 						    var gallery = this; // galleria is ready and the gallery is assigned
+						    $('.galleria-image img').get().oncontextmenu = function() {return false;};						    
 					        $('.galleria-image img').mousedown(function(e) {
 					          if( e.button == 2 ) { 
 					        	  gallery.toggleFullscreen(); // toggles the fullscreen
