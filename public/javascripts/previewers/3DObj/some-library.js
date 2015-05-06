@@ -1,3 +1,4 @@
+// Author: Constantinos Sophocleous
 (function ($, Configuration) {
   console.log("3D obj previewer for " + Configuration.id);
 

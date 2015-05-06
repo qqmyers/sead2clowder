@@ -1,3 +1,4 @@
+// Author: Constantinos Sophocleous
 (function ($, Configuration) {
   console.log("3D WebGL previewer for " + Configuration.id);
     

@@ -1,3 +1,4 @@
+// Author: Constantinos Sophocleous
 function removeFile(fileId,event, reloadPage){
 	if(reloadPage === undefined) reloadPage = false;
 

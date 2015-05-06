@@ -1,3 +1,4 @@
+// Author: Constantinos Sophocleous
 (function ($, Configuration) {
   console.log("PDF previewer for " + Configuration.id); 
   console.log("Updating tab " + Configuration.tab);

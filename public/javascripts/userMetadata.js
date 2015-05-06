@@ -1,3 +1,5 @@
+// Author: Constantinos Sophocleous
+
 /*	var allowedNodes = [["Node 1", "Node"],["Node2", "Node"],["Node3", "Node"],["Node4", "Node"],
 						["String1", "String"],["String2", "String"]];
 							

@@ -1,3 +1,4 @@
+// Author: Constantinos Sophocleous
 (function ($, Configuration) {
   console.log("PTM previewer for " + Configuration.id);
   
