@@ -16,6 +16,8 @@ import javax.inject.{Inject, Singleton}
 
 /**
  * Created by lmarini on 2/27/14.
+ * @author Constantinos Sophocleous
+ * @author Luigi Marini
  */
 @Singleton
 class MongoDBTileService @Inject() (previews: PreviewService, storage: ByteStorageService) extends TileService {

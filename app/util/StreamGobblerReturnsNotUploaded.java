@@ -7,6 +7,9 @@ import java.io.InputStreamReader;
 
 import play.Logger;
 
+/**
+ * @author Constantinos Sophocleous
+ */
 public class StreamGobblerReturnsNotUploaded extends StreamGobbler {
 
 	private boolean wasSuccessful = false;
