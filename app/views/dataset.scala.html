@@ -316,6 +316,9 @@
 			    	$(function() {
 					    // Load the classic theme
 					    Galleria.loadTheme('@routes.Assets.at("javascripts/galleria-classic/galleria.classic.min.js")');
+					    Galleria.configure({
+					        showInfo: false
+					    });
 					
 					    window["galleriaData_@(f.id.toString)"] = [];
 					    @f.sections.map { s =>
@@ -442,11 +445,20 @@
     		}
     		
     		<script>
-    					Galleria.ready(function(options) {
-						    this.bind('image', function(e) {
-						        Galleria.log('Now viewing ' + e.imageTarget.src);
-						    });
-						});
+	    		Galleria.ready(function(options) {
+				    this.bind('image', function(e) {
+				        Galleria.log('Now viewing ' + e.imageTarget.src);						        
+				    });
+				    var gallery = this; // galleria is ready and the gallery is assigned
+				    $('.galleria-image img').get().oncontextmenu = function() {return false;};						    
+			        $('.galleria-image img').mousedown(function(e) {
+			          if( e.button == 2 ) { 
+			        	  gallery.toggleFullscreen(); // toggles the fullscreen
+			              return false; 
+			          } 
+			          return true;
+			        });
+				});
     		</script>
     		
     		<script>
