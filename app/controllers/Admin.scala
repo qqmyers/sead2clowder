@@ -23,7 +23,7 @@ import play.api.data.Forms._
 @Singleton
 class Admin @Inject() (sectionIndexInfo: SectionIndexInfoService) extends SecuredController {
 
-  def main = SecuredAction(authorization = WithPermission(Permission.Admin)) { request =>  
+  def main = SecuredAction(authorization = WithPermission(Permission.Admin)) { request =>
     val theme = AppConfiguration.getTheme
     Logger.debug("Theme id " + theme)
     implicit val user = request.user
