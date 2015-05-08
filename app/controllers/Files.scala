@@ -28,6 +28,8 @@ import util.Utility
 import java.net.URL
 import java.net.HttpURLConnection
 import com.ning.http.client.Realm.AuthScheme
+import scala.collection.mutable.ListBuffer
+
 /**
  * Manage files.
  *
@@ -120,13 +122,27 @@ class Files @Inject() (
         }
         commentsByFile = commentsByFile.sortBy(_.posted)
         
-        var fileDataset = datasets.findByFileId(file.id).sortBy(_.name)
-        var datasetsOutside = datasets.findNotContainingFile(file.id).sortBy(_.name)
+        //Decode the datasets so that their free text will display correctly in the view
+        val datasetsContainingFile = datasets.findByFileId(file.id).sortBy(_.name)
+        val datasetsNotContaining = datasets.findNotContainingFile(file.id).sortBy(_.name)              
+        var decodedDatasetsContaining = new ListBuffer[models.Dataset]()
+        var decodedDatasetsNotContaining = new ListBuffer[models.Dataset]()
+        
+        for (aDataset <- datasetsContainingFile) {
+        	val dDataset = Utils.decodeDatasetElements(aDataset)
+        	decodedDatasetsContaining += dDataset
+        }
+        
+        for (aDataset <- datasetsNotContaining) {
+        	val dDataset = Utils.decodeDatasetElements(aDataset)
+        	decodedDatasetsNotContaining += dDataset
+        }
         
         val isRDFExportEnabled = current.plugin[RDFExportService].isDefined
 
         val extractionsByFile = extractions.findByFileId(id)
         
+
         //============== start of new code===============
 
         //get all possible output formats for this content type 
@@ -156,8 +172,9 @@ class Files @Inject() (
           outputsList<-outputsListFuture
         } yield {
           Ok(views.html.file(file, id.stringify, commentsByFile, previewsWithPreviewer, sectionsWithPreviews, 
-              extractorsActive, fileDataset, datasetsOutside, userMetadata, isRDFExportEnabled, extractionsByFile, outputsList))
+              extractorsActive, decodedDatasetsContaining.toList, decodedDatasetsNotContaining.toList, userMetadata, isRDFExportEnabled, extractionsByFile, outputsList))
         }
+
       }
       case None => {
         val error_str = "The file with id " + id + " is not found."
@@ -583,7 +600,7 @@ def uploadExtract() = SecuredAction(parse.multipartFormData, authorization = Wit
                             val filenameStar = if (userAgent.indexOf("MSIE") > -1) {
                               URLEncoder.encode(filename, "UTF-8")
                             } else {
-                              MimeUtility.encodeWord(filename)
+                              MimeUtility.encodeText(filename).replaceAll(",", "%2C")
                             }
                             Ok.chunked(Enumerator.fromStream(inputStream))
                               .withHeaders(CONTENT_TYPE -> contentType)
@@ -641,14 +658,13 @@ def uploadExtract() = SecuredAction(parse.multipartFormData, authorization = Wit
       
               try {
                 Logger.debug("about to convert file... " + file.id)
-                ///// ==== WHEN POSTING FILE NEED TO AUTHENTICATE ======= !!!!
-                //
+             
                 //https://github.com/playframework/playframework/issues/902
                 //There is actually no way to post a multipart/form-data, without encoding manually the body (and this is tricky!)
                 val polyglotConvertURL: String = play.api.Play.configuration.getString("polyglotConvertURL").getOrElse("")
                  
                 val resultURL: String = Utility.postFileWithAuthentication(polyglotConvertURL + outputFormat, file.filename, inputStream, "text/plain", userpass)
-                Logger.debug("=====================> got resultURL = " + resultURL)
+                Logger.debug("got resultURL = " + resultURL)
                 //check that file exists at the resulting link
                 //TODO: time out and print error message if conversion fails
                 Logger.debug("file at the url - check if exists")
@@ -667,7 +683,6 @@ def uploadExtract() = SecuredAction(parse.multipartFormData, authorization = Wit
                 val lastSeparatorIndex = file.filename.replace("_", ".").lastIndexOf(".")
                 val outputFileName = file.filename.substring(0, lastSeparatorIndex) + "." + outputFormat
               
-                //=================================== 
                 //try to download bytes from URL
                 Logger.debug("Get the bytes form url... before opening connection, resultURL = " + resultURL)               
                 conn = new URL(resultURL).openConnection().asInstanceOf[HttpURLConnection] 
