@@ -26,6 +26,7 @@ import play.api.libs.ws.Response
 import scala.concurrent.Future
 import util.Utility
 import java.net.URL
+import java.net.HttpURLConnection
 import com.ning.http.client.Realm.AuthScheme
 /**
  * Manage files.
@@ -94,6 +95,8 @@ class Files @Inject() (
           }
         }
         Logger.debug("Previewers available: " + previewsWithPreviewer)
+       
+        
         // add sections to file
         val sectionsByFile = sections.findByFileId(file.id)
         Logger.debug("Sections: " + sectionsByFile)
@@ -142,19 +145,12 @@ class Files @Inject() (
         val polyglotInputsURL: String = play.api.Play.configuration.getString("polyglotInputsURL").getOrElse("")
         val polyglotUser: String = play.api.Play.configuration.getString("browndogUsername").getOrElse("")
         val polyglotPassword: String = play.api.Play.configuration.getString("browndogPassword").getOrElse("")
-        //adding authentication for polyglot server
         var outputs: Future[Response] = null
+        //adding authentication for polyglot server
         outputs = WS.url(polyglotInputsURL + contentTypeEnding).withAuth(polyglotUser, polyglotPassword, AuthScheme.BASIC).get()    
-        //outputs = WS.url(polyglotInputsURL + contentTypeEnding).get()    
-            
-        ////////////
-//        var downloadRoute = "routes.Files.download(UUID(" + id.stringify + "), gif)";
-       // var downloadRoute = "/files/downloadAsFormat/" + id.stringify + "/gif"
-        ///////////////////
-        //val outputs:Future[Response] = WS.url("http://localhost:8184/inputs/" + contentTypeEnding).get()
         //future array of results
         var farray = outputs.map(_.body.split("\n"))
-        //farray.map(_.map(el=>Logger.debug("possibe output format = " + el)))
+        farray.map(_.map(el=>Logger.debug("possibe output format = " + el)))
         var outputsListFuture = farray.map(a=>a.toList)           
         for { 
           outputsList<-outputsListFuture
@@ -162,7 +158,6 @@ class Files @Inject() (
           Ok(views.html.file(file, id.stringify, commentsByFile, previewsWithPreviewer, sectionsWithPreviews, 
               extractorsActive, fileDataset, datasetsOutside, userMetadata, isRDFExportEnabled, extractionsByFile, outputsList))
         }
-
       }
       case None => {
         val error_str = "The file with id " + id + " is not found."
@@ -631,46 +626,59 @@ def uploadExtract() = SecuredAction(parse.multipartFormData, authorization = Wit
           Logger.debug("controllers files download got file")
           //get bytes for file to be converted
           files.getBytes(id) match {
-            case Some((inputStream, filename, contentType, contentLength)) => {
-              //got the bytes - send over to polyglot to make post request
-              //===============================================================
-              //start of -  polyglot conversion
-              var convertedFileStream: InputStream = null
+          case Some((inputStream, filename, contentType, contentLength)) => {
+        	  //got the bytes - send over to polyglot to make post request
+        	  //===============================================================
+        	  //start of polyglot conversion
+
+        	  val polyglotUser: String = play.api.Play.configuration.getString("browndogUsername").getOrElse("")
+        	  val polyglotPassword: String = play.api.Play.configuration.getString("browndogPassword").getOrElse("")
+        	  val userpass =polyglotUser + ":" +  polyglotPassword;
+
+        	  var convertedFileStream: InputStream = null
+        	  var conn: HttpURLConnection  = null
+
+      
               try {
                 Logger.debug("about to convert file... " + file.id)
-
+                ///// ==== WHEN POSTING FILE NEED TO AUTHENTICATE ======= !!!!
+                //
+                //https://github.com/playframework/playframework/issues/902
+                //There is actually no way to post a multipart/form-data, without encoding manually the body (and this is tricky!)
                 val polyglotConvertURL: String = play.api.Play.configuration.getString("polyglotConvertURL").getOrElse("")
-                val resultURL: String = Utility.postFile(polyglotConvertURL + outputFormat, file.filename, inputStream, "text/plain");
-                Logger.debug("got resultURL = " + resultURL)
+                 
+                val resultURL: String = Utility.postFileWithAuthentication(polyglotConvertURL + outputFormat, file.filename, inputStream, "text/plain", userpass)
+                Logger.debug("=====================> got resultURL = " + resultURL)
                 //check that file exists at the resulting link
                 //TODO: time out and print error message if conversion fails
                 Logger.debug("file at the url - check if exists")
-                var count = 0
-                while (!Utility.existsURL(resultURL)) {
-                  Utility.pause(1000)
+                var count = 0               
+                while (!Utility.existsURL(resultURL, userpass)) {
+                  Utility.pause(3000)
                   count = count + 1
-                  Logger.debug("file at the url does not exist, waiting... count=" + count)
+                  Logger.debug("file at the url " + resultURL + " does not exist, waiting... count=" + count)
                   if (count == 30) {
                     Logger.error("Taking too long to get the converted file. Exiting.")
                     throw new RuntimeException("Conversion timed out.")
                   }
                 }
-
-                Logger.debug("file at the url - GOT IT")
-
-                //=================
-                //use utility method to download file from URL               
-                Utility.downloadFile("", "test_output" + "." + outputFormat, resultURL, true)
-
+                Logger.debug("file at the url " +resultURL + "EXISTS!")
+              
                 val lastSeparatorIndex = file.filename.replace("_", ".").lastIndexOf(".")
                 val outputFileName = file.filename.substring(0, lastSeparatorIndex) + "." + outputFormat
-
+              
                 //=================================== 
                 //try to download bytes from URL
-                Logger.debug("Get the bytes form url... before opening connection, resultURL = " + resultURL)
-                convertedFileStream = new URL(resultURL).openStream()
-
-                Logger.debug("download fileas format...  GOT NO RANGE - downloading file from url")
+                Logger.debug("Get the bytes form url... before opening connection, resultURL = " + resultURL)               
+                conn = new URL(resultURL).openConnection().asInstanceOf[HttpURLConnection] 
+                //polyglot redirects to software servers, allow the connection to follow the redirect
+                conn.setInstanceFollowRedirects(true)
+                //authentication
+                var basicAuth:String  = "Basic " + javax.xml.bind.DatatypeConverter.printBase64Binary(userpass.getBytes());
+                conn.setRequestProperty ("Authorization", basicAuth);
+                conn.connect();
+                convertedFileStream = conn.getInputStream();
+                Logger.debug("download file as format...  GOT NO RANGE - downloading file from url = " + resultURL)
 
                 Ok.chunked(Enumerator.fromStream(convertedFileStream))
                   .withHeaders(CONTENT_TYPE -> "some-content-Type")
@@ -681,9 +689,9 @@ def uploadExtract() = SecuredAction(parse.multipartFormData, authorization = Wit
                   println(e.printStackTrace())
                   BadRequest(toJson("Conversion failed"))
               } finally {
-                //if (convertedFileStream != null)
-                //convertedFileStream.close
-              } //end of finally
+                if (convertedFileStream != null) convertedFileStream.close
+                if(conn != null) conn.disconnect()
+              }
             } //end of case Some
             case None => {
               Logger.error("Error getting file " + id)
@@ -692,14 +700,14 @@ def uploadExtract() = SecuredAction(parse.multipartFormData, authorization = Wit
           }
         }
         case None => {
-          //Case where the file could not be found
+          //File could not be found
           Logger.info(s"Error getting the file with id $id.")
           BadRequest("Invalid file ID")
         }
       }
 
     } else {
-      Logger.error(s"888 The given id $id is not a valid ObjectId.")
+      Logger.error(s"The given id $id is not a valid ObjectId.")
       BadRequest(toJson(s"The given id $id is not a valid ObjectId."))
     }
   }

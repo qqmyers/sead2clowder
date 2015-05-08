@@ -633,6 +633,7 @@ public class Utility
     
     //Download the file
     try{
+         
       InputStream is = new URL(url).openStream();
       DataInputStream dis = new DataInputStream(new BufferedInputStream(is));
       FileOutputStream fos = new FileOutputStream(new File(path + filename));
@@ -651,6 +652,7 @@ public class Utility
     return true;
   }
   
+ 
   /**
    * Download a file from the web.   
    * @param path the path to save the file to
@@ -698,7 +700,14 @@ public class Utility
     int tmpi;
     
     try{
-      conn = (HttpURLConnection)new URL(url).openConnection();
+    	
+    	
+    	String userpass = "browndog.user" + ":" + "twonkIv8";
+    	String basicAuth = "Basic " + javax.xml.bind.DatatypeConverter.printBase64Binary(userpass.getBytes());
+
+    	
+    	
+    	conn = (HttpURLConnection)new URL(url).openConnection();
       conn.setDoInput(true);
       conn.setDoOutput(true);
       //conn.setRequestMethod("POST");
@@ -771,17 +780,18 @@ public class Utility
   }
   
   /**
-   * Post a file to a URL.
+   * Post a file to a URL, using authentication.
    * @param url the URL to post to
    * @param filename the name of the file 
    * @param is the file input stream
    * @param type the accepted content type
+   * @param userpass the combination of username and password
    * @return a string the resulting URL contents
    */
-  public static String postFile(String url, String filename, InputStream is, String type)
+  public static String postFileWithAuthentication(String url, String filename, InputStream is, String type, String userpass)
   {
     
-    Logger.debug("4Postfile with four params, filename = " + filename);
+    Logger.debug("Postfile with authentication, filename = " + filename);
     HttpURLConnection conn = null;
     OutputStream os;
     PrintWriter writer = null;
@@ -795,10 +805,90 @@ public class Utility
     int tmpi;
       
     try{
-      //add authentication for polyglot    	
-    	//DO NOT check in the password!!!
-    	String userPassword = "browndog.user" + ":" + "twonkIv8";
-        //String encoding = new sun.misc.BASE64Encoder().encode(userPassword.getBytes());
+    	
+      conn = (HttpURLConnection)new URL(url).openConnection();
+      conn.setDoInput(true);
+      conn.setDoOutput(true);
+      //authentication
+   	  String basicAuth = "Basic " + javax.xml.bind.DatatypeConverter.printBase64Binary(userpass.getBytes());
+      conn.setRequestProperty ("Authorization", basicAuth);
+      conn.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + boundary);
+      if(type != null) conn.setRequestProperty("Accept", type);
+      conn.connect();
+            
+      //Upload file
+      os = conn.getOutputStream();
+      writer = new PrintWriter(new OutputStreamWriter(os), true);
+      writer.print("--" + boundary + "\r\n");
+      Logger.debug("From Utility - Content-Disposition: form-data; name=\"file\"; filename=\"" + Utility.getFilename(filename) + "\";\r\n");
+      writer.print("Content-Disposition: form-data; name=\"file\"; filename=\"" + Utility.getFilename(filename) + "\";\r\n");
+      writer.print("Content-Type: " + URLConnection.guessContentTypeFromName(Utility.getFilename(filename)) + "\r\n");
+      writer.print("Content-Transfer-Encoding: binary\r\n");
+      writer.print("\r\n");
+      writer.flush();
+      
+      bis = new BufferedInputStream(is);
+
+      do{
+        tmpi = bis.read(byte_buffer, 0, byte_buffer.length);
+        //Logger.debug("tmpi4 = " + tmpi);
+        if(tmpi>0) os.write(byte_buffer, 0, tmpi);
+      }while(tmpi>=0);
+      
+      os.flush();
+      bis.close(); 
+
+      writer.print("\r\n");
+      writer.print("--" + boundary + "--\r\n");
+      writer.flush();
+      Logger.debug("utility - upload done. Getting response");
+      //Get response
+      br = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+
+      do{
+        tmpi = br.read(char_buffer, 0, char_buffer.length);
+        if(tmpi>0) sb.append(char_buffer, 0, tmpi);
+      }while(tmpi>=0);
+      
+      response = sb.toString();
+ 
+      conn.disconnect();
+    }catch(Exception e){
+      e.printStackTrace();
+    }finally{
+      if(writer != null) writer.close();
+      if(conn != null) conn.disconnect();
+    }
+    
+    return response;
+  }
+  
+  /**
+   * Post a file to a URL.
+   * @param url the URL to post to
+   * @param filename the name of the file 
+   * @param is the file input stream
+   * @param type the accepted content type
+   * @return a string the resulting URL contents
+   */
+  public static String postFile(String url, String filename, InputStream is, String type)
+  {
+    
+    HttpURLConnection conn = null;
+    OutputStream os;
+    PrintWriter writer = null;
+    BufferedInputStream bis;
+    BufferedReader br;
+    StringBuilder sb = new StringBuilder();
+    String boundary = Long.toHexString(System.currentTimeMillis());
+    String response = "";
+    char[] char_buffer = new char[1024];
+    byte[] byte_buffer = new byte[1024];
+    int tmpi;
+      
+    try{
+      	
+    	
       conn = (HttpURLConnection)new URL(url).openConnection();
       conn.setDoInput(true);
       conn.setDoOutput(true);
@@ -937,35 +1027,55 @@ public class Utility
     
     return tmp;
   }
+   
   
   /**
    * Check if the specified URL exists.
    *  @param url the URL to check
    *  @return true if the URL exists
    */
-  public static boolean existsURL(String url)
+  public static boolean existsURL(String url, String userpass)
   {
     HttpURLConnection.setFollowRedirects(false);
     HttpURLConnection conn = null;
     boolean SUCCESS = false;
     
     try{
+       /* System.out.println("000");
+
       conn = (HttpURLConnection)new URL(url).openConnection();
+      System.out.println("111");
       conn.connect();
-      
+      System.out.println("222");
+      InputStream is = conn.getInputStream();
+      System.out.println("333");
+      BufferedInputStream bis = new BufferedInputStream(is);
+      System.out.println("444");
+      DataInputStream ins = new DataInputStream(bis);
+      System.out.println("555");
+*/
       //Try to open the stream, if it doesn't exist it will cause an exception.
+    	conn = (HttpURLConnection)new URL(url).openConnection();
+    	//authentication
+    	String basicAuth = "Basic " + javax.xml.bind.DatatypeConverter.printBase64Binary(userpass.getBytes());
+        conn.setRequestProperty ("Authorization", basicAuth);
+        conn.connect();
+        
       DataInputStream ins = new DataInputStream(new BufferedInputStream(conn.getInputStream()));
       ins.close();
       
       conn.disconnect();
       SUCCESS = true;
     }catch(FileNotFoundException e){
+    	System.out.println("existsURL - FileNotFoundException");
     }catch(Exception e){
-      e.printStackTrace();
+      //e.printStackTrace();
+    	System.out.println("existsURL - Exception = " + e);
+
     }finally{
       if(conn != null) conn.disconnect();
     }
-    
+    System.out.println("existsURL - SUCCESS is " + SUCCESS);
     return SUCCESS;
   }
   
