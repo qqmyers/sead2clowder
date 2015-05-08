@@ -417,6 +417,13 @@ class Datasets @Inject()(
 			                else if(showPreviews.equals("None"))
 			                	flags = flags + "+nopreviews"
 					        var fileType = f.contentType
+					        FilesUtils.getFilePrioritizedType(nameOfFile) match{
+			                  case ""=>{}
+			                  case customType=>{
+			                    fileType = customType
+			                  }
+			                } 
+					        
 					        if(fileType.contains("/zip") || fileType.contains("/x-zip") || nameOfFile.toLowerCase().endsWith(".zip")){
 					          fileType = FilesUtils.getMainFileTypeOfZipFile(uploadedFile.ref.file, nameOfFile, "dataset")			          
 					          if(fileType.startsWith("ERROR: ")){

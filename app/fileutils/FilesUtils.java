@@ -4,9 +4,13 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
+import java.util.Map;
 import play.Logger;
+import play.Application;
+import play.Play;
 
 import org.json.JSONObject;
 import org.json.XML;
@@ -17,6 +21,24 @@ import org.apache.commons.io.FileUtils;
  * @author Constantinos Sophocleous
  */
 public class FilesUtils {
+	
+	private static Map appMimetypes = new HashMap();
+	static{
+		for (String currKey: Play.application().configuration().keys()){
+			if(currKey.startsWith("mimetype.")){
+				appMimetypes.put(currKey.substring(currKey.indexOf(".")+1), Play.application().configuration().getString(currKey));
+			}
+		}
+	}
+
+	public static String getFilePrioritizedType(String filename){
+	
+		String fileExtension = filename.substring(filename.lastIndexOf(".")+1);
+		if(!fileExtension.equals(filename) && appMimetypes.containsKey(fileExtension)) {
+			return (String) appMimetypes.get(fileExtension);
+		}		
+		else return "";		
+	}
 
 	public static String getMainFileTypeOfZipFile(File compressedFile, String filename, String containerType){
 		
