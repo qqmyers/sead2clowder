@@ -227,7 +227,8 @@ class Files @Inject() (
 	                	flags = flags + "+filelevelshowpreviews"
 	            else if(showPreviews.equals("None"))
 	                	flags = flags + "+nopreviews"
-	             var fileType = f.contentType
+	             var fileType = f.contentType	             
+	             //Make sure the file type detected is the one understood by the extractors
 	             FilesUtils.getFilePrioritizedType(nameOfFile) match{
 			                  case ""=>{}
 			                  case customType=>{
@@ -452,6 +453,7 @@ class Files @Inject() (
           case Some(f) => {
              accessRights.addPermissionLevel(request.user.get, f.id.stringify, "file", "administrate")           
              var fileType = f.contentType
+             //Make sure the file type detected is the one understood by the extractors
              FilesUtils.getFilePrioritizedType(nameOfFile) match{
 			                  case ""=>{}
 			                  case customType=>{
@@ -576,6 +578,7 @@ class Files @Inject() (
           case Some(f) => {
             accessRights.addPermissionLevel(request.user.get, f.id.stringify, "file", "administrate")           
             var fileType = f.contentType
+            //Make sure the file type detected is the one understood by the extractors
             FilesUtils.getFilePrioritizedType(nameOfFile) match{
 			                  case ""=>{}
 			                  case customType=>{
@@ -698,6 +701,7 @@ class Files @Inject() (
           case Some(f) => {
              accessRights.addPermissionLevel(request.user.get, f.id.stringify, "file", "administrate")          
              var fileType = f.contentType
+             //Make sure the file type detected is the one understood by the extractors
              FilesUtils.getFilePrioritizedType(nameOfFile) match{
 			                  case ""=>{}
 			                  case customType=>{
@@ -831,6 +835,7 @@ class Files @Inject() (
 	                else if(showPreviews.equals("None"))
 	                	flags = flags + "+nopreviews"
 					  var fileType = f.contentType
+					  //Make sure the file type detected is the one understood by the extractors
 					  FilesUtils.getFilePrioritizedType(nameOfFile) match{
 			                  case ""=>{}
 			                  case customType=>{

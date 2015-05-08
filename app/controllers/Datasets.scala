@@ -416,7 +416,8 @@ class Datasets @Inject()(
 			                	flags = flags + "+filelevelshowpreviews"
 			                else if(showPreviews.equals("None"))
 			                	flags = flags + "+nopreviews"
-					        var fileType = f.contentType
+					        var fileType = f.contentType					        
+					        //Make sure the file type detected is the one understood by the extractors
 					        FilesUtils.getFilePrioritizedType(nameOfFile) match{
 			                  case ""=>{}
 			                  case customType=>{

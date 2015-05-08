@@ -294,7 +294,8 @@ class Files @Inject()(
 	            	flags = flags + "+filelevelshowpreviews"
 	            else if(showPreviews.equals("None"))
 	            	flags = flags + "+nopreviews"
-	            var fileType = f.contentType
+	            var fileType = f.contentType	            
+	            //Make sure the file type detected is the one understood by the extractors
 	            FilesUtils.getFilePrioritizedType(nameOfFile) match{
 			                  case ""=>{}
 			                  case customType=>{
@@ -488,7 +489,8 @@ class Files @Inject()(
 	            flags = flags + "+filelevelshowpreviews"
 	          else if(showPreviews.equals("None"))
 	            flags = flags + "+nopreviews"
-	          var fileType = f.contentType
+	          var fileType = f.contentType	          
+	          //Make sure the file type detected is the one understood by the extractors
 	          FilesUtils.getFilePrioritizedType(nameOfFile) match{
 			                  case ""=>{}
 			                  case customType=>{
@@ -638,8 +640,9 @@ class Files @Inject()(
               file match {
                 case Some(f) => {
                   files.setIntermediate(f.id)
-                  var fileType = f.contentType
-                  FilesUtils.getFilePrioritizedType(nameOfFile) match{
+                  var fileType = f.contentType                  
+                  //Make sure the file type detected is the one understood by the extractors
+                  FilesUtils.getFilePrioritizedType(f.filename) match{
 			                  case ""=>{}
 			                  case customType=>{
 			                    fileType = customType

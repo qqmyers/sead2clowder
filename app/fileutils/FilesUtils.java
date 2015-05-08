@@ -18,10 +18,13 @@ import org.json.XML;
 import org.apache.commons.io.FileUtils;
 
 /**
+ * Utilities for preprocessing of uploaded files.
+ * 
  * @author Constantinos Sophocleous
  */
 public class FilesUtils {
 	
+	//Read custom-defined extensions-to-MIME-types associations from config file.
 	private static Map appMimetypes = new HashMap();
 	static{
 		for (String currKey: Play.application().configuration().keys()){
@@ -31,6 +34,7 @@ public class FilesUtils {
 		}
 	}
 
+	//Get custom MIME type of file based on extension if such is defined.
 	public static String getFilePrioritizedType(String filename){
 	
 		String fileExtension = filename.substring(filename.lastIndexOf(".")+1);
