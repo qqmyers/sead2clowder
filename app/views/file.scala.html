@@ -2,7 +2,7 @@
   previews : Map[models.File, Array[(java.lang.String, String, String, String, java.lang.String, String, Long)]],
   sections: List[models.Section], beingProcessed: Boolean, fileDataset: List[models.Dataset],
   datasetsOutside: List[models.Dataset], usrmd: scala.collection.mutable.Map[String,Any],
-  rdfExported: Boolean, 
+  rdfExported: Boolean,
   extractionsStatus: List[Extraction], outputFormats: List[String])(implicit user: Option[securesocial.core.Identity])
 
 @import helper._
@@ -10,92 +10,92 @@
 @import play.api.Play.current
 @implicitFieldConstructor = @{ FieldConstructor(twitterBootstrapInput.f) }
 
-  @printLevel(metadata: scala.collection.immutable.Map[String,Any]) = {
-    @for((key,value) <- metadata) {
-      <li><b>@(key):</b>
-      @if(value.isInstanceOf[String]) {
-        @if(value.asInstanceOf[String].startsWith("http://") || value.asInstanceOf[String].startsWith("https://")) {
-          <a href="@value">@value</a>
-        } else {
-          @value
-        }
-      } else {
-        @if(value.isInstanceOf[java.lang.Integer] || value.isInstanceOf[java.lang.Double] || value.isInstanceOf[java.lang.Float] ) {
-          @value.toString
-        } else {
-          @if(value.isInstanceOf[com.mongodb.BasicDBList]) {
-            <ul>
-              @printList(value.asInstanceOf[com.mongodb.BasicDBList].toList)
-            </ul>
-          } else {
-            @if(value.isInstanceOf[com.mongodb.BasicDBObject]) {
-              <ul>
-                @printLevel(value.asInstanceOf[com.mongodb.BasicDBObject].toMap().asScala.asInstanceOf[scala.collection.mutable.Map[String, Any]].toMap)
-              </ul>
-            } else {
-              @value.toString
-            }
-          }
-        }
-      }</li>
-    }
-  }
+	@printLevel(metadata: scala.collection.immutable.Map[String,Any]) = {
+		@for((key,value) <- metadata) {
+			<li><b>@(key):</b>
+			@if(value.isInstanceOf[String]) {
+				@if(value.asInstanceOf[String].startsWith("http://") || value.asInstanceOf[String].startsWith("https://")) {
+					<a href="@value">@value</a>
+				} else {
+					@value
+				}
+			} else {
+				@if(value.isInstanceOf[java.lang.Integer] || value.isInstanceOf[java.lang.Double] || value.isInstanceOf[java.lang.Float] ) {
+					@value.toString
+				} else {
+					@if(value.isInstanceOf[com.mongodb.BasicDBList]) {
+						<ul>
+							@printList(value.asInstanceOf[com.mongodb.BasicDBList].toList)
+						</ul>
+					} else {
+						@if(value.isInstanceOf[com.mongodb.BasicDBObject]) {
+							<ul>
+							  @printLevel(value.asInstanceOf[com.mongodb.BasicDBObject].toMap().asScala.asInstanceOf[scala.collection.mutable.Map[String, Any]].toMap)
+							</ul>
+						} else {
+							@value.toString
+						}
+					}
+				}
+			}</li>
+		}
+	}
 
-  @printList(metadata: List[AnyRef])  = {
-    @metadata.indices.map { i =>
-      <li><b>@i:</b>
-        @if(metadata(i).isInstanceOf[String]) {
-          @if(metadata(i).asInstanceOf[String].startsWith("http://") || metadata(i).asInstanceOf[String].startsWith("https://")) {
-            <a href="@metadata(i)">@metadata(i)</a>
-          } else {
-            @metadata(i)
-          }
-        } else {
-          @if(metadata(i).isInstanceOf[java.lang.Integer] || metadata(i).isInstanceOf[java.lang.Double] || metadata(i).isInstanceOf[java.lang.Float] ) {
-            @metadata(i).toString
-          } else {
-            @if(metadata(i).isInstanceOf[com.mongodb.BasicDBList]) {
-              <ul>
-              @printList(metadata(i).asInstanceOf[com.mongodb.BasicDBList].toList)
-              </ul>
-            } else {
-              @if(metadata(i).isInstanceOf[com.mongodb.BasicDBObject]) {
-                <ul>
-                @printLevel(metadata(i).asInstanceOf[com.mongodb.BasicDBObject].toMap().asScala.asInstanceOf[scala.collection.mutable.Map[String, Any]].toMap)
-                </ul>
-              } else {
-                @metadata(i)
-              }
-            }
-          }
-        }</li>
-    }
-  }
+	@printList(metadata: List[AnyRef])	= {
+		@metadata.indices.map { i =>
+			<li><b>@i:</b>
+				@if(metadata(i).isInstanceOf[String]) {
+					@if(metadata(i).asInstanceOf[String].startsWith("http://") || metadata(i).asInstanceOf[String].startsWith("https://")) {
+						<a href="@metadata(i)">@metadata(i)</a>
+					} else {
+						@metadata(i)
+					}
+				} else {
+					@if(metadata(i).isInstanceOf[java.lang.Integer] || metadata(i).isInstanceOf[java.lang.Double] || metadata(i).isInstanceOf[java.lang.Float] ) {
+						@metadata(i).toString
+					} else {
+						@if(metadata(i).isInstanceOf[com.mongodb.BasicDBList]) {
+							<ul>
+							@printList(metadata(i).asInstanceOf[com.mongodb.BasicDBList].toList)
+							</ul>
+						} else {
+							@if(metadata(i).isInstanceOf[com.mongodb.BasicDBObject]) {
+								<ul>
+								@printLevel(metadata(i).asInstanceOf[com.mongodb.BasicDBObject].toMap().asScala.asInstanceOf[scala.collection.mutable.Map[String, Any]].toMap)
+								</ul>
+							} else {
+								@metadata(i)
+							}
+						}
+					}
+				}</li>
+		}
+	}
 
 @showPreview(id: String, p: (java.lang.String, String, String, String, java.lang.String, String, Long), filename: String, contentType: String) = {
-  <script>
-    Configuration.tab = "#previewer_@id";
-    Configuration.url = "@p._5";
-    Configuration.fileid = "@p._1";
-    Configuration.previewer = "@routes.Assets.at(p._3)";
-    if("@p._2" === "Thumbnail"){
-      Configuration.fileType = "@p._6";
-      Configuration.fileSize = @p._7;
-    }
-    else if("@p._2" === "X3d"){
-      Configuration.annotationsEditPath = "@api.routes.Previews.editAnnotation(UUID(p._1)))";
-      Configuration.annotationsListPath = "@api.routes.Previews.listAnnotations(UUID(p._1))";
-      Configuration.annotationsAttachPath = "@api.routes.Previews.attachAnnotation(UUID(p._1))";
-      Configuration.wasPTM = "@(filename.endsWith(".ptm") || contentType.contains("ptmimages"))";
-      Configuration.calledFrom = "file";
-    }
-    else if("@p._2" === "Oni"){     
-    }
-  </script>
-  <script type="text/javascript" src="@(routes.Assets.at(p._3) + "/" + p._4)"></script>
+	<script>
+		Configuration.tab = "#previewer_@id";
+		Configuration.url = "@p._5";
+		Configuration.fileid = "@p._1";
+		Configuration.previewer = "@routes.Assets.at(p._3)";
+		if("@p._2" === "Thumbnail"){
+			Configuration.fileType = "@p._6";
+			Configuration.fileSize = @p._7;
+		}
+		else if("@p._2" === "X3d"){
+			Configuration.annotationsEditPath = "@api.routes.Previews.editAnnotation(UUID(p._1)))";
+			Configuration.annotationsListPath = "@api.routes.Previews.listAnnotations(UUID(p._1))";
+			Configuration.annotationsAttachPath = "@api.routes.Previews.attachAnnotation(UUID(p._1))";
+			Configuration.wasPTM = "@(filename.endsWith(".ptm") || contentType.contains("ptmimages"))";
+			Configuration.calledFrom = "file";
+		}
+		else if("@p._2" === "Oni"){			
+		}
+	</script>
+	<script type="text/javascript" src="@(routes.Assets.at(p._3) + "/" + p._4)"></script>
 }
 
-@main("File") { 
+@main("File") {	
     <script src="@routes.Assets.at("javascripts/errorRedirect.js")" type="text/javascript"></script>
     <script src="@routes.Assets.at("javascripts/updateLicenseInfo.js")" language="javascript"></script>
     <script type="text/javascript" src="//ajax.googleapis.com/ajax/libs/swfobject/2.2/swfobject.js"></script>
@@ -105,87 +105,86 @@
     <script src="@routes.Assets.at("javascripts/galleria-1.2.9.js")" type="text/javascript"></script>
     <script src="@routes.Assets.at("javascripts/fileListProcess.js")" type="text/javascript"></script>
     
-  <script>
-    tinymce.init({selector:'.notesArea',
-        theme: "modern",
-        plugins: [
-                  "advlist autolink lists link image charmap print preview hr anchor pagebreak",
-                  "searchreplace wordcount visualblocks visualchars code fullscreen",
-                  "insertdatetime media nonbreaking save table contextmenu directionality",
-                  "template paste textcolor"
-              ],
-              toolbar1: "insertfile undo redo | styleselect | bold italic | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link image",
-              toolbar2: "print preview media | forecolor backcolor emoticons",
-              image_advtab: true,
-              templates: [
-                  {title: 'Test template 1', content: 'Test 1'},
-                  {title: 'Test template 2', content: 'Test 2'}
-              ]
-      });
-  </script>
-  <script>
-      var isPageLoaded = false;
-      var isx3dActive = false;
-      var Configuration = {};
-      Configuration.id  = "@file.id";
-    Configuration.authenticated = @user.isDefined;
-    Configuration.ptmAppletPath = "@(routes.Assets.at("plugins") + "/" + "envlib.jar")";
-    Configuration.expressInstallPath = "@(routes.Assets.at("plugins") + "/" + "expressInstall.swf")";
-    Configuration.iipZoomPath = "@(routes.Assets.at("plugins") + "/" + "IIPZoom.swf")";
-    Configuration.jsPath = "@(routes.Assets.at("javascripts"))";
-    Configuration.imagesPath = "@(routes.Assets.at("images"))";
-    Configuration.appContext = "@play.api.Play.configuration.getString("application.context").getOrElse("")";
+	<script>
+		tinymce.init({selector:'.notesArea',
+	    	theme: "modern",
+	    	plugins: [
+	    	          "advlist autolink lists link image charmap print preview hr anchor pagebreak",
+	    	          "searchreplace wordcount visualblocks visualchars code fullscreen",
+	    	          "insertdatetime media nonbreaking save table contextmenu directionality",
+	    	          "template paste textcolor"
+	    	      ],
+	    	      toolbar1: "insertfile undo redo | styleselect | bold italic | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link image",
+	    	      toolbar2: "print preview media | forecolor backcolor emoticons",
+	    	      image_advtab: true,
+	    	      templates: [
+	    	          {title: 'Test template 1', content: 'Test 1'},
+	    	          {title: 'Test template 2', content: 'Test 2'}
+	    	      ]
+	    });
+	</script>
+	<script>
+    	var isPageLoaded = false;
+    	var isx3dActive = false;
+    	var Configuration = {};
+    	Configuration.id  = "@file.id";
+		Configuration.authenticated = @user.isDefined;
+		Configuration.ptmAppletPath = "@(routes.Assets.at("plugins") + "/" + "envlib.jar")";
+		Configuration.expressInstallPath = "@(routes.Assets.at("plugins") + "/" + "expressInstall.swf")";
+		Configuration.iipZoomPath = "@(routes.Assets.at("plugins") + "/" + "IIPZoom.swf")";
+		Configuration.jsPath = "@(routes.Assets.at("javascripts"))";
+		Configuration.imagesPath = "@(routes.Assets.at("images"))";
+		Configuration.appContext = "@play.api.Play.configuration.getString("application.context").getOrElse("")";
     </script>
     <script>
-      window.onload = function() {
-        isPageLoaded = true;
-      }
+    	window.onload = function() {
+    		isPageLoaded = true;
+    	}
     </script>
 
-  <div class="row">
-    <div class="col-md-8 col-right-border">
-    @for((f, pvs) <- previews) {
-      <div class="row" id="filePrevContainer_@(f.id.toString)" data-previewsCount="@(pvs.length)" data-filename="@f.filename">
-          <div class="col-md-12">
-          <!-- 
-          First check if there is only one previewer, and if the value of the URL for it is "null". If so
-          that means there was no preview generated and the file is not allowed to be used due to the license
-          that is on the file.
-           -->
-          @if(pvs.length == 1 && pvs(0)._5 == "null") {
+	<div class="row">
+		<div class="col-md-8 col-right-border">
+		@for((f, pvs) <- previews) {
+			<div class="row" id="filePrevContainer_@(f.id.toString)" data-previewsCount="@(pvs.length)" data-filename="@f.filename">
+		    	<div class="col-md-12">
+		    	<!-- 
+		    	First check if there is only one previewer, and if the value of the URL for it is "null". If so
+		    	that means there was no preview generated and the file is not allowed to be used due to the license
+		    	that is on the file.
+		    	 -->
+		    	@if(pvs.length == 1 && pvs(0)._5 == "null") {
                     <h4>No previews currently available for this file</h4>
                 } else {
-            <div class="tabbable">
-            <ul class="nav nav-pills" id="myTab_@(f.id.toString)">
-              @for(i <- pvs.indices) {
-                  <li class=""><a href="#previewer_@(f.id.toString)_@i" data-toggle="tab">@pvs(i)._2</a></li>
-                }
-            </ul>
-            <div class="tab-content"  id="previewsContent_@(f.id.toString)">                                
-                @for(i <- pvs.indices) {
-                  <div class="tab-pane previewDiv" id="previewer_@(f.id.toString)_@i" data-previewId="@(pvs(i)._1)" data-previewerId="@(pvs(i)._2)"></div>
-                  @showPreview(f.id.toString + "_" + i, pvs(i), f.filename, f.contentType)
+			  		<div class="tabbable">
+						<ul class="nav nav-pills" id="myTab_@(f.id.toString)">
+							@for(i <- pvs.indices) {
+					    		<li class=""><a href="#previewer_@(f.id.toString)_@i" data-toggle="tab">@pvs(i)._2</a></li>
+			  				}
+						</ul>
+						<div class="tab-content"  id="previewsContent_@(f.id.toString)">						    						    
+						    @for(i <- pvs.indices) {
+						  		<div class="tab-pane previewDiv" id="previewer_@(f.id.toString)_@i" data-previewId="@(pvs(i)._1)" data-previewerId="@(pvs(i)._2)"></div>
+						  		@showPreview(f.id.toString + "_" + i, pvs(i), f.filename, f.contentType)
 
-              }             
-                <script type="text/javascript">
-                $(function () {
-                  $('#myTab_@(f.id.toString) a:first').tab('show');
-                 })
-              </script>
-            </div>
-          </div>
-          }
-          </div>
-      </div>
-      @if(pvs.length <= 1) {
-        <script>        
-            $('#myTab_@(f.id.toString)').attr('style', 'display:none;');
-          </script>
-        }
-        
-      
-  <div class="row">
-    <div class="col-md-12 button-margins">
+							}							
+				  			<script type="text/javascript">
+								$(function () {
+									$('#myTab_@(f.id.toString) a:first').tab('show');
+				 				 })
+							</script>
+						</div>
+					</div>
+			    }
+		  		</div>
+			</div>
+			@if(pvs.length <= 1) {
+				<script>				
+	    			$('#myTab_@(f.id.toString)').attr('style', 'display:none;');
+	    		</script>
+    		}
+
+     <div class="row">
+      <div class="col-md-12 button-margins">
       <div class="btn-group" role="group" aria-label="...">         
         
         <button id="downloadButton" type="button" onclick="return downloadFile();" 
@@ -216,16 +215,17 @@
                 <!-- If user can delete, the button is enabled, otherwise the button is present but disabled to provide consistent UE. -->
                     @if(user.get.identityId.userId.equals(file.author.identityId.userId)){                    
                         <span class="align-right">
-                    <button id="deleteButton" onclick="removeFileAndRedirect('@(file.id)','@(routes.Files.list(""))')" class="btn btn-primary" title="Delete">
-                <span class="glyphicon glyphicon-trash"></span> Delete</button>
-              </span>
-          } else {
-              <span class="align-right">
+				            <button id="deleteButton" onclick="removeFileAndRedirect('@(file.id)','@(routes.Files.list(""))')" class="btn btn-primary" title="Delete">
+						    <span class="glyphicon glyphicon-trash"></span> Delete</button>
+					    </span>
+					} else {
+					    <span class="align-right">
                             <button disabled id="deleteButton" onclick="removeFileAndRedirect('@(file.id)','@(routes.Files.list(""))')" class="btn btn-primary" title="Delete">
                             <span class="glyphicon glyphicon-trash"></span> Delete</button>
                         </span>
-          }         
-        } 
+					}					
+				}				               
+             
         
         
     </div> <!-- end of col-md-12 -->
@@ -237,135 +237,133 @@
            window.open(downloadRoute, '_blank');          
         }
         </script>
-
-
+ 
+ 
 <!--  new button code ends -->
 
-
-
-      <!-- sections -->
-      @if(sections.size > 0) {
-          <div class="row border-top">
-            <div class="col-md-12">
+			<!-- sections -->
+			@if(sections.size > 0) {
+			  	<div class="row border-top">
+			  	  <div class="col-md-12">
                     <h4>Sections</h4>
-            <div id="galleria" style="float:left;clear:none;width:600px;height:300px;">
-              @sections.map { s =>
-                @if(s.preview.isDefined) {
-                  <img src="@api.routes.Previews.download(s.preview.get.id)"
-                    class="img-polaroid" height="100px"
-                  @if(s.startTime.isDefined) {
-                    data-title="Shot" data-description="Starts at @s.startTime seconds."
-                  } else {
-                    if (s.area.isDefined) {
-                      data-title="Area" data-description="@s.area.toString"
-                    } else {
-                    data-title="Unknown" data-description="Unknown info"
-                    }
-                  }
-                  >
-                }
-              }
-            </div>
-          </div>
-        </div>
-        <div class="row" style="padding-top: 10px">
-            <div class="col-md-10">
-            <table class="table">
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>Thumbnail</th>
-                  <th>Information</th>
-                  <th>Find</th>
-                </tr>
-              </thead>
-              <tbody>
-                @sections.map { s =>
-                  <tr>
-                    <td>@(if (s.order > 0) s.order else "")</td>
-                    <td>
-                      @if(s.preview.isDefined) {
-                        <img src="@api.routes.Previews.download(s.preview.get.id)"
-                          class="img-polaroid" style="max-width: 100px;max-height: 100px;"
-                        @if(s.startTime.isDefined) {
-                          data-title="Shot" data-description="Starts at @s.startTime seconds."
-                        } else {
-                          @if(s.area.isDefined) {
-                            data-title="Area" data-description="@s.area.toString"
-                          } else {
-                          data-title="Unknown" data-description="Unknown info"
-                          }
-                        }
-                        ></img>
-                      }
-                    </td>
-                     <td>
-                     @if(s.startTime.isDefined) {
-                      @(s.startTime.get / 60):@("%02d".format(s.startTime.get % 60))
-                     } else {
-                      @if(s.area.isDefined) {
-                        @s.area.get.toString
-                      } else {
-                      Unknown info
-                      }
-                    }
-                     </td>
-                     <td><a href="@routes.Search.searchMultimediaIndex(s.id)">Similar</a></td>
-                   </tr>
-                }
-              </table>
-            </div>
-          </div>
-        
-        <script>
-            document.addEventListener("DOMContentLoaded", function () {
-            if ($("#ourvideo").length>0) {
-                  var pop = Popcorn("#ourvideo");
+				  	<div id="galleria" style="float:left;clear:none;width:600px;height:300px;">
+					  	@sections.map { s =>
+					  		@if(s.preview.isDefined) {
+					  			<img src="@api.routes.Previews.download(s.preview.get.id)"
+					  				class="img-polaroid" height="100px"
+					  			@if(s.startTime.isDefined) {
+					  		 		data-title="Shot" data-description="Starts at @s.startTime seconds."
+					  		 	} else {
+					  		 		if (s.area.isDefined) {
+					  		 			data-title="Area" data-description="@s.area.toString"
+					  		 		} else {
+										data-title="Unknown" data-description="Unknown info"
+					  		 		}
+					  		 	}
+					  		 	>
+					  		}
+					  	}
+				  	</div>
+				  </div>
+				</div>
+				<div class="row" style="padding-top: 10px">
+				    <div class="col-md-10">
+						<table class="table">
+							<thead>
+								<tr>
+									<th>#</th>
+									<th>Thumbnail</th>
+									<th>Information</th>
+									<th>Find</th>
+								</tr>
+							</thead>
+							<tbody>
+					  		@sections.map { s =>
+					  			<tr>
+						  			<td>@(if (s.order > 0) s.order else "")</td>
+						  			<td>
+								  		@if(s.preview.isDefined) {
+								  			<img src="@api.routes.Previews.download(s.preview.get.id)"
+								  				class="img-polaroid" style="max-width: 100px;max-height: 100px;"
+								  			@if(s.startTime.isDefined) {
+								  		 		data-title="Shot" data-description="Starts at @s.startTime seconds."
+								  		 	} else {
+								  		 		@if(s.area.isDefined) {
+								  		 			data-title="Area" data-description="@s.area.toString"
+								  		 		} else {
+													data-title="Unknown" data-description="Unknown info"
+								  		 		}
+								  		 	}
+								  		 	></img>
+								  		}
+					  				</td>
+						  			 <td>
+						  			 @if(s.startTime.isDefined) {
+						  			 	@(s.startTime.get / 60):@("%02d".format(s.startTime.get % 60))
+						  		 	 } else {
+						  		 		@if(s.area.isDefined) {
+						  		 			@s.area.get.toString
+						  		 		} else {
+											Unknown info
+						  		 		}
+						  		 	}
+						  			 </td>
+						  			 <td><a href="@routes.Search.searchMultimediaIndex(s.id)">Similar</a></td>
+					  			 </tr>
+					  		}
+				  		</table>
+				  	</div>
+			  	</div>
+				
+				<script>
+				    document.addEventListener("DOMContentLoaded", function () {
+						if ($("#ourvideo").length>0) {
+					        var pop = Popcorn("#ourvideo");
 
-              @sections.map { s =>
-                  @if(s.startTime.isDefined) {
-                    pop.code({
-                        start: @s.startTime,
-                        onStart: function() {
-                          var frame = @s.order - 1;
-                          console.log("Jumping to " + frame + " " + @s.startTime);
-                          $('#galleria').data('galleria').show(frame);
-                        },
-                        onEnd: function() {
-                          //console.log("end");
-                       }
-                    });
-                }
-                }
-            }
-            });
-             </script>
-          
-          <script>
-            $(function() {
-              // Load the classic theme
-              Galleria.loadTheme('@routes.Assets.at("javascripts/galleria-classic/galleria.classic.min.js")');
+							@sections.map { s =>
+					  			@if(s.startTime.isDefined) {
+							   		pop.code({
+								        start: @s.startTime,
+								        onStart: function() {
+								          var frame = @s.order - 1;
+								          console.log("Jumping to " + frame + " " + @s.startTime);
+								          $('#galleria').data('galleria').show(frame);
+								        },
+								        onEnd: function() {
+								          //console.log("end");
+								       }
+								    });
+								}
+						    }
+						}
+				    });
+		         </script>
+			    
+			    <script>
+			    	$(function() {
+					    // Load the classic theme
+					    Galleria.loadTheme('@routes.Assets.at("javascripts/galleria-classic/galleria.classic.min.js")');
 
-              // Initialize Galleria
-              Galleria.run('#galleria');
+					    // Initialize Galleria
+					    Galleria.run('#galleria');
 
-              var gallery = $('#galleria').data('galleria');
+					    var gallery = $('#galleria').data('galleria');
 
-            Galleria.ready(function(options) {
+						Galleria.ready(function(options) {
 
-                // 'this' is the gallery instance
-                // 'options' is the gallery options
+						    // 'this' is the gallery instance
+						    // 'options' is the gallery options
 
-                this.bind('image', function(e) {
-                    Galleria.log('Now viewing ' + e.imageTarget.src);
-                });
-            });
+						    this.bind('image', function(e) {
+						        Galleria.log('Now viewing ' + e.imageTarget.src);
+						    });
+						});
 
 
-            });
-          </script>
-          }
-        }
+				    });
+			    </script>
+    			}
+    		}
 
             <div class="row">
                 <div class="col-md-12 border-top col-section">
@@ -409,7 +407,7 @@
                 </div>
             </div>
 
-      @if(!file.xmlMetadata.isEmpty) {
+			@if(!file.xmlMetadata.isEmpty) {
                 <div id='xmlMetadata_@(file.id.toString)'>
                     <button class="tech_md_" type="button">Show XML-uploaded metadata</button>
                     <div style="display:none;">
@@ -433,18 +431,18 @@
             }
 
 
-      <div class="row border-top">
-        <div class="col-md-12">
-          <h4>Extractions</h4>
-          <a class="btn btn-link" data-toggle="collapse" href="#extractions" aria-expanded="false"
-          aria-controls="collapseExample">
-            List extraction events
-          </a>
-          <div class="collapse" id="extractions">
-            @extractions.extractionsByFile(extractionsStatus)
-          </div>
-        </div>
-      </div>
+			<div class="row border-top">
+				<div class="col-md-12">
+					<h4>Extractions</h4>
+					<a class="btn btn-link" data-toggle="collapse" href="#extractions" aria-expanded="false"
+					aria-controls="collapseExample">
+						List extraction events
+					</a>
+					<div class="collapse" id="extractions">
+						@extractions.extractionsByFile(extractionsStatus)
+					</div>
+				</div>
+			</div>
 
             <div class="row border-top">
                 <div class="col-md-12">
@@ -459,7 +457,7 @@
             </div>
 
 
-    </div>
+		</div>
 
         <div class="col-md-4">
 
@@ -547,7 +545,7 @@
                     //The checkLicenseType and checkAllowDownload variables are globally defined, and referenced from
                     //updateLicenseInfo.js.
                     //
-                    //Check the license type, only type1 needs to have further checks, otherwise download should be allowed
+                   //Check the license type, only type1 needs to have further checks, otherwise download should be allowed
                     if (fileLicenseType != 'license1') {
                         $("#downloadButton").removeAttr("disabled");
                         $("#downloadButton").attr("title", "Download the file");
@@ -571,8 +569,7 @@
                             $("#downloadAsButton").attr("disabled", "disabled");
                             $("#downloadAsButton").attr("title", "You don't have permission to download this file");
                         }
-                    }
-                    
+                    }                    
                 });
 
                 function downloadFile() {
@@ -632,7 +629,7 @@
                   });
 
                   request.fail(function (jqXHR, textStatus, errorThrown){
-                    console.error("The following error occured: " + textStatus, errorThrown);
+                	  console.error("The following error occured: " + textStatus, errorThrown);
                       var errMsg = "You must be logged in to remove a tag from a file.";                                
                       if (!checkErrorAndRedirect(jqXHR, errMsg)) {
                           notify("The tag was not removed from the file due to : " + errorThrown, "error");
@@ -687,7 +684,7 @@
                        });
                   
                       request.fail(function (jqXHR, textStatus, errorThrown){
-                        console.error("The following error occured: " + textStatus, errorThrown);
+                    	  console.error("The following error occured: " + textStatus, errorThrown);
                           var errMsg = "You must be logged in to add a tag to a file.";                                
                           if (!checkErrorAndRedirect(jqXHR, errMsg)) {
                               notify("The tag was not added to the file due to : " + errorThrown, "error");
@@ -722,9 +719,9 @@
 
     </div> @* End of small right hand side column *@
 
-  </div>
+	</div>
 
-  @if(!user.isDefined) {
+	@if(!user.isDefined) {
         <script language="javascript">
             $(".requiresLogin").css("display","none");
         </script>
