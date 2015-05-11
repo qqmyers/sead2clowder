@@ -143,9 +143,7 @@ class Files @Inject() (
         val extractionsByFile = extractions.findByFileId(id)
         
 
-        //============== start of new code===============
-
-        //get all possible output formats for this content type 
+        //======  call Polyglot to get all possible output formats for this file 
         Logger.debug("content type = " + file.contentType)
         
         //for content type with multiple parts (application/pdf) get the ending part (pdf)
@@ -153,20 +151,19 @@ class Files @Inject() (
         val endingIndex =(ct.replace("/", ".").lastIndexOf(".")) + 1
         val contentTypeEnding = ct.substring(endingIndex, ct.length)
         Logger.debug("content type ends in " + contentTypeEnding)            
-        //get possible output formats for the file's input type 
-       
-
-       
         
+        //get possible output formats for the file's input type         
         val polyglotInputsURL: String = play.api.Play.configuration.getString("polyglotInputsURL").getOrElse("")
         val polyglotUser: String = play.api.Play.configuration.getString("browndogUsername").getOrElse("")
         val polyglotPassword: String = play.api.Play.configuration.getString("browndogPassword").getOrElse("")
         var outputs: Future[Response] = null
+        
         //adding authentication for polyglot server
         outputs = WS.url(polyglotInputsURL + contentTypeEnding).withAuth(polyglotUser, polyglotPassword, AuthScheme.BASIC).get()    
+        
         //future array of results
         var farray = outputs.map(_.body.split("\n"))
-        farray.map(_.map(el=>Logger.debug("possibe output format = " + el)))
+        //farray.map(_.map(el=>Logger.debug("possible output format = " + el)))
         var outputsListFuture = farray.map(a=>a.toList)           
         for { 
           outputsList<-outputsListFuture
@@ -174,7 +171,6 @@ class Files @Inject() (
           Ok(views.html.file(file, id.stringify, commentsByFile, previewsWithPreviewer, sectionsWithPreviews, 
               extractorsActive, decodedDatasetsContaining.toList, decodedDatasetsNotContaining.toList, userMetadata, isRDFExportEnabled, extractionsByFile, outputsList))
         }
-
       }
       case None => {
         val error_str = "The file with id " + id + " is not found."
@@ -669,7 +665,7 @@ def uploadExtract() = SecuredAction(parse.multipartFormData, authorization = Wit
                 //TODO: time out and print error message if conversion fails
                 Logger.debug("file at the url - check if exists")
                 var count = 0               
-                while (!Utility.existsURL(resultURL, userpass)) {
+                while (!Utility.existsURLWithAuthentication(resultURL, userpass)) {
                   Utility.pause(3000)
                   count = count + 1
                   Logger.debug("file at the url " + resultURL + " does not exist, waiting... count=" + count)
@@ -726,7 +722,6 @@ def uploadExtract() = SecuredAction(parse.multipartFormData, authorization = Wit
       BadRequest(toJson(s"The given id $id is not a valid ObjectId."))
     }
   }
-
 
 
   def thumbnail(id: UUID) = SecuredAction(authorization=WithPermission(Permission.ShowFile)) { implicit request =>
