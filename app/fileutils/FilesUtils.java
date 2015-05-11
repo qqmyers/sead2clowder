@@ -6,15 +6,43 @@ import java.io.IOException;
 import java.util.Enumeration;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
+import java.util.Map;
+import java.util.HashMap;
 import play.Logger;
+import play.Application;
+import play.Play;
 
 import org.json.JSONObject;
 import org.json.XML;
 
 import org.apache.commons.io.FileUtils;
 
-
+/**
+ * Utilities for preprocessing of uploaded files.
+ * 
+ * @author Constantinos Sophocleous
+ */
 public class FilesUtils {
+	
+	//Read custom-defined extensions-to-MIME-types associations from config file.
+	private static Map appMimetypes = new HashMap();
+	static{
+		for (String currKey: Play.application().configuration().keys()){
+			if(currKey.startsWith("mimetype.")){
+				appMimetypes.put(currKey.substring(currKey.indexOf(".")+1), Play.application().configuration().getString(currKey));
+			}
+		}
+	}
+
+	//Get custom MIME type of file based on extension if such is defined.
+	public static String getFilePrioritizedType(String filename){
+	
+		String fileExtension = filename.substring(filename.lastIndexOf(".")+1);
+		if(!fileExtension.equals(filename) && appMimetypes.containsKey(fileExtension)) {
+			return (String) appMimetypes.get(fileExtension);
+		}		
+		else return "";		
+	}
 
 	public static String getMainFileTypeOfZipFile(File compressedFile, String filename, String containerType){
 		

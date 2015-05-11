@@ -273,6 +273,13 @@ def uploadExtract() = SecuredAction(parse.multipartFormData, authorization = Wit
 	            else if(showPreviews.equals("None"))
 	                	flags = flags + "+nopreviews"
 	             var fileType = f.contentType
+	             //Make sure the file type detected is the one understood by the extractors
+	              FilesUtils.getFilePrioritizedType(nameOfFile) match{
+			                  case ""=>{}
+			                  case customType=>{
+			                    fileType = customType
+			                  }
+			                }
 				    if(fileType.contains("/zip") || fileType.contains("/x-zip") || nameOfFile.toLowerCase().endsWith(".zip")){
 				          fileType = FilesUtils.getMainFileTypeOfZipFile(uploadedFile.ref.file, nameOfFile, "file")			          
                 if (fileType.startsWith("ERROR: ")) {
@@ -378,6 +385,13 @@ def uploadExtract() = SecuredAction(parse.multipartFormData, authorization = Wit
 	            else if(showPreviews.equals("None"))
 	                	flags = flags + "+nopreviews"
 	             var fileType = f.contentType
+	             //Make sure the file type detected is the one understood by the extractors
+	             FilesUtils.getFilePrioritizedType(nameOfFile) match{
+			                  case ""=>{}
+			                  case customType=>{
+			                    fileType = customType
+			                  }
+			                }
 				    if(fileType.contains("/zip") || fileType.contains("/x-zip") || nameOfFile.toLowerCase().endsWith(".zip")){
 				          fileType = FilesUtils.getMainFileTypeOfZipFile(uploadedFile.ref.file, nameOfFile, "file")			          
 				          if(fileType.startsWith("ERROR: ")){
@@ -682,6 +696,13 @@ def uploadExtract() = SecuredAction(parse.multipartFormData, authorization = Wit
           case Some(f) => {
                        
             var fileType = f.contentType
+            //Make sure the file type detected is the one understood by the extractors
+	            FilesUtils.getFilePrioritizedType(nameOfFile) match{
+			                  case ""=>{}
+			                  case customType=>{
+			                    fileType = customType
+			                  }
+			                }
 			    if(fileType.contains("/zip") || fileType.contains("/x-zip") || nameOfFile.toLowerCase().endsWith(".zip")){
 			          fileType = FilesUtils.getMainFileTypeOfZipFile(uploadedFile.ref.file, nameOfFile, "file")			          
 			          if(fileType.startsWith("ERROR: ")){
@@ -779,6 +800,13 @@ def uploadExtract() = SecuredAction(parse.multipartFormData, authorization = Wit
           case Some(f) => {
                        
              var fileType = f.contentType
+             //Make sure the file type detected is the one understood by the extractors
+	            FilesUtils.getFilePrioritizedType(nameOfFile) match{
+			                  case ""=>{}
+			                  case customType=>{
+			                    fileType = customType
+			                  }
+			                }
 			    if(fileType.contains("/zip") || fileType.contains("/x-zip") || nameOfFile.toLowerCase().endsWith(".zip")){
 			          fileType = FilesUtils.getMainFileTypeOfZipFile(uploadedFile.ref.file, nameOfFile, "file")			          
 			          if(fileType.startsWith("ERROR: ")){
@@ -883,6 +911,13 @@ def uploadExtract() = SecuredAction(parse.multipartFormData, authorization = Wit
 	                else if(showPreviews.equals("None"))
 	                	flags = flags + "+nopreviews"
 					  var fileType = f.contentType
+					  //Make sure the file type detected is the one understood by the extractors
+					  FilesUtils.getFilePrioritizedType(nameOfFile) match{
+			                  case ""=>{}
+			                  case customType=>{
+			                    fileType = customType
+			                  }
+			                }
 					  if(fileType.contains("/zip") || fileType.contains("/x-zip") || nameOfFile.toLowerCase().endsWith(".zip")){
 						  fileType = FilesUtils.getMainFileTypeOfZipFile(uploadedFile.ref.file, nameOfFile, "dataset")			          
 						  if(fileType.startsWith("ERROR: ")){

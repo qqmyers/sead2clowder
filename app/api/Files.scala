@@ -344,6 +344,13 @@ class Files @Inject()(
 	            else if(showPreviews.equals("None"))
 	            	flags = flags + "+nopreviews"
 	            var fileType = f.contentType
+	            //Make sure the file type detected is the one understood by the extractors
+	            FilesUtils.getFilePrioritizedType(nameOfFile) match{
+			                  case ""=>{}
+			                  case customType=>{
+			                    fileType = customType
+			                  }
+			                }
 	            if(fileType.contains("/zip") || fileType.contains("/x-zip") || nameOfFile.toLowerCase().endsWith(".zip")){
 	            	fileType = FilesUtils.getMainFileTypeOfZipFile(uploadedFile.ref.file, nameOfFile, "file")			          
 	            	if(fileType.startsWith("ERROR: ")){
@@ -560,6 +567,13 @@ class Files @Inject()(
                 flags = flags + "+nopreviews"
               }
 	            var fileType = f.contentType
+	            //Make sure the file type detected is the one understood by the extractors
+	            FilesUtils.getFilePrioritizedType(nameOfFile) match{
+			                  case ""=>{}
+			                  case customType=>{
+			                    fileType = customType
+			                  }
+			                }
 	            if(fileType.contains("/zip") || fileType.contains("/x-zip") || nameOfFile.endsWith(".zip")) {
 	        	    fileType = FilesUtils.getMainFileTypeOfZipFile(uploadedFile.ref.file, nameOfFile, "dataset")
                 if (fileType.startsWith("ERROR: ")) {
@@ -697,6 +711,13 @@ class Files @Inject()(
                 case Some(f) => {
                   files.setIntermediate(f.id)
                   var fileType = f.contentType
+                  //Make sure the file type detected is the one understood by the extractors
+	              FilesUtils.getFilePrioritizedType(f.filename) match{
+			                  case ""=>{}
+			                  case customType=>{
+			                    fileType = customType
+			                  }
+			                }
                   if (fileType.contains("/zip") || fileType.contains("/x-zip") || f.filename.toLowerCase().endsWith(".zip")) {
                     fileType = FilesUtils.getMainFileTypeOfZipFile(uploadedFile.ref.file, f.filename, "file")
                     if (fileType.startsWith("ERROR: ")) {
