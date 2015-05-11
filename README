@@ -1,7 +1,6 @@
 HTTPS
 =====
 
-
 To use https you will need to do the following:
 set ssl to true in conf/securesocial.conf
 set swagger.api.basepath in conf/application.conf
