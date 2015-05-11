@@ -699,13 +699,7 @@ public class Utility
     byte[] byte_buffer = new byte[1024];
     int tmpi;
     
-    try{
-    	
-    	
-    	String userpass = "browndog.user" + ":" + "twonkIv8";
-    	String basicAuth = "Basic " + javax.xml.bind.DatatypeConverter.printBase64Binary(userpass.getBytes());
-
-    	
+    try{    	
     	
     	conn = (HttpURLConnection)new URL(url).openConnection();
       conn.setDoInput(true);
