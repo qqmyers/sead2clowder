@@ -153,9 +153,9 @@ class Files @Inject() (
         Logger.debug("content type ends in " + contentTypeEnding)            
         
         //get possible output formats for the file's input type         
-        val polyglotInputsURL: String = play.api.Play.configuration.getString("polyglotInputsURL").getOrElse("")
-        val polyglotUser: String = play.api.Play.configuration.getString("browndogUsername").getOrElse("")
-        val polyglotPassword: String = play.api.Play.configuration.getString("browndogPassword").getOrElse("")
+        val polyglotInputsURL: String = play.api.Play.configuration.getString("polyglot.inputsURL").getOrElse("")
+        val polyglotUser: String = play.api.Play.configuration.getString("polyglot.username").getOrElse("")
+        val polyglotPassword: String = play.api.Play.configuration.getString("polyglot.password").getOrElse("")
         var outputs: Future[Response] = null
         
         //adding authentication for polyglot server
@@ -644,20 +644,17 @@ def uploadExtract() = SecuredAction(parse.multipartFormData, authorization = Wit
         	  //===============================================================
         	  //start of polyglot conversion
 
-        	  val polyglotUser: String = play.api.Play.configuration.getString("browndogUsername").getOrElse("")
-        	  val polyglotPassword: String = play.api.Play.configuration.getString("browndogPassword").getOrElse("")
+        	  val polyglotUser: String = play.api.Play.configuration.getString("polyglot.username").getOrElse("")
+        	  val polyglotPassword: String = play.api.Play.configuration.getString("polyglot.password").getOrElse("")
         	  val userpass =polyglotUser + ":" +  polyglotPassword;
-
         	  var convertedFileStream: InputStream = null
-        	  var conn: HttpURLConnection  = null
-
-      
+        	  var conn: HttpURLConnection  = null      
               try {
                 Logger.debug("about to convert file... " + file.id)
              
                 //https://github.com/playframework/playframework/issues/902
                 //There is actually no way to post a multipart/form-data, without encoding manually the body (and this is tricky!)
-                val polyglotConvertURL: String = play.api.Play.configuration.getString("polyglotConvertURL").getOrElse("")
+                val polyglotConvertURL: String = play.api.Play.configuration.getString("polyglot.convertURL").getOrElse("")
                  
                 val resultURL: String = Utility.postFileWithAuthentication(polyglotConvertURL + outputFormat, file.filename, inputStream, "text/plain", userpass)
                 Logger.debug("got resultURL = " + resultURL)
@@ -674,7 +671,7 @@ def uploadExtract() = SecuredAction(parse.multipartFormData, authorization = Wit
                     throw new RuntimeException("Conversion timed out.")
                   }
                 }
-                Logger.debug("file at the url " +resultURL + "EXISTS!")
+                Logger.debug("file at the url " +resultURL + " exists")
               
                 val lastSeparatorIndex = file.filename.replace("_", ".").lastIndexOf(".")
                 val outputFileName = file.filename.substring(0, lastSeparatorIndex) + "." + outputFormat
