@@ -1,11 +1,10 @@
 package controllers
 
 import java.io._
-import java.net.URLEncoder
 import javax.mail.internet.MimeUtility
 import models.{UUID, FileMD, File, Thumbnail}
 import play.api.Logger
-import play.api.Play.current
+import play.api.Play.{current, configuration}
 import play.api.data.Form
 import play.api.data.Forms._
 import play.api.libs.iteratee._
@@ -15,8 +14,7 @@ import java.text.SimpleDateFormat
 import views.html.defaultpages.badRequest
 import play.api.libs.json.Json._
 import fileutils.FilesUtils
-import api.WithPermission
-import api.Permission
+import api.{WithPermission, Permission}
 import javax.inject.Inject
 import java.util.Date
 import scala.sys.SystemProperties
@@ -25,8 +23,7 @@ import play.api.libs.ws._
 import play.api.libs.ws.Response
 import scala.concurrent.Future
 import util.Utility
-import java.net.URL
-import java.net.HttpURLConnection
+import java.net.{URL, HttpURLConnection,URLEncoder}
 import com.ning.http.client.Realm.AuthScheme
 import scala.collection.mutable.ListBuffer
 
@@ -153,9 +150,9 @@ class Files @Inject() (
         Logger.debug("content type ends in " + contentTypeEnding)            
         
         //get possible output formats for the file's input type         
-        val polyglotInputsURL: String = play.api.Play.configuration.getString("polyglot.inputsURL").getOrElse("")
-        val polyglotUser: String = play.api.Play.configuration.getString("polyglot.username").getOrElse("")
-        val polyglotPassword: String = play.api.Play.configuration.getString("polyglot.password").getOrElse("")
+        val polyglotInputsURL: String = configuration.getString("polyglot.inputsURL").getOrElse("")
+        val polyglotUser: String = configuration.getString("polyglot.username").getOrElse("")
+        val polyglotPassword: String = configuration.getString("polyglot.password").getOrElse("")
         var outputs: Future[Response] = null
         
         //adding authentication for polyglot server
@@ -489,7 +486,7 @@ def uploadExtract() = SecuredAction(parse.multipartFormData, authorization = Wit
 
 	             //add file to RDF triple store if triple store is used
 	             if(fileType.equals("application/xml") || fileType.equals("text/xml")){
-		             play.api.Play.configuration.getString("userdfSPARQLStore").getOrElse("no") match{      
+		             configuration.getString("userdfSPARQLStore").getOrElse("no") match{      
 			             case "yes" => sparql.addFileToGraph(f.id)
 			             case _ => {}		             
 		             }
@@ -644,8 +641,8 @@ def uploadExtract() = SecuredAction(parse.multipartFormData, authorization = Wit
         	  //===============================================================
         	  //start of polyglot conversion
 
-        	  val polyglotUser: String = play.api.Play.configuration.getString("polyglot.username").getOrElse("")
-        	  val polyglotPassword: String = play.api.Play.configuration.getString("polyglot.password").getOrElse("")
+        	  val polyglotUser: String = configuration.getString("polyglot.username").getOrElse("")
+        	  val polyglotPassword: String = configuration.getString("polyglot.password").getOrElse("")
         	  val userpass =polyglotUser + ":" +  polyglotPassword;
         	  var convertedFileStream: InputStream = null
         	  var conn: HttpURLConnection  = null      
@@ -654,7 +651,7 @@ def uploadExtract() = SecuredAction(parse.multipartFormData, authorization = Wit
              
                 //https://github.com/playframework/playframework/issues/902
                 //There is actually no way to post a multipart/form-data, without encoding manually the body (and this is tricky!)
-                val polyglotConvertURL: String = play.api.Play.configuration.getString("polyglot.convertURL").getOrElse("")
+                val polyglotConvertURL: String = configuration.getString("polyglot.convertURL").getOrElse("")
                  
                 val resultURL: String = Utility.postFileWithAuthentication(polyglotConvertURL + outputFormat, file.filename, inputStream, "text/plain", userpass)
                 Logger.debug("got resultURL = " + resultURL)
@@ -862,7 +859,7 @@ def uploadExtract() = SecuredAction(parse.multipartFormData, authorization = Wit
 	            }	            
 	            //add file to RDF triple store if triple store is used
 	            if(fileType.equals("application/xml") || fileType.equals("text/xml")){
-	             play.api.Play.configuration.getString("userdfSPARQLStore").getOrElse("no") match{      
+	             configuration.getString("userdfSPARQLStore").getOrElse("no") match{      
 		             case "yes" => sparql.addFileToGraph(f.id)
 		             case _ => {}
 	             }
@@ -958,7 +955,7 @@ def uploadExtract() = SecuredAction(parse.multipartFormData, authorization = Wit
 	            }	            
 	            //add file to RDF triple store if triple store is used
 	            if(fileType.equals("application/xml") || fileType.equals("text/xml")){
-	             play.api.Play.configuration.getString("userdfSPARQLStore").getOrElse("no") match{      
+	             configuration.getString("userdfSPARQLStore").getOrElse("no") match{      
 		             case "yes" => sparql.addFileToGraph(f.id)
 		             case _ => {}
 	             }
@@ -1094,7 +1091,7 @@ def uploadExtract() = SecuredAction(parse.multipartFormData, authorization = Wit
  			    	
  			    	//add file to RDF triple store if triple store is used
  			    	if(fileType.equals("application/xml") || fileType.equals("text/xml")){
-		             play.api.Play.configuration.getString("userdfSPARQLStore").getOrElse("no") match{      
+		             configuration.getString("userdfSPARQLStore").getOrElse("no") match{      
 			             case "yes" => {
                      sparql.addFileToGraph(f.id)
                      sparql.linkFileToDataset(f.id, dataset_id)
