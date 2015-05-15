@@ -37,6 +37,33 @@
 				
 	if(typeof usrmdFuncsAlreadyLoaded === "undefined")
 	$(function() {
+
+            var CSN_PROPERTY_NAME = "CSDMS Standard Name";
+            var semanticAnnotationAutocomplete = function(htmlElement, remoteUrl) {
+                jQuery(htmlElement).autocomplete({
+                    minLength: AUTOCOMPLETE_MIN_LEN,
+                    source: function( request, response ) {
+                        $.ajax({
+                            url: remoteUrl,
+                            dataType: "jsonp",
+                            data: { q: request.term },
+                            success: function( data ) {
+                                var searchspace = data;
+                                // split by space or however you want to split up your search phrase into terms
+                                var searchwords = request.term.split(" ");
+
+                                $.each(searchwords, function() {
+                                    searchspace = $.ui.autocomplete.filter(searchspace, this);
+                                });
+
+                                // in case you don't want to return the whole thing, if your searchspace is large
+                                var mySlice = searchspace.slice(0, AUTOCOMPLETE_MAX_NUM_ENTRIES_TO_SUGGEST);
+                                response(mySlice);
+                            }
+                        });
+                    }
+                });
+            };
 		
 		$('body').on('click','.usr_md_,.usr_md_submit',function(e){
 			var topId = $(this).closest("div").get(0).getAttribute('id');
@@ -48,9 +75,14 @@
 					textBox.setAttribute('type', 'text');
 					textBox.value = $(this).parent().children("span").get(0).innerHTML; 
 					   
+                                       var fieldName = $(this).parent().children('b').get(0).textContent;
+                                       if (fieldName == CSN_PROPERTY_NAME + ":") {
+                                           semanticAnnotationAutocomplete(textBox, AUTOCOMPLETE_CSN_URL);
+                                       }
+
 					$(this).parent().get(0).insertBefore(textBox, $(this).parent().children("span").get(0));					
 					$(this).parent().children('span').remove();
-					   
+
 					$(this).html("Ok");							   		   			   
 				  }
 				  else if($(this).html() == "Ok"){
@@ -137,6 +169,10 @@
 									   
 						textBox.setAttribute('type', 'text');
 						textBox.textContent = "";
+                                                if (selectedProperty == CSN_PROPERTY_NAME) {
+                                                    semanticAnnotationAutocomplete(textBox, AUTOCOMPLETE_CSN_URL);
+                                                }
+
 						$(this).parent().get(0).insertBefore(textBox, $(this).get(0));
 						
 						$(this).html("Ok");
@@ -175,6 +211,7 @@
 					}
 					
 					var data = DOMtoJSON(document.getElementById(topId).children[1]);
+					console.log("Submitting user metadata: " + JSON.stringify(data));
 					
 					var request = $.ajax({
 				       type: 'POST',

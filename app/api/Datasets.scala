@@ -1287,6 +1287,20 @@ class Datasets @Inject()(
     }
   }
 
+  import play.api.mvc.Action
+  def CSN = Action.async { implicit request =>
+    val csn_url = play.Play.application().configuration().getString("autocompleteCSNUrl") + "?" + request.rawQueryString
+    Logger.debug("In api.Datasets.CSN: request: " + request + ", getting content from: " + csn_url)
+
+    import play.api.libs.ws._
+    import scala.concurrent.Future
+    implicit val context = scala.concurrent.ExecutionContext.Implicits.global
+
+    WS.url(csn_url).get().map { response =>
+      Ok(response.body.trim)
+    }
+
+  }
 }
 
 object ActivityFound extends Exception {}

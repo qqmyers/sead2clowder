@@ -11,3 +11,4 @@ Contact,Email,1,1
 Spatial Reference,Latitude,1,1
 Spatial Reference,Longitude,1,1
 Spatial Reference,Altitude,1,1
+!root!,CSDMS Standard Name,0,*

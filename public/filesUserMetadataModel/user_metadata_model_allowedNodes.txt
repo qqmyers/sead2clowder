@@ -11,3 +11,4 @@ Spatial Reference,Node
 Latitude,String
 Longitude,String
 Altitude,String
+CSDMS Standard Name,String

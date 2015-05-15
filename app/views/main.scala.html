@@ -23,6 +23,14 @@
 	<script src="@routes.Assets.at("javascripts/noty/packaged/jquery.noty.packaged.min.js")" type="text/javascript"></script>
 	<script src="@routes.Assets.at("javascripts/main.js")" type="text/javascript"></script>
 	<script type="text/javascript" src="@routes.Application.javascriptRoutes"></script>
+        <script language="javascript">
+          <!-- Global variables for all the JavaScript scripts. -->
+          window["WEB_ROOT"] = "@routes.Application.index";
+          window["AUTOCOMPLETE_CSN_URL"] = "@api.routes.Datasets.CSN";
+          window["AUTOCOMPLETE_MIN_LEN"] = "@play.Play.application().configuration().getInt("autocompleteMinLength")";
+          window["AUTOCOMPLETE_MAX_NUM_ENTRIES_TO_SUGGEST"] = "@play.Play.application().configuration().getInt("autocompleteMaxNumberOfEntriesToSuggest")";
+          console.log("Rui, WEB_ROOT is " + window["WEB_ROOT"] + ", AUTOCOMPLETE_CSN_URL is: " + window["AUTOCOMPLETE_CSN_URL"] + ", MIN_LEN is: " + window["AUTOCOMPLETE_MIN_LEN"] + ", MAX_NUM_ENTRIES_TO_SUGGEST is: " + window["AUTOCOMPLETE_MAX_NUM_ENTRIES_TO_SUGGEST"]);
+        </script>
 
 	<!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
     <!--[if lt IE 9]>
