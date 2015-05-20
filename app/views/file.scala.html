@@ -96,6 +96,14 @@
 	    	          {title: 'Test template 2', content: 'Test 2'}
 	    	      ]
 	    });
+		
+		function stopevent(e){
+			if(e.preventDefault != undefined)
+	    		e.preventDefault();
+	    	if(e.stopPropagation != undefined)
+	    		e.stopPropagation();
+		}
+		
 	</script>
 	<script>
     	var isPageLoaded = false;
@@ -178,6 +186,7 @@
 			@if(sections.size > 0) {	
 			  	<div class="row" style="padding-top: 10px">
 			  	  <div class="col-md-12">
+			  	  	<div class="galleriaHelp">Right-click on main image to toggle sections gallery fullscreen view</div>
 				  	<div id="galleria_@(f.id.toString)" style="float:left;clear:none;width:100%;height:400px;">
 				  	</div>
 				  	<script type="text/javascript">
@@ -367,18 +376,23 @@
 						
     		<script>
     					Galleria.ready(function(options) {
-						    this.bind('image', function(e) {
-						        Galleria.log('Now viewing ' + e.imageTarget.src);						        
-						    });
-						    var gallery = this; // galleria is ready and the gallery is assigned
-						    $('.galleria-image img').get().oncontextmenu = function() {return false;};						    
-					        $('.galleria-image img').mousedown(function(e) {
-					          if( e.button == 2 ) { 
-					        	  gallery.toggleFullscreen(); // toggles the fullscreen
-					              return false; 
-					          } 
-					          return true;
-					        });
+							    this.bind('image', function(e) {
+							        Galleria.log('Now viewing ' + e.imageTarget.src);						        
+							    });
+							    var gallery = this; // galleria is ready and the gallery is assigned
+						    	$(document).on("contextmenu", ".galleria-images .galleria-image img", function(e){
+						    			stopevent(e);							    		
+						    		    return false;
+						    	});
+							    $(document).on("mousedown", ".galleria-images .galleria-image img", function(e){
+							          if( e.button == 2 ) {
+							        	  gallery.toggleFullscreen(); // toggles the fullscreen
+							        	  stopevent(e);
+							              return false; 
+							          } 
+							          return true;
+							    });
+					        
 						});
     		</script>
 

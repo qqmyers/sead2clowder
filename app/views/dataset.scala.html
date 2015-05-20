@@ -117,6 +117,14 @@
 	    	          {title: 'Test template 2', content: 'Test 2'}
 	    	      ]
 	    });
+		
+		function stopevent(e){
+			if(e.preventDefault != undefined)
+	    		e.preventDefault();
+	    	if(e.stopPropagation != undefined)
+	    		e.stopPropagation();
+		}
+		
 	</script>
     <script>
     	var isPageLoaded = false;
@@ -450,14 +458,19 @@
 				        Galleria.log('Now viewing ' + e.imageTarget.src);						        
 				    });
 				    var gallery = this; // galleria is ready and the gallery is assigned
-				    $('.galleria-image img').get().oncontextmenu = function() {return false;};						    
-			        $('.galleria-image img').mousedown(function(e) {
-			          if( e.button == 2 ) { 
-			        	  gallery.toggleFullscreen(); // toggles the fullscreen
-			              return false; 
-			          } 
-			          return true;
-			        });
+			    	$(document).on("contextmenu", ".galleria-images .galleria-image img", function(e){
+			    			stopevent(e);							    		
+			    		    return false;
+			    	});
+				    $(document).on("mousedown", ".galleria-images .galleria-image img", function(e){
+				          if( e.button == 2 ) {
+				        	  gallery.toggleFullscreen(); // toggles the fullscreen
+				        	  stopevent(e);
+				              return false; 
+				          } 
+				          return true;
+				    });
+		        
 				});
     		</script>
     		
