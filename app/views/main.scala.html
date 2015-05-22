@@ -29,7 +29,8 @@
           window["AUTOCOMPLETE_CSN_URL"] = "@api.routes.Datasets.CSN";
           window["AUTOCOMPLETE_MIN_LEN"] = "@play.Play.application().configuration().getInt("autocompleteMinLength")";
           window["AUTOCOMPLETE_MAX_NUM_ENTRIES_TO_SUGGEST"] = "@play.Play.application().configuration().getInt("autocompleteMaxNumberOfEntriesToSuggest")";
-          console.log("Rui, WEB_ROOT is " + window["WEB_ROOT"] + ", AUTOCOMPLETE_CSN_URL is: " + window["AUTOCOMPLETE_CSN_URL"] + ", MIN_LEN is: " + window["AUTOCOMPLETE_MIN_LEN"] + ", MAX_NUM_ENTRIES_TO_SUGGEST is: " + window["AUTOCOMPLETE_MAX_NUM_ENTRIES_TO_SUGGEST"]);
+          window["CSN_QUERY_PROPERTIES_URL"] = "@api.routes.Datasets.CSNqueryProperties("")";
+          //console.log("WEB_ROOT is " + window["WEB_ROOT"] + ", AUTOCOMPLETE_CSN_URL is: " + window["AUTOCOMPLETE_CSN_URL"] + ", MIN_LEN is: " + window["AUTOCOMPLETE_MIN_LEN"] + ", MAX_NUM_ENTRIES_TO_SUGGEST is: " + window["AUTOCOMPLETE_MAX_NUM_ENTRIES_TO_SUGGEST"]);
         </script>
 
 	<!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->

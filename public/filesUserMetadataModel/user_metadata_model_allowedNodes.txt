@@ -11,4 +11,11 @@ Spatial Reference,Node
 Latitude,String
 Longitude,String
 Altitude,String
+Temporal Reference,Node
+Start Time,String
+End Time,String
+Resolution,String
+CSDMS Standard Name Node,Node
 CSDMS Standard Name,String
+Unit,String
+Label,String

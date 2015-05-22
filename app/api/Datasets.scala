@@ -1299,7 +1299,52 @@ class Datasets @Inject()(
     WS.url(csn_url).get().map { response =>
       Ok(response.body.trim)
     }
+  }
 
+  // graph defaults to "smw" if unspecified.
+  def CSNqueryProperties(in_csn: String, graph: String) = Action.async { implicit request =>
+
+    import scala.collection.JavaConversions._
+    // Found java.net.UrLDecoder easier to use than play.utils.UriEncoding, as it does not complain about the validity of the URL given.
+    import java.net.URLDecoder
+
+    //val csn_url = "http://localhost:9001/queryProperties?graph=smw&name=http://ecgs-dev.ncsa.illinois.edu/wiki/index.php?title=Special:URIResolver/Water_sand_grain_settling_speed&propertyNames=http://ecgs-dev.ncsa.illinois.edu/wiki/index.php?title=Special:URIResolver/Property-3AHasUnit,http://ecgs-dev.ncsa.illinois.edu/wiki/index.php?title=Special:URIResolver/Property-3AMedium"
+    //val csn_url = play.Play.application().configuration().getString("csn.queryProperties.externalUrl") + "?" + request.rawQueryString
+
+    val csnExternalUrl = play.Play.application().configuration().getString("csn.queryProperties.externalUrl")
+    val csnNamePrefix = play.Play.application().configuration().getString("csn.namePrefix")
+    // Now use getConfig, then use its "keys" instead of "entrySet" method to create property names.
+    val properties = play.Play.application().configuration().getConfig("csn.properties")
+    // To support properties of various sources (such as RDFS' isDefinedBy), changed from using a single csnPropertyPrefix to using fully qualified path in application.conf.
+    val propertyNames = properties.keys.map(x => properties.getString(x)).mkString(",")
+    // Some property definition URLs such as isDefinedBy's contain special chars such as #. They have to be escaped in application.conf as %23, but in returned query, still need to use them for look up. Thus the below decoding.
+    val propertyNameMap = properties.keys.map(x => (URLDecoder.decode(properties.getString(x), "utf-8"),x)).toMap
+    Logger.debug("In api.Datasets.CSNqueryProperties: propertyNames: " + propertyNames + ", propertyNameMap: " + propertyNameMap)
+
+    // Media Wiki converts double underscore to single underscore.
+    val csn = in_csn.toLowerCase().replace("__", "_")
+    val csn_url = csnExternalUrl + "?graph=" + graph + "&name=" + csnNamePrefix + csn + "&propertyNames=" + propertyNames
+    Logger.debug("In api.Datasets.CSNqueryProperties: request: " + request + ", getting content from: " + csn_url)
+
+    import play.api.libs.json.JsObject
+    import scala.collection.mutable.ListBuffer
+
+    import play.api.libs.ws._
+    import scala.concurrent.Future
+    implicit val context = scala.concurrent.ExecutionContext.Implicits.global
+
+    WS.url(csn_url).get().map { response =>
+      Logger.debug("In api.Datasets.CSNQueryProperties: response: " + response.body.trim)
+      var res = new ListBuffer[String]()
+      val jv: JsObject = Json.parse(response.body.trim).as[JsObject]
+      for ( (k,v) <- propertyNameMap ) {
+        if (jv.keys.contains(k)) {
+          Logger.debug(v + ": " + (jv \ k))
+          res += v + "!!" + (jv \ k).as[String]
+        }
+      }
+      Ok(res.mkString("\n"))
+    }
   }
 }
 
