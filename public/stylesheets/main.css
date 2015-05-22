@@ -493,3 +493,23 @@ textarea, input[type='text'], input[type='password']{
 .galleria-thumbnails-container { height: 62px;}
 
 .galleriaHelp{margin-bottom: 1%;}
+
+.galleria-fscr{
+    width:50px;
+    height:50px;
+    position:absolute;
+    bottom:2%;
+    right:2%;
+    background:url('/assets/images/fullpage_rest.png');
+    background-size: 100%;
+    z-index:4;
+    cursor: pointer;
+}
+.galleria-fscr:hover{
+    background:url('/assets/images/fullpage_hover.png');
+    background-size: 100%;
+}
+.galleria-active{
+    background:url('/assets/images/fullpage_pressed.png');
+    background-size: 100%;
+}
