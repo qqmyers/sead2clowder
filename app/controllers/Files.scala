@@ -1,11 +1,10 @@
 package controllers
 
 import java.io._
-import java.net.URLEncoder
 import javax.mail.internet.MimeUtility
 import models.{UUID, FileMD, File, Thumbnail}
 import play.api.Logger
-import play.api.Play.current
+import play.api.Play.{current, configuration}
 import play.api.data.Form
 import play.api.data.Forms._
 import play.api.libs.iteratee._
@@ -15,13 +14,22 @@ import java.text.SimpleDateFormat
 import views.html.defaultpages.badRequest
 import play.api.libs.json.Json._
 import fileutils.FilesUtils
-import api.WithPermission
-import api.Permission
+import api.{WithPermission, Permission}
 import javax.inject.Inject
 import java.util.Date
 import scala.sys.SystemProperties
 import securesocial.core.Identity
+import play.api.libs.ws._
+import java.net.{URL, HttpURLConnection,URLEncoder}
+import scala.concurrent._
+import scala.concurrent.duration._                	  
+import com.ning.http.client.Realm.AuthScheme
+import com.ning.http.multipart.{ByteArrayPartSource, Part, FilePart, MultipartRequestEntity}
+import com.ning.http.client.FluentCaseInsensitiveStringsMap
+import play.api.http.{Writeable,ContentTypeOf} 
 import scala.collection.mutable.ListBuffer
+import org.apache.commons.io.IOUtils
+
 
 /**
  * Manage files.
@@ -53,8 +61,9 @@ class Files @Inject() (
   /**
    * File info.
    */
-  def file(id: UUID) = SecuredAction(authorization = WithPermission(Permission.ShowFile)) { implicit request =>
-    implicit val user = request.user
+   def file(id: UUID) = SecuredAction(authorization = WithPermission(Permission.ShowFile)) { implicit request =>
+    Async {
+    implicit val user = request.user   
     Logger.info("GET file with id " + id)
     files.get(id) match {
       case Some(file) => {
@@ -89,14 +98,14 @@ class Files @Inject() (
           }
         }
         Logger.debug("Previewers available: " + previewsWithPreviewer)
-
-
+       
+        
         // add sections to file
         val sectionsByFile = sections.findByFileId(file.id)
         Logger.debug("Sections: " + sectionsByFile)
         val sectionsWithPreviews = sectionsByFile.map { s =>
-          val p = previews.findBySectionId(s.id)
-          if(p.length>0)
+        	val p = previews.findBySectionId(s.id)
+        	if(p.length>0)
         		s.copy(preview = Some(p(0)))
         	else
         		s.copy(preview = None)
@@ -133,18 +142,63 @@ class Files @Inject() (
         val isRDFExportEnabled = current.plugin[RDFExportService].isDefined
 
         val extractionsByFile = extractions.findByFileId(id)
-        
+        //===== get information for downloadAs button
+        //======  call Polyglot to get all possible output formats for this file 
+          Logger.debug("content type = " + file.contentType)
 
-        Ok(views.html.file(file, id.stringify, commentsByFile, previewsWithPreviewer, sectionsWithPreviews, 
-          extractorsActive, decodedDatasetsContaining.toList, decodedDatasetsNotContaining.toList, userMetadata, isRDFExportEnabled, extractionsByFile))
+          //for content type with multiple parts (application/pdf) get the ending part (pdf)
+          val endingIndex = (file.contentType.replace("/", ".").lastIndexOf(".")) + 1
+          val contentTypeEnding = file.contentType.substring(endingIndex, file.contentType.length)
+          Logger.debug("content type ends in " + contentTypeEnding)
+
+          //get possible output formats for the file's input type 
+          val polyglotInputsURL: Option[String] = configuration.getString("polyglot.inputsURL")
+          val polyglotUser: Option[String] = configuration.getString("polyglot.username")
+          val polyglotPassword: Option[String] = configuration.getString("polyglot.password")
+    
+          //proceed only if received all the config params
+          if (polyglotInputsURL.isDefined && polyglotUser.isDefined && polyglotPassword.isDefined) {
+            //call polyglot server with authentication          
+              WS.url(polyglotInputsURL.get + contentTypeEnding)
+              .withAuth(polyglotUser.get, polyglotPassword.get, AuthScheme.BASIC)
+              .get
+              .map {
+                case response =>
+            
+                //If reponse was successful, get a list of output formats. Otherwise return None.
+              	val outputFormats = { 
+              	  if (response.status == 200) {
+            		Logger.debug("success getting response from Polyglot")
+            		Some(response.body.split("\n").toList)
+              	  }                	
+              	  else {
+              		Logger.debug("Problems getting response from Polyglot, response status = " + response.status + ", " + response.statusText)
+              		None
+              	  }                	
+              }
+
+                 Ok(views.html.file(file, id.stringify, commentsByFile, 
+                     previewsWithPreviewer, sectionsWithPreviews, 
+                     extractorsActive, decodedDatasetsContaining.toList, decodedDatasetsNotContaining.toList, 
+                     userMetadata, isRDFExportEnabled, extractionsByFile, outputFormats))
+            }               
+          }
+          //config params NOT defined - return None for outputs
+          else{  
+            Logger.debug("Could not get Polyglot config params.")
+             Future(Ok(views.html.file(file, id.stringify, commentsByFile, previewsWithPreviewer, sectionsWithPreviews, 
+              extractorsActive, decodedDatasetsContaining.toList, decodedDatasetsNotContaining.toList, userMetadata, isRDFExportEnabled, extractionsByFile, None)))
+          }         
       }
+          
       case None => {
         val error_str = "The file with id " + id + " is not found."
         Logger.error(error_str)
-        NotFound(toJson(error_str))
+        Future(NotFound(toJson(error_str)))  
         }
     }
-  }
+   }//end of Async {
+  }  
   
   /**
    * List a specific number of files before or after a certain date.
@@ -595,6 +649,158 @@ def uploadExtract() = SecuredAction(parse.multipartFormData, authorization = Wit
       }
   }
 
+  //using code from https://www.playframework.com/documentation/2.2.x/ScalaWS
+  //Processing large responses
+  def fromStream(stream: OutputStream): Iteratee[Array[Byte], Unit] = Cont {   
+    case e @ Input.EOF =>
+      Logger.debug("fromStream case EOF")
+      stream.close()
+      Done((),  e)
+    case Input.El(data) =>
+      Logger.debug("fromStream case input.El, data = " + data)
+      stream.write(data)
+      fromStream(stream)
+    case Input.Empty =>
+      Logger.debug("fromStream case empty , so calling fromStream again")
+      fromStream(stream)
+  }
+  
+  def downloadAsFormat(id: UUID, outputFormat: String) = SecuredAction(authorization = WithPermission(Permission.DownloadFiles)) { request =>
+
+    Async {
+      //get possible output formats for the file's input type 
+      val polyglotUser: Option[String] = configuration.getString("polyglot.username")
+      val polyglotPassword: Option[String] = configuration.getString("polyglot.password")
+      val polyglotConvertURL: Option[String] = configuration.getString("polyglot.convertURL")
+
+      //proceed only if received all the config params  
+      if (polyglotConvertURL.isDefined && polyglotUser.isDefined && polyglotPassword.isDefined) {
+        if (UUID.isValid(id.stringify)) {
+          files.get(id) match {
+            case Some(file) => {
+
+              //get bytes for file to be converted
+              files.getBytes(id) match {
+                case Some((inputStream, filename, contentType, contentLength)) => {              
+                  //create local temp file to save polyglot output
+                  val tempFileName = "temp_converted_file." + outputFormat
+                  val tempFile: java.io.File = new java.io.File(tempFileName)
+                  tempFile.deleteOnExit()                    
+                  val outputStream: OutputStream = new BufferedOutputStream(new FileOutputStream(tempFile))                    
+                    
+                  try { 
+                    //based on the code from https://github.com/playframework/playframework/issues/902
+                    //from Dec 5, 2014                   
+                    // Build up the Multiparts - consists of just one file part               
+                    val filePart: FilePart = new FilePart(filename, new ByteArrayPartSource(filename, IOUtils.toByteArray(inputStream)))
+                    val parts = Array[Part](filePart)
+                    val reqEntity = new MultipartRequestEntity(parts, new FluentCaseInsensitiveStringsMap)
+                    val baos = new ByteArrayOutputStream                    
+                    reqEntity.writeRequest(baos)
+                    val bytes = baos.toByteArray
+                    val reqContentType = reqEntity.getContentType
+
+                    // Now just send the data to the WS API                
+                    val responseFut = WS.url(polyglotConvertURL.get + outputFormat)
+                      .withAuth(polyglotUser.get, polyglotPassword.get, AuthScheme.BASIC)
+                      .post(bytes)(Writeable.wBytes, ContentTypeOf(Some(reqContentType)))
+                      
+                    //get the url for the converted file on Polyglot  
+                    val fileURLFut = responseFut.map {
+                      res =>
+                        //TODO: Find an easier way to get rid of html markup 
+                        //result is an html link
+                        //<a href=http://the_url_string>http://the_url_string</a>
+                        val fileURL = res.body.substring(res.body.indexOf("http"), res.body.indexOf(">"))
+                        fileURL
+                    }   
+                        							
+                    val futureResponse = fileURLFut.flatMap {
+                      convertedFileURL =>
+                        Logger.debug("checking status for " + convertedFileURL)                    
+                        //wait for the http result and check the status                                      
+                        var counter = 0
+                        var respStatus: Int = 0
+                        do {                          
+                           if (counter == 30) {
+                            //throw runtime exception
+                            throw new RuntimeException("Converted file not found on the Polyglot server. Timed out.")
+                           }                           
+                           Thread.sleep(2000)
+                           counter = counter + 1                      
+                           respStatus = Await.result( 
+                        		  WS.url(convertedFileURL)
+                        		   .withAuth(polyglotUser.get, polyglotPassword.get, AuthScheme.BASIC)
+                        		   .get
+                        		   .map(_.status), 
+                        		  duration.Duration(10000, "millis"))
+                           Logger.debug("Checking if file exists...  " + counter + " status = " + respStatus)  						                            
+                        } while (respStatus != 200)
+                        
+                        Logger.debug("File exists on polyglot... will download now...")
+                        //file exists on Polyglot, begin download using iteratee
+                        //following example in https://www.playframework.com/documentation/2.2.x/ScalaWS
+                        //Processing large responses
+                        WS.url(convertedFileURL)
+                          .withAuth(polyglotUser.get, polyglotPassword.get, AuthScheme.BASIC)
+                          .get {
+                            headers =>
+                              fromStream(outputStream)
+                          }.flatMap { x =>
+                            x.run
+                          }                       
+                    }
+
+                    //prepare encoded file name for converted file
+                    val lastSeparatorIndex = file.filename.replace("_", ".").lastIndexOf(".")
+                    val outputFileName = file.filename.substring(0, lastSeparatorIndex) + "." + outputFormat                      
+                    val outputFileNameEncoded = if (request.headers("user-agent").indexOf("MSIE") > -1) {
+                      URLEncoder.encode(outputFileName, "UTF-8")
+                    } else {
+                      MimeUtility.encodeText(outputFileName).replaceAll(",", "%2C")
+                    }       
+                    
+                    futureResponse.map {
+                      x =>
+                        Ok.chunked(Enumerator.fromStream(new FileInputStream(tempFileName)))
+                          .withHeaders(CONTENT_TYPE -> "some-content-Type")
+                          .withHeaders(CONTENT_DISPOSITION -> ("attachment; filename=" + outputFileNameEncoded))
+                    }.recover{
+                      case e: RuntimeException =>  BadRequest("Conversion failed: " + e.getMessage())
+                    } 
+
+                  } catch {
+                    case e: Exception =>
+                      Logger.debug("Exception thrown: " + e.printStackTrace())
+                      Future(BadRequest("Conversion failed"))
+                  } 
+                } //end of case Some
+                case None => {
+                  Logger.error("Error getting file " + id)
+                  Future(BadRequest("File with this id not found"))
+                }
+              }
+            }
+            case None => {
+              //File could not be found
+              Logger.info(s"Error getting the file with id $id.")
+              Future(BadRequest("Invalid file ID"))
+            }
+          }
+        } //end of if (UUID.isValid(id.stringify))
+        else {
+          Logger.error(s"The given id $id is not a valid ObjectId.")
+          Future(BadRequest(toJson(s"The given id $id is not a valid ObjectId.")))
+        }
+      } //end of if config params are defined 
+      else {
+        Logger.error("Could not get configuration parameters.")
+        Future(BadRequest("Could not get configuration parameters."))
+      }
+    } //end of Async
+  }
+
+  
   def thumbnail(id: UUID) = SecuredAction(authorization=WithPermission(Permission.ShowFile)) { implicit request =>
     thumbnails.getBlob(id) match {
       case Some((inputStream, filename, contentType, contentLength)) => {
