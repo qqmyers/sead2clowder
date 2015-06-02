@@ -191,40 +191,25 @@
 	    		</script>
     		}
 
-         <div class="row">
-      <div class="col-md-12 button-margins">
-      <div class="btn-group" role="group" aria-label="...">         
-        
-        <button id="downloadButton" type="button" onclick="return downloadFile();" 
-              class="btn btn-primary" 
-              title="You don't have permission to download this file" 
-              disabled="disabled">
-           <span class="glyphicon glyphicon-save"></span> Download
-        </button>                
-        
-        <div class="btn-group" role="group">
-        @if(outputFormats.isEmpty){}
-         @if(!outputFormats.isEmpty){           
-          <button id="downloadAsButton" type="button" class="btn btn-primary dropdown-toggle" 
-                  data-toggle="dropdown" aria-expanded="false">
-             
-            <span class="glyphicon glyphicon-save"></span>
-          </button>
-          <ul class="dropdown-menu" role="menu">
-          @outputFormats.get.map { outputFrmt =>
-           <li id="doc"  
-           onclick="return downloadFileAs('@routes.Files.downloadAsFormat(UUID(id), outputFrmt)'  );" > 
-                <a href="#">@outputFrmt</a>
-            </li>          
-             }                 
-          </ul>          
-          } <!-- end of    if(!outputFormats.isEmpty)-->       
-          
-        </div> <!-- end of class btn-group -->
-      </div> <!-- end of class button-group -->
-                @if(user.isDefined) {
-                  
-                  
+      <div class="row">
+        <div class="col-md-12 button-margins">
+          <div class="btn-group" role="group" aria-label="...">                 
+            <button id="downloadButton" type="button" onclick="return downloadFile();" class="btn btn-primary" title="You don't have permission to download this file"  disabled="disabled"> <span class="glyphicon glyphicon-save"></span> Download </button>
+            
+            <!--  If outputFormats list is not empty, display downloadAs drop-down button with the list of available formats -->      
+            @if(!outputFormats.isEmpty){  
+              <div class="btn-group" role="group">         
+                <button id="downloadAsButton" type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" aria-expanded="false"> <span class="glyphicon glyphicon-save"></span> </button>
+                <ul class="dropdown-menu" role="menu">
+                  @outputFormats.get.map { outputFrmt =>
+                    <li id="doc" onclick="return downloadFileAs('@routes.Files.downloadAsFormat(UUID(id), outputFrmt)'  );" > <a href="#">@outputFrmt</a> </li>          
+                  }                 
+                </ul>  
+              </div> <!-- end of class button-group -->                        
+            } <!-- end of    if(!outputFormats.isEmpty)-->              
+          </div> <!-- end of class btn-group -->
+            
+            @if(user.isDefined) {
                 <!-- If user can delete, the button is enabled, otherwise the button is present but disabled to provide consistent UE. -->                
                     @if(user.get.identityId.userId.equals(file.author.identityId.userId)){                    
                         <span class="align-right">
@@ -238,18 +223,8 @@
                         </span>
 					}					
 				}				               
-            </div> <!-- end of col-md-12 -->
-  </div> <!-- end of class row -->
-        
-        <script>
-        function downloadFileAs(downloadRoute) {
-           console.log("downloadFileAs - route = "+downloadRoute ); 
-           window.open(downloadRoute, '_blank');          
-        }
-        </script>
- 
- 
-<!--  new button code ends -->
+        </div> <!-- end of col-md-12 -->
+      </div> <!-- end of class row -->
 
 			<!-- sections -->
 			@if(sections.size > 0) {
@@ -624,6 +599,11 @@
                 function downloadFile() {
                     var downloadRoute = "@routes.Files.download(UUID(id))";
                     window.open(downloadRoute, '_blank');                    
+                }
+                
+                function downloadFileAs(downloadRoute) {
+                    console.log("downloadFileAs - route = " + downloadRoute); 
+                    window.open(downloadRoute, '_blank');          
                 }
                 </script>
             </div>
