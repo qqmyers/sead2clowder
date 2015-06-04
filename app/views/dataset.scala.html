@@ -1018,7 +1018,7 @@
 							});
 							request.done(function (response, textStatus, jqXHR){
 								console.log("Response " + textStatus);
-								$("#" + tagId).parents("li").remove();
+								$("[id='"+tagId+"']").parents("li").remove();
 							});
 							request.fail(function (jqXHR, textStatus, errorThrown){
 								console.error(
