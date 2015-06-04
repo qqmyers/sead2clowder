@@ -1025,8 +1025,6 @@
 								"The following error occured: "+
 								textStatus, errorThrown
 								);
-								//alert("ERROR: " + errorThrown +". Tag not removed from dataset." );					
-								window.location = "../login"; // FIXME hardcoded
 							});
 							
 							return false;
@@ -1069,9 +1067,9 @@
 						     });
 						     
 						     request.done(function (response, textStatus, jqXHR){
-						        console.log("Response " + response);
+						        console.log("Response " + JSON.stringify(response) );
 						        var url = "../tags/search?tag=" + tag;
-						        $newTag = $("<li><a href='" + url + "'>" + tag + " [Dataset]</a><a href='javascript:void(0);'><i style='display:none;'id='" + response +"' class='glyphicon-remove'></i></a></li>").appendTo('#tagList');
+						        $newTag = $("<li><a href='" + url + "'>" + tag + " [Dataset]</a><a href='javascript:void(0);'><i style='display:none;'id='" +  response.ids[0] +"' class='glyphicon glyphicon-remove'></i></a></li>").appendTo('#tagList');
 						        /*$newTag.children("li").each(function(){$(this).hover(removeIconMouseIn,removeIconMouseOut);});
      						$newTag.find(".glyphicon-remove").click(removeTag);*/     						
 						        $newTag.hover(removeIconMouseIn,removeIconMouseOut);
@@ -1082,10 +1080,8 @@
 						     request.fail(function (jqXHR, textStatus, errorThrown){
 						        console.error(
 						            "The following error occured: "+
-						            textStatus, errorThrown
-						            
+						            textStatus, errorThrown						            
 						        );
-						        window.location = "../login"; // FIXME hardcoded
 						     });
 						     return false;
 					     }

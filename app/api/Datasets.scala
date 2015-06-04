@@ -507,6 +507,8 @@ Accepted JSON:{"name":"select a name","description":"select a description","file
     val userOpt = tagCheck.userOpt
     val extractorOpt = tagCheck.extractorOpt
     val tags = tagCheck.tags
+    
+    var tagsIDs: List[String] = List.empty
 
     // Now the real work: adding the tags.
     if ("" == error_str) {
@@ -515,12 +517,15 @@ Accepted JSON:{"name":"select a name","description":"select a description","file
       (obj_type) match {
         case TagCheck_File => files.addTags(id, userOpt, extractorOpt, tagsCleaned)
         case TagCheck_Dataset => {
-          datasets.addTags(id, userOpt, extractorOpt, tagsCleaned)
+          tagsIDs = datasets.addTags(id, userOpt, extractorOpt, tagsCleaned)
           datasets.index(id)
         }
         case TagCheck_Section => sections.addTags(id, userOpt, extractorOpt, tagsCleaned)
       }
-      Ok(Json.obj("status" -> "success"))
+      
+      var tagsIDsJSON = for (tagsID <- tagsIDs) yield JsString(tagsID) 
+      val listJson = toJson(tagsIDsJSON)
+      Ok(toJson(Map[String, JsValue]("status" -> JsString("success"), "ids" -> listJson)))
     } else {
       Logger.error(error_str)
       if (not_found) {

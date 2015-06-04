@@ -683,20 +683,23 @@ class MongoDBDatasetService @Inject() (
     Dataset.update(MongoDBObject("_id" -> new ObjectId(id.stringify)), $set("userMetadata" -> md), false, false, WriteConcern.Safe)
   }
 
-  def addTags(id: UUID, userIdStr: Option[String], eid: Option[String], tags: List[String]) {
+  def addTags(id: UUID, userIdStr: Option[String], eid: Option[String], tags: List[String]): List[String] = {
     Logger.debug("Adding tags to dataset " + id + " : " + tags)
     // TODO: Need to check for the owner of the dataset before adding tag
 
     val dataset = get(id).get
     val existingTags = dataset.tags.filter(x => userIdStr == x.userId && eid == x.extractor_id).map(_.name)
     val createdDate = new Date
+    var tagIDsList: List[String] = List.empty
     tags.foreach(tag => {
       // Only add tags with new values.
       if (!existingTags.contains(tag)) {
         val tagObj = models.Tag(name = tag, userId = userIdStr, extractor_id = eid, created = createdDate)
         Dataset.update(MongoDBObject("_id" -> new ObjectId(id.stringify)), $addToSet("tags" -> Tag.toDBObject(tagObj)), false, false, WriteConcern.Safe)
+        tagIDsList = tagIDsList :+ tagObj.id.stringify 
       }
     })
+    return tagIDsList
   }
 
   def setUserMetadataWasModified(id: UUID, wasModified: Boolean) {

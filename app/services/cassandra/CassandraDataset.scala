@@ -143,7 +143,7 @@ class CassandraDataset extends DatasetService {
 
   def removeXMLMetadata(id: UUID, fileId: UUID) {}
 
-  def addTags(id: UUID, userIdStr: Option[String], eid: Option[String], tags: List[String]) {}
+  def addTags(id: UUID, userIdStr: Option[String], eid: Option[String], tags: List[String]) = List.empty
 
   def setUserMetadataWasModified(id: UUID, wasModified: Boolean) {}
 

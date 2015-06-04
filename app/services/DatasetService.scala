@@ -152,7 +152,7 @@ trait DatasetService {
 
   def removeXMLMetadata(id: UUID, fileId: UUID)
 
-  def addTags(id: UUID, userIdStr: Option[String], eid: Option[String], tags: List[String])
+  def addTags(id: UUID, userIdStr: Option[String], eid: Option[String], tags: List[String]): List[String]
 
   def setUserMetadataWasModified(id: UUID, wasModified: Boolean)
 
