@@ -85,7 +85,7 @@
 
         request.done(function (response, textStatus, jqXHR) {
             console.log("Response " + textStatus);
-            $("div#" + tagId + ".tag").remove();
+            $("div[id='"+tagId+"']" + ".tag").remove();
         });
 
         request.fail(function (jqXHR, textStatus, errorThrown) {
