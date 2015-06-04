@@ -980,7 +980,7 @@
 					}
   				    @dataset.files.map { file =>
 						@file.tags.map { tag =>
-						  <li><a href="@routes.Tags.search(tag.name)">@tag.name [File]</a></li>
+						  <li id="filetag_@tag.name"><a href="@routes.Tags.search(tag.name)">@tag.name [File]</a></li>
 						}
 				    	@file.sections.map { section =>
 							@section.tags.map { tag =>
@@ -989,6 +989,16 @@
 						}
 				   }
 				</ul>
+				<script language="javascript">
+					//Remove non-unique appearances of file tags for the same dataset (i.e. from different files)
+					var currTags = [];
+					$("#tagList li[id^='filetag_'] a").each(function(){
+						if(currTags.indexOf($(this).text()) >= 0)
+							$(this).parent().remove();
+						else
+							currTags.push($(this).text());
+					});
+				</script>
 				<form class="form-inline requiresLogin requiresLoginCommunity">
 					<div class="input-group input-group-sm col-md-8"">
 						<input type="text" id="tagField" class="form-control">
