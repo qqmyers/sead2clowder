@@ -646,6 +646,26 @@
 							        		);
 						        	}
     						}
+    						
+//     						var fileTags = respJSON[i].tags;
+//     						for(var k = 0; k < fileTags.length; k++){
+//     							var currTag = fileTags[k];
+//     							var allOfThisFile = $("#tagList li[data-tagfileid='"+respJSON[i].id+"']"); 
+//     							if(allOfThisFile.filter(function() {
+// 				        		    return $(this).text() === currTag + " [File]";
+// 				        		  }).length == 0){
+//     								var mustHide = false;
+//     								if($("#tagList li").filter(function() {
+//     				        		    return $(this).text() === currTag + " [File]";
+//   				        		  	  }).length != 0){
+//     									mustHide = true;
+//     								}
+//     								$("#tagList").append('<li class="filetag" data-tagfileid="'+respJSON[i].id+'"><a href="'+window.jsRoutes.Tags.search(currTag)+'">'+currTag+' [File]</a></li>');
+    									
+//     							}
+//     						}
+    						
+    							
     					}
     					setTimeout(function(){updateFiles()}, 2000);
 	     			});				 
@@ -835,7 +855,19 @@
 						        $("#technicalMetadata_"+fileId).remove();						        						        
 						        $("#fileUserMetadata_"+fileId).remove();
 						        $("#galleriaRow_"+fileId).remove();
-						        $("#sectionsRow_"+fileId).remove(); 						        
+						        $("#sectionsRow_"+fileId).remove();
+						        
+						        $("#tagList li[data-tagfileid='"+fileId+"']").each(function(){
+						        	var thisStore = this;
+						        	if($(thisStore).is(':visible')){
+						        		var currTagText = $(thisStore).text();
+						        		$("#tagList li[data-tagfileid!='"+fileId+"']").filter(function() {
+						        		    return $(this).text() === currTagText;
+						        		}).first().show();
+						        	}
+						        	$(thisStore).remove();
+								});
+						        
 							});	
 							request.fail(function (jqXHR, textStatus, errorThrown){
 					    		console.error(
@@ -980,7 +1012,7 @@
 					}
   				    @dataset.files.map { file =>
 						@file.tags.map { tag =>
-						  <li id="filetag_@tag.name"><a href="@routes.Tags.search(tag.name)">@tag.name [File]</a></li>
+						  <li class="filetag" data-tagfileid="@file.id.stringify"><a href="@routes.Tags.search(tag.name)">@tag.name [File]</a></li>
 						}
 				    	@file.sections.map { section =>
 							@section.tags.map { tag =>
@@ -992,9 +1024,9 @@
 				<script language="javascript">
 					//Remove non-unique appearances of file tags for the same dataset (i.e. from different files)
 					var currTags = [];
-					$("#tagList li[id^='filetag_'] a").each(function(){
+					$("#tagList li.filetag a").each(function(){
 						if(currTags.indexOf($(this).text()) >= 0)
-							$(this).parent().remove();
+							$(this).parent().hide();
 						else
 							currTags.push($(this).text());
 					});
