@@ -377,13 +377,22 @@ Accepted JSON:{"name":"select a name","description":"select a description","file
         case Some(dataset) => {
           var list: List[JsValue] = List.empty
           val filesChecker = services.DI.injector.getInstance(classOf[api.Files])
+          var currExistingFiles : List[File] = List.empty
+          for(f <- dataset.files){
+            files.get(f.id) match{
+              case Some(currExistingFile)=>{
+                currExistingFiles = currExistingFiles :+ currExistingFile
+              }
+            }
+          }
+          
           request.user match{
 	        case Some(theUser)=>{
 	        	val rightsForUser = accessRights.get(theUser)
-	        	list = for (f <- dataset.files if(filesChecker.checkAccessForFileUsingRightsList(f, request.user , "view", rightsForUser))) yield jsonFile(f, request.user, rightsForUser)
+	        	list = for (f <- currExistingFiles if(filesChecker.checkAccessForFileUsingRightsList(f, request.user , "view", rightsForUser))) yield jsonFile(f, request.user, rightsForUser)
 	        }
 	        case None=>{
-	          list = for (f <- dataset.files if(filesChecker.checkAccessForFile(f, request.user, "view"))) yield jsonFile(f, request.user)
+	          list = for (f <- currExistingFiles if(filesChecker.checkAccessForFile(f, request.user, "view"))) yield jsonFile(f, request.user)
 	        }
 	      }  
             
@@ -408,9 +417,9 @@ Accepted JSON:{"name":"select a name","description":"select a description","file
         }
       }  
     
-    toJson(Map("id" -> file.id.toString, "filename" -> file.filename, "contentType" -> file.contentType,
-               "date-created" -> file.uploadDate.toString(), "size" -> file.length.toString, "authorId" -> file.author.identityId.userId,
-               "usercanedit" -> userCanEdit.toString, "userThatRequested" -> userRequested))
+    toJson(Map[String, JsValue]("id" -> JsString(file.id.toString), "filename" -> JsString(file.filename), "contentType" -> JsString(file.contentType),
+               "date-created" -> JsString(file.uploadDate.toString()), "size" -> JsString(file.length.toString), "authorId" -> JsString(file.author.identityId.userId),
+               "usercanedit" -> JsString(userCanEdit.toString), "userThatRequested" -> JsString(userRequested), "tags" -> toJson( for (currTag <- file.tags) yield JsString(currTag.name))  ))
   }
   
 
