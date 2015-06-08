@@ -532,8 +532,14 @@ textarea, input[type='text'], input[type='password']{
     align-content: center;
 }
 .prevIframe{
-	width: 22em;
-    height: 100%;
+	width: 88em;
+	-moz-transform: scale(0.25);
+	-moz-transform-origin: 0 0;
+	-o-transform: scale(0.25);
+    -o-transform-origin: 0 0;
+    -webkit-transform: scale(0.25);
+    -webkit-transform-origin: 0 0;
+    height: 400%;
     border: none;
     background-image: url("../javascripts/previewers/iframe/images/iframe_error.jpg");
     background-size: cover;
@@ -556,10 +562,10 @@ textarea, input[type='text'], input[type='password']{
 	left: 10em;
 }
 .iframeModalDiv{
-	width: 56%;
+	width: 72%;
 	overflow:hidden !important;
 	position: fixed !important;
-    left: 24% !important;
+    left: 14% !important;
     top: 5% !important;
 }
 .iframeModal{
