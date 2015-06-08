@@ -1,4 +1,10 @@
 @* Authors: Constantinos Sophocleous, Luigi Marini *@
+
+@* Parameters (in this order): Dataset data, Dataset comments, Previews of all Files in the Dataset, technical metadata of dataset, community-generated metadata of dataset,
+ * whether the dataset is currently being processed, Collections not containing and containing the dataset, Files that can be added to the Dataset, whether metadata of this
+ * Dataset can be exported as RDF and the current user's access rights to this Dataset *@
+
+@* Previews parameters for each file (in this order): Preview ID, previewer ID, previewer code file path, name of previewer, web path to preview, preview content type, preview file length *@
 @(dataset: models.Dataset, comments: List[Comment], previews : Map[models.File, Array[(java.lang.String, String, String, String, java.lang.String, String, Long)]], md: Map[String,Any], usrmd: scala.collection.mutable.Map[String,Any], beingProcessed: Boolean, collectionsOutside: List[models.Collection], collectionsInside: List[models.Collection], filesOutside: List[models.File], rdfExported: Boolean, rightsForUser: Option[models.UserPermissions])(implicit user: Option[securesocial.core.Identity]) 
 
 
@@ -138,8 +144,6 @@
 		Configuration.jsPath = "@(routes.Assets.at("javascripts"))";
 		Configuration.imagesPath = "@(routes.Assets.at("images"))";
 		Configuration.stylesheetsPath = "@(routes.Assets.at("stylesheets"))";
-		Configuration.presentationsMediumQualityLimit = @(play.api.Play.configuration.getInt("presentationPreviewsSettings.mediumQualityLimit").getOrElse(0));
-		Configuration.presentationsHighQualityLimit = @(play.api.Play.configuration.getInt("presentationPreviewsSettings.highQualityLimit").getOrElse(0));
     </script>
     <script>
     	window.onload = function() {
@@ -321,7 +325,7 @@
 		         </script>
 													
 			    <script>
-			    	$(function() {
+			    	$(function() {  /////////////////////comments
 					    // Load the classic theme
 					    Galleria.loadTheme('@routes.Assets.at("javascripts/galleria-classic/galleria.classic.min.js")');
 					    Galleria.configure({

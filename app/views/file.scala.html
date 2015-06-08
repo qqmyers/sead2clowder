@@ -117,8 +117,6 @@
 		Configuration.iipZoomPath = "@(routes.Assets.at("plugins") + "/" + "IIPZoom.swf")";
 		Configuration.jsPath = "@(routes.Assets.at("javascripts"))";
 		Configuration.imagesPath = "@(routes.Assets.at("images"))";
-		Configuration.presentationsMediumQualityLimit = @(play.api.Play.configuration.getInt("presentationPreviewsSettings.mediumQualityLimit").getOrElse(0));
-		Configuration.presentationsHighQualityLimit = @(play.api.Play.configuration.getInt("presentationPreviewsSettings.highQualityLimit").getOrElse(0));
 		Configuration.stylesheetsPath = "@(routes.Assets.at("stylesheets"))";
     </script>
     <script>
