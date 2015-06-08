@@ -1,6 +1,6 @@
 package api
 
-import play.api.mvc.Controller
+import play.api.mvc.{Action, Controller}
 import play.api.Play.current
 import play.api.libs.json.Json.toJson
 import services.{AppConfiguration, AppConfigurationService}
@@ -20,6 +20,10 @@ object Admin extends Controller with ApiController {
   def deleteAllData = SecuredAction(parse.anyContent, authorization = WithPermission(Permission.Admin)) { request =>
     current.plugin[MongoSalatPlugin].map(_.dropAllData())
     Ok(toJson("done"))
+  }
+
+  def testingCommit = Action {
+    Ok()
   }
   
   
