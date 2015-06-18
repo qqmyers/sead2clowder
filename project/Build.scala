@@ -105,7 +105,8 @@ object ApplicationBuild extends Build {
     "org.springframework" % "spring" % "2.5.6",
     "org.scalatestplus" % "play_2.10" % "1.0.0" % "test",
     "org.irods.jargon" % "jargon-core" % "3.3.3-beta1",
-    "org.julienrf" %% "play-jsonp-filter" % "1.1"
+    "org.julienrf" %% "play-jsonp-filter" % "1.1",
+    "com.roundeights" %% "hasher" % "1.0.0"
   )
 
 
@@ -131,6 +132,7 @@ object ApplicationBuild extends Build {
     //resolvers += "Forth" at "http://139.91.183.63/repository",
     resolvers += "NCSA" at "https://opensource.ncsa.illinois.edu/nexus/content/repositories/thirdparty",   
     resolvers += "opencastproject" at "http://repository.opencastproject.org/nexus/content/repositories/public",
+    resolvers += "RoundEights" at "http://maven.spikemark.net/roundeights",
 
     // add custom folder to the classpath, use this to add/modify medici:
     // custom/public/stylesheets/themes     - for custom themes

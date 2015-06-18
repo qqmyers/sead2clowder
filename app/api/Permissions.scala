@@ -74,6 +74,7 @@ object Permission extends Enumeration {
     GetUser,
     AddProject,
     AddInstitution,
+    AccessGateOne,
     UserAdmin = Value        // Permission to work with users (list/add/remove/register)
 }
 
