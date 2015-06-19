@@ -36,6 +36,10 @@ class MongoDBGateOneService extends GateOneService {
     (for (userMachine <- GateOneUserDAO.find(MongoDBObject("userEmail" -> userEmail) )) yield userMachine).toList
   }
   
+  def checkUserOnMachine(userEmail: String, apiKey: String, accessUsername: String): Boolean = {
+    GateOneUserDAO.findOne(MongoDBObject("userEmail" -> userEmail, "apiKey" -> apiKey, "accessUsername" -> accessUsername)).isDefined
+  }
+  
 }
 
 object GateOneMachineDAO extends ModelCompanion[GateOneMachine, ObjectId] {

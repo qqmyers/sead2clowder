@@ -72,5 +72,38 @@ class GateOne extends ApiController {
     def jsonUserMachine(userMachine: GateOneUserOnMachine): JsValue = {
     	toJson(Map("userEmail" -> userMachine.userEmail, "apiKey" -> userMachine.apiKey, "accessUsername" -> userMachine.accessUsername))
     }
+    
+    def getAuth() = SecuredAction(parse.json, authorization=WithPermission(Permission.AccessGateOne)) { request =>
+      current.plugin[GateOnePlugin].map{ gateOnePlugin =>   	
+    	request.user.map { currUser =>
+    	  (request.body \ "api_key").asOpt[String].map { apiKey =>
+            (request.body \ "machine_username").asOpt[String].map { accessUsername =>
+		    	  if(gateOnePlugin.checkUserOnMachine(currUser.email.getOrElse(""), apiKey, accessUsername)){
+		    	     gateOnePlugin.getAuth(apiKey, accessUsername).map{ auth =>
+		    	       Ok(jsonAuth(auth, apiKey))
+		    	     }.getOrElse {
+		    	    	 InternalServerError(toJson("ERROR: Requested machine not found"))
+		    	     }
+		    	  }
+		    	  else
+		    	    Unauthorized("You don't have access to the requested machine with the requested username, or machine/username does not exist.")
+            }.getOrElse {
+	            BadRequest(toJson("Missing parameter [machine_username]"))
+	          }
+           }.getOrElse {
+            BadRequest(toJson("Missing parameter [api_key]"))
+           }
+    	}.getOrElse {
+            BadRequest(toJson("Must be requesting as a Medici user"))
+        }
+      }.getOrElse {
+            InternalServerError(toJson("ERROR: GateOnePlugin is not activated"))
+      }
+    }
+    
+    def jsonAuth(auth: (String, String, String), apiKey: String): JsValue = {
+    	toJson(Map("api_key" -> apiKey, "upn" -> auth._1, "timestamp" -> auth._2, "signature" -> auth._3, "signature_method" -> "HMAC-SHA1", "api_version" -> "1.0"))
+    }
+    
   
 }

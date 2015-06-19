@@ -118,7 +118,9 @@ class Application @Inject() (files: FileService, collections: CollectionService,
         api.routes.javascript.Collections.removeCollection,
         api.routes.javascript.Projects.addproject,
         api.routes.javascript.Institutions.addinstitution,
-        api.routes.javascript.Users.getUser
+        api.routes.javascript.Users.getUser,
+        api.routes.javascript.GateOne.getUserMachines,
+        api.routes.javascript.GateOne.getAuth
       )
     ).as(JSON) 
   }

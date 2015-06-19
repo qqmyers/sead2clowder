@@ -256,6 +256,12 @@ GET            /api/delete-data                                                 
 POST           /api/remove-admin                                                        api.Admin.removeAdmin
 POST           /api/changeAppearance                                                    api.Admin.submitAppearance
 
+#GATEONE
+POST		   /api/gateone/addMachine													@api.GateOne.addMachine
+POST		   /api/gateone/addUserOnMachine											@api.GateOne.addUserOnMachine
+GET			   /api/gateone/getUserMachines												@api.GateOne.getUserMachines
+GET			   /api/gateone/getAuth														@api.GateOne.getAuth
+
 # ----------------------------------------------------------------------
 # COLLECTIONS ENDPOINT
 # ----------------------------------------------------------------------

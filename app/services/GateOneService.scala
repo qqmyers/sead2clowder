@@ -17,4 +17,6 @@ trait GateOneService {
   
   def getUserMachines(userEmail: String): List[GateOneUserOnMachine]
   
+  def checkUserOnMachine(userEmail: String, apiKey: String, accessUsername: String): Boolean
+  
 }

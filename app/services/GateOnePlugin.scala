@@ -53,4 +53,8 @@ class GateOnePlugin(application: Application) extends Plugin {
     }.toOption
   }
   
+  def checkUserOnMachine(userEmail: String, apiKey: String, accessUsername: String): Boolean = {
+    gateOne.checkUserOnMachine(userEmail, apiKey, accessUsername)
+  }
+  
 }
