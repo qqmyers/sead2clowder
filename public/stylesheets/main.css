@@ -584,3 +584,18 @@ textarea, input[type='text'], input[type='password']{
 .galleria-fscr:active{
     color: #fff;
 }
+
+
+/* GateOne: */
+#button_xterm{
+	position: fixed; 
+	display: block; 
+	visibility: visible; 
+	opacity: 0.6; 
+	cursor: pointer; 
+	right: 0px; 
+	bottom: 0px;
+}
+#button_xterm:hover{
+	opacity: 1;
+}

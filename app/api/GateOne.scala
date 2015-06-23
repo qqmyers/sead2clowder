@@ -3,6 +3,7 @@ package api
 import javax.inject.{ Singleton, Inject }
 import services.GateOnePlugin
 import play.api.Play.current
+import play.api.Logger
 import play.api.libs.json.Json.toJson
 import models.GateOneUserOnMachine
 import play.api.libs.json.JsValue

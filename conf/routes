@@ -260,7 +260,7 @@ POST           /api/changeAppearance                                            
 POST		   /api/gateone/addMachine													@api.GateOne.addMachine
 POST		   /api/gateone/addUserOnMachine											@api.GateOne.addUserOnMachine
 GET			   /api/gateone/getUserMachines												@api.GateOne.getUserMachines
-GET			   /api/gateone/getAuth														@api.GateOne.getAuth
+POST			   /api/gateone/getAuth														@api.GateOne.getAuth
 
 # ----------------------------------------------------------------------
 # COLLECTIONS ENDPOINT
