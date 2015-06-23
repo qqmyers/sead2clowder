@@ -162,6 +162,8 @@ DELETE         /admin/index                                                     
 GET            /admin/extractions                                                       @controllers.Extractors.listAllExtractions
 POST           /admin/theme                                                             @controllers.Admin.setTheme
 
+GET      	   /admin/dataDumps           												@controllers.Admin.viewDumpers 
+
 # Javascript Endpoints
 GET            /javascriptRoutes                                                        @controllers.Application.javascriptRoutes
 
@@ -260,7 +262,12 @@ POST           /api/changeAppearance                                            
 POST		   /api/gateone/addMachine													@api.GateOne.addMachine
 POST		   /api/gateone/addUserOnMachine											@api.GateOne.addUserOnMachine
 GET			   /api/gateone/getUserMachines												@api.GateOne.getUserMachines
-POST			   /api/gateone/getAuth														@api.GateOne.getAuth
+POST		   /api/gateone/getAuth													    @api.GateOne.getAuth
+
+#CONTENT DUMPS
+POST		   /api/dumpFilesMd															@api.Files.dumpFilesMetadata
+POST		   /api/dumpDatasetsMd														@api.Datasets.dumpDatasetsMetadata
+POST		   /api/dumpDatasetGroupings												@api.Datasets.dumpDatasetGroupings
 
 # ----------------------------------------------------------------------
 # COLLECTIONS ENDPOINT
