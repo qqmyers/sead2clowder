@@ -115,7 +115,7 @@ var doAccess=function(){
 			gateOneAuthenticate(data[0].apiKey,data[0].accessUsername);
 		}
 		else{
-			$('#machineSelectChoices > input').remove();
+			$('#machineSelectChoices').contents().remove();
 			for(var i = 0; i < data.length; i++){
 				var radioHTML='<input type="radio" name="machineChoice" value="'+data[i].accessUsername+'@'+data[i].apiKey+'"><label>'+data[i].accessUsername+'@'+data[i].apiKey+'</label><br>'; 
 				$('#machineSelectChoices').append(radioHTML);
