@@ -411,12 +411,13 @@
 							                }));
 							            });
 							          }
-							        }
+							        },
+							        dataSource: galleriaData
 						    });
 					    }
 					    @if(!navOnSectionClick){
 					    	// Initialize Galleria
-						    Galleria.run('#galleria');
+					    	Galleria.run('#galleria', {dataSource: galleriaData});
 					    }
 
 					    var gallery = $('#galleria').data('galleria');
