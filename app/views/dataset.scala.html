@@ -105,7 +105,8 @@
 	<script type="text/javascript" src="//ajax.googleapis.com/ajax/libs/swfobject/2.2/swfobject.js"></script>
 	<script src="@routes.Assets.at("javascripts/tinymce/tinymce.min.js")" type="text/javascript"></script>
 	<script src="@routes.Assets.at("javascripts/galleria-1.2.9.js")" type="text/javascript"></script>
-	<script src="@routes.Assets.at("javascripts/sectionsListProcess.js")" type="text/javascript"></script> 
+	<script src="@routes.Assets.at("javascripts/sectionsListProcess.js")" type="text/javascript"></script>
+	<script type="text/javascript" src="@routes.Application.javascriptRoutes"></script> 
 	<script>
 		tinymce.init({selector:'.notesArea',
 	    	theme: "modern",
@@ -617,8 +618,8 @@
  				       contentType: "application/json"
  				     });
     				request.done(function (respJSON){
-    					for(var i = 0; i < respJSON.length; i++){
-    						if($("#filePrevContainer_"+respJSON[i].id).length == 0){
+    					for(var i = 0; i < respJSON.length; i++){   						
+    						if($("#filePrevContainer_"+respJSON[i].id).length == 0){    							
     							var fileId = respJSON[i].id;
     							$("#bottomDatasetTabbable").before("<div class='row' style='position:relative;left:2%;' id='filePrevContainer_"+fileId+"' data-previewsCount='0' data-isAuthenticated='"+respJSON[i].usercanedit+"' data-filename='"+respJSON[i].filename+"'>"
     													+"<div class='span12'><div class='tabbable'><ul class='nav nav-pills' id='myTab_"+fileId+"'></ul>"
@@ -650,24 +651,29 @@
 							        		);
 						        	}
     						}
-    						
-//     						var fileTags = respJSON[i].tags;
-//     						for(var k = 0; k < fileTags.length; k++){
-//     							var currTag = fileTags[k];
-//     							var allOfThisFile = $("#tagList li[data-tagfileid='"+respJSON[i].id+"']"); 
-//     							if(allOfThisFile.filter(function() {
-// 				        		    return $(this).text() === currTag + " [File]";
-// 				        		  }).length == 0){
-//     								var mustHide = false;
-//     								if($("#tagList li").filter(function() {
-//     				        		    return $(this).text() === currTag + " [File]";
-//   				        		  	  }).length != 0){
-//     									mustHide = true;
-//     								}
-//     								$("#tagList").append('<li class="filetag" data-tagfileid="'+respJSON[i].id+'"><a href="'+window.jsRoutes.Tags.search(currTag)+'">'+currTag+' [File]</a></li>');
-    									
-//     							}
-//     						}
+
+    						var fileTags = respJSON[i].tags;
+    						for(var k = 0; k < fileTags.length; k++){
+    							var currTag = fileTags[k];
+    							var allOfThisFile = $("#tagList li.filetag[data-tagfileid='"+respJSON[i].id+"']");
+    							if(allOfThisFile.filter(function() {
+				        		    return $(this).text() == currTag + " [File]";				        		   
+				        		  }).length == 0){   								
+    								var mustHide = false;
+    								if($("#tagList li.filetag").filter(function() {
+    				        		    return $(this).text() == currTag + " [File]";
+  				        		  	  }).length != 0){
+    									mustHide = true;
+    								}
+    								newtaghtml = $.parseHTML('<li class="filetag" data-tagfileid="'+respJSON[i].id+'"><a href="'+jsRoutes.controllers.Tags.search(currTag)+'">'+currTag+' [File]</a></li>');    								
+    								if(mustHide)
+    									$.each( newtaghtml, function( i, el ) {
+    										  if(el.tagName == "LI")
+    											  $(el).hide();
+    									});   								
+    								$("#tagList").append(newtaghtml);
+    							}
+    						}
     						
     							
     					}
@@ -861,11 +867,11 @@
 						        $("#galleriaRow_"+fileId).remove();
 						        $("#sectionsRow_"+fileId).remove();
 						        
-						        $("#tagList li[data-tagfileid='"+fileId+"']").each(function(){
+						        $("#tagList li.filetag[data-tagfileid='"+fileId+"']").each(function(){
 						        	var thisStore = this;
 						        	if($(thisStore).is(':visible')){
 						        		var currTagText = $(thisStore).text();
-						        		$("#tagList li[data-tagfileid!='"+fileId+"']").filter(function() {
+						        		$("#tagList li.filetag[data-tagfileid!='"+fileId+"']").filter(function() {
 						        		    return $(this).text() === currTagText;
 						        		}).first().show();
 						        	}
@@ -1026,7 +1032,7 @@
 				   }
 				</ul>
 				<script language="javascript">
-					//Remove non-unique appearances of file tags for the same dataset (i.e. from different files)
+					//Hide non-unique appearances of file tags for the same dataset (i.e. from different files)
 					var currTags = [];
 					$("#tagList li.filetag a").each(function(){
 						if(currTags.indexOf($(this).text()) >= 0)
