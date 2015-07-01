@@ -188,13 +188,33 @@ object Permission extends Enumeration {
       }
       case ResourceRef(ResourceRef.comment, id) => {
         val comment = comments.get(id)
-        val hasPermission: Option[Boolean] = for {clowderUser <- getUserByIdentity(user)
-                                                  dataset <- datasets.get(comment.get.id)
-                                                  spaceId <- dataset.space
-                                                  role <- users.getUserRoleInSpace(clowderUser.id, spaceId)
-                                                  if role.permissions.contains(permission.toString)
-        } yield true
-        hasPermission getOrElse comment.exists(_.author.email == user.email)
+
+        if (comment.get.dataset_id.isDefined) {
+          val hasPermission: Option[Boolean] = for {clowderUser <- getUserByIdentity(user)
+                                                    dataset <- datasets.get(comment.get.dataset_id.get)
+                                                    spaceId <- dataset.space
+                                                    role <- users.getUserRoleInSpace(clowderUser.id, spaceId)
+                                                    if role.permissions.contains(permission.toString)
+          } yield true
+          hasPermission getOrElse comment.exists(_.author.email == user.email)
+        } else if (comment.get.file_id.isDefined) {
+          val datasetList = datasets.findByFileId(comment.get.file_id.get);
+          var hasPermission: Option[Boolean]= None
+          for(clowderUser <- getUserByIdentity(user)) {
+            datasetList.flatMap(_.space).map{
+              spaceId => for(role<- users.getUserRoleInSpace(clowderUser.id, spaceId)) {
+                if(role.permissions.contains(permission.toString)) {
+                  hasPermission = Some(true)
+                  return true
+                }
+              }
+            }
+          }
+          hasPermission getOrElse comment.exists(_.author.email == user.email)
+        } else {
+          false
+        }
+
       }
       case ResourceRef(resType, id) => {
         Logger.error("Resource type not recognized " + resType)
