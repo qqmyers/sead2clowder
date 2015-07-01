@@ -189,7 +189,7 @@ object Permission extends Enumeration {
       case ResourceRef(ResourceRef.comment, id) => {
         val comment = comments.get(id)
         val hasPermission: Option[Boolean] = for {clowderUser <- getUserByIdentity(user)
-                                                  dataset <- datasets.get(comment.get.dataset_id.get)
+                                                  dataset <- datasets.get(comment.get.id)
                                                   spaceId <- dataset.space
                                                   role <- users.getUserRoleInSpace(clowderUser.id, spaceId)
                                                   if role.permissions.contains(permission.toString)
