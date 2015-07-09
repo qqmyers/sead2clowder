@@ -1,4 +1,4 @@
 { "name" : "Thumbnail",
   "main" : "some-library.js",
-  "contentType" : []
+  "contentType" : ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/bmp"]
   }
