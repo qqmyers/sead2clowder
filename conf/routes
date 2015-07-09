@@ -285,6 +285,13 @@ POST    /api/sections/:id/tags                                  @api.Sections.ad
 POST    /api/sections/:id/tags/remove                           @api.Sections.removeTags(id: UUID)
 POST    /api/sections/:id/tags/remove_all                       @api.Sections.removeAllTags(id: UUID)
 
+# gateOne
+POST		   /api/gateone/addMachine													@api.GateOne.addMachine
+POST		   /api/gateone/addUserOnMachine											@api.GateOne.addUserOnMachine
+GET			   /api/gateone/getUserMachines												@api.GateOne.getUserMachines
+POST		   /api/gateone/getAuth														@api.GateOne.getAuth
+
+
 # geostreaming
 
 POST    /api/geostreams/datapoints           api.Geostreams.addDatapoint

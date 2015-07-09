@@ -1,0 +1,37 @@
+@(gateOneServer: String)(implicit user: Option[securesocial.core.Identity])
+
+<!-- Button for in-browser terminal -->
+<div id="button_xterm" title="Open Terminal in window. You can always hide the terminal again by pressing the escape key twice rapidly.">
+  <button id="termbut"><img src="@routes.Assets.at("images/terminal.png")" alt="Open xTerm" height="32" width="32"></button>
+</div>
+
+<div class="modal fade" id="machineChooseModal" tabindex="-1"
+	role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+	<div class="modal-dialog">
+		<div class="modal-content">
+			<div class="modal-header">
+				<button type="button" class="close" data-dismiss="modal"
+					aria-hidden="true" id="machineSelectClose">&times;</button>
+				<h4 class="modal-title">Select computing resource and account</h4>
+			</div>
+			<div class="modal-body">
+				<div class="form-group" id="machineSelectChoices">
+					<!-- 					<input type="radio" name="datasetLevel" value="DatasetLevel" checked><label> Everywhere</label><br> -->
+					<!-- 					<input type="radio" name="datasetLevel" value="FileLevel"><label> On file page</label><br> -->
+					<!-- 					<input type="radio" name="datasetLevel" value="None"><label> Nowhere</label><br> -->
+				</div>
+			</div>
+			<div class="modal-footer">
+				<button class="btn btn-default" id="machineSelectBtn">Select</button>
+			</div>
+		</div> <!-- /.modal-content -->
+	</div> <!-- /.modal-dialog -->
+</div> <!-- /.modal -->
+
+
+<!--Load up the GateOne-->
+<script type="text/javascript">
+	//URL of Gate One server
+	var goURL = "@gateOneServer";
+</script>
+<script type="text/javascript" src="@routes.Assets.at("javascripts/gateone_anywhere_medici.js")"></script>

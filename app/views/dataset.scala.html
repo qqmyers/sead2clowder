@@ -530,6 +530,7 @@
     				Configuration.url = pv.pv_route;
     				Configuration.fileid = pv.pv_id;
     				Configuration.previewer = pv.p_path;
+    				Configuration.authenticatedIndividualResource = $("#filePrevContainer_" + fileId).attr('data-isAuthenticated') == 'true';
     				if(pv.p_id === "Thumbnail"){
     					Configuration.fileType = pv.pv_contenttype;
     					Configuration.fileSize = pv.pv_length;			
@@ -538,8 +539,7 @@
     					Configuration.annotationsEditPath = pv.pv_annotationsEditPath;
     					Configuration.annotationsListPath = pv.pv_annotationsListPath;
     					Configuration.annotationsAttachPath = pv.pv_annotationsAttachPath;
-    					Configuration.annotationsDeletePath = pv.pv_annotationsDeletePath;
-    					Configuration.authenticatedIndividualResource = $("#filePrevContainer_" + fileId).attr('data-isAuthenticated') == 'true';
+    					Configuration.annotationsDeletePath = pv.pv_annotationsDeletePath;    					
     					if($("#previewedFileName_" + fileId +" :nth-child(1)").text().endsWith(".ptm"))   					
     						Configuration.wasPTM = 'true';
     					else

@@ -50,7 +50,8 @@ object ApplicationBuild extends Build {
     "postgresql" % "postgresql" % "8.1-407.jdbc3" exclude("play", "*"),
     "org.postgresql" % "com.springsource.org.postgresql.jdbc4" % "8.3.604" exclude("play", "*"),
     "org.springframework" % "spring" % "2.5.6" exclude("play", "*"),
-    "org.scalatest" %% "scalatest" % "2.1.0" % "test" exclude("play", "*")
+    "org.scalatest" %% "scalatest" % "2.1.0" % "test" exclude("play", "*"),
+    "com.roundeights" %% "hasher" % "1.0.0"
   )
 
   // Only compile the bootstrap bootstrap.less file and any other *.less file in the stylesheets directory 
@@ -77,7 +78,8 @@ object ApplicationBuild extends Build {
     resolvers += "Aduna" at "http://maven-us.nuxeo.org/nexus/content/repositories/public/",
     //resolvers += "Forth" at "http://139.91.183.63/repository",
     resolvers += "NCSA" at "https://opensource.ncsa.illinois.edu/nexus/content/repositories/thirdparty",   
-    resolvers += "opencastproject" at "http://repository.opencastproject.org/nexus/content/repositories/public"
+    resolvers += "opencastproject" at "http://repository.opencastproject.org/nexus/content/repositories/public",
+    resolvers += "RoundEights" at "http://maven.spikemark.net/roundeights"
    
   ).settings(net.virtualvoid.sbt.graph.Plugin.graphSettings: _*)
 }

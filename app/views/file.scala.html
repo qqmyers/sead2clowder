@@ -34,7 +34,7 @@
 		}
 	} 
 
-@showPreview(id: String, p: (java.lang.String, String, String, String, java.lang.String, String, Long), filename: String, contentType: String, originalFileId: String, isAuthModify: Boolean) = {
+@showPreview(id: String, p: (java.lang.String, String, String, String, java.lang.String, String, Long), filename: String, contentType: String, originalFileId: String) = {
 	<script>
 		Configuration.tab = "#previewer_@id";
 		Configuration.url = "@p._5";
@@ -65,7 +65,6 @@
 		}
 		else if("@p._2" === "Video presentation"){
 			Configuration.originalFileId = "@originalFileId";
-			Configuration.authenticatedFileModify = isAuthModify;
 		}
 	</script>
 	<script type="text/javascript" src="@(routes.Assets.at(p._3) + "/" + p._4)"></script>
@@ -161,7 +160,7 @@
 							<div class="tab-content"  id="previewsContent_@(f.id.toString)">
 								@for(i <- pvs.indices) {
 							  		<div class="tab-pane previewDiv" id="previewer_@(f.id.toString)_@i" data-previewId="@(pvs(i)._1)" data-previewerId="@(pvs(i)._2)"></div>
-							  		@showPreview(f.id.toString + "_" + i, pvs(i), f.filename, f.contentType, f.id.toString, authenticatedFileModify)
+							  		@showPreview(f.id.toString + "_" + i, pvs(i), f.filename, f.contentType, f.id.toString)
 
 								}
 					  			<script type="text/javascript">

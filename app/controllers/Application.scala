@@ -112,7 +112,10 @@ class Application  @Inject() (files: FileService, appAppearance: AppAppearanceSe
         api.routes.javascript.Sections.removeAllTags,
         api.routes.javascript.Geostreams.searchSensors,
         api.routes.javascript.Geostreams.getSensorStreams,
-        api.routes.javascript.Geostreams.searchDatapoints
+        api.routes.javascript.Geostreams.searchDatapoints,
+        
+        api.routes.javascript.GateOne.getUserMachines,
+        api.routes.javascript.GateOne.getAuth
       )
     ).as(JSON) 
   }

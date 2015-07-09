@@ -174,7 +174,18 @@
       <p class="muted credit">Powered by <a href="http://medici.ncsa.illinois.edu">Medici</a>.</p>
     </div>
   </div>
-  
 
+@play.api.Play.current.plugin[services.GateOnePlugin] match {
+	case Some(p) => {
+		@user match {
+			case Some(u) => {
+				@gateOne.gateOne(p.gateOneServer)
+			}
+			case None => {}
+		}							
+	}
+	case None => {}
+}
+  
 </body>
 </html>

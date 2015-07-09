@@ -76,6 +76,7 @@ object Permission extends Enumeration {
 		SearchSensors,
 		RemoveSensors,
 		AddThumbnail,
+		AccessGateOne,
 		DownloadFiles = Value		
 }
 

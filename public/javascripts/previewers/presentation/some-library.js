@@ -9,7 +9,7 @@
 	  	In that case, we want the button for downloading the original ZIP file to be disabled when we have the merged video ready for download,
 	  	to avoid confusion of general users between downloading the merged video and the original ZIP file.
 	  */
-	  if(Configuration.authenticatedFileModify){
+	  if(Configuration.authenticatedIndividualResource){
 		  $(document).ready(function() {
 			  $("#downloadButtonFile").css("display","none");
 		  });	  

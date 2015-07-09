@@ -46,6 +46,7 @@ class ProdModule extends AbstractModule {
     bind(classOf[SocialUserService]).to(classOf[MongoDBSocialUserService])
     bind(classOf[SubscriberService]).to(classOf[MongoDBSubscriberService])
     bind(classOf[UserAccessRightsService]).to(classOf[MongoDBUserAccessRightsService])
+    bind(classOf[GateOneService]).to(classOf[MongoDBGateOneService])
   }
 }
 
@@ -73,5 +74,6 @@ class DevModule extends AbstractModule {
     bind(classOf[SocialUserService]).to(classOf[MongoDBSocialUserService])
     bind(classOf[SubscriberService]).to(classOf[MongoDBSubscriberService])
     bind(classOf[UserAccessRightsService]).to(classOf[MongoDBUserAccessRightsService])
+    bind(classOf[GateOneService]).to(classOf[MongoDBGateOneService])
   }
 }
