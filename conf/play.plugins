@@ -23,6 +23,6 @@
 #10014:services.FileMetadataAutodumpService
 #10015:services.DatasetsAutodumpService
 #10016:services.DatasetsMetadataAutodumpService
-10017:services.GateOnePlugin
+#10017:services.GateOnePlugin
 10100:services.TempFilesPlugin
 10101:services.RDFExporterPlugin
