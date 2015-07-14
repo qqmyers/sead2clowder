@@ -1,40 +1,33 @@
-package integration
+package unit
 
-import org.scalatest.Assertions._
-import play.api.test.FakeApplication
-import play.api.test.FakeRequest
-import play.api.test.Helpers._
-import org.mockito.Mockito.when
-import org.scalatest.mock.MockitoSugar._
-import org.mockito.Mockito.doNothing
-import services.FileService
+
+
+
 import services.DatasetService
 import services.CollectionService
 import services.MultimediaQueryService
 import services.TagService
 import services.CommentService
-
-
+import services.ThreeDService
 import services.ExtractionService
 import services.ExtractionRequestsService
-
 import services.PreviewService
-
-import services.ThreeDService
-
 import services.RdfSPARQLService
 import services.ThumbnailService
+import services.FileService
+
 import play.api.GlobalSettings
-import play.api.libs.concurrent.Execution.Implicits._
-import play.api.libs.json.Json
-import play.api.Logger
-import com.wordnik.swagger.annotations.Api
-import com.wordnik.swagger.annotations.ApiOperation
-import unit.UnitSpec
 import org.scalatestplus.play.OneAppPerSuite
-import org.scalatest.DoNotDiscover
 import org.scalatestplus.play.PlaySpec
-import play.api.Play
+import play.api.test.FakeApplication
+import play.api.test.FakeRequest
+import play.api.test.Helpers._
+import org.mockito.Mockito.when
+import org.scalatest.mock.MockitoSugar._
+import play.api.GlobalSettings
+
+
+
 
 /*
  * Integration/Unit Test for Files Controller 
@@ -42,7 +35,7 @@ import play.api.Play
  * 
  */
 
-class FilesControllerSpec extends PlaySpec with OneAppPerSuite {
+class FilesControllerAppSpec extends PlaySpec with OneAppPerSuite with FileTestData {
   
   val excludedPlugins = List(
     "services.mongodb.MongoSalatPlugin",
@@ -76,30 +69,33 @@ class FilesControllerSpec extends PlaySpec with OneAppPerSuite {
   val mockThumbnails = mock[ThumbnailService]
 
 
-  when(mockFiles.listFiles).thenReturn(List(File("morrowplots.jpg"), File("morrow-plots.jpg")))
+
+
+  when(mockFiles.listFiles).thenReturn(List(testFile1,testFile2))
   when(mockFiles.count).thenReturn(4)
-  when(mockExtractors.getExtractorInputTypes).thenReturn(List("image", "text"))
-  doNothing().when(mockFiles).upload(List("ncsa.cv.face", "ncsa.ocr"))
-  doNothing().when(mockExtractors).insertServerIPs(List("dts1.ncsa.illinois.edu", "141.142.220.244"))
-  doNothing().when(mockExtractors).insertInputTypes(List("image", "text"))
+ // when(mockExtractors.getExtractorInputTypes).thenReturn(List("image", "text"))
+ // doNothing().when(mockFiles).File(List("ncsa.cv.face", "ncsa.ocr"))
+//  doNothing().when(mockExtractors).insertServerIPs(List("dts1.ncsa.illinois.edu", "141.142.220.244"))
+//  doNothing().when(mockExtractors).insertInputTypes(List("image", "text"))
   
 
   "The Files HTML Controller Test Suite" must {
      "return number of files" in {
       val files_controller = new api.Files(mockFiles, mockDatasets, mockCollections, mockQueries, mockTags, mockComments, mockExtractions, mockDTSRequests, mockPreviews, mockThreeD, mockSqarql, mockThumbnails)
-      // val resultFileNames = files_controller.count.apply(FakeRequest())
+      //val resultFileNames = files_controller.count.apply(FakeRequest())
       //contentType(resultFileNames) mustEqual Some("application/json")
       //contentAsString(resultFileNames) must include ("filename")
-      info("File names "+contentAsString(resultFileNames))
+      //info("File names "+contentAsString(resultFileNames))
      }
 
-     "return List of File Names" in {
+    "return List of File Names" in {
       val files_controller = new api.Files(mockFiles, mockDatasets, mockCollections, mockQueries, mockTags, mockComments, mockExtractions, mockDTSRequests, mockPreviews, mockThreeD, mockSqarql, mockThumbnails)
-      val resultFileNames = files_controller.listFiles.apply(FakeRequest())
-      //contentType(resultFileNames) mustEqual Some("application/json")
-      //contentAsString(resultFileNames) must include ("filename")
-      info("File names "+contentAsString(resultFileNames))
-     }
+      val resultFileNames = files_controller.list.apply(FakeRequest())
+      assert(testFile1.contentType != "")
+      assert(testFile2.filename == "morrowplots.jpeg")
+      info("Eugene New Test")
 
+    }
+  }
 
 }

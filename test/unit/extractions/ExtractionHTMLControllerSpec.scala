@@ -1,6 +1,6 @@
 package integration
 
-import org.scalatest.Assertions._
+
 import play.api.test.FakeApplication
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
@@ -15,16 +15,9 @@ import services.RdfSPARQLService
 import services.ThumbnailService
 import services.FileService
 import play.api.GlobalSettings
-import play.api.libs.concurrent.Execution.Implicits._
-import play.api.libs.json.Json
-import play.api.Logger
-import com.wordnik.swagger.annotations.Api
-import com.wordnik.swagger.annotations.ApiOperation
-import unit.UnitSpec
 import org.scalatestplus.play.OneAppPerSuite
-import org.scalatest.DoNotDiscover
 import org.scalatestplus.play.PlaySpec
-import play.api.Play
+
 
 /*
  * Integration/Unit Test for Extractions Api Controller 
