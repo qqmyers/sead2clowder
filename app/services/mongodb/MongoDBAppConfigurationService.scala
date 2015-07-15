@@ -33,7 +33,7 @@ class MongoDBAppConfigurationService extends AppConfigurationService {
 	   * it wil return None.
 	   */
 	  def getProperty[objectType <: AnyRef](key: String): Option[objectType] = {
-	    Logger.debug(s"Getting value for $key")
+	    //Logger.debug(s"Getting value for $key")
 	    getCollection.findOne(MongoDBObject("key" -> key)) match {
 	      case Some(x) => {
 	        x.get("value") match {
