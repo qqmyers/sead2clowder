@@ -1173,6 +1173,8 @@ class Files @Inject()(
     implicit request =>
       val theResponse = addTagsHelper(TagCheck_File, id, request)
   	  files.index(id)
+  	  for(dataset <- datasets.findByFileId(id))
+  	    datasets.index(dataset.id)  	  
   	  theResponse
   }
 
@@ -1190,6 +1192,8 @@ class Files @Inject()(
     implicit request =>
       val theResponse = removeTagsHelper(TagCheck_File, id, request)
   	  files.index(id)
+  	  for(dataset <- datasets.findByFileId(id))
+  	    datasets.index(dataset.id)
   	  theResponse
   }
 
@@ -1209,6 +1213,8 @@ class Files @Inject()(
           case Some(file) => {
             files.removeAllTags(id)
             files.index(id)
+            for(dataset <- datasets.findByFileId(id))
+            	datasets.index(dataset.id)
             Ok(Json.obj("status" -> "success"))
           }
           case None => {

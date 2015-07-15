@@ -1055,10 +1055,6 @@ class MongoDBDatasetService @Inject() (
           tagListBuffer += tag.name
         }
 
-        val tagsJson = new JSONArray(tagListBuffer.toList)
-
-        Logger.debug("tagStr=" + tagsJson);
-
         val commentsByDataset = for (comment <- comments.findCommentsByDatasetId(id, false)) yield {
           comment.text
         }
@@ -1080,7 +1076,13 @@ class MongoDBDatasetService @Inject() (
         for(file <- dataset.files){
           fileDsId = fileDsId + file.id.stringify + "  "
           fileDsName = fileDsName + file.filename + "  "
+          for (tag <- file.tags) {
+        	  tagListBuffer += tag.name
+          }
         }
+        
+        val tagsJson = new JSONArray(tagListBuffer.toList)
+        Logger.debug("tagStr=" + tagsJson);
         
         var dsCollsId = ""
         var dsCollsName = ""
