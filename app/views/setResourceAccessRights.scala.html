@@ -1,11 +1,12 @@
 @* Author: Constantinos Sophocleous *@
 @(resourceType: String, resourceId: String, isPublic: Boolean = false, resourceAuthor: Option[securesocial.core.Identity])(implicit user: Option[securesocial.core.Identity])
 
-@import services.{DI, UserAccessRightsService}
+@import services.{DI, UserAccessRightsService, AppConfiguration}
 @import securesocial.core.AuthenticationMethod
 @import securesocial.core.SocialUser
 @import securesocial.core.IdentityId 
 
+@defining(AppConfiguration.getResourceDisplayAliases){resourceAliases=>
 @defining(DI.injector.getInstance(classOf[UserAccessRightsService])){accessRightsServiceInner=>
 @defining(new SocialUser(new IdentityId("anonymous", ""), "Anonymous", "User", "Anonymous User", None, None, AuthenticationMethod.UserPassword)){anonUser=>
 <form class="form-inline">
@@ -65,7 +66,7 @@
 				@if(resourceType.equals("collection")){
 					<td>
 						<button class="btn btn-default adminResourceBtn" onclick="setPermission('@userPermission._1','@userPermission._2','@resourceType','@resourceId', $(this).parent().parent().find('select').get(0).value, 'none', resetValue, this, true); return false;">
-							Apply to datasets
+							Apply to @(resourceAliases("dPlural"))
 						</button>
 					</td>
 				}
@@ -79,7 +80,7 @@
 				@if(resourceType.equals("collection")){
 					<td>
 						<input value="true" type="checkbox">
-						<label class="adminResourceRemoveFromSubdoc">From datasets</label>
+						<label class="adminResourceRemoveFromSubdoc">From @(resourceAliases("dPlural"))</label>
 					</td>
 				}			
 			  </tr>
@@ -258,5 +259,6 @@
 		
 		
 	</script>
+}
 }
 }

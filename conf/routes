@@ -210,6 +210,7 @@ GET     /api/delete-data                    					api.Admin.deleteAllData
 POST	/api/remove-admin										api.Admin.removeAdmin
 POST	/api/changeAppearance									api.Admin.submitAppearance
 POST    /api/setViewNoLoggedIn                                  api.Admin.setViewNoLoggedIn
+POST    /api/changeAliases                                      api.Admin.submitAliases
 
 POST	/api/dumpFilesMd										@api.Files.dumpFilesMetadata
 POST	/api/dumpDatasetsMd										@api.Datasets.dumpDatasetsMetadata

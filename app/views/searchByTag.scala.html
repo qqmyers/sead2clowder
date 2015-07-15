@@ -1,6 +1,9 @@
 @(tag: String, datasets: List[models.Dataset], files: List[models.File], sectionsWithFiles: List[(models.Section, models.File)])
 
-@main("Tagged Datasets") {
+@import services.AppConfiguration
+
+@defining(AppConfiguration.getResourceDisplayAliases){resourceAliases=>
+@main("Tagged "+resourceAliases("dPlural")) {
 	<div class="page-header">
 		<h3>Tag: @tag</h3>
 	</div>
@@ -23,7 +26,7 @@
 	<tbody>
     @for(dataset <- datasets) {
 		<tr>
-			<td><a href="@(routes.Datasets.dataset(dataset.id))">@dataset.name [dataset]</a></td>
+			<td><a href="@(routes.Datasets.dataset(dataset.id))">@dataset.name [@(resourceAliases("dSingular"))]</a></td>
 			<td>@dataset.created</td>
 			<td>@dataset.description</td>
 			<td>
@@ -52,4 +55,4 @@
 	}
 	</tbody>
 	</table>
-}
+}}

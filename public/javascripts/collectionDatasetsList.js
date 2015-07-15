@@ -74,7 +74,8 @@
         		"The following error occured: "+
         		textStatus, errorThrown		            
     			);
-    		alert("ERROR: " + errorThrown +". Dataset not added to collection. The collection or dataset was possibly removed from the system." );
+    		alert("ERROR: " + errorThrown +". "+window["resAliases"]["dSingular"]+" not added to "+window["resAliases"]["cSingular"]
+    				+". The "+window["resAliases"]["cSingular"]+" or "+window["resAliases"]["dSingular"]+" was possibly removed from the system." );
  			});
 		
 	}
@@ -148,7 +149,8 @@
         		"The following error occured: "+
         		textStatus, errorThrown		            
     			);
-    		alert("ERROR: " + errorThrown +". Dataset not removed from collection. The collection was possibly removed from the system." );
+    		alert("ERROR: " + errorThrown +". "+window["resAliases"]["dSingular"]+" not removed from "+window["resAliases"]["cSingular"]
+    			+". The "+window["resAliases"]["cSingular"]+" was possibly removed from the system." );
  			});	
 	}
 	
@@ -303,7 +305,7 @@
             		"The following error occured: "+
             		textStatus, errorThrown		            
         			);
-        		alert("ERROR: " + errorThrown +". The collection was possibly removed." );
+        		alert("ERROR: " + errorThrown +". The "+window["resAliases"]["cSingular"]+" was possibly removed." );
         		
         		return false;
      			});		 

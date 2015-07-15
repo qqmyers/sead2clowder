@@ -5,9 +5,12 @@
 @import controllers.Collections
 @import securesocial.core.{SocialUser, IdentityId, AuthenticationMethod}
 
-@main("Collections") {
+@import services.AppConfiguration
+
+@defining(AppConfiguration.getResourceDisplayAliases){resourceAliases=>
+@main(resourceAliases("cPlural")) {
 <div class="page-header">
-  <h1>Collections</h1>
+  <h1>@(resourceAliases("cPlural"))</h1>
 </div>
 <div class="row">
 	<div class="col-md-12">
@@ -64,4 +67,4 @@
 		</script>
 	}
 <script src="@routes.Assets.at("javascripts/collectionListProcess.js")" type="text/javascript"></script>
-}
+}}

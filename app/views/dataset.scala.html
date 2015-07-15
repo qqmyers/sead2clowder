@@ -12,7 +12,7 @@
 @import collection.JavaConverters._
 @import controllers.{Files, Collections, Datasets}
 @import com.mongodb.casbah.Imports.DBObject
-@import services.{DI, AppConfigurationService, UserAccessRightsService}
+@import services.{DI, AppConfigurationService, UserAccessRightsService, AppConfiguration}
 @import securesocial.core.{SocialUser, IdentityId, AuthenticationMethod}
 @import play.api.Play.current 
 @implicitFieldConstructor = @{ FieldConstructor(twitterBootstrapInput.f) }
@@ -98,8 +98,8 @@
 	<script type="text/javascript" src="@(routes.Assets.at(p._3) + "/" + p._4)"></script>
 }
 
-
-@main("Dataset") {
+@defining(AppConfiguration.getResourceDisplayAliases){resourceAliases=>
+@main(resourceAliases("dSingular")) {
 @defining(services.DI.injector.getInstance(classOf[controllers.Datasets]).checkAccessForDatasetUsingRightsList(dataset, user, "modify", rightsForUser)){authenticatedDatasetModify=>
 @defining(services.DI.injector.getInstance(classOf[controllers.Datasets]).checkAccessForDatasetUsingRightsList(dataset, user, "administrate", rightsForUser)){authenticatedDatasetAdministrate=>
 	<script type="text/javascript" src="//ajax.googleapis.com/ajax/libs/swfobject/2.2/swfobject.js"></script>
@@ -476,9 +476,9 @@
     			$('.file_separator').last().remove();
     		</script>
     		@if(beingProcessed == true){
-    			<div id='beingProcessed' style='display:block;'><h5>Dataset is being processed...</h5></div>  		
+    			<div id='beingProcessed' style='display:block;'><h5>@(resourceAliases("dSingular")) is being processed...</h5></div>  		
     		}else{
-    			<div id='beingProcessed' style='display:none;'><h5>Dataset is being processed...</h5></div> 
+    			<div id='beingProcessed' style='display:none;'><h5>@(resourceAliases("dSingular")) is being processed...</h5></div> 
     		}
     		<script>
     			function updateIsBeingProcessed(){
@@ -765,7 +765,7 @@
 				 		  <div class="form-group">
 						    <label for="exampleInputFile">New File</label>
 						    <input type="file" id="query" name="File">
-						    <p class="help-block"><label>The file will be uploaded and added to this dataset.</label></p>
+						    <p class="help-block"><label>The file will be uploaded and added to this @(resourceAliases("dSingular")).</label></p>
 								    	<label for="exampleShowPreviews">Show file preview(s)</label>
 		          						<br/>				
 		          						<input type="radio" name="datasetLevel" value="DatasetLevel" checked><label> Everywhere</label><br>
@@ -826,7 +826,7 @@
 					        		"The following error occured: "+
 					        		textStatus, errorThrown		            
 					    			);
-					    		alert("ERROR: " + errorThrown +". File not added to dataset. The dataset or file was possibly removed." );
+					    		alert("ERROR: " + errorThrown +". File not added to @(resourceAliases("dSingular")). The @(resourceAliases("dSingular")) or file was possibly removed." );
 					 			});				
 						});
 						
@@ -884,14 +884,14 @@
 					        		"The following error occured: "+
 					        		textStatus, errorThrown		            
 					    			);
-					    		alert("ERROR: " + errorThrown +". File not detached from dataset." );
+					    		alert("ERROR: " + errorThrown +". File not detached from @(resourceAliases("dSingular"))." );
 					 			});
 						}
 						
 					</script>
 	
 			<div class="row ds-section-sm">
-				<h3>Collections</h3>
+				<h3>@(resourceAliases("cPlural"))</h3>
 				<table id="collTable">
 				@collectionsInside.map { collection =>
 					<tr><td><a href="@(routes.Collections.collection(collection.id))">@collection.name</a>&nbsp;&nbsp;&nbsp;&nbsp;</td>
@@ -916,7 +916,7 @@
 								<button class="btn btn-default btn-sm" id="addCollBtn">Add</button>
 							</span>
 						</div><br/>
-						<span style="color:red;display:none;margin-top:10px;font-size:14px;font-family:Helvetica Neue,Helvetica,Arial,sans-serif"  id="doesNotExistErrorCollections">Collection does not exist or already added.</span>
+						<span style="color:red;display:none;margin-top:10px;font-size:14px;font-family:Helvetica Neue,Helvetica,Arial,sans-serif"  id="doesNotExistErrorCollections">@(resourceAliases("cSingular")) does not exist or already added.</span>
 
 				</div>
 					<script src="@routes.Assets.at("javascripts/combobox.js")" type="text/javascript"></script>
@@ -974,7 +974,7 @@
 					        		"The following error occured: "+
 					        		textStatus, errorThrown		            
 					    			);
-					    		alert("ERROR: " + errorThrown +". Dataset not added to collection. The collection or dataset was possibly removed." );
+					    		alert("ERROR: " + errorThrown +". @(resourceAliases("dSingular")) not added to @(resourceAliases("cSingular")). The @(resourceAliases("cSingular")) or @(resourceAliases("dSingular")) was possibly removed." );
 					 			});				
 						});
 						
@@ -1004,7 +1004,7 @@
 					        		"The following error occured: "+
 					        		textStatus, errorThrown		            
 					    			);
-					    		alert("ERROR: " + errorThrown +". Dataset not removed from collection." );
+					    		alert("ERROR: " + errorThrown +". @(resourceAliases("dSingular")) not removed from @(resourceAliases("cSingular"))." );
 					 			});
 						}
 						
@@ -1121,7 +1121,7 @@
 						     request.done(function (response, textStatus, jqXHR){
 						        console.log("Response " + JSON.stringify(response) );
 						        var url = "../tags/search?tag=" + tag;
-						        $newTag = $("<li><a href='" + url + "'>" + tag + " [Dataset]</a><a href='javascript:void(0);'><i style='display:none;'id='" +  response.ids[0] +"' class='glyphicon glyphicon-remove'></i></a></li>").appendTo('#tagList');
+						        $newTag = $("<li><a href='" + url + "'>" + tag + " [@(resourceAliases("dSingular"))]</a><a href='javascript:void(0);'><i style='display:none;'id='" +  response.ids[0] +"' class='glyphicon glyphicon-remove'></i></a></li>").appendTo('#tagList');
 						        /*$newTag.children("li").each(function(){$(this).hover(removeIconMouseIn,removeIconMouseOut);});
      						$newTag.find(".glyphicon-remove").click(removeTag);*/     						
 						        $newTag.hover(removeIconMouseIn,removeIconMouseOut);
@@ -1163,6 +1163,7 @@
 			</div>
 		</div>
 	</div>
+}
 }
 }
 }

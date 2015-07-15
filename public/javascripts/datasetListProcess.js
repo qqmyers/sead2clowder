@@ -18,6 +18,6 @@ function removeDataset(datasetId,event, reloadPage){
     		"The following error occured: "+
     		textStatus, errorThrown		            
 			);
-		alert("ERROR: " + errorThrown +". Dataset not removed. Maybe it was already removed." );
+		alert("ERROR: " + errorThrown +". "+window["resAliases"]["dSingular"]+" not removed. Maybe it was already removed." );
 			});	
 }

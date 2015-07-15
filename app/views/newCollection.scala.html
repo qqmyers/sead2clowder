@@ -2,11 +2,13 @@
 @(myForm: Form[Collection])(implicit flash: play.api.mvc.Flash, user: Option[securesocial.core.Identity])
 
 @import helper._
+@import services.AppConfiguration
 @implicitFieldConstructor = @{ FieldConstructor(twitterBootstrapInput.f) }
 
-@main("Collection") {
+@defining(AppConfiguration.getResourceDisplayAliases){resourceAliases=>
+@main(resourceAliases("cSingular")) {
   <div class="page-header">
-    <h1>Add New Collection</h1>
+    <h1>Add New @(resourceAliases("cSingular"))</h1>
   </div>
   <div class="row">
 	<div class="col-md-12">
@@ -27,7 +29,7 @@
 	      @textarea(myForm("description"), '_label -> "Description")
 	    </fieldset>
 	    <fieldset id="collectionPrivatePublicFieldSet" style="margin-bottom: 1%;">
-	      @checkbox(field = myForm("collectionPrivatePublic"),'_label -> "Collection is public")
+	      @checkbox(field = myForm("collectionPrivatePublic"),'_label -> (resourceAliases("cSingular")+" is public"))
 	    </fieldset>
         <div class="form-actions">
           <input type="submit" class="btn btn-default" value="Create"/>
@@ -40,5 +42,5 @@
   		$('#collectionPrivatePublicFieldSet label').css('left', '2%');
   		$('#collectionPrivatePublicFieldSet label').css('position', 'relative');
   </script>
-}
+}}
 

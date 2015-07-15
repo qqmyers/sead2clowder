@@ -2,16 +2,18 @@
 @(myForm: Form[Dataset], filesList: List[(String, String)])(implicit flash: play.api.mvc.Flash, user: Option[securesocial.core.Identity])
 
 @import helper._
+@import services.AppConfiguration
 @implicitFieldConstructor = @{ FieldConstructor(twitterBootstrapInput.f) }
 
-@main("Dataset") {
+@defining(AppConfiguration.getResourceDisplayAliases){resourceAliases=>
+@main(resourceAliases("dSingular")) {
   <script>
   	function clearUpload(){
   		$('#file').val('');
   	}
   </script>  
   <div class="page-header">
-    <h1>Create New Dataset</h1>
+    <h1>Create New @(resourceAliases("dSingular"))</h1>
   </div>
   <div class="row">
 	<div class="col-md-12">
@@ -32,7 +34,7 @@
 	      @textarea(myForm("description"), '_label -> "Description")
 	    </fieldset>
 	    <fieldset id="datasetPrivatePublicFieldSet" style="margin-bottom: 1%;">
-	      @checkbox(field = myForm("datasetPrivatePublic"),'_label -> "Dataset is public")
+	      @checkbox(field = myForm("datasetPrivatePublic"),'_label -> (resourceAliases("dSingular")+" is public"))
 	    </fieldset>
 	    <fieldset  id="fileUploadField">
 	      @inputFile(myForm("file"), '_label -> "Upload file")
@@ -79,4 +81,4 @@
   		$('#datasetPrivatePublicFieldSet label').css('left', '2%');
   		$('#datasetPrivatePublicFieldSet label').css('position', 'relative');
   </script> 
-}
+}}

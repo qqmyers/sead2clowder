@@ -1,9 +1,12 @@
 @* Author: Constantinos Sophocleous *@
 @()(implicit user: Option[securesocial.core.Identity])
 
-@main("Dataset metadata search") {
+@import services.AppConfiguration
+
+@defining(AppConfiguration.getResourceDisplayAliases){resourceAliases=>
+@main(resourceAliases("dSingular")+" metadata search") {
 <div class="page-header">
-  <h1>Dataset metadata search</h1>
+  <h1>@(resourceAliases("dSingular")) metadata search</h1>
 </div>
 <div class="row-fluid">
 	<div class="span12">
@@ -60,4 +63,4 @@
 </script>
 <script src="@routes.Assets.at("javascripts/searchUserMetadata.js")" type="text/javascript"></script>
 <script src="@routes.Assets.at("javascripts/datasetListProcess.js")" type="text/javascript"></script>
-}
+}}

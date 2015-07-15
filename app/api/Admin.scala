@@ -84,6 +84,22 @@ object Admin extends Controller with ApiController {
     
   }
   
+  def submitAliases = SecuredAction(parse.json, authorization=WithPermission(Permission.Admin)) { request =>
+    (request.body \ "datasetsAliasSingular").asOpt[String] match {
+      case Some(datasetsAliasSingular) => AppConfiguration.setResourceDisplayAlias(datasetsAliasSingular.capitalize,"dataset","singular")
+    }
+    (request.body \ "datasetsAliasPlural").asOpt[String] match {
+      case Some(datasetsAliasPlural) => AppConfiguration.setResourceDisplayAlias(datasetsAliasPlural.capitalize,"dataset","plural")
+    }
+    (request.body \ "collectionsAliasSingular").asOpt[String] match {
+      case Some(collectionsAliasSingular) => AppConfiguration.setResourceDisplayAlias(collectionsAliasSingular.capitalize,"collection","singular")
+    }
+    (request.body \ "collectionsAliasPlural").asOpt[String] match {
+      case Some(collectionsAliasPlural) => AppConfiguration.setResourceDisplayAlias(collectionsAliasPlural.capitalize,"collection","plural")
+    }
+    Ok(toJson(Map("status" -> "success")))
+  }
+  
 
 }
 

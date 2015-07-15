@@ -11,7 +11,7 @@ import securesocial.core.SecureSocial
 import api.ApiController
 import api.WithPermission
 import api.Permission
-import services.{AppConfigurationService, AppAppearanceService, VersusPlugin}
+import services.{AppConfigurationService, AppAppearanceService, VersusPlugin, AppConfiguration}
 import play.api.Play.current
 import play.api.libs.concurrent.Execution.Implicits._
 
@@ -49,7 +49,7 @@ class Admin @Inject() (appConfiguration: AppConfigurationService, appAppearance:
     val appAppearanceGet = appAppearance.getDefault.get
     val appConfigGet = appConfiguration.getDefault.get
     implicit val user = request.user
-    Ok(views.html.admin(themeId, appAppearanceGet, appConfigGet))
+    Ok(views.html.admin(themeId, appAppearanceGet, appConfigGet, AppConfiguration.getResourceDisplayAliases))
   }
 
   def reindexFiles = SecuredAction(parse.json, authorization = WithPermission(Permission.AddIndex)) { request =>

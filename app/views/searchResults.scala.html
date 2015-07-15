@@ -2,7 +2,9 @@
 @(query: String, files: Array[models.File], datasets: Array[models.Dataset], collections: Array[models.Collection], mapdatasetIds:scala.collection.mutable.HashMap[String,scala.collection.mutable.ListBuffer[(String, String)]], mapcollectionIds:scala.collection.mutable.HashMap[String,scala.collection.mutable.ListBuffer[(String, String)]])(implicit user: Option[securesocial.core.Identity])
 
 @import scala.collection.mutable.ListBuffer
+@import services.AppConfiguration
 
+@defining(AppConfiguration.getResourceDisplayAliases){resourceAliases=>
 @main("Search Results") {
 	<div class="page-header">
 		<h1>Search Results <small>@query</small></h1>
@@ -37,7 +39,7 @@
 						<dd>@file.contentType</dd>
 						<dt>Uploaded on:</dt>
 						<dd>@file.uploadDate</dd>
-						<dt>Dataset name(s):</dt>
+						<dt>@(resourceAliases("dSingular")) name(s):</dt>
 						<dd>
 							@for(currMapping <- mapdatasetIds.get(file.id.toString).get){
 								<a href="@(routes.Datasets.dataset(UUID(currMapping._1.trim)))">@currMapping._2.trim</a><br/>
@@ -60,7 +62,7 @@
 		    	<div class="col-md-6">
 		    }
 						    
-	       <h3>Datasets</h3>
+	       <h3>@(resourceAliases("dPlural"))</h3>
 	    @for(dataset <- datasets) {
 		  <div class="row elasticsearchResult" id="datasetdiv_@dataset.id.toString">
 		    <div class="col-md-2">
@@ -72,7 +74,7 @@
 					<dd><a href="@(routes.Datasets.dataset(dataset.id))">@dataset.name</a></dd>
 					<dt>  Descriptions:</dt>
 					<dd> @dataset.description</dd>
-					<dt>Collection name(s):</dt>
+					<dt>@(resourceAliases("cSingular")) name(s):</dt>
 					<dd>
 						@for(currMapping <- mapcollectionIds.get(dataset.id.toString).get){
 							<a href="@(routes.Collections.collection(UUID(currMapping._1.trim)))">@currMapping._2.trim</a><br/>
@@ -96,7 +98,7 @@
 		    	<div class="col-md-6">
 		    }
 			    
-	       <h3>Collections</h3>
+	       <h3>@(resourceAliases("cPlural"))</h3>
 	    @for(collection <- collections) {
 		  <div class="row elasticsearchResult">
 		    <div class="col-md-2">  
@@ -130,4 +132,4 @@
 	    });
 		
 	</script>
-}
+}}

@@ -1,5 +1,5 @@
 @* Authors: Luigi Marini, Constantinos Sophocleous, Smruti Padhy *@
-@(theme: Int, appAppearance: models.AppAppearance, appConfiguration: AppConfiguration)(implicit user: Option[securesocial.core.Identity])
+@(theme: Int, appAppearance: models.AppAppearance, appConfiguration: AppConfiguration, displayAliases: Map[String, String])(implicit user: Option[securesocial.core.Identity])
 @main("Administration") {
 	<div class="page-header">
 		<h1>Administration</h1>
@@ -55,6 +55,31 @@
 		</div>
 	</div>
 	
+	<legend>Select aliases for Datasets and Collections</legend>
+	
+	<div class="row">
+		<div class="col-md-2">
+			<form role="form-horizontal">
+			  <div class="form-group">
+			  	<div id="datasetsAlias_error" style="display:none; margin-top:5%; margin-bottom:5%; color:red;">Must have aliases for all cases</div>			  
+			    <label for="datasetsAliasFieldSingular">Datasets alias (singular)</label>
+			    <input id="datasetsAliasFieldSingular" class="aliasField" name="datasetsAliasFieldSingular" type="text" value="@(displayAliases("dSingular"))"></input>
+			    <br /><br />
+			    <label for="datasetsAliasFieldPlural">Datasets alias (plural)</label>
+			    <input id="datasetsAliasFieldPlural" class="aliasField" name="datasetsAliasFieldPlural" type="text" value="@(displayAliases("dPlural"))"></input>
+			    <br /><br />
+			    <label for="collectionsAliasFieldSingular">Collections alias (singular)</label>
+			    <input id="collectionsAliasFieldSingular" class="aliasField" name="collectionsAliasFieldSingular" type="text" value="@(displayAliases("cSingular"))"></input>
+			    <br /><br />
+			    <label for="collectionsAliasFieldPlural">Collections alias (plural)</label>
+			    <input id="collectionsAliasFieldPlural" class="aliasField" name="collectionsAliasFieldPlural" type="text" value="@(displayAliases("cPlural"))"></input>
+			    <br /><br />
+				<button class="btn btn-default" onclick="return submitAliases();">Submit</button>	
+			  </div>
+			</form>	
+		</div>
+	</div>
+	
 	<script language="javascript">
 		function submitAppearance(){
 			var displayName = $("#displayNameField").val().trim();
@@ -103,6 +128,44 @@
 				alert("The viewing permissions settings were not updated due to : " + errorThrown);
 			});						
 			return false;
+		}
+		
+		function submitAliases(){
+			
+			var validAliases = true;
+			$(".aliasField").each(function() {
+				  if($(this).val().trim() == ""){					  
+					  validAliases = false;
+					  return false;
+				  }
+			});
+			if(!validAliases){
+				$("#datasetsAlias_error").css("display","block");
+				return false;
+			}			
+			$("#datasetsAlias_error").css("display","none");
+			
+			var datasetsAliasSingular = $("#datasetsAliasFieldSingular").val().trim();
+			var datasetsAliasPlural = $("#datasetsAliasFieldPlural").val().trim();
+			var collectionsAliasSingular = $("#collectionsAliasFieldSingular").val().trim();
+			var collectionsAliasPlural = $("#collectionsAliasFieldPlural").val().trim();
+			
+			var request = $.ajax({
+				url:  "@api.routes.Admin.submitAliases",
+				data: JSON.stringify({ datasetsAliasSingular: datasetsAliasSingular, datasetsAliasPlural: datasetsAliasPlural, collectionsAliasSingular: collectionsAliasSingular,
+										collectionsAliasPlural: collectionsAliasPlural}),
+				type: "POST",
+				contentType: "application/json"
+	     	});
+			request.done(function (response, textStatus, jqXHR){ 
+				console.log("Response: " + response);
+				alert("Done");
+			});
+			request.fail(function (jqXHR, textStatus, errorThrown){
+				console.error("The following error occured: " + textStatus, errorThrown);
+				alert("The resources aliases were not updated due to : " + errorThrown);
+			});						
+			return false;			
 		}
 		
 	</script>
