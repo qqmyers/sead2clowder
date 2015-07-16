@@ -107,18 +107,23 @@
 						</li>
                         <li><a href="@routes.Assets.at("docs/api/index.html")">API</a></li>
 					</ul>
-					
-					
-					@play.api.Play.current.plugin[services.ElasticsearchPlugin] match {
-						case Some(p) => {
+										
 							@(user.isDefined || services.DI.injector.getInstance(classOf[AppConfigurationService]).getDefault.get.viewNoLoggedIn) match {
 							  case true => { 
 									<div class="nav navbar-nav navbar-right col-md-3" style="vertical-align: middle;">
-										<form class="navbar-form navbar-right form-horizontal" role="search" action="@routes.Search.search("")">
+										<form class="navbar-form navbar-right form-horizontal" role="search">
 								        <div class="input-group">
 								            <input type="text" class="form-control input-sm" placeholder="Search" name="query" id="srch-term">
 								            <div class="input-group-btn">
-								                <button class="btn btn-default btn-sm" type="submit"><i class="glyphicon glyphicon-search"></i></button>
+								            	@play.api.Play.current.plugin[services.ElasticsearchPlugin] match {
+													case Some(p) => {
+								                		<button style="margin-right:6%;" class="btn btn-default btn-sm" type="submit" formaction="@routes.Search.search("")">
+								                			<i class="glyphicon glyphicon-search"></i>
+								                		</button>
+								                	}
+								                	case None => {}
+								                }
+								                <button class="btn btn-default btn-sm" type="submit" formaction="@routes.Tags.search("")"><i>Tags</i></button>
 								            </div>
 								        </div>
 								        </form>
@@ -126,26 +131,20 @@
 							    }
 							 case false => {}   
 						    }
-						}
-						case None => {}
-					}
-					
 
 					<ul class="nav navbar-nav navbar-right">
-					
-					
-					@user match {
-    					case Some(x) => {
-    						<li>
-								<a  class="navbar-link" href="@securesocial.controllers.routes.LoginPage.logout">Logout (@x.fullName)</a>
-							</li>
+						@user match {
+	    					case Some(x) => {
+	    						<li>
+									<a  class="navbar-link" href="@securesocial.controllers.routes.LoginPage.logout">Logout (@x.fullName)</a>
+								</li>
+							}
+	    					case None => {
+	    						<li>
+									<a class="navbar-link" href="@securesocial.controllers.routes.LoginPage.login">Login</a>
+								</li>
+							}
 						}
-    					case None => {
-    						<li>
-								<a class="navbar-link" href="@securesocial.controllers.routes.LoginPage.login">Login</a>
-							</li>
-						}
-					}
 <!-- 						<a class="" href="@routes.Admin.main">Admin</a> -->
 						<li class="dropdown">
 						   <a href="#" class="dropdown-toggle" data-toggle="dropdown">Admin<b class="caret"></b></a>
@@ -165,11 +164,6 @@
 						</li>
 					
 					</ul>
-					
-
-					
-					
-					
 				</div>
 		</div>
 	</div>

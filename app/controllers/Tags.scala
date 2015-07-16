@@ -18,44 +18,54 @@ import javax.inject.Inject
  */
 class Tags @Inject()(datasets: DatasetService, files: FileService, sections: SectionService, accessRights: UserAccessRightsService) extends SecuredController {
 
-  def search(tag: String) = SecuredAction(parse.anyContent, authorization = WithPermission(Permission.SearchDatasets)) { implicit request =>
+  def search(tag: String, query: String) = SecuredAction(parse.anyContent, authorization = WithPermission(Permission.SearchDatasets)) { implicit request =>
     implicit val user = request.user
-    
-    // Clean up leading, trailing and multiple contiguous white spaces.
-    val tagCleaned = tag.trim().replaceAll("\\s+", " ")
-    val datasetsChecker = services.DI.injector.getInstance(classOf[controllers.Datasets])
-    val filesChecker = services.DI.injector.getInstance(classOf[controllers.Files])
-
-    val sectionsByTag = sections.findByTag(tagCleaned)
         
-    var taggedDatasets: List[models.Dataset] = List.empty
-      request.user match{
-	        case Some(theUser)=>{
-	        	val rightsForUser = accessRights.get(theUser)
-	        	taggedDatasets = for (dataset <- datasets.findByTag(tagCleaned); if(datasetsChecker.checkAccessForDatasetUsingRightsList(dataset, request.user , "view", rightsForUser))) yield dataset
-	        }
-	        case None=>{
-	          taggedDatasets = for (dataset <- datasets.findByTag(tagCleaned); if(datasetsChecker.checkAccessForDataset(dataset, request.user , "view"))) yield dataset
-	        }
-	 }
-    
-    var taggedFiles: List[models.File] = List.empty
-      request.user match{
-	        case Some(theUser)=>{
-	        	val rightsForUser = accessRights.get(theUser)
-	        	taggedFiles = for (file <- files.findByTag(tagCleaned); if(filesChecker.checkAccessForFileUsingRightsList(file, request.user , "view", rightsForUser))) yield file
-	        }
-	        case None=>{
-	          taggedFiles = for (file <- files.findByTag(tagCleaned); if(filesChecker.checkAccessForFile(file, request.user , "view"))) yield file
-	        }
-	 }
-    
-    for(taggedFile <- taggedFiles){
-      taggedDatasets = taggedDatasets ++ datasets.findByFileId(taggedFile.id)
+    var queryString = tag
+    if(queryString == "")
+    	queryString = query
+    // Clean up leading, trailing and multiple contiguous white spaces.
+    val tagCleaned = queryString.trim().replaceAll("\\s+", " ")
+    tagCleaned match{
+      case "" =>{
+        BadRequest("No query tag entered")
+      }
+      case _ =>{
+        val datasetsChecker = services.DI.injector.getInstance(classOf[controllers.Datasets])
+	    val filesChecker = services.DI.injector.getInstance(classOf[controllers.Files])
+	
+	    val sectionsByTag = sections.findByTag(tagCleaned)
+	        
+	    var taggedDatasets: List[models.Dataset] = List.empty
+	      request.user match{
+		        case Some(theUser)=>{
+		        	val rightsForUser = accessRights.get(theUser)
+		        	taggedDatasets = for (dataset <- datasets.findByTag(tagCleaned); if(datasetsChecker.checkAccessForDatasetUsingRightsList(dataset, request.user , "view", rightsForUser))) yield dataset
+		        }
+		        case None=>{
+		          taggedDatasets = for (dataset <- datasets.findByTag(tagCleaned); if(datasetsChecker.checkAccessForDataset(dataset, request.user , "view"))) yield dataset
+		        }
+		 }
+	    
+	    var taggedFiles: List[models.File] = List.empty
+	      request.user match{
+		        case Some(theUser)=>{
+		        	val rightsForUser = accessRights.get(theUser)
+		        	taggedFiles = for (file <- files.findByTag(tagCleaned); if(filesChecker.checkAccessForFileUsingRightsList(file, request.user , "view", rightsForUser))) yield file
+		        }
+		        case None=>{
+		          taggedFiles = for (file <- files.findByTag(tagCleaned); if(filesChecker.checkAccessForFile(file, request.user , "view"))) yield file
+		        }
+		 }
+	    
+	    for(taggedFile <- taggedFiles){
+	      taggedDatasets = taggedDatasets ++ datasets.findByFileId(taggedFile.id)
+	    }
+	    
+	    val sectionsWithFiles = for (s <- sectionsByTag; f <- files.get(s.file_id)) yield (s, f)
+	    Ok(views.html.searchByTag(tagCleaned, taggedDatasets.distinct , taggedFiles, sectionsWithFiles))
+      }
     }
-    
-    val sectionsWithFiles = for (s <- sectionsByTag; f <- files.get(s.file_id)) yield (s, f)
-    Ok(views.html.searchByTag(tag, taggedDatasets.distinct , taggedFiles, sectionsWithFiles))
   }
   
   def tagCloud() = SecuredAction(parse.anyContent, authorization = WithPermission(Permission.ShowTags)) { implicit request =>
