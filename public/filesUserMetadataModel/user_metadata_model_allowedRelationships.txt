@@ -10,4 +10,12 @@ Contact,Email,1,1
 !root!,Spatial Reference,0,1
 Spatial Reference,Latitude,1,1
 Spatial Reference,Longitude,1,1
-Spatial Reference,Altitude,1,1
+Spatial Reference,Altitude,0,1
+!root!,Temporal Reference,0,1
+Temporal Reference,Start Time,0,1
+Temporal Reference,End Time,0,1
+Temporal Reference,Resolution,0,1
+!root!,CSDMS Standard Name Node,0,*
+CSDMS Standard Name Node,CSDMS Standard Name,1,1
+CSDMS Standard Name Node,Unit,0,1
+CSDMS Standard Name Node,Label,0,1

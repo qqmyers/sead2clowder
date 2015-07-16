@@ -37,7 +37,78 @@
 				
 	if(typeof usrmdFuncsAlreadyLoaded === "undefined")
 	$(function() {
+
+            var CSN_PROPERTY_NAME = "CSDMS Standard Name";
+            var semanticAnnotationAutocomplete = function(htmlElement, remoteUrl) {
+                jQuery(htmlElement).autocomplete({
+                    minLength: AUTOCOMPLETE_MIN_LEN,
+                    source: function( request, response ) {
+                        $.ajax({
+                            url: remoteUrl,
+                            dataType: "jsonp",
+                            data: { q: request.term },
+                            success: function( data ) {
+                                var searchspace = data;
+                                // split by space or however you want to split up your search phrase into terms
+                                var searchwords = request.term.split(" ");
+
+                                $.each(searchwords, function() {
+                                    searchspace = $.ui.autocomplete.filter(searchspace, this);
+                                });
+
+                                // in case you don't want to return the whole thing, if your searchspace is large
+                                var mySlice = searchspace.slice(0, AUTOCOMPLETE_MAX_NUM_ENTRIES_TO_SUGGEST);
+                                response(mySlice);
+                            }
+                        });
+                    }
+                });
+            };
 		
+            var addPropertyNameAndValue = function(element, name, value) {
+                var newProperty = document.createElement("li");
+                newProperty.classList.add('usr_md_');
+
+                var newPropertyKey = document.createElement('b');
+                newPropertyKey.classList.add('usr_md_');
+                newPropertyKey.innerHTML = name + ":";
+
+                var newModifyButton = document.createElement('button');         
+                newModifyButton.classList.add('usr_md_');
+                newModifyButton.classList.add('btn-link');
+                newModifyButton.classList.add('btn-sm');
+                newModifyButton.setAttribute('type','button');  
+                newModifyButton.innerHTML = 'Modify';
+
+                var newDeleteButton = document.createElement('button');         
+                newDeleteButton.classList.add('usr_md_');
+                newDeleteButton.classList.add('btn-link');
+                newDeleteButton.classList.add('btn-sm');
+                newDeleteButton.setAttribute('type','button');  
+                newDeleteButton.innerHTML = 'Delete';
+
+                var textSpan1 = document.createElement('span');
+                textSpan1.classList.add('usr_md_');
+                textSpan1.innerHTML = value;
+
+                // Locations of the new elements.
+                // Here the element is the "Ok" button.
+                // parent() is a jQuery method on a jQuery object and constructs a new jQuery object from the matching elements, while parentNode is a field in a DOM element and returns a DOM element in JavaScript.
+                // This adds the new nodes at the end:
+                //   element.parent().parent().get(0).appendChild(newProperty);
+                // This adds the new nodes right after the CSN.
+                //   element.parent().parent().get(0).insertBefore(newProperty, element.parent().get(0).nextSibling);
+                // or
+                //   var parentElement = element.parent().get(0);
+                //   parentElement.parentNode.insertBefore(newProperty, parentElement.nextSibling);
+                jQuery(newProperty).insertAfter(element.parent().get(0));
+                newProperty.appendChild(newPropertyKey);
+                newProperty.appendChild(textSpan1);
+                newProperty.appendChild(newModifyButton);
+                newProperty.appendChild(newDeleteButton);
+
+            };
+
 		$('body').on('click','.usr_md_,.usr_md_submit',function(e){
 			var topId = $(this).closest("div").get(0).getAttribute('id');
 						
@@ -48,15 +119,44 @@
 					textBox.setAttribute('type', 'text');
 					textBox.value = $(this).parent().children("span").get(0).innerHTML; 
 					   
+                                       var fieldName = $(this).parent().children('b').get(0).textContent;
+                                       if (fieldName == CSN_PROPERTY_NAME + ":") {
+                                           semanticAnnotationAutocomplete(textBox, AUTOCOMPLETE_CSN_URL);
+                                       }
+
 					$(this).parent().get(0).insertBefore(textBox, $(this).parent().children("span").get(0));					
 					$(this).parent().children('span').remove();
-					   
+
 					$(this).html("Ok");							   		   			   
 				  }
 				  else if($(this).html() == "Ok"){
 				  	var textSpan = document.createElement('span');
 					textSpan.classList.add('usr_md_');
-					textSpan.innerHTML = $(this).parent().children("input").get(0).value; 
+				        var curValue = $(this).parent().children("input").get(0).value; 
+				        textSpan.innerHTML = curValue;
+
+                                        var fieldName = $(this).parent().children('b').get(0).textContent;
+                                        if (fieldName == CSN_PROPERTY_NAME + ":") {
+                                            $.ajax({
+	                                        url: CSN_QUERY_PROPERTIES_URL + curValue,
+	                                        async:false,
+		                                success: function (data){
+                                                    console.log("Got: " + data);
+                                                    window["csn_str"] = data;
+		                                },
+	                                        dataType: "text"
+	                                    });
+
+                                            // Add data only when available.
+                                            var retStr = window["csn_str"];
+                                            if (retStr.trim()) {
+		   		                var propertyValues = retStr.split(/\r\n|\n/);
+				                for (var i = 0; i < propertyValues.length; i++){
+					            var res = propertyValues[i].split("!!");
+                                                    addPropertyNameAndValue($(this), res[0], res[1]);
+                                                }
+                                            }
+                                        }
 						
 					$(this).parent().get(0).insertBefore(textSpan, $(this).parent().children("input").get(0));
 					$(this).parent().get(0).removeChild($(this).parent().children("input").get(0));
@@ -137,6 +237,10 @@
 									   
 						textBox.setAttribute('type', 'text');
 						textBox.textContent = "";
+                                                if (selectedProperty == CSN_PROPERTY_NAME) {
+                                                    semanticAnnotationAutocomplete(textBox, AUTOCOMPLETE_CSN_URL);
+                                                }
+
 						$(this).parent().get(0).insertBefore(textBox, $(this).get(0));
 						
 						$(this).html("Ok");
@@ -175,6 +279,7 @@
 					}
 					
 					var data = DOMtoJSON(document.getElementById(topId).children[1]);
+                                        console.log("Submitting user metadata: " + JSON.stringify(data));
 					
 					var request = $.ajax({
 				       type: 'POST',

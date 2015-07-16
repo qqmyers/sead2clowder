@@ -40,7 +40,34 @@ String.prototype.endsWith = function(str)
 	var searchResultsCount = 0;
 	
 $(function() {
-		
+
+            var CSN_PROPERTY_NAME = "CSDMS Standard Name";
+            var semanticAnnotationAutocomplete = function(htmlElement, remoteUrl) {
+                jQuery(htmlElement).autocomplete({
+                    minLength: AUTOCOMPLETE_MIN_LEN,
+                    source: function( request, response ) {
+                        $.ajax({
+                            url: remoteUrl,
+                            dataType: "jsonp",
+                            data: { q: request.term },
+                            success: function( data ) {
+                                var searchspace = data;
+                                // split by space or however you want to split up your search phrase into terms
+                                var searchwords = request.term.split(" ");
+
+                                $.each(searchwords, function() {
+                                    searchspace = $.ui.autocomplete.filter(searchspace, this);
+                                });
+
+                                // in case you don't want to return the whole thing, if your searchspace is large
+                                var mySlice = searchspace.slice(0, AUTOCOMPLETE_MAX_NUM_ENTRIES_TO_SUGGEST);
+                                response(mySlice);
+                            }
+                        });
+                    }
+                });
+            };
+				
 		$('body').on('click','.usr_md_,.usr_md_submit',function(e){
 			if($(this).is('button')){				
 				   if($(this).html() == "Modify"){			  
@@ -50,6 +77,11 @@ $(function() {
 					var fullTextValue = $(this).parent().children("span").get(0).innerHTML;
 					textBox.value = fullTextValue.replace(" IGNORE CASE", "").replace(" ANYWHERE", "");
 					   
+                                       var fieldName = $(this).parent().children('b').get(0).textContent;
+                                       if (fieldName == CSN_PROPERTY_NAME + ":") {
+                                           semanticAnnotationAutocomplete(textBox, AUTOCOMPLETE_CSN_URL);
+                                       }
+
 					var toRemove = $(this).parent().children("span").get(0);
 					
 					$(this).parent().get(0).insertBefore(textBox, toRemove);					
@@ -282,6 +314,9 @@ $(function() {
 									   
 						textBox.setAttribute('type', 'text');
 						textBox.textContent = "";
+                                                if (selectedProperty == CSN_PROPERTY_NAME) {
+                                                    semanticAnnotationAutocomplete(textBox, AUTOCOMPLETE_CSN_URL);
+                                                }
 						$(this).parent().get(0).insertBefore(textBox, $(this).get(0));
 						
 						var newPropertyIgnoreCaseBox = document.createElement('input');
@@ -458,6 +493,7 @@ $(function() {
 				  else if($(this).html() == "Submit"){
 
 					var data = DOMtoJSON(document.getElementById('queryUserMetadata').children[1]);
+					console.log("Submitting user metadata: " + JSON.stringify(data));
 					var request = $.ajax({
 				       type: 'POST',
 				       url: queryIp,
@@ -486,7 +522,7 @@ $(function() {
 						        	}
 						        	var datasetThumbnail = "";
 						        	if(respJSON[i].thumbnail != "None")
-						        		datasetThumbnail = "<img src='" + window.location.protocol + "//" + window.location.hostname + (window.location.port ? ':' + window.location.port: '') + "/fileThumbnail/" + respJSON[i].thumbnail + "/blob' "
+						        		datasetThumbnail = "<img src='" + window["WEB_ROOT"] + "fileThumbnail/" + respJSON[i].thumbnail + "/blob' "
 						        							+ "alt='Thumbnail of " + respJSON[i].datasetname + "' height='120' width='120'>";
 						        	var dsUrl = jsRoutes.controllers.Datasets.dataset(respJSON[i].id).url;
 						        	$('#resultTable tbody').append("<tr id='resultRow" + (i+1) + "' style='display:none;'><td><a href='" + dsUrl + "'>"+ respJSON[i].datasetname + "</a></td>"
@@ -509,7 +545,7 @@ $(function() {
 						        	}
 						        	var fileThumbnail = "";
 						        	if(respJSON[i].thumbnail != "None")
-						        		fileThumbnail = "<img src='" + window.location.protocol + "//" + window.location.hostname + (window.location.port ? ':' + window.location.port: '') + "/fileThumbnail/" + respJSON[i].thumbnail + "/blob' "
+						        		fileThumbnail = "<img src='" + window["WEB_ROOT"] + "fileThumbnail/" + respJSON[i].thumbnail + "/blob' "
 						        							+ "alt='Thumbnail of " + respJSON[i].filename + "' height='120' width='120'>";
 						        	var fileUrl = jsRoutes.controllers.Files.file(respJSON[i].id).url;
 						        	$('#resultTable tbody').append("<tr id='resultRow" + (i+1) + "' style='display:none;'><td><a href='" + fileUrl + "'>"+ respJSON[i].filename + "</a></td>"

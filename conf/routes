@@ -332,6 +332,8 @@ GET            /api/collections/:coll_id                                        
 # DATASETS ENDPOINT
 # ----------------------------------------------------------------------
 GET            /api/datasets                                                            @api.Datasets.list
+GET            /api/datasets/CSN                                                        @api.Datasets.CSN
+GET            /api/datasets/CSNqueryProperties                                         @api.Datasets.CSNqueryProperties(csn: String, graph: String ?= "smw")
 POST           /api/datasets                                                            @api.Datasets.createDataset
 POST           /api/datasets/createempty                                                @api.Datasets.createEmptyDataset
 POST           /api/datasets/attachmultiple                                             @api.Datasets.attachMultipleFiles
