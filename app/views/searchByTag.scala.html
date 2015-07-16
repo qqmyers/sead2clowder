@@ -1,4 +1,4 @@
-@(tag: String, datasets: List[models.Dataset], files: List[models.File], sectionsWithFiles: List[(models.Section, models.File)])
+@(tag: String, datasets: List[models.Dataset], files: List[models.File], sectionsWithFiles: List[(models.Section, models.File)])(implicit user: Option[securesocial.core.Identity])
 
 @import services.AppConfiguration
 

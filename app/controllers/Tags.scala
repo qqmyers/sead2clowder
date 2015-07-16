@@ -19,6 +19,8 @@ import javax.inject.Inject
 class Tags @Inject()(datasets: DatasetService, files: FileService, sections: SectionService, accessRights: UserAccessRightsService) extends SecuredController {
 
   def search(tag: String) = SecuredAction(parse.anyContent, authorization = WithPermission(Permission.SearchDatasets)) { implicit request =>
+    implicit val user = request.user
+    
     // Clean up leading, trailing and multiple contiguous white spaces.
     val tagCleaned = tag.trim().replaceAll("\\s+", " ")
     val datasetsChecker = services.DI.injector.getInstance(classOf[controllers.Datasets])
@@ -48,8 +50,12 @@ class Tags @Inject()(datasets: DatasetService, files: FileService, sections: Sec
 	        }
 	 }
     
+    for(taggedFile <- taggedFiles){
+      taggedDatasets = taggedDatasets ++ datasets.findByFileId(taggedFile.id)
+    }
+    
     val sectionsWithFiles = for (s <- sectionsByTag; f <- files.get(s.file_id)) yield (s, f)
-    Ok(views.html.searchByTag(tag, taggedDatasets, taggedFiles, sectionsWithFiles))
+    Ok(views.html.searchByTag(tag, taggedDatasets.distinct , taggedFiles, sectionsWithFiles))
   }
   
   def tagCloud() = SecuredAction(parse.anyContent, authorization = WithPermission(Permission.ShowTags)) { implicit request =>
