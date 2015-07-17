@@ -34,16 +34,27 @@ class Tags @Inject()(datasets: DatasetService, files: FileService, sections: Sec
         val datasetsChecker = services.DI.injector.getInstance(classOf[controllers.Datasets])
 	    val filesChecker = services.DI.injector.getInstance(classOf[controllers.Files])
 	
-	    val sectionsByTag = sections.findByTag(tagCleaned)
+	    var tagRegexp = tagCleaned
+	    if(tagRegexp.startsWith("*"))
+	      tagRegexp = tagRegexp.substring(1)
+	    else
+	      tagRegexp = "^"+tagRegexp
+	    
+	   if(tagRegexp.endsWith("*"))
+	      tagRegexp = tagRegexp.substring(0,tagRegexp.length()-1)
+	   else
+	      tagRegexp = tagRegexp+"$"
+	    
+	    val sectionsByTag = sections.findByTag(tagRegexp)
 	        
 	    var taggedDatasets: List[models.Dataset] = List.empty
 	      request.user match{
 		        case Some(theUser)=>{
 		        	val rightsForUser = accessRights.get(theUser)
-		        	taggedDatasets = for (dataset <- datasets.findByTag(tagCleaned); if(datasetsChecker.checkAccessForDatasetUsingRightsList(dataset, request.user , "view", rightsForUser))) yield dataset
+		        	taggedDatasets = for (dataset <- datasets.findByTag(tagRegexp); if(datasetsChecker.checkAccessForDatasetUsingRightsList(dataset, request.user , "view", rightsForUser))) yield dataset
 		        }
 		        case None=>{
-		          taggedDatasets = for (dataset <- datasets.findByTag(tagCleaned); if(datasetsChecker.checkAccessForDataset(dataset, request.user , "view"))) yield dataset
+		          taggedDatasets = for (dataset <- datasets.findByTag(tagRegexp); if(datasetsChecker.checkAccessForDataset(dataset, request.user , "view"))) yield dataset
 		        }
 		 }
 	    
@@ -51,10 +62,10 @@ class Tags @Inject()(datasets: DatasetService, files: FileService, sections: Sec
 	      request.user match{
 		        case Some(theUser)=>{
 		        	val rightsForUser = accessRights.get(theUser)
-		        	taggedFiles = for (file <- files.findByTag(tagCleaned); if(filesChecker.checkAccessForFileUsingRightsList(file, request.user , "view", rightsForUser))) yield file
+		        	taggedFiles = for (file <- files.findByTag(tagRegexp); if(filesChecker.checkAccessForFileUsingRightsList(file, request.user , "view", rightsForUser))) yield file
 		        }
 		        case None=>{
-		          taggedFiles = for (file <- files.findByTag(tagCleaned); if(filesChecker.checkAccessForFile(file, request.user , "view"))) yield file
+		          taggedFiles = for (file <- files.findByTag(tagRegexp); if(filesChecker.checkAccessForFile(file, request.user , "view"))) yield file
 		        }
 		 }
 	    

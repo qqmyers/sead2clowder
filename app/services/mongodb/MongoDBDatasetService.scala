@@ -576,7 +576,8 @@ class MongoDBDatasetService @Inject() (
   }
 
   def findByTag(tag: String): List[Dataset] = {
-    Dataset.dao.find(MongoDBObject("tags.name" -> tag)).toList
+    //Case-insensitive search
+    Dataset.dao.find(MongoDBObject("tags.name" -> ("(?i)"+tag).r)).toList
   }
 
   def getMetadata(id: UUID): Map[String, Any] = {

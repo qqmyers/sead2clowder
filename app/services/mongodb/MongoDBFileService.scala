@@ -775,7 +775,8 @@ class MongoDBFileService @Inject() (
 
 
   def findByTag(tag: String): List[File] = {
-    FileDAO.find(MongoDBObject("tags.name" -> tag)).toList
+    //Case-insensitive search
+    FileDAO.find(MongoDBObject("tags.name" -> ("(?i)"+tag).r)).toList
   }
 
   def findIntermediates(): List[File] = {

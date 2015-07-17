@@ -61,7 +61,8 @@ class MongoDBSectionService @Inject() (comments: CommentService, previews: Previ
   }
 
   def findByTag(tag: String): List[Section] = {
-    SectionDAO.find(MongoDBObject("tags.name" -> tag)).toList
+    //Case-insensitive search
+    SectionDAO.find(MongoDBObject("tags.name" -> ("(?i)"+tag).r)).toList
   }
 
   def removeAllTags(id: UUID) {
