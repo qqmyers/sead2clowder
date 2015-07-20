@@ -192,18 +192,58 @@ object Permission extends Enumeration {
       }
       case ResourceRef(ResourceRef.comment, id) => {
         val comment = comments.get(id)
-        val hasPermission: Option[Boolean] = for {clowderUser <- getUserByIdentity(user)
-                                                  dataset <- {if (comment.isDefined && comment.get.dataset_id.isDefined) {
-                                                                datasets.get(comment.get.dataset_id.get)
-                                                              } else {
-                                                                None
-                                                              }
-                                                  }
-                                                  spaceId <- dataset.space
-                                                  role <- users.getUserRoleInSpace(clowderUser.id, spaceId)
-                                                  if role.permissions.contains(permission.toString)
-        } yield true
-        hasPermission getOrElse comment.exists(_.author.email == user.email)
+
+        //Need to break it out into individual checks for both datasets and files, otherwise there are cases that
+        //will result in a None.get call.
+        var hasPermission: Option[Boolean] = None
+          if (comment.isDefined) {
+            if (comment.get.dataset_id.isDefined) {
+              for (clowderUser <- getUserByIdentity(user)) {
+                for (aDataset <- datasets.get(comment.get.dataset_id.get)) {
+                  for (spaceId <- aDataset.space) {
+                    for (role <- users.getUserRoleInSpace(clowderUser.id, spaceId)) {
+                      if (role.permissions.contains(permission.toString)) {
+                        //Short circut here since all it takes is a single permission
+                        return true
+                      }
+                    }
+                  }
+                }
+              }
+              //If any of the above elements are missing, or all the roles in all the spaces are cycled through,
+              //then the result is false.
+              false
+            }
+            else if (comment.get.file_id.isDefined) {
+              for (clowderUser <- getUserByIdentity(user)) {
+                for (file <- files.get(comment.get.file_id.get)) {
+                  //Since files aren't directly in a space, need to check which datasets a file is in
+                  val datasetsContainingFile = datasets.findByFileId(comment.get.file_id.get)
+                  for (aDataset <- datasetsContainingFile) {
+                    for (spaceId <- aDataset.space) {
+                      for (role <- users.getUserRoleInSpace(clowderUser.id, spaceId)) {
+                        if (role.permissions.contains(permission.toString)) {
+                          //Short circut here since all it takes is a single permission
+                          return true
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+              //If any of the above elements are missing, or all the roles in all the spaces in all the datasets that
+              //the file is in are cycled through, then the result is false.
+              false
+            }
+            else {
+              //If the comment doesn't belong to a dataset or file
+              comment.get.author.email == user.email
+            }
+          }
+          else {
+            //Will this happen? The case where the comment
+            false
+          }
       }
       case ResourceRef(resType, id) => {
         Logger.error("Resource type not recognized " + resType)
