@@ -54,6 +54,6 @@ object Previewers extends Controller with SecuredController {
         }
       }
     }
-    return result
+    return result.sortBy(prev => prev.id)
   }
 }

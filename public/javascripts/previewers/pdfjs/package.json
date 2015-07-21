@@ -1,4 +1,4 @@
-{ "name" : "PDFViewer",
+{ "name" : "JS PDF Viewer",
   "main" : "some-library.js",
   "contentType" : ["application/pdf"]
   }
