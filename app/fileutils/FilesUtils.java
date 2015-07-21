@@ -37,11 +37,22 @@ public class FilesUtils {
 	//Get custom MIME type of file based on extension if such is defined.
 	public static String getFilePrioritizedType(String filename){
 	
-		String fileExtension = filename.substring(filename.lastIndexOf(".")+1);
-		if(!fileExtension.equals(filename) && appMimetypes.containsKey(fileExtension)) {
-			return (String) appMimetypes.get(fileExtension);
-		}		
-		else return "";		
+		int secondLastIndex = filename.lastIndexOf(".", filename.lastIndexOf(".")-1);
+		String fileExtension = filename.substring(secondLastIndex+1);
+		if(filename.lastIndexOf(".") != -1)
+			if(!fileExtension.equals(filename) && appMimetypes.containsKey(fileExtension)) {
+				return (String) appMimetypes.get(fileExtension);
+			}		
+			else{
+				fileExtension = filename.substring(filename.lastIndexOf(".")+1);
+				if(appMimetypes.containsKey(fileExtension)) {
+					return (String) appMimetypes.get(fileExtension);
+				}
+				else
+					return "";
+			}
+		else
+			return "";
 	}
 
 	public static String getMainFileTypeOfZipFile(File compressedFile, String filename, String containerType){
