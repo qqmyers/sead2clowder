@@ -195,7 +195,6 @@ object Permission extends Enumeration {
 
         //Need to break it out into individual checks for both datasets and files, otherwise there are cases that
         //will result in a None.get call.
-        var hasPermission: Option[Boolean] = None
           if (comment.isDefined) {
             if (comment.get.dataset_id.isDefined) {
               for (clowderUser <- getUserByIdentity(user)) {
