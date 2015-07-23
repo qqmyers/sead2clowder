@@ -13,7 +13,9 @@ class GateOnePlugin(application: Application) extends Plugin {
   var gateOneServer: String = ""
 
   override def onStart() {
-    this.gateOneServer = play.api.Play.configuration.getString("gateone.server").getOrElse("http://localhost")
+    this.gateOneServer = play.api.Play.configuration.getString("gateone.server").getOrElse("http://localhost/")
+    if(!this.gateOneServer.endsWith("/"))
+      this.gateOneServer = this.gateOneServer + "/"
     Logger.debug("Gate One Plugin started")
   }
   
