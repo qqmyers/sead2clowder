@@ -28,7 +28,7 @@ public class FilesUtils {
 	private static Map appMimetypes = new HashMap();
 	static{
 		for (String currKey: Play.application().configuration().keys()){
-			if(currKey.startsWith("mimetype.")){
+			if(currKey.startsWith("mimetype.") || currKey.startsWith("mimetypes.")){
 				appMimetypes.put(currKey.substring(currKey.indexOf(".")+1), Play.application().configuration().getString(currKey));
 			}
 		}
