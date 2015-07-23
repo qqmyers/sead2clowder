@@ -29,8 +29,22 @@ class GateOnePlugin(application: Application) extends Plugin {
     gateOne.insertMachine(GateOneMachine(apiKey=apiKey, secret=secret))
   }
   
+  def removeMachine(apiKey: String) = {
+    gateOne.removeUsersOfMachine(apiKey)
+    gateOne.removeMachine(apiKey)    
+  }
+  
+  
+  def updateMachineSecret(apiKey: String, secret: String) = {
+    gateOne.updateMachineSecret(apiKey, secret)
+  }
+  
   def addUserOnMachine(userEmail: String, apiKey: String, accessUsername: String) = {
     gateOne.insertUserOnMachine(GateOneUserOnMachine(apiKey=apiKey, userEmail=userEmail, accessUsername=accessUsername))
+  }
+  
+  def removeUserFromMachine(userEmail: String, apiKey: String, accessUsername: String){
+    gateOne.removeUserFromMachine(userEmail, apiKey, accessUsername)
   }
   
   def getUserMachines(email:String) = {

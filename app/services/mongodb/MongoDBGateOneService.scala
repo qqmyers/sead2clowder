@@ -7,6 +7,7 @@ import models.{GateOneMachine, GateOneUserOnMachine}
 import org.bson.types.ObjectId
 import play.api.Play.current
 import com.mongodb.casbah.commons.MongoDBObject
+import com.mongodb.casbah.Imports._
 import MongoContext.context
 import securesocial.core.Identity
 
@@ -16,20 +17,31 @@ class MongoDBGateOneService extends GateOneService {
   def insertMachine(machine: GateOneMachine): Option[String] = {
     GateOneMachineDAO.insert(machine).map(_.toString)    
   }
-  def updateMachine(machine: GateOneMachine) {
-    GateOneMachineDAO.save(machine)
+  
+  def updateMachineSecret(apiKey: String, secret: String) { 
+    GateOneMachineDAO.dao.collection.update(MongoDBObject("apiKey" -> apiKey),
+      $set("secret" -> secret), false, false, WriteConcern.Safe)
   }
   
   def getMachine(apiKey: String): Option[GateOneMachine] = {
     GateOneMachineDAO.findOne(MongoDBObject("apiKey" -> apiKey))
   }
   
+  def removeMachine(apiKey: String) {
+    GateOneMachineDAO.remove(MongoDBObject("apiKey" -> apiKey))
+  }
+  
+  def removeUsersOfMachine(apiKey: String){
+    GateOneUserDAO.remove(MongoDBObject("apiKey" -> apiKey))
+  }
+  
   
   def insertUserOnMachine(user: GateOneUserOnMachine): Option[String] = {
     GateOneUserDAO.insert(user).map(_.toString)    
   }
-  def updateUserOnMachine(user: GateOneUserOnMachine) {
-    GateOneUserDAO.save(user)
+  
+  def removeUserFromMachine(userEmail: String, apiKey: String, accessUsername: String) {
+    GateOneUserDAO.remove(MongoDBObject("userEmail" -> userEmail, "apiKey" -> apiKey, "accessUsername" -> accessUsername))
   }
   
   def getUserMachines(userEmail: String): List[GateOneUserOnMachine] = {

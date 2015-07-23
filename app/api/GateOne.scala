@@ -34,6 +34,43 @@ class GateOne extends ApiController {
             InternalServerError(toJson("ERROR: GateOnePlugin is not activated"))
       }
     }
+	
+	def updateMachineSecret() = SecuredAction(parse.json, authorization=WithPermission(Permission.Admin)) { request =>
+      current.plugin[GateOnePlugin].map{ gateOnePlugin =>
+      	var hostname = request.host
+      	if(hostname.indexOf(":") > 0)
+      	  hostname = hostname.substring(0, hostname.indexOf(":"))
+      	if(!hostname.equals("localhost"))
+      	  BadRequest(toJson("For security reasons, updating a machine secret can only be done from localhost."))
+      	else{
+      	  (request.body \ "api_key").asOpt[String].map { apiKey =>
+            (request.body \ "secret").asOpt[String].map { secret =>
+	            gateOnePlugin.updateMachineSecret(apiKey, secret)
+	            Ok(toJson(Map("status" -> "success")))
+	        }.getOrElse {
+	            BadRequest(toJson("Missing parameter [secret]"))
+	        }
+          }.getOrElse {
+            BadRequest(toJson("Missing parameter [api_key]"))
+          } 
+      	}
+      }.getOrElse {
+            InternalServerError(toJson("ERROR: GateOnePlugin is not activated"))
+      }
+    }
+	
+	def removeMachine() = SecuredAction(parse.json, authorization=WithPermission(Permission.Admin)) { request =>
+      current.plugin[GateOnePlugin].map{ gateOnePlugin =>
+      	  (request.body \ "api_key").asOpt[String].map { apiKey =>
+	            gateOnePlugin.removeMachine(apiKey)
+	            Ok(toJson(Map("status" -> "success")))
+          }.getOrElse {
+            BadRequest(toJson("Missing parameter [api_key]"))
+          } 
+      }.getOrElse {
+            InternalServerError(toJson("ERROR: GateOnePlugin is not activated"))
+      }
+    }
     
     def addUserOnMachine() = SecuredAction(parse.json, authorization=WithPermission(Permission.Admin)) { request =>
       current.plugin[GateOnePlugin].map{ gateOnePlugin =>
@@ -41,6 +78,27 @@ class GateOne extends ApiController {
             (request.body \ "medici_email").asOpt[String].map { userEmail =>
               (request.body \ "machine_username").asOpt[String].map { accessUsername =>
 	            gateOnePlugin.addUserOnMachine(userEmail, apiKey, accessUsername)
+	            Ok(toJson(Map("status" -> "success")))
+	          }.getOrElse {
+	            BadRequest(toJson("Missing parameter [machine_username]"))
+	          }
+	        }.getOrElse {
+	            BadRequest(toJson("Missing parameter [medici_email]"))
+	        }
+          }.getOrElse {
+            BadRequest(toJson("Missing parameter [api_key]"))
+          }
+      }.getOrElse {
+            InternalServerError(toJson("ERROR: GateOnePlugin is not activated"))
+      }
+    }
+    
+    def removeUserFromMachine() = SecuredAction(parse.json, authorization=WithPermission(Permission.Admin)) { request =>
+      current.plugin[GateOnePlugin].map{ gateOnePlugin =>
+      	  (request.body \ "api_key").asOpt[String].map { apiKey =>
+            (request.body \ "medici_email").asOpt[String].map { userEmail =>
+              (request.body \ "machine_username").asOpt[String].map { accessUsername =>
+	            gateOnePlugin.removeUserFromMachine(userEmail, apiKey, accessUsername)
 	            Ok(toJson(Map("status" -> "success")))
 	          }.getOrElse {
 	            BadRequest(toJson("Missing parameter [machine_username]"))

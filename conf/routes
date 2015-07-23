@@ -288,8 +288,11 @@ POST    /api/sections/:id/tags/remove_all                       @api.Sections.re
 
 # gateOne
 POST		   /api/gateone/addMachine													@api.GateOne.addMachine
+POST		   /api/gateone/updateMachineSecret											@api.GateOne.updateMachineSecret
+POST		   /api/gateone/removeMachine												@api.GateOne.removeMachine
 POST		   /api/gateone/addUserOnMachine											@api.GateOne.addUserOnMachine
 GET			   /api/gateone/getUserMachines												@api.GateOne.getUserMachines
+POST		   /api/gateone/removeUserFromMachine										@api.GateOne.removeUserFromMachine
 POST		   /api/gateone/getAuth														@api.GateOne.getAuth
 
 

@@ -7,13 +7,17 @@ trait GateOneService {
 
   def insertMachine(machine: GateOneMachine): Option[String]
   
-  def updateMachine(machine: GateOneMachine)
+  def updateMachineSecret(apiKey: String, secret: String)
   
   def getMachine(apiKey: String): Option[GateOneMachine]
   
+  def removeMachine(apiKey: String)
+  
+  def removeUsersOfMachine(apiKey: String)
+  
   def insertUserOnMachine(user: GateOneUserOnMachine): Option[String]
   
-  def updateUserOnMachine(user: GateOneUserOnMachine)
+  def removeUserFromMachine(userEmail: String, apiKey: String, accessUsername: String)
   
   def getUserMachines(userEmail: String): List[GateOneUserOnMachine]
   
