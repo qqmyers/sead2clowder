@@ -233,6 +233,7 @@ button.tech_md_ {
 .avatar {
 	width: 48px;
 	height: 48px;
+	display: none;
 }
 
 #checkboxFieldSet .control-group .control-label{
