@@ -563,7 +563,7 @@
     					$("#myTab_" + fileId).attr('style', 'display:block;');
     				}
 
-    				else if(prevsOfFile == 0 && ($("#technicalMetadata_" + fileId).length == 0) && ($("#fileUserMetadata_" + fileId).length == 0)){   					
+    				else if(prevsOfFile == 0 && ($("#technicalMetadata_" + fileId).length == 0) && ($("#xmlMetadata_" + fileId).length == 0)  && ($("#fileUserMetadata_" + fileId).length == 0)){   					
     					$("#filePrevContainer_" + fileId).before("<div id='previewedFileName_" + fileId + "' class='filenameDiv'><h4  style='font-weight:bold;'>" + $("#filePrevContainer_" + fileId).attr("data-filename")  + "</h4></div>");
 
     					var followingVisibleFiles = $("#filePrevContainer_" + fileId).nextAll(".filenameDiv");
@@ -862,7 +862,8 @@
 							        }						        
 						        $("#previewedFileName_"+fileId).remove();
 						        $("#filePrevContainer_"+fileId).remove();
-						        $("#technicalMetadata_"+fileId).remove();						        						        
+						        $("#technicalMetadata_"+fileId).remove();
+						        $("#xmlMetadata_"+fileId).remove();
 						        $("#fileUserMetadata_"+fileId).remove();
 						        $("#galleriaRow_"+fileId).remove();
 						        $("#sectionsRow_"+fileId).remove();
