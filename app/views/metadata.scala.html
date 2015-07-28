@@ -55,9 +55,9 @@
 		}	
 		<br />
 	*@
-	<h5>User-generated metadata:</h5>
+	<h5 class="userMetadataRelated">User-generated metadata:</h5>
 	
-	<div id='generalUserMetadata_@(dataset.id.stringify)' class='usr_md_'>
+	<div id='generalUserMetadata_@(dataset.id.stringify)' class='usr_md_ userMetadataRelated'>
 		<button class="usr_md_" type="button">Add property</button>
 		@printLevelUserMetadata(userMetadata)
 		<button class="usr_md_submit btn" type="button">Submit</button>

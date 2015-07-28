@@ -430,7 +430,7 @@
 				}
 				
 				
-					<div id='fileUserMetadata_@(f.id.toString)'>
+					<div id='fileUserMetadata_@(f.id.toString)' class="userMetadataRelated">
 							<button class="tech_md_" type="button">Show/edit file user-generated metadata</button>
 							<div style="display:none;">
 									@fileusermetadata(f, collection.mutable.Map() ++ f.userMetadata, rdfExported, rightsForUser)						
