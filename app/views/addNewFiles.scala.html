@@ -1,4 +1,4 @@
-@(filesList: List[(String, String)], datasetId: String)(implicit user: Option[models.User])
+@( datasetId: String)(implicit user: Option[models.User])
 
 <!-- Snippet to contain elements that are required for displaying the multi file uploader library and configuring it for adding new files
      to a dataset that is being created. It is also re-used in the workflow for attaching new files to an existing dataset. -->
@@ -25,10 +25,7 @@
                 <!-- The file input had "multiple" removed for the current dataset creation method. -->
                 <input type="file" name="files[]" multiple>                                 
             </span>
-            <button type="submit" class="btn btn-default start" onclick="checkZeroFiles();" title="Create the Dataset">
-                <i class="glyphicon glyphicon-upload"></i>
-                <span id="uploadcreate">Create Dataset</span>
-            </button>
+
             <button type="reset" class="btn btn-default cancel">
                 <i class="glyphicon glyphicon-ban-circle"></i>
                 <span>Cancel upload</span>

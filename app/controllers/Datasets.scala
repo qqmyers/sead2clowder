@@ -49,13 +49,13 @@ class Datasets @Inject()(
       for (aSpace <- spacesList) {
           decodedSpaceList += Utils.decodeSpaceElements(aSpace)
       }
-      Ok(views.html.newDataset(filesList, decodedSpaceList.toList, RequiredFieldsConfig.isNameRequired, RequiredFieldsConfig.isDescriptionRequired)).flashing("error" -> "Please select ONE file (upload new or existing)")
+      Ok(views.html.newDataset(Map(filesList:_*), decodedSpaceList.toList, RequiredFieldsConfig.isNameRequired, RequiredFieldsConfig.isDescriptionRequired)).flashing("error" -> "Please select ONE file (upload new or existing)")
   }
   
   def addToDataset(id: UUID, name: String, desc: String) = PermissionAction(Permission.CreateDataset, Some(ResourceRef(ResourceRef.dataset, id))) { implicit request =>
       implicit val user = request.user
       val filesList = for (file <- files.listFilesNotIntermediate.sortBy(_.filename)) yield (file.id.toString(), file.filename)
-      Ok(views.html.addToExistingDataset(filesList, id, name, desc)).flashing("error" -> "Cannot add to the dataset")
+      Ok(views.html.addToExistingDataset(Map(filesList:_*), id, name, desc)).flashing("error" -> "Cannot add to the dataset")
   }
 
   /**

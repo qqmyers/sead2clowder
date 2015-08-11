@@ -1,4 +1,4 @@
-@(filesList: List[(String, String)], spaces: List[models.ProjectSpace], isNameRequired: Boolean, isDescriptionRequired: Boolean)(implicit flash: play.api.mvc.Flash, user: Option[models.User])
+@(filesList: Map[String, String], spaces: List[models.ProjectSpace], isNameRequired: Boolean, isDescriptionRequired: Boolean)(implicit flash: play.api.mvc.Flash, user: Option[models.User])
 
 @import helper._
 @implicitFieldConstructor = @{ FieldConstructor(twitterBootstrapInput.f) }
@@ -54,7 +54,7 @@ of the blueimp jQuery File Upload library. An open source project locatd here: h
             <td style="width: 20%; vertical-align:top;" class="input-table-cell">Name:</td>
             <td style="width: 35%; vertical-align:top;" class="input-table-cell">
                 <label id="namelabel" class="hiddencomplete">Nothing</label>
-                <textarea cols=40 rows=4 type="text" id="name"></textarea>                                            
+                <textarea class="form-control" rows=4 type="text" id="name"></textarea>
             </td>
             <td style="vertical-align:top;" class="input-table-cell">
                 <span class="error hiddencomplete" id="nameerror"> The name is a required field</span><br>
@@ -64,7 +64,7 @@ of the blueimp jQuery File Upload library. An open source project locatd here: h
             <td style="width: 20%; vertical-align:top;" class="input-table-cell">Description:</td>
             <td style="width: 35%; vertical-align:top;" class="input-table-cell" id="desccell">
                 <label id="desclabel" class="hiddencomplete">Nothing</label>
-                <textarea cols=40 rows=4 type="text" id="description"></textarea>                                            
+                <textarea class="form-control" cols=40 rows=4 type="text" id="description"></textarea>
             </td>
             <td style="vertical-align:top;" class="input-table-cell">
                 <span class="error hiddencomplete" id="descerror"> This description is a required field</span><br>
@@ -72,8 +72,8 @@ of the blueimp jQuery File Upload library. An open source project locatd here: h
         </tr>
         <tr>
             <td style="width: 20%; vertical-align:top;" class="input-table-cell">Space:</td>
-            <td style="width: 35%; vertical-align:top;" class="input-table-cell" id="desccell">
-                <select name="space" id="spaceid" style="width: 415px;" class ="chosen-select" multiple>
+            <td style="vertical-align:top;" class="input-table-cell" id="desccell">
+                <select name="space" id="spaceid" class ="chosen-select form-control" multiple>
 
 			        @spaces.map { space =>  
 			            <option value="@(space.id)">@(space.name)</option>
@@ -93,6 +93,9 @@ of the blueimp jQuery File Upload library. An open source project locatd here: h
             <td>
             </td>
             <td colspan="2">
+                <button style="margin-top: 10px;" class="btn btn-primary" title="Create the dataset" onclick="createDataset()">
+                    <span class="glyphicon glyphicon-upload"></span> Create Dataset
+                </button>
                 <button style="margin-top: 10px;" class="btn btn-default" title="Start the dataset creation process over" onclick="return resetValues();">
 		          <span class="glyphicon glyphicon-refresh"></span> Reset
 		        </button>
@@ -109,7 +112,7 @@ of the blueimp jQuery File Upload library. An open source project locatd here: h
               </ul>
               <div class="tab-content">
                 <div class="tab-pane active" id="tab1">              
-                    @addNewFiles(filesList, "__noval") 
+                    @addNewFiles("__noval")
                 </div> <!-- End 1st Tab content -->
                 <div class="tab-pane" id="tab2">
                     @addExistingFiles(filesList, "__noval")                    	     							       
@@ -237,7 +240,6 @@ of the blueimp jQuery File Upload library. An open source project locatd here: h
 
 <script language = "javascript">
     $(".chosen-select").chosen({
-        width: "90%",
         placeholder_text_multiple: "Select spaces for this dataset."
     })
 </script>

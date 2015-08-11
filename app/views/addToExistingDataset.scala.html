@@ -1,4 +1,4 @@
-@(filesList: List[(String, String)], id: UUID, name: String, desc: String)(implicit flash: play.api.mvc.Flash, user: Option[models.User])
+@(filesList: Map[String, String], id: UUID, name: String, desc: String)(implicit flash: play.api.mvc.Flash, user: Option[models.User])
 
 
 
@@ -77,7 +77,7 @@ of the blueimp jQuery File Upload library. An open source project locatd here: h
               </ul>
               <div class="tab-content">
                 <div class="tab-pane active" id="tab1">              
-                    @addNewFiles(filesList, id.stringify) 
+                    @addNewFiles(id.stringify)
                 </div> <!-- End 1st Tab content -->
                 <div class="tab-pane" id="tab2">
                     @addExistingFiles(filesList, id.stringify)                                                               

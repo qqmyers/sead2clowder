@@ -1,19 +1,75 @@
-@(filesList: List[(String, String)], datasetId: String)(implicit user: Option[models.User])
+@(filesList: Map[String, String], datasetId: String)(implicit user: Option[models.User])
 
 <!-- Snippet to contain elements that are required for listing existing files and allowing them to be selected and added 
 to a dataset during creation. It is also re-used in the workflow for attaching existing files to an existing dataset. -->
 <!-- This file is currently referenced from newDataset.scala.html and from addToExistingDataset.scala.html. -->
 
 <div>
-	<p>                                                             
-	<button class="btn btn-primary btn-large button-margins" title="Create the Dataset" onclick="attachFiles();return false;"><span class="glyphicon glyphicon-upload"></span> <span id="existingcreate"> Create Dataset</span></button>
+	<p>
 	<button id="filesCLearBtn" class="btn btn-default btn-large button-margins" style="margin-left:10px;" onclick="clearFiles();return false;">Clear Selected Files</button>	
     <input type="hidden" name="datasetid" id="hiddenid" value="@datasetId">
     	                                                              
-	<p>
-	<select multiple name="files" size="15" id="filelist" style="width: 500px;">
-		@filesList.map { file =>  
-		    <option value="@(file._1)">@(file._2)</option>
-		}                    
+	</p>
+	<select name="files" id="filelist" class="chosen-select-files form-control" multiple>
+		@filesList.map { file =>
+		    <option class = "form-control" value="@(file._1)">@(file._2)</option>
+		}
 	</select>
 </div>
+<script src="/assets/javascripts/chosen.jquery.js" type="text/javascript"></script>
+<link rel="stylesheet" href="/assets/stylesheets/chosen.css">
+<script language="javascript">
+	$('.chosen-select-files').chosen({
+		width: "100%",
+		placeholder_text_multiple: "Select files to be added to the dataset."
+	})
+</script>
+
+<script>
+	var fileIdObj = {};
+	function isUndefined(value) {
+		return typeof value === 'undefined'
+	}
+
+	function getFileIdName(id) {
+		return fileIdObj[id];
+	}
+
+	$(document).ready(function(){
+		$('#filelist_chosen').removeAttr('style');
+		$('#filelist_chosen').addClass('form-control');
+		$('.chosen-choices').addClass('form-control');
+		@for((id, name) <- filesList) {
+
+			fileIdObj["@id"] = "@name";
+		}
+
+
+
+	});
+
+	$('.chosen-select-files').chosen().change(function(event,params) {
+		var targetId = this.getAttribute("id");
+		if(!isUndefined(params.selected)) {
+			var addedId = params.selected;
+			@for((id, name) <-filesList) {
+				var currentId = "@file";
+				if(currentId != targetId) {
+					$('#@id option [value='+addedId+']').remove();
+					$("#@id").trigger("chosen:updated");
+				}
+			}
+			// $('ul.chosen-choices li.search-field').css('width', '0');
+		}
+		else if(!isUndefined(params.deselected)) {
+			var removedId = params.deselected;
+			@for((id, name) <-filesList) {
+				var currentId = "@file";
+				if(currentId != targetId) {
+					$('#@id').prepend($("<option></option>").attr("value", removedId).text(getName(removedId)));
+					$('#@id').trigger("chosen:updated");
+				}
+			}
+		}
+	});
+</script>

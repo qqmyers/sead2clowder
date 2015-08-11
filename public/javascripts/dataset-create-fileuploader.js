@@ -204,8 +204,10 @@ function createEmptyDataset(data) {
 	            origData.submit();
             }
                         
-            notify("Creation successful. Go to the <a href='" + jsRoutes.controllers.Datasets.dataset(id).url + "'>Dataset</a>", "success", 5000);            
-            $('#uploadcreate').html(" Attach Files");
+            //notify("Creation successful. Go to the <a href='" + jsRoutes.controllers.Datasets.dataset(id).url + "'>Dataset</a>", "success", 5000);
+			$('#uploadcreate').html(" Attach Files");
+			window.location.replace(jsRoutes.controllers.Datasets.dataset(id).url)
+
         });
 
 
@@ -246,7 +248,7 @@ function checkZeroFiles() {
 
 //Clear all selected items
 function clearFiles() {
-	$("#filelist option:selected").removeAttr("selected");
+	$("#filelist_chosen .chosen-choices .search-choice .search-choice-close").click();
 }
 
 //Call on Create button click. Move to create a dataset as specified, and attach any files if they are specified. This is the 
@@ -319,7 +321,6 @@ function attachFiles() {
 	        notify("Creation successful. Go to the <a href='" + jsRoutes.controllers.Datasets.dataset(id).url + "'>Dataset</a>", "success", 5000);	        
 	        $('#existingcreate').html(" Attach Files");
 	    });
-	
 	
 	    request.fail(function (jqXHR, textStatus, errorThrown){
 	        console.error("The following error occured: " + textStatus, errorThrown);
@@ -444,3 +445,81 @@ function holdForAuthAdd(data) {
 	}
 	checkAuth();	
 }
+
+function createDataset(){
+	clearErrors();
+	disableFields();
+	var newFilesCount = $('#fileupload').fileupload('option').getNumberOfFiles();
+
+	var existingFileIds = $("#filelist option:selected").map(function(){ return this.value }).get().join(",");
+
+	if(!asynchStarted && id == "__notset") {
+
+		var name=$('#name');
+		var desc = $('#description');
+		var spaceList = [];
+		$('#spaceid').find(":selected").each(function(i, selected) {
+			spaceList[i] = $(selected).val()
+		});
+		console.log("isNameRequired is" + isNameRequired);
+		console.log("isDescRequired is " + isDescRequired);
+
+
+		//Add errors and return false if validation fails. Validation comes from the host page, passing in the isNameRequired and isDescRequired
+		//variables.
+		var error = false;
+		if (!name.val() && isNameRequired) {
+			$('#nameerror').show();
+			error = true;
+		}
+		if (!desc.val() && isDescRequired) {
+			$('#descerror').show();
+			error = true;
+		}
+		if (error) {
+			enableFields();
+			return false;
+		}
+
+		var encName = htmlEncode(name.val());
+		var encDescription = htmlEncode(desc.val());
+
+
+
+		if(existingFileIds.length == 0) {
+			jsonData = JSON.stringify({"name":encName, "description":encDescription, "space":spaceList});
+		}
+		else {
+			jsonData = JSON.stringify({"name":encName, "description":encDescription, "space":spaceList, "existingfiles":ids});
+		}
+
+		request = jsRoutes.api.Datasets.createEmptyDataset().ajax({
+			data: jsonData,
+			type: 'POST',
+			contentType: "application/json",
+		});
+
+		request.done(function (response, textStatus, jqXHR){
+			//Successful creation and file attachment. Update the status label accordingly.
+			id = response["id"];
+			console.log("Successful response from createEmptyDataset existing files. ID is " + id);
+			$('#hiddenid').val(id);
+			if (asynchStarted) {
+				//Now call the submit for the primary file that was submitted that triggered the dataset
+				//creation.
+				origData.submit();
+			}
+			window.location.replace(jsRoutes.controllers.Datasets.dataset(id).url)
+		});
+
+		request.fail(function (jqXHR, textStatus, errorThrown){
+			console.error("The following error occured: " + textStatus, errorThrown);
+			var errMsg = "You must be logged in to create a new dataset.";
+			if (!checkErrorAndRedirect(jqXHR, errMsg)) {
+				notify("Error in creating dataset with existing files. : " + errorThrown, "error");
+			}
+		});
+	}
+	createEmptyDataset();
+}
+
