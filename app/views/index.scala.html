@@ -40,19 +40,16 @@
               <div class="panel-body">
                   <ul class="list-group">
                       <li class="list-group-item" title="Access to @spacesCountAccess spaces">
-                          <span class="badge badge-gray">@spacesCount</span>
-                          <a href="@routes.Spaces.list()">Project Spaces</a>
+                          <a href="@routes.Spaces.list()">Project Spaces <span class="badge pull-right">@spacesCount</span></a>
                       </li>
                       <li class="list-group-item" title="Access to @collectionsCountAccess collections">
-                          <span class="badge badge-gray">@collectionsCount</span>
-                          <a href="@routes.Collections.list("")">Collections</a>
+                          <a href="@routes.Collections.list("")">Collections <span class="badge pull-right">@collectionsCount</span></a>
                       </li>
                       <li class="list-group-item" title="Access to @datasetsCountAccess datasets">
-                          <span class="badge badge-gray">@datasetsCount</span>
-                          <a href="@routes.Datasets.list("")">Datasets</a>
+                          <a href="@routes.Datasets.list("")">Datasets <span class="badge pull-right">@datasetsCount</span></a>
                       </li>
                       <li class="list-group-item">
-                          <span class="badge badge-gray">@filesCount</span>
+                          <span class="badge pull_right">@filesCount</span>
                           <a href="@routes.Files.list("")">Files</a>
                       </li>
                   </ul>
@@ -96,10 +93,6 @@
             });
         });
     </script>
-
-    <style type="text/css">
-        .badge-gray { background-color: gray; }
-    </style>
 
     @*******
     *if(user.isDefined) {
