@@ -14,12 +14,10 @@ import util.RequiredFieldsConfig
 
 import scala.text
 
-class CurationObjects @Inject()( curations: CurationService,
-                           datasets: DatasetService,
-                             collections: CollectionService,
-                             spaces: SpaceService
-
-                              ) extends SecuredController {
+class CurationObjects @Inject()(curations: CurationService,
+                                datasets: DatasetService,
+                                collections: CollectionService,
+                                spaces: SpaceService) extends SecuredController {
 
   def newCO(spaceId:UUID) = PermissionAction(Permission.EditSpace, Some(ResourceRef(ResourceRef.space, spaceId))) { implicit request =>
     implicit val user = request.user
@@ -35,7 +33,7 @@ class CurationObjects @Inject()( curations: CurationService,
    * page since I haven't merge staging area.
    */
   def submit(spaceId:UUID) = PermissionAction(Permission.EditSpace, Some(ResourceRef(ResourceRef.space, spaceId))) (parse.multipartFormData) { implicit request =>
-
+    //get CO info from request
     var COName = request.body.asFormUrlEncoded.getOrElse("name", null)
     var CODesc = request.body.asFormUrlEncoded.getOrElse("description", null)
     var CODataset = request.body.asFormUrlEncoded.getOrElse("datasets",  List.empty)
@@ -47,10 +45,9 @@ class CurationObjects @Inject()( curations: CurationService,
         //TODO:check COName is null
         val stringCollections = COCollection(0).split(",").toList
         val stringDatasets = CODataset(0).split(",").toList
-
+        //TODO:refine dataset and collection
         val COCollectionIDs: List[UUID] = stringCollections.map(aCollection => if(aCollection != "") UUID(aCollection) else None).filter(_ != None).asInstanceOf[List[UUID]]
         var COCollections = COCollectionIDs.map( collectionid => collections.get(collectionid).getOrElse(null)).filter(_ != null)
-
 
         val CODatasetIDs: List[UUID] = stringDatasets.map(aDataset => if(aDataset != "") UUID(aDataset) else None).filter(_ != None).asInstanceOf[List[UUID]]
         var CODatasets = CODatasetIDs.map( datasetid => datasets.get(datasetid).getOrElse(null)).filter(_ != null)
@@ -69,10 +66,10 @@ class CurationObjects @Inject()( curations: CurationService,
         )
 
         // insert curation
-        Logger.debug("create Co: " + newCuration.id)
+        //Logger.debug("create Co: " + newCuration.id)
         curations.insert(newCuration)
 
-       Redirect(routes.Spaces.getSpace(spaceId))
+        Redirect(routes.Spaces.getSpace(spaceId))
      }
       case None => Redirect(routes.Spaces.getSpace(spaceId))
     }

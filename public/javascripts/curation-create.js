@@ -15,23 +15,25 @@ function createCuration() {
     var desc = $('#description');
 
     var datasets = document.getElementById('datasetid');
-    var Datasets = "";
+    if(datasets != null) {
+        var Datasets = "";
 
-    for (var i = 0; i < datasets.options.length; i++) {
-        if (datasets.options[i].selected ) {
-            Datasets = Datasets  +datasets.options[i].value + ",";
+        for (var i = 0; i < datasets.options.length; i++) {
+            if (datasets.options[i].selected) {
+                Datasets = Datasets + datasets.options[i].value + ",";
+            }
         }
     }
-
     var collections = document.getElementById('collectionid');
-    var Collections = "";
+    if(collections != null) {
+        var Collections = "";
 
-    for (var i = 0; i < collections.options.length; i++) {
-        if (collections.options[i].selected ) {
-            Collections = Collections  + collections.options[i].value + ",";
+        for (var i = 0; i < collections.options.length; i++) {
+            if (collections.options[i].selected) {
+                Collections = Collections + collections.options[i].value + ",";
+            }
         }
     }
-
     //Add errors and return false if validation fails. Validation comes from the host page, passing in the isNameRequired and isDescRequired
     //variables.
     var error = false;

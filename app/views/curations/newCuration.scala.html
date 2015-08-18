@@ -16,20 +16,20 @@
 
     <div class="row">
         <div class="col-md-12">
-    <table style="width: 100%; margin-bottom: 40px; margin-top: 40px;">
+    <table style="width: 100%; margin-bottom: 40px; margin-top: 40px;" >
         <tr>
-            <td style="width: 20%; vertical-align:top;" class="input-table-cell">Name:</td>
-            <td style="width: 35%; vertical-align:top;" class="input-table-cell">
-                <textarea cols=40 rows=4 type="text" id="name"></textarea>
+            <td class="createtable-title">Name:</td>
+            <td class="createtable-input">
+                <textarea cols=40 rows=4 type="text" id="name" class="form-control"></textarea>
             </td>
             <td style="vertical-align:top;" class="input-table-cell">
                 <span class="error hiddencomplete" id="nameerror"> The name is a required field</span><br>
             </td>
         </tr>
         <tr>
-            <td style="width: 20%; vertical-align:top;" class="input-table-cell">Description:</td>
-            <td style="width: 35%; vertical-align:top;" class="input-table-cell" id="desccell">
-                <textarea cols=40 rows=4 type="text" id="description"></textarea>
+            <td class="createtable-title">Description:</td>
+            <td class="createtable-input" id="desccell">
+                <textarea cols=40 rows=4 type="text" id="description" class="form-control"></textarea>
             </td>
             <td style="vertical-align:top;" class="input-table-cell">
                 <span class="error hiddencomplete" id="descerror"> This description is a required field</span><br>
@@ -38,8 +38,8 @@
 
         @if( !collections.isEmpty) {
             <tr>
-                <td style="width : 20 % ; vertical-align : top ;" class="input-table-cell">Collections:</td>
-                <td style="width : 35 % ; vertical-align : top ;" class="input-table-cell" id="desccell">
+                <td class="createtable-title">Collections:</td>
+                <td class="createtable-input">
                     <select multiple name="collection" id="collectionid" class = "chosen-select"  style="width : 342 px ;">
                         @*<option value="default">Default</option>*@
                         @collections.map { collection =>
@@ -52,8 +52,8 @@
 
         @if( !datasets.isEmpty) {
             <tr>
-                <td style="width : 20 % ; vertical-align : top ;" class="input-table-cell">Datasets:</td>
-                <td style="width : 35 % ; vertical-align : top ;" class="input-table-cell" id="desccell">
+                <td class="createtable-title">Datasets:</td>
+                <td class="createtable-input">
                     <select multiple name="dataset" id="datasetid" class = "chosen-select"  style="width : 342 px ;">
                         @*<option value="default">Default</option>*@
                         @datasets.map { dataset =>

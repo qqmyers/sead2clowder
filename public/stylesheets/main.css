@@ -770,3 +770,17 @@ textarea, input[type='text'], input[type='password']{
 	font-size: 30px !important;
 	margin-top: -5px !important;
 }
+
+.createtable-title{
+  width: 20%;
+  vertical-align:top;
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+
+.createtable-input{
+  width: 35%;
+  vertical-align:top;
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
