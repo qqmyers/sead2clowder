@@ -36,30 +36,32 @@
             </td>
         </tr>
 
-        @if( !collections.isEmpty) {
+        @*if( !collections.isEmpty) {
             <tr>
                 <td class="createtable-title">Collections:</td>
                 <td class="createtable-input">
                     <select multiple name="collection" id="collectionid" class = "chosen-select"  style="width : 342 px ;">
-                        @*<option value="default">Default</option>*@
+
                         @collections.map { collection =>
                             <option value="@(collection.id)">@(collection.name)</option>
                         }
                     </select>
                 </td>
             </tr>
-        }
-
+        }*@
         @if( !datasets.isEmpty) {
             <tr>
                 <td class="createtable-title">Datasets:</td>
                 <td class="createtable-input">
-                    <select multiple name="dataset" id="datasetid" class = "chosen-select"  style="width : 342 px ;">
-                        @*<option value="default">Default</option>*@
+                    <select class = "chosen-select"  style="width : 342 px ;">
+                        <option selected disabled>Select the dataset</option>
                         @datasets.map { dataset =>
                             <option value="@(dataset.id)">@(dataset.name)</option>
                         }
                     </select>
+                </td>
+                <td style="vertical-align:top;" class="input-table-cell">
+                    <span class="error hiddencomplete" id="descerror"> This dataset is a required field</span><br>
                 </td>
             </tr>
         }
