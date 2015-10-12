@@ -71,6 +71,31 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
     }
   }
 
+  @ApiOperation(value = "Add subcollection to collection",
+    notes = "",
+    responseClass = "None", httpMethod = "POST")
+  def attachSubCollection(collectionId: UUID, subCollectionId: UUID) = SecuredAction(parse.anyContent,
+    authorization=WithPermission(Permission.CreateCollections), resourceId = Some(collectionId)) { request =>
+
+    collections.addSubCollection(collectionId, subCollectionId) match {
+      case Success(_) => {
+
+        collections.get(collectionId) match {
+          case Some(collection) => {
+            collections.get(subCollectionId) match {
+              case Some(collection) => {
+                //events.addSourceEvent( "attach_dataset_collection")
+              }
+            }
+
+          }
+        }
+        Ok(toJson(Map("status" -> "success")))
+      }
+      case Failure(t) => InternalServerError
+    }
+  }
+
   /**
    * Reindex the given collection, if recursive is set to true it will
    * also reindex all datasets and files.
@@ -158,7 +183,7 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
 
   def jsonCollection(collection: Collection): JsValue = {
     toJson(Map("id" -> collection.id.toString, "name" -> collection.name, "description" -> collection.description,
-               "created" -> collection.created.toString))
+               "created" -> collection.created.toString,"root_flag" -> collection.root_flag.toString))
   }
 
   /**

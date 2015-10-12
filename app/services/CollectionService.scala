@@ -76,6 +76,17 @@ trait CollectionService {
   def removeDataset(collectionId: UUID, datasetId: UUID, ignoreNotFound: Boolean = true): Try[Unit]
 
   /**
+   * Add subcollection to collection
+   *
+   */
+  def addSubCollection(collectionId: UUID, subCollectionId: UUID) : Try[Unit]
+
+  /**
+   * Remove subcollection from collection
+   */
+  def removeSubCollection(collectionId: UUID, subCollectionId: UUID) : Try[Unit]
+
+  /**
    * Delete collection and any reference of it
    */
   def delete(collectionId: UUID): Try[Unit]

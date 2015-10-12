@@ -264,6 +264,14 @@ class MongoDBCollectionService @Inject() (datasets: DatasetService, userService:
     }
   }
 
+  def addSubCollection(collectionId :UUID, subCollectionId: UUID) = Try{
+    Logger.error("Add subcollection not yet implemented")
+  }
+
+  def removeSubCollection(collectionId : UUID, subCollectionId: UUID) = Try{
+    Logger.error("Remove subcollection method not yet implemented")
+  }
+
   private def isInCollection(dataset: Dataset, collection: Collection): Boolean = {
     for(collDataset <- collection.datasets){
       if(collDataset.id == dataset.id)
@@ -271,6 +279,8 @@ class MongoDBCollectionService @Inject() (datasets: DatasetService, userService:
     }
     return false
   }
+
+  //we need a method to check if we can add a subcollection to a collection
 
   def delete(collectionId: UUID) = Try {
 	Collection.findOneById(new ObjectId(collectionId.stringify)) match {
