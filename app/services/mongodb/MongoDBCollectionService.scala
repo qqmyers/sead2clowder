@@ -3,9 +3,11 @@
  */
 package services.mongodb
 
+import akka.event.SubchannelClassification
 import models.{UUID, Collection, Dataset}
 import com.mongodb.casbah.commons.MongoDBObject
 import java.text.SimpleDateFormat
+import org.bson.types.ObjectId
 import play.api.Logger
 import scala.util.Try
 import services._
@@ -286,24 +288,17 @@ class MongoDBCollectionService @Inject() (datasets: DatasetService, userService:
   def addSubCollection(collectionId :UUID, subCollectionId: UUID) = Try{
     Collection.findOneById(new ObjectId(collectionId.stringify)) match {
       case Some(collection) => {
-        Collection.findOneById(new ObjectId(subCollectionId.stringify)) match {
-          case Some(sub_collection) => {
-            if (!isSubCollectionInCollection(sub_collection,collection)){
-              Collection.update(MongoDBObject("_id" -> new ObjectId(collectionId.stringify)),
-                $addToSet("child_collections" ->  Collection.toDBObject(sub_collection)), false, false, WriteConcern.Safe)
-              addParentCollection(subCollectionId,collectionId)
-              index(collection.id)
+
+        if (!isSubCollectionIdInCollection(subCollectionId,collection)){
+          addSubCollectionId(subCollectionId,collection)
+          addParentCollectionId(subCollectionId,collectionId)
+          index(collection.id)
+          Collection.findOneById(new ObjectId(subCollectionId.stringify)) match {
+            case Some(sub_collection) => {
               index(sub_collection.id)
-              //add collection to dataset
-              /*
-              datasets.addCollection(dataset.id, collection.id)
-              datasets.index(dataset.id)
-              index(collection.id)
-              */
-            }
-        } case None => {
-            Logger.error("Error getting subcollection" + subCollectionId);
-            Failure
+            } case None =>
+              Logger.error("Error getting subcollection" + subCollectionId);
+              Failure
           }
         }
       } case None => {
@@ -311,6 +306,14 @@ class MongoDBCollectionService @Inject() (datasets: DatasetService, userService:
         Failure
       }
     }
+  }
+
+  def addSubCollectionId(subCollectionId: UUID, collection: Collection) = Try {
+    Collection.update(MongoDBObject("_id" -> new ObjectId((collection.id).stringify)), $addToSet("child_collection_ids" -> subCollectionId.stringify), false, false, WriteConcern.Safe)
+  }
+
+  def addParentCollectionId(subCollectionId: UUID, parentCollectionId: UUID) = Try {
+    Collection.update(MongoDBObject("_id" -> new ObjectId(subCollectionId.stringify)), $addToSet("parent_collection_ids" -> parentCollectionId.stringify), false, false, WriteConcern.Safe)
   }
 
   def removeSubCollection(collectionId : UUID, subCollectionId: UUID) = Try{
@@ -325,9 +328,10 @@ class MongoDBCollectionService @Inject() (datasets: DatasetService, userService:
     return false
   }
 
-  private def isSubCollectionInCollection(subCollection: Collection, collection: Collection) : Boolean = {
-    for(child_collection <- collection.child_collections){
-      if(child_collection.id == subCollection.id)
+
+  private def isSubCollectionIdInCollection(subCollectionId: UUID, collection: Collection) : Boolean = {
+    for(child_collection_id <- collection.child_collection_ids){
+      if(child_collection_id == subCollectionId)
         return true
     }
     return false

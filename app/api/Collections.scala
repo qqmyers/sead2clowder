@@ -24,7 +24,7 @@ import controllers.Utils
 @Singleton
 class Collections @Inject() (datasets: DatasetService, collections: CollectionService, previews: PreviewService, userService: UserService, events: EventService) extends ApiController {
 
-    
+
   @ApiOperation(value = "Create a collection",
       notes = "",
       responseClass = "None", httpMethod = "POST")
@@ -47,26 +47,26 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
   }
 
   @ApiOperation(value = "Add dataset to collection",
-      notes = "",
-      responseClass = "None", httpMethod = "POST")
+    notes = "",
+    responseClass = "None", httpMethod = "POST")
   def attachDataset(collectionId: UUID, datasetId: UUID) = SecuredAction(parse.anyContent,
-                    authorization=WithPermission(Permission.CreateCollections), resourceId = Some(collectionId)) { request =>
-    
+    authorization = WithPermission(Permission.CreateCollections), resourceId = Some(collectionId)) { request =>
+
     collections.addDataset(collectionId, datasetId) match {
       case Success(_) => {
 
         collections.get(collectionId) match {
-        case Some(collection) => {
-          datasets.get(datasetId) match {
-            case Some(dataset) => {
-              events.addSourceEvent(request.user , dataset.id, dataset.name, collection.id, collection.name, "attach_dataset_collection") 
+          case Some(collection) => {
+            datasets.get(datasetId) match {
+              case Some(dataset) => {
+                events.addSourceEvent(request.user, dataset.id, dataset.name, collection.id, collection.name, "attach_dataset_collection")
+              }
             }
-          }
 
+          }
         }
+        Ok(toJson(Map("status" -> "success")))
       }
-      Ok(toJson(Map("status" -> "success")))
-    }
       case Failure(t) => InternalServerError
     }
   }
@@ -79,17 +79,14 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
 
     collections.addSubCollection(collectionId, subCollectionId) match {
       case Success(_) => {
-
         collections.get(collectionId) match {
           case Some(collection) => {
             collections.get(subCollectionId) match {
-              case Some(collection) => {
-                //events.addSourceEvent( "attach_dataset_collection")
-
+              case Some(sub_collection) => {
+                events.addSourceEvent(request.user, sub_collection.id, sub_collection.name, collection.id, collection.name, "add_sub_collection")
                 Ok(jsonCollection(collection))
               }
             }
-
           }
         }
 
@@ -186,7 +183,7 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
   def jsonCollection(collection: Collection): JsValue = {
     toJson(Map("id" -> collection.id.toString, "name" -> collection.name, "description" -> collection.description,
                "created" -> collection.created.toString,"root_flag" -> collection.root_flag.toString,
-      "sub_collections"-> collection.child_collections.toString, "parent_collections" -> collection.parent_collections.toString))
+      "sub_collection_ids"-> collection.child_collection_ids.toString, "parent_collection_ids" -> collection.parent_collection_ids.toString))
   }
 
   /**
