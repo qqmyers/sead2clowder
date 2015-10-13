@@ -85,12 +85,14 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
             collections.get(subCollectionId) match {
               case Some(collection) => {
                 //events.addSourceEvent( "attach_dataset_collection")
+
+                Ok(jsonCollection(collection))
               }
             }
 
           }
         }
-        Ok(toJson(Map("status" -> "success")))
+
       }
       case Failure(t) => InternalServerError
     }
@@ -183,7 +185,8 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
 
   def jsonCollection(collection: Collection): JsValue = {
     toJson(Map("id" -> collection.id.toString, "name" -> collection.name, "description" -> collection.description,
-               "created" -> collection.created.toString,"root_flag" -> collection.root_flag.toString))
+               "created" -> collection.created.toString,"root_flag" -> collection.root_flag.toString,
+      "sub_collections"-> collection.child_collections.toString, "parent_collections" -> collection.parent_collections.toString))
   }
 
   /**
