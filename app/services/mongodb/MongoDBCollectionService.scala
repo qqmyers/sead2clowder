@@ -265,6 +265,42 @@ class MongoDBCollectionService @Inject() (datasets: DatasetService, userService:
       }
     }
   }
+  def removeSubCollection(collectionId: UUID, subCollectionId: UUID, ignoreNotFound: Boolean = true) = Try {
+    Collection.findOneById(new ObjectId(collectionId.stringify)) match{
+      case Some(collection) => {
+        Collection.findOneById(new ObjectId(subCollectionId.stringify)) match {
+          case Some(sub_collection) => {
+            if(isSubCollectionIdInCollection(subCollectionId,collection)){
+              // remove dataset from collection
+              Collection.update(MongoDBObject("_id" -> new ObjectId(collectionId.stringify)),
+                $pull("child_collection_ids" ->  MongoDBObject( "_id" -> new ObjectId(subCollectionId.stringify))), false, false, WriteConcern.Safe)
+              Collection.update(MongoDBObject("_id" -> new ObjectId(subCollectionId.stringify)),
+                $pull("parent_collection_ids" ->  MongoDBObject( "_id" -> new ObjectId(collectionId.stringify))), false, false, WriteConcern.Safe)
+              index(collection.id)
+              index(sub_collection.id)
+
+
+              Logger.info("Removing subcollection from collection completed")
+            }
+            else{
+              Logger.info("Subcollection was already out of the collection.")
+            }
+            Success
+          }
+          case None => Success
+        }
+      }
+      case None => {
+        ignoreNotFound match{
+          case true => Success
+          case false =>
+            Logger.error("Error getting collection" + collectionId)
+            Failure
+        }
+      }
+    }
+  }
+
 
   def addParentCollection(subCollectionId: UUID, parentCollectionId: UUID) =Try {
     Collection.findOneById(new ObjectId(subCollectionId.stringify)) match {
@@ -316,9 +352,6 @@ class MongoDBCollectionService @Inject() (datasets: DatasetService, userService:
     Collection.update(MongoDBObject("_id" -> new ObjectId(subCollectionId.stringify)), $addToSet("parent_collection_ids" -> parentCollectionId.stringify), false, false, WriteConcern.Safe)
   }
 
-  def removeSubCollection(collectionId : UUID, subCollectionId: UUID) = Try{
-    Logger.error("Remove subcollection method not yet implemented")
-  }
 
   private def isInCollection(dataset: Dataset, collection: Collection): Boolean = {
     for(collDataset <- collection.datasets){
@@ -331,7 +364,7 @@ class MongoDBCollectionService @Inject() (datasets: DatasetService, userService:
 
   private def isSubCollectionIdInCollection(subCollectionId: UUID, collection: Collection) : Boolean = {
     for(child_collection_id <- collection.child_collection_ids){
-      if(child_collection_id == subCollectionId)
+      if(child_collection_id == subCollectionId.stringify)
         return true
     }
     return false

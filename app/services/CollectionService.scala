@@ -89,7 +89,7 @@ trait CollectionService {
   /**
    * Remove subcollection from collection
    */
-  def removeSubCollection(collectionId: UUID, subCollectionId: UUID) : Try[Unit]
+  def removeSubCollection(collectionId: UUID, subCollectionId: UUID, ignoreNotFound: Boolean = true) : Try[Unit]
 
   /**
    * Delete collection and any reference of it

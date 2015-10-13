@@ -142,6 +142,30 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
     case Failure(t) => InternalServerError
     }
   }
+
+  @ApiOperation(value = "Remove subcollection from collection",
+    notes="",
+  responseClass = "None", httpMethod = "POST")
+  def removeSubCollection(collectionId: UUID, subCollectionId: UUID, ignoreNotFound: String) = SecuredAction(parse.anyContent,
+    authorization=WithPermission(Permission.CreateCollections), resourceId = Some(collectionId)) { request =>
+
+    collections.removeSubCollection(collectionId, subCollectionId, Try(ignoreNotFound.toBoolean).getOrElse(true)) match {
+      case Success(_) => {
+
+        collections.get(collectionId) match {
+          case Some(collection) => {
+            collections.get(subCollectionId) match {
+              case Some(sub_collection) => {
+                events.addSourceEvent(request.user , sub_collection.id, sub_collection.name, collection.id, collection.name, "remove_subcollection")
+              }
+            }
+          }
+        }
+        Ok(toJson(Map("status" -> "success")))
+      }
+      case Failure(t) => InternalServerError
+    }
+  }
   
   @ApiOperation(value = "Remove collection",
       notes = "Does not delete the individual datasets in the collection.",
