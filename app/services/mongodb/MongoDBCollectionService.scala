@@ -4,6 +4,7 @@
 package services.mongodb
 
 import akka.event.SubchannelClassification
+import com.mongodb.casbah.WriteConcern
 import models.{UUID, Collection, Dataset}
 import com.mongodb.casbah.commons.MongoDBObject
 import java.text.SimpleDateFormat
@@ -271,15 +272,10 @@ class MongoDBCollectionService @Inject() (datasets: DatasetService, userService:
         Collection.findOneById(new ObjectId(subCollectionId.stringify)) match {
           case Some(sub_collection) => {
             if(isSubCollectionIdInCollection(subCollectionId,collection)){
-              // remove dataset from collection
-              Collection.update(MongoDBObject("_id" -> new ObjectId(collectionId.stringify)),
-                $pull("child_collection_ids" ->  MongoDBObject( "_id" -> new ObjectId(subCollectionId.stringify))), false, false, WriteConcern.Safe)
-              Collection.update(MongoDBObject("_id" -> new ObjectId(subCollectionId.stringify)),
-                $pull("parent_collection_ids" ->  MongoDBObject( "_id" -> new ObjectId(collectionId.stringify))), false, false, WriteConcern.Safe)
-              index(collection.id)
-              index(sub_collection.id)
-
-
+              // remove sub collection from list of child collection
+              Collection.update(MongoDBObject("_id" -> new ObjectId(collectionId.stringify)), $pull("child_collection_ids" -> subCollectionId.stringify), false, false, WriteConcern.Safe)
+              //remove collection from the list of parent collection for sub collection
+              Collection.update(MongoDBObject("_id" -> new ObjectId(subCollectionId.stringify)), $pull("parent_collection_ids" -> collectionId.stringify), false, false, WriteConcern.Safe)
               Logger.info("Removing subcollection from collection completed")
             }
             else{
