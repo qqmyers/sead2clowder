@@ -201,6 +201,20 @@ class Collections @Inject()(datasets: DatasetService, collections: CollectionSer
             decodedDatasetsInside += dDataset
           }
 
+          val child_collections_ids = dCollection.child_collection_ids
+          val decodedChildCollections = ListBuffer.empty[models.Collection]
+          for (child_collection_id <- child_collections_ids) {
+            collections.get(UUID(child_collection_id)) match {
+              case Some(child_collection) => {
+                val decodedChild = Utils.decodeCollectionElements(child_collection)
+                decodedChildCollections += decodedChild
+              } case None => {
+                Logger.debug("No child collection found for" + child_collection_id)
+              }
+
+            }
+          }
+
           Ok(views.html.collectionofdatasets(decodedDatasetsInside.toList, dCollection, filteredPreviewers.toList))
         }
         case None => {
