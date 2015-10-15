@@ -1,4 +1,4 @@
-@(datasetsInCollection: List[models.Dataset], collection: models.Collection, previewers: List[Previewer])(implicit user: Option[models.User])
+@(childCollections: List[models.Collection], datasetsInCollection: List[models.Dataset], collection: models.Collection, previewers: List[Previewer])(implicit user: Option[models.User])
 
 @import models.UUID
 
@@ -145,23 +145,23 @@
 				</tr>
 			</thead>
 			<tbody>
-				@datasetsInCollection.map { dataset =>
-					<tr data-datasetId="@(dataset.id.toString)">
-						<td><a href="@(routes.Datasets.dataset(dataset.id))">@Html(dataset.name)</a></td>
-						<td>@dataset.created.format("MMM dd, yyyy")</td>
-						<td>@Html(dataset.description)</td>
+				@childCollections.map { collection =>
+					<tr data-childCollectionId="@(collection.id.toString)">
+						<td><a href="@(routes.Collections.collection(collection.id))">@Html(collection.name)</a></td>
+						<td>@collection.created.format("MMM dd, yyyy")</td>
+						<td>@Html(collection.description)</td>
 						<td>
-							@if(!dataset.thumbnail_id.isEmpty){<img src="@(routes.Files.thumbnail(UUID(dataset.thumbnail_id.toString().substring(5,dataset.thumbnail_id.toString().length-1))))" alt="Thumbnail of @Html(dataset.name)" width="120">}
-							@if(dataset.thumbnail_id.isEmpty){No thumbnail available}
+							@if(!collection.thumbnail_id.isEmpty){<img src="@(routes.Files.thumbnail(UUID(collection.thumbnail_id.toString().substring(5,collection.thumbnail_id.toString().length-1))))" alt="Thumbnail of @Html(collection.name)" width="120">}
+							@if(collection.thumbnail_id.isEmpty){No thumbnail available}
 						</td>
-						<td class="requiresLogin"><a href="#!" onclick="removeDataset('@(dataset.id.toString)',event)">Remove</a>
+						<td class="requiresLogin"><a href="#!" onclick="removeDataset('@(collection.id.toString)',event)">Remove</a>
 						    @if(user.isDefined) {                             
                                 <!-- If user can delete, the button is enabled, otherwise the button is present but disabled to provide consistent UE. -->   
                                 @if(collection.author.isDefined && user.get.identityId.userId.equals(collection.author.get.identityId.userId)){
-                                    <button onclick="removeDataset('@(dataset.id.toString)',event)" class="btn btn-link" style="text-align:right" title="Detach the Dataset">
+                                    <button onclick="removeDataset('@(collection.id.toString)',event)" class="btn btn-link" style="text-align:right" title="Detach the Dataset">
                                     <span class="glyphicon glyphicon-trash"></span></button>
                                 } else {
-                                    <button disabled onclick="removeDataset('@(dataset.id.toString)',event)" class="btn btn-link" style="text-align:right" title="Detach the Dataset">
+                                    <button disabled onclick="removeDataset('@(collection.id.toString)',event)" class="btn btn-link" style="text-align:right" title="Detach the Dataset">
                                     <span class="glyphicon glyphicon-trash"></span></button>
                                 }                                                                                                                                           
                             }
