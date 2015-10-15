@@ -215,7 +215,8 @@ class Collections @Inject()(datasets: DatasetService, collections: CollectionSer
             }
           }
 
-          Ok(views.html.collectionofdatasets(decodedDatasetsInside.toList, dCollection, filteredPreviewers.toList))
+          //Ok(views.html.collectionofdatasets(decodedDatasetsInside.toList, dCollection, filteredPreviewers.toList))
+          Ok(views.html.collectionofdatasets_with_childcollections(decodedDatasetsInside.toList, dCollection, filteredPreviewers.toList))
         }
         case None => {
           Logger.error("Error getting collection " + id); BadRequest("Collection not found")
