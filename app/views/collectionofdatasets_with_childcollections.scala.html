@@ -154,14 +154,14 @@
 							@if(!collection.thumbnail_id.isEmpty){<img src="@(routes.Files.thumbnail(UUID(collection.thumbnail_id.toString().substring(5,collection.thumbnail_id.toString().length-1))))" alt="Thumbnail of @Html(collection.name)" width="120">}
 							@if(collection.thumbnail_id.isEmpty){No thumbnail available}
 						</td>
-						<td class="requiresLogin"><a href="#!" onclick="removeDataset('@(collection.id.toString)',event)">Remove</a>
+						<td class="requiresLogin"><a href="#!" onclick="removeChildCollection('@(collection.id.toString)',event)">Remove</a>
 						    @if(user.isDefined) {                             
                                 <!-- If user can delete, the button is enabled, otherwise the button is present but disabled to provide consistent UE. -->   
                                 @if(collection.author.isDefined && user.get.identityId.userId.equals(collection.author.get.identityId.userId)){
-                                    <button onclick="removeDataset('@(collection.id.toString)',event)" class="btn btn-link" style="text-align:right" title="Detach the Dataset">
+                                    <button onclick="removeChildCollection('@(collection.id.toString)',event)" class="btn btn-link" style="text-align:right" title="Detach the Child Collection">
                                     <span class="glyphicon glyphicon-trash"></span></button>
                                 } else {
-                                    <button disabled onclick="removeDataset('@(collection.id.toString)',event)" class="btn btn-link" style="text-align:right" title="Detach the Dataset">
+                                    <button disabled onclick="removeChildCollection('@(collection.id.toString)',event)" class="btn btn-link" style="text-align:right" title="Detach the Child Collection">
                                     <span class="glyphicon glyphicon-trash"></span></button>
                                 }                                                                                                                                           
                             }
@@ -170,15 +170,15 @@
 				}
 			</tbody>
 		</table>
-		<ul class="pager" id="datasetsPager">
-			<li class="previous" id="datasetsPagerPrev" style="visibility:hidden;"><a href="#!">Previous</a></li>
-  			<li class ="next" id="datasetsPagerNext" style="visibility:hidden;"><a href="#!">Next</a></li>
+		<ul class="pager" id="childCollectionsPager">
+			<li class="previous" id="childCollectionsPagerPrev" style="visibility:hidden;"><a href="#!">Previous</a></li>
+  			<li class ="next" id="childCollectionsPagerNext" style="visibility:hidden;"><a href="#!">Next</a></li>
 		</ul>
-		<button id="addDatasetBtn" class="btn btn-default requiresLogin" type="button" title="View Dataset List"><span class="glyphicon glyphicon-plus"></span> Add</button>
-		<button id="hideAddDatasetBtn" class="btn btn-default" type="button" style="display:none;" title="Close Dataset List"><span class="glyphicon glyphicon-remove"></span></button>
+		<button id="addChildCollectionBtn" class="btn btn-default requiresLogin" type="button" title="View Child Collection List"><span class="glyphicon glyphicon-plus"></span> Add</button>
+		<button id="hideAddChildCollectionBtn" class="btn btn-default" type="button" style="display:none;" title="Close Child Collection List"><span class="glyphicon glyphicon-remove"></span></button>
 		<br />
 		<br />		
-		<table id='addDatasetsTable' class="table table-bordered table-hover" style="display:none;">
+		<table id='addChildCollectionsTable' class="table table-bordered table-hover" style="display:none;">
 			<thead>
 				<tr>
 					<th style="width: 27%">Name</th>

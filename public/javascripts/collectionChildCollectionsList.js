@@ -11,41 +11,42 @@
 	
 	var areRestDatasetsVisible = false;
 
-	function addDataset(datasetId, event){
+	function addChildCollection(childCollectionId, event){
 		
-		var request = jsRoutes.api.Collections.attachDataset(collectionId, datasetId).ajax({
+		var request = jsRoutes.api.Collections.attachChildCollection(collectionId, childCollectionId).ajax({
 			type: 'POST'
 		});
 
 		//Note - need to make the "replace" calls below more generic.
 		request.done(function (response, textStatus, jqXHR){	        
 	        //Remove selected dataset from datasets not in collection.
-	        var resultId = event.target.parentNode.parentNode.getAttribute('data-datasetid');
-	        var inputDate = $("tr[data-datasetid='" + resultId + "'] td:nth-child(2)").text();
-	        var inputDescr = $("tr[data-datasetid='" + resultId + "'] td:nth-child(3)").html();
-	        var inputThumbnail = $("tr[data-datasetid='" + resultId + "'] td:nth-child(4)").html(); 	        
-	        $("#addDatasetsTable tbody tr[data-datasetid='" + resultId + "']").remove();
+	        var resultId = event.target.parentNode.parentNode.getAttribute('data-childcollectionid');
+	        var inputDate = $("tr[data-childcollectionid='" + resultId + "'] td:nth-child(2)").text();
+	        var inputDescr = $("tr[data-childcollectionid='" + resultId + "'] td:nth-child(3)").html();
+	        var inputThumbnail = $("tr[data-childcollectionid='" + resultId + "'] td:nth-child(4)").html();
+	        $("#addChildCollectionsTable tbody tr[data-childcollectionsid='" + resultId + "']").remove();
 	        
 	        //Add the node to the contained datasets table, with associated data
-	        $('#collectionChildCollectionsTable tbody').append("<tr data-datasetid='" + datasetId + "'><td><a href='" + jsRoutes.controllers.Datasets.dataset(datasetId).url + "'>"+ event.target.innerHTML.replace(/\n/g, "<br>") + "</a></td>"
+	        $('#collectionChildCollectionsTable tbody').append("<tr data-childcollectionid='" + childCollectionId + "'><td><a href='" + jsRoutes.controllers.Collections.collection(childCollectionId).url + "'>"+ event.target.innerHTML.replace(/\n/g, "<br>") + "</a></td>"
 					+ "<td>" + inputDate + "</td>"
 					+ "<td style='white-space:pre-line;'>" + inputDescr.replace(/\n/g, "<br>") + "</td>"
 					+ "<td>" + inputThumbnail + "</td>"
-					+ "<td><a href='#!' onclick='removeDataset(\"" + datasetId + "\",event)'>Remove</a>"
-					+ "<button class='btn btn-link' title='Detach the Dataset' style='text-align:right' onclick='removeDataset(\"" + datasetId + "\",event)'>"
+					+ "<td><a href='#!' onclick='removeChildCollection(\"" + childCollectionId + "\",event)'>Remove</a>"
+					+ "<button class='btn btn-link' title='Detach the ChildCollection' style='text-align:right' onclick='removeChildCollection(\"" + childCollectionId + "\",event)'>"
 					+ "<span class='glyphicon glyphicon-trash'></span></button></td></tr>");
 		});	
 		
 		request.fail(function (jqXHR, textStatus, errorThrown){
 			console.error("The following error occured: "+textStatus, errorThrown);
-	        var errMsg = "You must be logged in to add a dataset to a collection.";
+	        var errMsg = "You must be logged in to add a child collection to a collection.";
 	        if (!checkErrorAndRedirect(jqXHR, errMsg)) {
-	            notify("The dataset was not added to the collection due to : " + errorThrown, "error");
+	            notify("The child collection was not added to the collection due to : " + errorThrown, "error");
 	        }    		
  		});
 		
 	}
-	
+
+	//done up to here #tn
 	function removeDataset(datasetId, event){
 		
 		var request = jsRoutes.api.Collections.removeDataset(collectionId, datasetId).ajax({
@@ -98,7 +99,7 @@
 		dateString[0] = dateString[0].replace("Nov","11");
 		dateString[0] = dateString[0].replace("Dec","12");		
 		for(var pos = 1;pos <= searchResultsCount; pos++){
-			var currRowDate = $("#addDatasetsTable tbody tr[id='resultRow" + pos + "'] td:nth-child(2)").text().split(" ");
+			var currRowDate = $("#addChildCollectionsTable tbody tr[id='resultRow" + pos + "'] td:nth-child(2)").text().split(" ");
 			currRowDate[1] = currRowDate[1].replace(",","");
 			if(dateString[2] > currRowDate[2])
 				return pos;
@@ -138,42 +139,42 @@
 			$(this).css('display','table-row');	
 	});
 	if(childCollectionsInCollection.length > 10)
-		$('#datasetsPagerNext').css('visibility','visible');	
+		$('#childCollectionsPagerNext').css('visibility','visible');
 	childCollectionsInCollection.each(function() {
-		$(this).attr("id","datasetRow" + elementCounterChildCollections);
+		$(this).attr("id","childCollectionRow" + elementCounterChildCollections);
 		elementCounterChildCollections++;
 	});
 	
-	 $('body').on('click','#datasetsPagerNext',function(e){
-		 currentFirstDatasets = currentFirstDatasets + 10;
+	 $('body').on('click','#childCollectionsPagerNext',function(e){
+		 currentFirstChildCollections = currentFirstCollections + 10;
 		 $("#collectionChildCollectionsTable tbody tr").each(function() {
         	    $(this).css('display','none');
          });
-		 for(var i = currentFirstDatasets; i < currentFirstDatasets + 10; i++){
-			 $("#collectionChildCollectionsTable tbody tr[id='datasetRow" + i + "']").each(function() {
+		 for(var i = currentFirstChildCollections; i < currentFirstChildCollections + 10; i++){
+			 $("#collectionChildCollectionsTable tbody tr[id='childCollectionRow" + i + "']").each(function() {
 				 $(this).css('display','table-row');
 			 });
 		 }
-		 $('#datasetsPagerPrev').css('visibility','visible');
-		 if(currentFirstDatasets + 10 > childCollectionsInCollectionCount)
-			 $('#datasetsPagerNext').css('visibility','hidden');
+		 $('#childCollectionsPagerPrev').css('visibility','visible');
+		 if(currentFirstChildCollections + 10 > childCollectionsInCollectionCount)
+			 $('#childCollectionsPagerNext').css('visibility','hidden');
 		 
 		 return false;
 	 });
-	 $('body').on('click','#datasetsPagerPrev',function(e){
-		 currentFirstDatasets = currentFirstDatasets - 10;
+	 $('body').on('click','#childCollectionsPagerPrev',function(e){
+		 currentFirstChildCollections = currentFirstChildCollections - 10;
 		 $("#collectionChildCollectionsTable tbody tr").each(function() {
         	    $(this).css('display','none');
          });
-		 for(var i = currentFirstDatasets; i < currentFirstDatasets + 10; i++){
-			 $("#collectionChildCollectionsTable tbody tr[id='datasetRow" + i + "']").each(function() {
+		 for(var i = currentFirstChildCollections; i < currentFirstChildCollections + 10; i++){
+			 $("#collectionChildCollectionsTable tbody tr[id='childCollections" + i + "']").each(function() {
 				 $(this).css('display','table-row');
 			 });
 		 }
-		 if(currentFirstDatasets + 10 <= childCollectionsInCollectionCount)
-			 $('#datasetsPagerNext').css('visibility','visible');
-		 if(currentFirstDatasets == 1)
-			 $('#datasetsPagerPrev').css('visibility','hidden');
+		 if(currentFirstChildCollections + 10 <= childCollectionsInCollectionCount)
+			 $('#childCollectionsPagerNext').css('visibility','visible');
+		 if(currentFirstChildCollections == 1)
+			 $('#childCollectionsPagerPrev').css('visibility','hidden');
 		 
 		 return false;
 	 });
