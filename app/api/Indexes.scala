@@ -1,15 +1,14 @@
 package api
 
-import play.api.mvc.Controller
-import play.api.libs.json.Json._
-import play.api.Play.current
-import services._
 import javax.inject.Inject
-import services.ExtractorMessage
-import models.{Feature, UUID, MultimediaFeatures}
-import play.api.libs.json.JsObject
-import scala.Some
+
 import controllers.Utils
+import models.{Feature, MultimediaFeatures, UUID}
+import play.api.Play.current
+import play.api.libs.json.JsObject
+import play.api.libs.json.Json._
+import play.api.mvc.Controller
+import services.{ExtractorMessage, _}
 
 /**
  * Index data.
@@ -59,6 +58,7 @@ class Indexes @Inject() (multimediaSearch: MultimediaQueryService, previews: Pre
           case Some(multimediaFeature) => {
             val features = (request.body \ "features").as[List[JsObject]]
             multimediaSearch.updateFeatures(multimediaFeature, sectionUUID, features)
+            // TODO add method to pre-compute with existing feature vectors
             Ok(toJson(Map("id"->multimediaFeature.id.toString)))
           }
           case None => {
@@ -68,6 +68,8 @@ class Indexes @Inject() (multimediaSearch: MultimediaQueryService, previews: Pre
             }
             val doc = MultimediaFeatures(section_id = Some(sectionUUID), features = features)
             multimediaSearch.insert(doc)
+            // precompute distances
+            multimediaSearch.computeDistances(doc)
             Ok(toJson(Map("id"->doc.id.toString)))
           }
         }

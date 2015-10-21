@@ -1,12 +1,12 @@
 package api
 
-import play.api.libs.json.Json
-import play.api.Logger
-import play.api.libs.json.Json._
-import models.{UUID, Comment}
-import services._
 import javax.inject.{Inject, Singleton}
-import scala.Some
+
+import models.{Comment, UUID}
+import play.api.Logger
+import play.api.libs.json.Json
+import play.api.libs.json.Json._
+import services._
 
 /**
  * Files sections.
