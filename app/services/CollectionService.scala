@@ -81,6 +81,7 @@ trait CollectionService {
    */
   def addSubCollection(collectionId: UUID, subCollectionId: UUID) : Try[Unit]
 
+
   /**
    *  Add parent to subcollection parent list
    */

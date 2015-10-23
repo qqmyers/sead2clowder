@@ -13,7 +13,7 @@
 
 	function addChildCollection(childCollectionId, event){
 		
-		var request = jsRoutes.api.Collections.attachChildCollection(collectionId, childCollectionId).ajax({
+		var request = jsRoutes.api.Collections.attachSubCollection(collectionId, childCollectionId).ajax({
 			type: 'POST'
 		});
 

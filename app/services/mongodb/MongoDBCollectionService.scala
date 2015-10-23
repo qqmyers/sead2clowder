@@ -340,6 +340,7 @@ class MongoDBCollectionService @Inject() (datasets: DatasetService, userService:
     }
   }
 
+
   def addSubCollectionId(subCollectionId: UUID, collection: Collection) = Try {
     Collection.update(MongoDBObject("_id" -> new ObjectId((collection.id).stringify)), $addToSet("child_collection_ids" -> subCollectionId.stringify), false, false, WriteConcern.Safe)
   }

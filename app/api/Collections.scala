@@ -3,6 +3,7 @@ package api
 import play.api.Logger
 import play.api.Play.current
 import models._
+import play.api.http.Writeable
 import services._
 import play.api.libs.json._
 import play.api.libs.json.{JsObject, JsValue}
@@ -26,8 +27,8 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
 
 
   @ApiOperation(value = "Create a collection",
-      notes = "",
-      responseClass = "None", httpMethod = "POST")
+    notes = "",
+    responseClass = "None", httpMethod = "POST")
   def createCollection() = SecuredAction(authorization=WithPermission(Permission.CreateCollections)) {
     request =>
       Logger.debug("Creating new collection")
@@ -38,13 +39,45 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
               val c = Collection(name = name, description = description, created = new Date())
               collections.insert(c) match {
                 case Some(id) => {
-                 Ok(toJson(Map("id" -> id)))
+                  Ok(toJson(Map("id" -> id)))
                 }
                 case None => Ok(toJson(Map("status" -> "error")))
               }
           }.getOrElse(BadRequest(toJson("Missing parameter [description]")))
       }.getOrElse(BadRequest(toJson("Missing parameter [name]")))
   }
+
+  @ApiOperation(value = "Create a collection with parent",
+    notes = "",
+    responseClass = "None", httpMethod = "POST")
+  def createCollectionWithParent() = SecuredAction(authorization=WithPermission(Permission.CreateCollections)) {
+    request =>
+      Logger.debug("Created new collection with parent")
+      (request.body \ "name").asOpt[String].map{
+        name =>
+          (request.body \ "description").asOpt[String].map {
+            description =>
+              (request.body \ "parentId").asOpt[String].map {
+                parentId =>
+                  val c = Collection(name = name, description = description, created = new Date())
+                  collections.insert(c) match {
+                    case Some(id) => {
+                      collections.addParentCollection(UUID(id),UUID(parentId)) match {
+                        case Success(_) => {
+                          Ok(toJson(Map("id" -> id)))
+                        }
+                      }
+                    }
+                    case None => Ok(toJson(Map("status" -> "error")))
+                  }
+
+              }.getOrElse(BadRequest(toJson("Missing parameter[parentId")))
+          }.getOrElse(BadRequest(toJson("Missing parameter [description]")))
+      }.getOrElse(BadRequest(toJson("Missing parameter [name]")))
+
+  }
+
+
 
   @ApiOperation(value = "Add dataset to collection",
     notes = "",
@@ -93,6 +126,24 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
       }
       case Failure(t) => InternalServerError
     }
+  }
+
+  @ApiOperation(value = "Add child collection to collection by name and description",
+                notes = "",
+                responseClass = "None", httpMethod = "POST")
+  def addChildCollection(collectionId: UUID, childName: String, childDescription: String) = SecuredAction(parse.anyContent,
+    authorization = WithPermission(Permission.CreateCollections), resourceId = Some(collectionId)) { request =>
+    Logger.debug("Creating new collection")
+    val c = Collection(name = childName, description = childDescription, created = new Date())
+    collections.insert(c) match {
+      case Some(id) => {
+        collections.addSubCollection(collectionId,UUID(id))
+        //add to collection here
+        Ok(toJson(Map("id" -> id)))
+      }
+      case None => Ok(toJson(Map("status" -> "error")))
+    }
+
   }
 
   /**
