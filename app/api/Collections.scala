@@ -62,11 +62,16 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
                   val c = Collection(name = name, description = description, created = new Date())
                   collections.insert(c) match {
                     case Some(id) => {
-                      collections.addParentCollection(UUID(id),UUID(parentId)) match {
-                        case Success(_) => {
-                          Ok(toJson(Map("id" -> id)))
-                        }
+                      collections.get(UUID(parentId)) match {
+                        case Some(parentCollection) => {
+                          collections.addParentCollection(UUID(id),UUID(parentId)) match {
+                            case Success(_) => {
+                              Ok(toJson(Map("id" -> id)))
+                            }
+                          }
+                        } case None => Ok(toJson(Map("status" -> "error")))
                       }
+
                     }
                     case None => Ok(toJson(Map("status" -> "error")))
                   }
