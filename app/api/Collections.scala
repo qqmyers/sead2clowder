@@ -69,7 +69,7 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
                               Ok(toJson(Map("id" -> id)))
                             }
                           }
-                        } case None => Ok(toJson(Map("status" -> "error")))
+                        } case None => Ok(toJson("Invalid parentId"))
                       }
 
                     }
