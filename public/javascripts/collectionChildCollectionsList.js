@@ -47,35 +47,35 @@
 	}
 
 	//done up to here #tn
-	function removeDataset(datasetId, event){
+	function removeChildCollection(childCollectionId, event){
 		
-		var request = jsRoutes.api.Collections.removeDataset(collectionId, datasetId).ajax({
+		var request = jsRoutes.api.Collections.removeSubCollection(collectionId, childCollectionId).ajax({
 			type: 'POST'
 		});
 		
 		request.done(function (response, textStatus, jqXHR){	        	       
 	      //Remove selected dataset from datasets in collection.
-	      var rowId = event.target.parentNode.parentNode.getAttribute('data-datasetid');	
-	      var inputDate = $("tr[data-datasetid='" + rowId + "'] td:nth-child(2)").text();
-	      var inputDescr = $("tr[data-datasetid='" + rowId + "'] td:nth-child(3)").html();
-	      var inputThumbnail = $("tr[data-datasetid='" + rowId + "'] td:nth-child(4)").html();
-	      $("#collectionChildCollectionsTable tbody tr[data-datasetid='" + rowId + "']").remove(); 
+	      var rowId = event.target.parentNode.parentNode.getAttribute('data-childcollectionid');
+	      var inputDate = $("tr[data-childcollectionid='" + rowId + "'] td:nth-child(2)").text();
+	      var inputDescr = $("tr[data-childcollectionid='" + rowId + "'] td:nth-child(3)").html();
+	      var inputThumbnail = $("tr[data-childcollectionid='" + rowId + "'] td:nth-child(4)").html();
+	      $("#collectionChildCollectionsTable tbody tr[data-childcollectionid='" + rowId + "']").remove();
 	      
 	      //Add the data back to the uncontained datasets table
-	      var newDatasetHTML = "<tr data-datasetId='" + datasetId + "'><td><a href='#!' "
-	      + "onclick='addDataset(\"" + datasetId + "\",event)' "
+	      var newDatasetHTML = "<tr data-childcollectionId='" + childCollectionId + "'><td><a href='#!' "
+	      + "onclick='addChildCollection(\"" + childCollection + "\",event)' "
 	      + ">"+ event.target.parentNode.parentNode.children[0].children[0].innerHTML + "</a></td>"
 	      + "<td>" + inputDate + "</td>"
 	      + "<td style='white-space:pre-line;'>" + inputDescr + "</td>"
 	      + "<td>" + inputThumbnail + "</td>"
-	      + "<td><a target='_blank' href='" + jsRoutes.controllers.Datasets.dataset(datasetId).url + "'>View</a></td></tr>";
+	      + "<td><a target='_blank' href='" + jsRoutes.controllers.Collections.collection(childCollectionId).url + "'>View</a></td></tr>";
 	      
-	      $('#addDatasetsTable tbody').append(newDatasetHTML);	      	      	      	          
+	      $('#addChildCollectionsTable tbody').append(newDatasetHTML);
 		});  	
 		
 		request.fail(function (jqXHR, textStatus, errorThrown){
 			console.error("The following error occured: "+textStatus, errorThrown);
-	        var errMsg = "You must be logged in to remove a dataset from a collection.";
+	        var errMsg = "You must be logged in to remove a child collection from a collection.";
 	        if (!checkErrorAndRedirect(jqXHR, errMsg)) {
 	            notify("The dataset was not removed from the collection due to : " + errorThrown, "error");
 	        }
@@ -182,7 +182,7 @@
 	//TODO - MMF - Is this really necessary? The list of available datasets that are external to the collection should be available already.
 	//This would also unify the htmlDecoding on the server side instead of having to happen both here and there.
 	//Note - need to make the "replace" calls below more generic.
-	 $('body').on('click','#addDatasetBtn',function(e){
+	 $('body').on('click','#addChildCollectionBtn',function(e){
 			var request = $.ajax({
 		       type: 'GET',
 		       url: queryIp,
