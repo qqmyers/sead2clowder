@@ -2,14 +2,14 @@
 	var elementCounterChildCollections = 1;
 	var elementCounterAdd = 1;
 	
-	var currentFirstDatasets = 1;
+	var currentFirstChildCollections = 1;
 	var currentFirstAdd = 1;
 	var searchResultsCount = 0;
 	
 	var childCollectionsInCollection = $("#collectionChildCollectionsTable tbody tr");
 	var childCollectionsInCollectionCount = childCollectionsInCollection.length;
 	
-	var areRestDatasetsVisible = false;
+	var areRestChildCollectionsVisible = false;
 
 	function addChildCollection(childCollectionId, event){
 		
@@ -24,7 +24,7 @@
 	        var inputDate = $("tr[data-childcollectionid='" + resultId + "'] td:nth-child(2)").text();
 	        var inputDescr = $("tr[data-childcollectionid='" + resultId + "'] td:nth-child(3)").html();
 	        var inputThumbnail = $("tr[data-childcollectionid='" + resultId + "'] td:nth-child(4)").html();
-	        $("#addChildCollectionsTable tbody tr[data-childcollectionsid='" + resultId + "']").remove();
+	        $("#addChildCollectionsTable tbody tr[data-childcollectionid='" + resultId + "']").remove();
 	        
 	        //Add the node to the contained datasets table, with associated data
 	        $('#collectionChildCollectionsTable tbody').append("<tr data-childcollectionid='" + childCollectionId + "'><td><a href='" + jsRoutes.controllers.Collections.collection(childCollectionId).url + "'>"+ event.target.innerHTML.replace(/\n/g, "<br>") + "</a></td>"
@@ -62,7 +62,7 @@
 	      $("#collectionChildCollectionsTable tbody tr[data-childcollectionid='" + rowId + "']").remove();
 	      
 	      //Add the data back to the uncontained datasets table
-	      var newDatasetHTML = "<tr data-childcollectionId='" + childCollectionId + "'><td><a href='#!' "
+	      var newDatasetHTML = "<tr data-childcollectionid='" + childCollectionId + "'><td><a href='#!' "
 	      + "onclick='addChildCollection(\"" + childCollection + "\",event)' "
 	      + ">"+ event.target.parentNode.parentNode.children[0].children[0].innerHTML + "</a></td>"
 	      + "<td>" + inputDate + "</td>"
@@ -77,7 +77,7 @@
 			console.error("The following error occured: "+textStatus, errorThrown);
 	        var errMsg = "You must be logged in to remove a child collection from a collection.";
 	        if (!checkErrorAndRedirect(jqXHR, errMsg)) {
-	            notify("The dataset was not removed from the collection due to : " + errorThrown, "error");
+	            notify("The child collection was not removed from the collection due to : " + errorThrown, "error");
 	        }
  		});	
 	}
@@ -194,30 +194,30 @@
 		        $('#addPagerPrev').css('visibility','hidden');
 		        $('#addPagerNext').css('visibility','hidden');
 		        searchResultsCount = respJSON.length;
-		        $('#addDatasetsTable tbody tr').remove();
+		        $('#addChildCollectionsTable tbody tr').remove();
 		        for(var i = 0; i < respJSON.length; i++){
 		        	var createdDateArray = respJSON[i].created.split(" ");
 		        	var createdDate = createdDateArray.slice(1,3).join(" ") + ", " + createdDateArray[5];
-		        	var datasetThumbnail = "";
+		        	var childCollectionThumbnail = "";
 		        	if(respJSON[i].thumbnail != "None")
-		        		datasetThumbnail = "<img src='" + window.location.protocol + "//" + window.location.hostname + (window.location.port ? ':' + window.location.port: '') + "/fileThumbnail/" + respJSON[i].thumbnail + "/blob' "
-		        							+ "alt='Thumbnail of " + respJSON[i].datasetname.replace(/\n/g, "<br>") + "' width='120'>";
+		        		childCollectionThumbnail = "<img src='" + window.location.protocol + "//" + window.location.hostname + (window.location.port ? ':' + window.location.port: '') + "/fileThumbnail/" + respJSON[i].thumbnail + "/blob' "
+		        							+ "alt='Thumbnail of " + respJSON[i].name.replace(/\n/g, "<br>") + "' width='120'>";
 		        	else
-		        		datasetThumbnail = "No thumbnail available"
+		        		childCollectionThumbnail = "No thumbnail available"
 
-		        	$('#addDatasetsTable tbody').append("<tr id='resultRow" + (i+1) + "' style='display:none;' data-datasetId='" + respJSON[i].id + "'><td><a href='#!' "
-		        								+ "onclick='addDataset(\"" + respJSON[i].id + "\",event)' "
-		        								+ ">"+ respJSON[i].datasetname.replace(/\n/g, "<br>") + "</a></td>"
+		        	$('#addChildCollectionsTable tbody').append("<tr id='resultRow" + (i+1) + "' style='display:none;' data-childcollectionid='" + respJSON[i].id + "'><td><a href='#!' "
+		        								+ "onclick='addChildCollection(\"" + respJSON[i].id + "\",event)' "
+		        								+ ">"+ respJSON[i].id.replace(/\n/g, "<br>") + "</a></td>"
 		        								+ "<td>" + createdDate + "</td>"
 		        								+ "<td style='white-space:pre-line;'>" + respJSON[i].description.replace(/\n/g, "<br>") + "</td>"
-		        								+ "<td>" + datasetThumbnail + "</td>"
-		        								+ "<td><a target='_blank' href='" +  jsRoutes.controllers.Datasets.dataset(respJSON[i].id).url + "'>View</a></td></tr>");
+		        								+ "<td>" + childCollectionThumbnail + "</td>"
+		        								+ "<td><a target='_blank' href='" +  jsRoutes.controllers.Collections.collection(respJSON[i].id).url + "'>View</a></td></tr>");
 		        	
 		        }
-		        $('#addDatasetsTable').show();
+		        $('#addChildCollectionsTable').show();
 		        
 		        for(var i = 0; i < 10; i++){
-		        	$("#addDatasetsTable tbody tr[id='resultRow" + (i+1) + "']").each(function() {
+		        	$("#addChildCollectionsTable tbody tr[id='resultRow" + (i+1) + "']").each(function() {
 		        	    $(this).css('display','table-row');
 		        	});
 		        }
@@ -227,8 +227,8 @@
 		        	$('#addPagerNext').css('visibility','visible');
 		        }
 		        
-		        $("#hideAddDatasetBtn").show();
-		        areRestDatasetsVisible = true;
+		        $("#hideAddChildCollectionsBtn").show();
+		        areRestChildCollectionsVisible = true;
 		        
 		        return false;
  			});
@@ -241,24 +241,24 @@
         		return false;
      		});		 
 	 });
-	 $('body').on('click','#hideAddDatasetBtn',function(e){
+	 $('body').on('click','#hideAddChildCollectionsBtn',function(e){
 		 $('#addPagerPrev').css('visibility','hidden');
 	     $('#addPagerNext').css('visibility','hidden');
-	     $('#addDatasetsTable tbody tr').remove();
-	     $('#addDatasetsTable').css('display','none');
-	     $('#hideAddDatasetBtn').css('display','none');
-	     areRestDatasetsVisible = false;
+	     $('#addChildCollectionsTable tbody tr').remove();
+	     $('#addChildCollectionsTable').css('display','none');
+	     $('#hideAddChildCollectionsBtn').css('display','none');
+	     areRestChildCollectionsVisible = false;
 	     
 	     return false;
 	 });
 	
 	 $('body').on('click','#addPagerNext',function(e){
 		 currentFirstAdd = currentFirstAdd + 10;
-		 $("#addDatasetsTable tbody tr").each(function() {
+		 $("#addChildCollectionsTable tbody tr").each(function() {
         	    $(this).css('display','none');
          });
 		 for(var i = currentFirstAdd; i < currentFirstAdd + 10; i++){
-			 $("#addDatasetsTable tbody tr[id='resultRow" + i + "']").each(function() {
+			 $("#addChildCollectionsTable tbody tr[id='resultRow" + i + "']").each(function() {
 				 $(this).css('display','table-row');
 			 });
 		 }
@@ -270,11 +270,11 @@
 	 });
 	 $('body').on('click','#addPagerPrev',function(e){
 		 currentFirstAdd = currentFirstAdd - 10;
-		 $("#addDatasetsTable tbody tr").each(function() {
+		 $("#addChildCollectionsTable tbody tr").each(function() {
         	    $(this).css('display','none');
          });
 		 for(var i = currentFirstAdd; i < currentFirstAdd + 10; i++){
-			 $("#addDatasetsTable tbody tr[id='resultRow" + i + "']").each(function() {
+			 $("#addChildCollectionsTable tbody tr[id='resultRow" + i + "']").each(function() {
 				 $(this).css('display','table-row');
 			 });
 		 }

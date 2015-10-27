@@ -262,7 +262,7 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
 
   def jsonCollection(collection: Collection): JsValue = {
     toJson(Map("id" -> collection.id.toString, "name" -> collection.name, "description" -> collection.description,
-               "created" -> collection.created.toString,"root_flag" -> collection.root_flag.toString,
+               "created" -> collection.created.toString,"author"-> collection.author.toString, "root_flag" -> collection.root_flag.toString,
       "sub_collection_ids"-> collection.child_collection_ids.toString, "parent_collection_ids" -> collection.parent_collection_ids.toString))
   }
 
