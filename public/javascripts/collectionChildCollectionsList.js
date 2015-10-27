@@ -62,7 +62,7 @@
 	      $("#collectionChildCollectionsTable tbody tr[data-childcollectionid='" + rowId + "']").remove();
 	      
 	      //Add the data back to the uncontained datasets table
-	      var newDatasetHTML = "<tr data-childcollectionid='" + childCollectionId + "'><td><a href='#!' "
+	      var newChildCollectionHTML = "<tr data-childcollectionid='" + childCollectionId + "'><td><a href='#!' "
 	      + "onclick='addChildCollection(\"" + childCollection + "\",event)' "
 	      + ">"+ event.target.parentNode.parentNode.children[0].children[0].innerHTML + "</a></td>"
 	      + "<td>" + inputDate + "</td>"
@@ -70,7 +70,7 @@
 	      + "<td>" + inputThumbnail + "</td>"
 	      + "<td><a target='_blank' href='" + jsRoutes.controllers.Collections.collection(childCollectionId).url + "'>View</a></td></tr>";
 	      
-	      $('#addChildCollectionsTable tbody').append(newDatasetHTML);
+	      $('#addChildCollectionsTable tbody').append(newChildCollectionHTML);
 		});  	
 		
 		request.fail(function (jqXHR, textStatus, errorThrown){
@@ -185,7 +185,7 @@
 	 $('body').on('click','#addChildCollectionBtn',function(e){
 			var request = $.ajax({
 		       type: 'GET',
-		       url: queryIp,
+		       url: collectionsIp,
 		       dataType: "json",
 		     });
 			
@@ -228,7 +228,7 @@
 		        }
 		        
 		        $("#hideAddChildCollectionsBtn").show();
-		        areRestChildCollectionsVisible = true;
+		        areRestChildCollectionsVisible = false;
 		        
 		        return false;
  			});
