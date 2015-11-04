@@ -162,6 +162,7 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
     Logger.debug("changing the value of the root flag")
     collections.get(collectionId) match {
       case Some(collection) => {
+        collections.setRootFlag(collectionId, isRoot)
         Ok("collection exists")
       } case None => {
         Logger.error("Error getting collection  " + collectionId)

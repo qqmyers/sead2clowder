@@ -349,6 +349,9 @@ class MongoDBCollectionService @Inject() (datasets: DatasetService, userService:
     Collection.update(MongoDBObject("_id" -> new ObjectId(subCollectionId.stringify)), $addToSet("parent_collection_ids" -> parentCollectionId.stringify), false, false, WriteConcern.Safe)
   }
 
+  def setRootFlag(collectionId : UUID, isRoot : Boolean) = Try {
+    Collection.update(MongoDBObject("_id" -> new ObjectId(collectionId.stringify)),$set("root_flag" -> isRoot), false, false, WriteConcern.Safe )
+  }
 
   private def isInCollection(dataset: Dataset, collection: Collection): Boolean = {
     for(collDataset <- collection.datasets){

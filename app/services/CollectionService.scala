@@ -92,6 +92,8 @@ trait CollectionService {
    */
   def removeSubCollection(collectionId: UUID, subCollectionId: UUID, ignoreNotFound: Boolean = true) : Try[Unit]
 
+  def setRootFlag(collectionId: UUID, isRoot: Boolean) : Try[Unit]
+
   /**
    * Delete collection and any reference of it
    */
