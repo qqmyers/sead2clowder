@@ -332,7 +332,8 @@ class MongoDBDatasetService @Inject() (
       datasetThumbnail = dataset.thumbnail_id.toString().substring(5,dataset.thumbnail_id.toString().length-1)
 
     toJson(Map("id" -> dataset.id.toString, "datasetname" -> dataset.name, "description" -> dataset.description,
-      "created" -> dataset.created.toString, "thumbnail" -> datasetThumbnail, "authorId" -> dataset.author.identityId.userId))
+      "created" -> dataset.created.toString, "thumbnail" -> datasetThumbnail, "authorId" -> dataset.author.identityId.userId,
+          "collections" -> dataset.collections.toString))
   }
 
   def isInCollection(datasetId: UUID, collectionId: UUID): Boolean = {

@@ -152,6 +152,28 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
   }
 
   /**
+    * changes root flag value for collection
+    */
+  @ApiOperation(value = "Change value of root flag for collection",
+                notes = "",
+                responseClass = "None",httpMethod = "POST")
+  def rootFlag(collectionId: UUID, isRoot: Boolean) = SecuredAction(parse.anyContent,
+    authorization = WithPermission(Permission.CreateCollections), resourceId = Some(collectionId)) { request =>
+    Logger.debug("changing the value of the root flag")
+    collections.get(collectionId) match {
+      case Some(collection) => {
+        Ok("collection exists")
+      } case None => {
+        Logger.error("Error getting collection  " + collectionId)
+        BadRequest(toJson(s"The given collection id $collectionId is not a valid ObjectId."))
+      }
+    }
+
+    Ok("not yet implemented")
+  }
+
+
+  /**
    * Reindex the given collection, if recursive is set to true it will
    * also reindex all datasets and files.
    */

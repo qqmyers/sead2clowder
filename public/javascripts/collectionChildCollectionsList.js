@@ -199,11 +199,12 @@
 		        	var createdDateArray = respJSON[i].created.split(" ");
 		        	var createdDate = createdDateArray.slice(1,3).join(" ") + ", " + createdDateArray[5];
 		        	var childCollectionThumbnail = "";
+					var currentThumbnail = $("tr[data-childcollectionid='" + resultId + "'] td:nth-child(4)").html();
 		        	if(respJSON[i].thumbnail != "None")
 		        		childCollectionThumbnail = "<img src='" + window.location.protocol + "//" + window.location.hostname + (window.location.port ? ':' + window.location.port: '') + "/fileThumbnail/" + respJSON[i].thumbnail + "/blob' "
 		        							+ "alt='Thumbnail of " + respJSON[i].name.replace(/\n/g, "<br>") + "' width='120'>";
 		        	else
-		        		childCollectionThumbnail = "No thumbnail available"
+		        		childCollectionThumbnail = "No thumbnail available YO"
 
 		        	$('#addChildCollectionsTable tbody').append("<tr id='resultRow" + (i+1) + "' style='display:none;' data-childcollectionid='" + respJSON[i].id + "'><td><a href='#!' "
 		        								+ "onclick='addChildCollection(\"" + respJSON[i].id + "\",event)' "
