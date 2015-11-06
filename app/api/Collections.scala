@@ -36,12 +36,25 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
         name =>
           (request.body \ "description").asOpt[String].map {
             description =>
-              val c = Collection(name = name, description = description, created = new Date())
-              collections.insert(c) match {
-                case Some(id) => {
-                  Ok(toJson(Map("id" -> id)))
+              implicit val user = request.user
+              user match {
+                case Some(identity) => {
+                  val c = Collection(name = name, description = description, created = new Date(), author = Some(identity))
+                  collections.insert(c) match {
+                    case Some(id) => {
+                      Ok(toJson(Map("id"->id)))
+                    }
+                    case None => Ok(toJson(Map("status" -> "error")))
+                  }
+                } case None => {
+                    val c = Collection(name = name, description = description, created = new Date(), author = null)
+                    collections.insert(c) match {
+                      case Some(id) => {
+                        Ok(toJson(Map("id" ->id)))
+                      }
+                      case None => Ok(toJson(Map("status" -> "error")))
+                    }
                 }
-                case None => Ok(toJson(Map("status" -> "error")))
               }
           }.getOrElse(BadRequest(toJson("Missing parameter [description]")))
       }.getOrElse(BadRequest(toJson("Missing parameter [name]")))
