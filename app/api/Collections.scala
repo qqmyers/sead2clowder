@@ -72,23 +72,46 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
             description =>
               (request.body \ "parentId").asOpt[String].map {
                 parentId =>
-                  val c = Collection(name = name, description = description, created = new Date())
-                  collections.insert(c) match {
-                    case Some(id) => {
-                      collections.get(UUID(parentId)) match {
-                        case Some(parentCollection) => {
-                          collections.addParentCollection(UUID(id),UUID(parentId)) match {
-                            case Success(_) => {
-                              Ok(toJson(Map("id" -> id)))
+                  implicit val user = request.user
+                  user match {
+                    case Some(identity) => {
+                      val c = Collection(name = name, description = description, created = new Date(), author = Some(identity))
+                      collections.insert(c) match {
+                        case Some(id) => {
+                          collections.get(UUID(parentId)) match {
+                            case Some(parntCollection) => {
+                              collections.addParentCollection(UUID(id),UUID(parentId)) match {
+                                case Success(_) => {
+                                  Ok(toJson(Map("id" -> id)))
+                                }
+                              }
                             }
+                            case None => Ok(toJson("Invalid parentId"))
                           }
-                        } case None => Ok(toJson("Invalid parentId"))
+                        }
+                        case None => Ok(toJson(Map("status" -> "error")))
                       }
-
                     }
-                    case None => Ok(toJson(Map("status" -> "error")))
-                  }
+                    case None => {
+                      // create without author here
+                      val c = Collection(name = name, description = description, created = new Date())
+                      collections.insert(c) match {
+                        case Some(id) => {
+                          collections.get(UUID(parentId)) match {
+                            case Some(parentCollection) => {
+                              collections.addParentCollection(UUID(id),UUID(parentId)) match {
+                                case Success(_) => {
+                                  Ok(toJson(Map("id" -> id)))
+                                }
+                              }
+                            } case None => Ok(toJson("Invalid parentId"))
+                          }
 
+                        }
+                        case None => Ok(toJson(Map("status" -> "error")))
+                      }
+                    }
+                  }
               }.getOrElse(BadRequest(toJson("Missing parameter[parentId")))
           }.getOrElse(BadRequest(toJson("Missing parameter [description]")))
       }.getOrElse(BadRequest(toJson("Missing parameter [name]")))
