@@ -330,7 +330,7 @@ GET            /api/collections/list                                            
 POST           /api/collections/:id/follow                                              @api.Collections.follow(id: UUID, name: String)
 POST           /api/collections/:id/unfollow                                            @api.Collections.unfollow(id: UUID, name: String)
 POST           /api/collections/:coll_id/datasets/:ds_id                                @api.Collections.attachDataset(coll_id: UUID, ds_id: UUID)
-POST           /api/collections/:coll_id/collections/:sub_coll_id                       @api.Collections.attachSubCollection(coll_id: UUID, sub_coll_id: UUID)
+POST           /api/collections/:coll_id/addSubcollection/:sub_coll_id                       @api.Collections.attachSubCollection(coll_id: UUID, sub_coll_id: UUID)
 POST           /api/collections/:coll_id/addChildCollection/:child_name/:child_description  @api.Collections.addChildCollection(coll_id: UUID, child_name: String, child_description: String)
 POST           /api/collections/:coll_id/datasetsRemove/:ds_id/:ignoreNotFound          @api.Collections.removeDataset(coll_id: UUID, ds_id: UUID,ignoreNotFound)
 DELETE         /api/collections/:coll_id/datasets/:ds_id                                @api.Collections.removeDataset(coll_id: UUID, ds_id: UUID, ignoreNotFound ?= "True")
