@@ -314,6 +314,16 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
   def getCollection(collectionId: UUID) = SecuredAction(parse.anyContent,
     authorization=WithPermission(Permission.ShowCollection)) { request =>
     collections.get(collectionId) match {
+      case Some(x) => Ok(listChildCollectionIds(x))
+      case None => BadRequest(toJson("collection not found"))
+    }
+  }
+
+  @ApiOperation(value = "Get child collections in collection",
+    responseClass = "", httpMethod = "GET")
+  def listChildCollectionIds(collectionId: UUID) = SecuredAction(parse.anyContent,
+    authorization = WithPermission(Permission.ShowCollection)) { request =>
+    collections.get(collectionId) match {
       case Some(x) => Ok(jsonCollection(x))
       case None => BadRequest(toJson("collection not found"))
     }
@@ -323,6 +333,10 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
     toJson(Map("id" -> collection.id.toString, "name" -> collection.name, "description" -> collection.description,
                "created" -> collection.created.toString,"author"-> collection.author.toString, "root_flag" -> collection.root_flag.toString,
       "sub_collection_ids"-> collection.child_collection_ids.toString, "parent_collection_ids" -> collection.parent_collection_ids.toString))
+  }
+
+  def listChildCollectionIds(collection: Collection): JsValue = {
+    toJson(Map("sub_collection_ids" -> collection.child_collection_ids.toString))
   }
 
   /**

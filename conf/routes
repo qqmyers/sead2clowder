@@ -337,6 +337,7 @@ DELETE         /api/collections/:coll_id/datasets/:ds_id                        
 POST           /api/collections/:coll_id/remove                                         @api.Collections.removeCollection(coll_id: UUID)
 POST           /api/collections/:coll_id/reindex                                        @api.Collections.reindex(coll_id: UUID, recursive: Boolean ?= true)
 GET            /api/collections/:coll_id/getDatasets                                    @api.Datasets.listInCollection(coll_id: UUID)
+GET            /api/collections/:coll_id/getChildCollections                            @api.Collections.listChildCollectionIds(coll_id: UUID)
 DELETE         /api/collections/:coll_id                                                @api.Collections.removeCollection(coll_id: UUID)
 POST           /api/collections/:c_id/previews/:p_id                                    @api.Collections.attachPreview(c_id: UUID, p_id: UUID)
 GET            /api/collections/:coll_id                                                @api.Collections.getCollection(coll_id: UUID)
