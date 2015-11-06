@@ -314,17 +314,17 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
   def getCollection(collectionId: UUID) = SecuredAction(parse.anyContent,
     authorization=WithPermission(Permission.ShowCollection)) { request =>
     collections.get(collectionId) match {
-      case Some(x) => Ok(listChildCollectionIds(x))
+      case Some(x) => Ok(jsonCollection(x))
       case None => BadRequest(toJson("collection not found"))
     }
   }
 
   @ApiOperation(value = "Get child collections in collection",
-    responseClass = "", httpMethod = "GET")
-  def listChildCollectionIds(collectionId: UUID) = SecuredAction(parse.anyContent,
+    responseClass = "None", httpMethod = "GET")
+  def listChildCollections(collectionId: UUID) = SecuredAction(parse.anyContent,
     authorization = WithPermission(Permission.ShowCollection)) { request =>
     collections.get(collectionId) match {
-      case Some(x) => Ok(jsonCollection(x))
+      case Some(collection) => Ok(listChildCollectionIds(collection))
       case None => BadRequest(toJson("collection not found"))
     }
   }
