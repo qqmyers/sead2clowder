@@ -9,6 +9,7 @@ import play.api.libs.json._
 import play.api.libs.json.{JsObject, JsValue}
 import play.api.libs.json.Json.toJson
 import javax.inject.{ Singleton, Inject }
+import scala.collection.mutable.ListBuffer
 import scala.util.{Try, Success, Failure}
 import com.wordnik.swagger.annotations.Api
 import com.wordnik.swagger.annotations.ApiOperation
@@ -324,19 +325,25 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
   def listChildCollections(collectionId: UUID) = SecuredAction(parse.anyContent,
     authorization = WithPermission(Permission.ShowCollection)) { request =>
     collections.get(collectionId) match {
-      case Some(collection) => Ok(listChildCollectionIds(collection))
+      case Some(collection) => {
+        val childCollections = ListBuffer.empty[models.Collection]
+        val childCollectionIds = listChildCollectionIds(collection)
+
+        Ok(childCollectionIds)
+      }
       case None => BadRequest(toJson("collection not found"))
     }
-  }
+}
 
   def jsonCollection(collection: Collection): JsValue = {
     toJson(Map("id" -> collection.id.toString, "name" -> collection.name, "description" -> collection.description,
                "created" -> collection.created.toString,"author"-> collection.author.toString, "root_flag" -> collection.root_flag.toString,
-      "sub_collection_ids"-> collection.child_collection_ids.toString, "parent_collection_ids" -> collection.parent_collection_ids.toString))
+      "child_collection_ids"-> collection.child_collection_ids.toString, "parent_collection_ids" -> collection.parent_collection_ids.toString))
   }
 
   def listChildCollectionIds(collection: Collection): JsValue = {
-    toJson(Map("sub_collection_ids" -> collection.child_collection_ids.toString))
+    var childCollectionIds = collection.child_collection_ids;
+    toJson(Map("child_collection_ids" -> childCollectionIds))
   }
 
   /**
