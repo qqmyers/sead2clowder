@@ -4,6 +4,7 @@ import play.api.Logger
 import play.api.Play.current
 import models._
 import play.api.http.Writeable
+import play.api.libs.json
 import services._
 import play.api.libs.json._
 import play.api.libs.json.{JsObject, JsValue}
@@ -322,7 +323,7 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
 
   @ApiOperation(value = "Get child collections in collection",
     responseClass = "None", httpMethod = "GET")
-  def listChildCollections(collectionId: UUID) = SecuredAction(parse.anyContent,
+  def getChildCollectionIds(collectionId: UUID) = SecuredAction(parse.anyContent,
     authorization = WithPermission(Permission.ShowCollection)) { request =>
     collections.get(collectionId) match {
       case Some(collection) => {
