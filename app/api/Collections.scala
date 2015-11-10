@@ -313,9 +313,16 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
     notes = "",
     responseClass = "None", httpMethod = "GET")
   def getRootCollections() = SecuredAction(parse.anyContent,
-    authorization = WithPermission(Permission.ShowCollection)) {request =>
-    Ok("not implemented")
+    authorization = WithPermission(Permission.ListCollections)) {request =>
+
+
+    val root_collections_list = for (collection <- collections.listCollections; if collection.root_flag == true)
+      yield jsonCollection(collection)
+
+
+    Ok(toJson(root_collections_list))
   }
+
 
   @ApiOperation(value = "Get a specific collection",
     responseClass = "Collection", httpMethod = "GET")

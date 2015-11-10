@@ -323,6 +323,7 @@ POST		   /api/dumpDatasetGroupings												@api.Datasets.dumpDatasetGroupings
 # ----------------------------------------------------------------------
 # COLLECTIONS ENDPOINT
 # ----------------------------------------------------------------------
+GET            /api/collections/getRootCollections                                      @api.Collections.getRootCollections
 GET            /api/collections                                                         @api.Collections.listCollections
 POST           /api/collections                                                         @api.Collections.createCollection()
 GET            /api/collections/list                                                    @api.Collections.listCollections
@@ -343,7 +344,7 @@ POST           /api/collections/:c_id/previews/:p_id                            
 GET            /api/collections/:coll_id                                                @api.Collections.getCollection(coll_id: UUID)
 POST           /api/collections/:coll_id/removeSubCollection/:sub_coll_id               @api.Collections.removeSubCollection(coll_id: UUID,sub_coll_id:UUID, ignoreNotFound?="True")
 POST           /api/collections/:coll_id/rootFlag/:isRoot                               @api.Collections.rootFlag(coll_id: UUID, isRoot: Boolean )
-GET            /api/collections/getRootCollections                                      @api.Collections.getRootCollections()
+
 
 
 # ----------------------------------------------------------------------
