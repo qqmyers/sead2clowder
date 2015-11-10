@@ -201,14 +201,12 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
     collections.get(collectionId) match {
       case Some(collection) => {
         collections.setRootFlag(collectionId, isRoot)
-        Ok("collection exists")
+        Ok(jsonCollection(collection))
       } case None => {
         Logger.error("Error getting collection  " + collectionId)
         BadRequest(toJson(s"The given collection id $collectionId is not a valid ObjectId."))
       }
     }
-
-    Ok("not yet implemented")
   }
 
 
@@ -309,6 +307,14 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
                                         authorization=WithPermission(Permission.ListCollections)) { request =>
     val list = for (collection <- collections.listCollections()) yield jsonCollection(collection)
     Ok(toJson(list))
+  }
+
+  @ApiOperation(value = "Get all root collections",
+    notes = "",
+    responseClass = "None", httpMethod = "GET")
+  def getRootCollections() = SecuredAction(parse.anyContent,
+    authorization = WithPermission(Permission.ShowCollection)) {request =>
+    Ok("not implemented")
   }
 
   @ApiOperation(value = "Get a specific collection",
