@@ -11,6 +11,7 @@ import play.api.libs.json.{JsObject, JsValue}
 import play.api.libs.json.Json.toJson
 import javax.inject.{ Singleton, Inject }
 import scala.collection.mutable.ListBuffer
+import scala.util.parsing.json.JSONArray
 import scala.util.{Try, Success, Failure}
 import com.wordnik.swagger.annotations.Api
 import com.wordnik.swagger.annotations.ApiOperation
@@ -81,8 +82,8 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
                       collections.insert(c) match {
                         case Some(id) => {
                           collections.get(UUID(parentId)) match {
-                            case Some(parntCollection) => {
-                              collections.addParentCollection(UUID(id),UUID(parentId)) match {
+                            case Some(parentCollection) => {
+                              collections.addSubCollection(UUID(parentId),UUID(id)) match {
                                 case Success(_) => {
                                   Ok(toJson(Map("id" -> id)))
                                 }
@@ -171,23 +172,6 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
     }
   }
 
-  @ApiOperation(value = "Add child collection to collection by name and description",
-                notes = "",
-                responseClass = "None", httpMethod = "POST")
-  def addChildCollection(collectionId: UUID, childName: String, childDescription: String) = SecuredAction(parse.anyContent,
-    authorization = WithPermission(Permission.CreateCollections), resourceId = Some(collectionId)) { request =>
-    Logger.debug("Creating new collection")
-    val c = Collection(name = childName, description = childDescription, created = new Date())
-    collections.insert(c) match {
-      case Some(id) => {
-        collections.addSubCollection(collectionId,UUID(id))
-        //add to collection here
-        Ok(toJson(Map("id" -> id)))
-      }
-      case None => Ok(toJson(Map("status" -> "error")))
-    }
-
-  }
 
   /**
     * changes root flag value for collection
@@ -323,6 +307,24 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
     Ok(toJson(root_collections_list))
   }
 
+  @ApiOperation(value = "Get all root collections",
+    notes = "",
+    responseClass = "None", httpMethod = "GET")
+  def getTopLevelCollections() = SecuredAction(parse.anyContent,
+    authorization = WithPermission(Permission.ShowCollection)) {request =>
+
+    val topLevelCollections = ListBuffer.empty[JsValue]
+
+    for (collection <- collections.listCollections()) {
+      if (collection.root_flag == true || collection.parent_collection_ids.isEmpty){
+        topLevelCollections += jsonCollection(collection)
+      }
+    }
+
+    Ok(toJson(topLevelCollections))
+  }
+
+
 
   @ApiOperation(value = "Get a specific collection",
     responseClass = "Collection", httpMethod = "GET")
@@ -334,20 +336,85 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
     }
   }
 
-  @ApiOperation(value = "Get child collections in collection",
+  @ApiOperation(value = "Get child collection ids in collection",
     responseClass = "None", httpMethod = "GET")
   def getChildCollectionIds(collectionId: UUID) = SecuredAction(parse.anyContent,
     authorization = WithPermission(Permission.ShowCollection)) { request =>
     collections.get(collectionId) match {
       case Some(collection) => {
-        val childCollections = ListBuffer.empty[models.Collection]
-        val childCollectionIds = listChildCollectionIds(collection)
+        var childCollectionIds = collection.child_collection_ids
 
-        Ok(childCollectionIds)
+        Ok(toJson(childCollectionIds))
       }
       case None => BadRequest(toJson("collection not found"))
     }
-}
+  }
+
+  @ApiOperation(value = "Get parent collection ids in collection",
+    responseClass = "None", httpMethod = "GET")
+  def getParentCollectionIds(collectionId: UUID) = SecuredAction(parse.anyContent,
+    authorization = WithPermission(Permission.ShowCollection)) { request =>
+    collections.get(collectionId) match {
+      case Some(collection) => {
+        var parentCollectionIds = collection.parent_collection_ids
+
+        Ok(toJson(parentCollectionIds))
+      }
+      case None => BadRequest(toJson("collection not found"))
+    }
+  }
+
+
+
+  @ApiOperation(value = "Get child collections in collection",
+    responseClass = "None", httpMethod = "GET")
+  def getChildCollections(collectionId: UUID) = SecuredAction(parse.anyContent,
+    authorization = WithPermission(Permission.ShowCollection)) { request =>
+    collections.get(collectionId) match {
+      case Some(collection) => {
+        val childCollections = ListBuffer.empty[JsValue]
+        var childCollectionIds = collection.child_collection_ids
+        for (childCollectionId <- childCollectionIds) {
+          collections.get(UUID(childCollectionId)) match {
+            case Some(child_collection) => {
+              childCollections += jsonCollection(child_collection )
+            }
+            case None =>
+              Logger.debug("No child collection with id : " + childCollectionId)
+          }
+        }
+
+        Ok(toJson(childCollections))
+      }
+      case None => BadRequest(toJson("collection not found"))
+    }
+  }
+
+  @ApiOperation(value = "Get parent collections for collection",
+    responseClass = "None", httpMethod = "GET")
+  def getParentCollections(collectionId: UUID) = SecuredAction(parse.anyContent,
+    authorization = WithPermission(Permission.ShowCollection)) { request =>
+    collections.get(collectionId) match {
+      case Some(collection) => {
+        val parentCollections = ListBuffer.empty[JsValue]
+        var parentCollectionIds = collection.parent_collection_ids
+        for (parentCollectionId <- parentCollectionIds) {
+          collections.get(UUID(parentCollectionId)) match {
+            case Some(parent_collection) => {
+              parentCollections += jsonCollection(parent_collection )
+            }
+            case None =>
+              Logger.debug("No child collection with id : " + parentCollectionId)
+          }
+        }
+
+        Ok(toJson(parentCollections))
+      }
+      case None => BadRequest(toJson("collection not found"))
+    }
+  }
+
+
 
   def jsonCollection(collection: Collection): JsValue = {
     toJson(Map("id" -> collection.id.toString, "name" -> collection.name, "description" -> collection.description,
@@ -464,6 +531,21 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
         }
       }
   }
+
+  def isCollectionRootOrHasNoParent(collectionId: UUID): Unit = {
+    collections.get(collectionId) match {
+      case Some(collection) => {
+        if (collection.root_flag == true || collection.parent_collection_ids.isEmpty) {
+          return true
+        } else
+          return false
+
+      }
+      case None =>
+        Ok("no collection with id : " + collectionId)
+    }
+  }
+
 
   def getTopRecommendations(followeeUUID: UUID, follower: User): List[MiniEntity] = {
     val followeeModel = collections.get(followeeUUID)
