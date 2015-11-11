@@ -104,49 +104,55 @@ class Datasets @Inject()(
    * Create new dataset
    */
   @ApiOperation(value = "Create new dataset",
-      notes = "New dataset containing one existing file, based on values of fields in attached JSON. Returns dataset id as JSON object.",
-      responseClass = "None", httpMethod = "POST")
+    notes = "New dataset containing one existing file, based on values of fields in attached JSON. Returns dataset id as JSON object.",
+    responseClass = "None", httpMethod = "POST")
   def createDataset() = PermissionAction(Permission.CreateDataset)(parse.json) { implicit request =>
     Logger.debug("--- API Creating new dataset ----")
     (request.body \ "name").asOpt[String].map { name =>
-      (request.body \ "description").asOpt[String].map { description =>
-        (request.body \ "file_id").asOpt[String].map { file_id =>
-            (request.body \ "space").asOpt[String].map { space =>
-                  files.get(UUID(file_id)) match {
-                    case Some(file) =>
-                      var d : Dataset = null
-                      if (space == "default") {
-                          d = Dataset(name=name,description=description, created=new Date(), author=request.user.get, licenseData = License.fromAppConfig())
-                      }
-                      else {
-                          d = Dataset(name=name,description=description, created=new Date(), author=request.user.get, licenseData = License.fromAppConfig(), spaces = List(UUID(space)))
-                      }
-                      events.addObjectEvent(request.user, d.id, d.name, "create_dataset")
-                      datasets.insert(d) match {
-                        case Some(id) => {
-                          files.index(UUID(file_id))
-                          if(!file.xmlMetadata.isEmpty) {
-                            val xmlToJSON = files.getXMLMetadataJSON(UUID(file_id))
-                            datasets.addXMLMetadata(UUID(id), UUID(file_id), xmlToJSON)
-                            current.plugin[ElasticsearchPlugin].foreach {
-                             _.index("data", "dataset", UUID(id),
-                               List(("name", d.name), ("description", d.description), ("xmlmetadata", xmlToJSON)))
-                            }
-                          } else {
-                            current.plugin[ElasticsearchPlugin].foreach {
-                              _.index("data", "dataset", UUID(id), List(("name", d.name), ("description", d.description)))
-                            }
-                          }
-                          current.plugin[AdminsNotifierPlugin].foreach{_.sendAdminsNotification(Utils.baseUrl(request),"Dataset","added",id, name)}
-                          Ok(toJson(Map("id" -> id)))
-                        }
-                        case None => Ok(toJson(Map("status" -> "error")))
-                      }
-                    case None => BadRequest(toJson("Bad file_id = " + file_id))
-                }
-          }.getOrElse(BadRequest(toJson("Missing parameter [space]")))
-        }.getOrElse(BadRequest(toJson("Missing parameter [file_id]")))
-      }.getOrElse(BadRequest(toJson("Missing parameter [description]")))
+      val description = (request.body \ "description").asOpt[String].getOrElse("")
+
+      var d : Dataset = null
+      (request.body \ "space").asOpt[String] match {
+        case Some(space) => d = Dataset(name=name,description=description, created=new Date(), author=request.user.get, licenseData = License.fromAppConfig(), spaces = List(UUID(space)))
+        case None => d = Dataset(name=name,description=description, created=new Date(), author=request.user.get, licenseData = License.fromAppConfig())
+      }
+      events.addObjectEvent(request.user, d.id, d.name, "create_dataset")
+
+      datasets.insert(d) match {
+        case Some(id) => {
+          (request.body \ "file_id").asOpt[String] match {
+            case Some(file_id) => {
+
+              files.get(UUID(file_id)) match {
+                case Some(file) =>
+                  files.index(UUID(file_id))
+                  if (!file.xmlMetadata.isEmpty) {
+                    val xmlToJSON = files.getXMLMetadataJSON(UUID(file_id))
+                    datasets.addXMLMetadata(UUID(id), UUID(file_id), xmlToJSON)
+                    current.plugin[ElasticsearchPlugin].foreach {
+                      _.index("data", "dataset", UUID(id),
+                        List(("name", d.name), ("description", d.description), ("xmlmetadata", xmlToJSON)))
+                    }
+                  } else {
+                    current.plugin[ElasticsearchPlugin].foreach {
+                      _.index("data", "dataset", UUID(id), List(("name", d.name), ("description", d.description)))
+                    }
+                  }
+
+                  current.plugin[AdminsNotifierPlugin].foreach {
+                    _.sendAdminsNotification(Utils.baseUrl(request), "Dataset", "added", id, name)
+                  }
+                  Ok(toJson(Map("id" -> id)))
+
+                case None => BadRequest(toJson("Bad file_id = " + file_id))
+
+              }
+            }
+            case None => Ok(toJson(Map("id" -> id)))
+          }
+        }
+        case None => Ok(toJson(Map("status" -> "error")))
+      }
     }.getOrElse(BadRequest(toJson("Missing parameter [name]")))
   }
   

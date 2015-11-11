@@ -30,33 +30,30 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
   @ApiOperation(value = "Create a collection",
       notes = "",
       responseClass = "None", httpMethod = "POST")
-  def createCollection() = PermissionAction(Permission.CreateCollection)(parse.json) { implicit request =>
-      Logger.debug("Creating new collection")
-      (request.body \ "name").asOpt[String].map { name =>
-          (request.body \ "description").asOpt[String].map { description =>
-              (request.body \ "space").asOpt[String].map { space => 
-	              var c : Collection = null
-                implicit val user = request.user
-                user match {
-                  case Some(identity) => {
-                    if (space == "default") {
-                      c = Collection(name = name, description = description, created = new Date(), datasetCount = 0, author = identity)
-                    }
-                    else {
-                      c = Collection(name = name, description = description, created = new Date(), datasetCount = 0, author = identity, spaces = List(UUID(space)))
-                    }
-                    collections.insert(c) match {
-                      case Some(id) => {
-                        Ok(toJson(Map("id" -> id)))
-                      }
-                      case None => Ok(toJson(Map("status" -> "error")))
-                    }
-                  }
-                  case None => InternalServerError("User Not found")
-                }
-              }.getOrElse(BadRequest(toJson("Missing parameter [space]")))
-          }.getOrElse(BadRequest(toJson("Missing parameter [description]")))
-      }.getOrElse(BadRequest(toJson("Missing parameter [name]")))
+  def createCollection() = PermissionAction(Permission.CreateCollection) (parse.json) { implicit request =>
+    Logger.debug("Creating new collection")
+    (request.body \ "name").asOpt[String].map { name =>
+
+      var c : Collection = null
+      implicit val user = request.user
+      user match {
+        case Some(identity) => {
+          val description = (request.body \ "description").asOpt[String].getOrElse("")
+          (request.body \ "space").asOpt[String] match {
+            case Some(space) =>  c = Collection(name = name, description = description, created = new Date(), datasetCount = 0, author = identity, spaces = List(UUID(space)))
+            case None => c = Collection(name = name, description = description, created = new Date(), datasetCount = 0, author = identity)
+          }
+
+          collections.insert(c) match {
+            case Some(id) => {
+              Ok(toJson(Map("id" -> id)))
+            }
+            case None => Ok(toJson(Map("status" -> "error")))
+          }
+        }
+        case None => InternalServerError("User Not found")
+      }
+    }.getOrElse(BadRequest(toJson("Missing parameter [name]")))
   }
 
   @ApiOperation(value = "Add dataset to collection",
