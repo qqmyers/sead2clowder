@@ -102,7 +102,7 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
                         case Some(id) => {
                           collections.get(UUID(parentId)) match {
                             case Some(parentCollection) => {
-                              collections.addParentCollection(UUID(id),UUID(parentId)) match {
+                              collections.addSubCollection(UUID(parentId),UUID(id)) match {
                                 case Success(_) => {
                                   Ok(toJson(Map("id" -> id)))
                                 }
