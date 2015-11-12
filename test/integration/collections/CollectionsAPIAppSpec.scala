@@ -33,11 +33,11 @@ class CollectionsAPIAppSpec extends PlaySpec with ConfiguredApp with FakeMultipa
 
   implicit val fileReads: Reads[FileName] = (
     (__ \ "size").read[String] and
-    (__ \ "date-created").read[String] and
-    (__ \ "id").read[String] and
-    (__ \ "content-type").read[String] and
-    (__ \ "filename").read[String]
-  )(FileName.apply _)
+      (__ \ "date-created").read[String] and
+      (__ \ "id").read[String] and
+      (__ \ "content-type").read[String] and
+      (__ \ "filename").read[String]
+    )(FileName.apply _)
 
 
 
@@ -45,22 +45,22 @@ class CollectionsAPIAppSpec extends PlaySpec with ConfiguredApp with FakeMultipa
 
   implicit val datasetReads: Reads[DataSet] = (
     (__ \ "description").read[String] and
-    (__ \ "thumbnail").read[String] and
-    (__ \ "id").read[String] and
-    (__ \ "datasetname").read[String] and
-    (__ \ "authorId").read[String] and
-    (__ \ "created").read[String]
-  )(DataSet.apply _)
+      (__ \ "thumbnail").read[String] and
+      (__ \ "id").read[String] and
+      (__ \ "datasetname").read[String] and
+      (__ \ "authorId").read[String] and
+      (__ \ "created").read[String]
+    )(DataSet.apply _)
 
 
   case class CollectionSet(id: String, name: String, description: String, created: String)
 
   implicit val collectionReads: Reads[CollectionSet] = (
     (__ \ "id").read[String] and
-    (__ \ "name").read[String] and
-    (__ \ "description").read[String] and
-    (__ \ "created").read[String]
-  )(CollectionSet.apply _)
+      (__ \ "name").read[String] and
+      (__ \ "description").read[String] and
+      (__ \ "created").read[String]
+    )(CollectionSet.apply _)
 
 
 
@@ -76,8 +76,8 @@ class CollectionsAPIAppSpec extends PlaySpec with ConfiguredApp with FakeMultipa
       Play.maybeApplication mustBe Some(app)
     }
   }
- 	
- "The Collections API Spec" must {
+
+  "The Collections API Spec" must {
     "respond to the createCollection() function routed by POST /api/collections for Collection 1" in {
       //link up json file here before fake request.
       info("Working Directory: " + workingDir)
@@ -94,7 +94,7 @@ class CollectionsAPIAppSpec extends PlaySpec with ConfiguredApp with FakeMultipa
       val json_tags: JsValue = Json.parse(json_data_from_file_lines)
       val readableString_tags: String = Json.prettyPrint(json_tags)
       info("Pretty JSON format")
-      info(readableString_tags)          
+      info(readableString_tags)
 
       //link up json file here before fake request.
       val Some(result) = route(FakeRequest(POST, "/api/collections?key=" + secretKey).withJsonBody(json_tags))
@@ -125,7 +125,7 @@ class CollectionsAPIAppSpec extends PlaySpec with ConfiguredApp with FakeMultipa
       val json_tags: JsValue = Json.parse(json_data_from_file_lines)
       val readableString_tags: String = Json.prettyPrint(json_tags)
       info("Pretty JSON format")
-      info(readableString_tags)          
+      info(readableString_tags)
 
       //link up json file here before fake request.
       val Some(result) = route(FakeRequest(POST, "/api/collections?key=" + secretKey).withJsonBody(json_tags))
@@ -156,7 +156,7 @@ class CollectionsAPIAppSpec extends PlaySpec with ConfiguredApp with FakeMultipa
       val description = "Part 1 of Dataset API Test Suite"
 
       val req2 = FakeRequest(POST, "/api/datasets?key=" + secretKey).
-          withJsonBody(Json.toJson(Map("name" -> name, "description" -> description, "file_id" -> zipFile1Id, "space" -> "default")))
+        withJsonBody(Json.toJson(Map("name" -> name, "description" -> description, "file_id" -> zipFile1Id, "space" -> "default")))
       val result2 = route(req2).get
 
       info("Status=" + status(result2))
@@ -186,7 +186,7 @@ class CollectionsAPIAppSpec extends PlaySpec with ConfiguredApp with FakeMultipa
       //val file_id = ""
 
       val req2 = FakeRequest(POST, "/api/datasets?key=" + secretKey).
-          withJsonBody(Json.toJson(Map("name" -> name, "description" -> description, "file_id" -> zipFile2Id, "space" -> "default")))
+        withJsonBody(Json.toJson(Map("name" -> name, "description" -> description, "file_id" -> zipFile2Id, "space" -> "default")))
       val result2 = route(req2).get
 
       info("Status=" + status(result2))
@@ -279,31 +279,31 @@ class CollectionsAPIAppSpec extends PlaySpec with ConfiguredApp with FakeMultipa
     }
 
 
-   "respond to the deleteDataset(id:UUID) function routed by DELETE /api/datasets/:id for Dataset 1 " in {
-     val Some(result_get) = route(FakeRequest(DELETE, "/api/datasets/" + dataset1Id + "?key=" + secretKey))
-     info("Status_Get="+status(result_get))
-     status(result_get) mustEqual OK
-     info("contentType_Get="+contentType(result_get))
-     contentType(result_get) mustEqual Some("application/json")
-     val json: JsValue = Json.parse(contentAsString(result_get))
-     val readableString: String = Json.prettyPrint(json)
-     info("Pretty JSON format")
-     info(readableString)
-   }
+    "respond to the deleteDataset(id:UUID) function routed by DELETE /api/datasets/:id for Dataset 1 " in {
+      val Some(result_get) = route(FakeRequest(DELETE, "/api/datasets/" + dataset1Id + "?key=" + secretKey))
+      info("Status_Get="+status(result_get))
+      status(result_get) mustEqual OK
+      info("contentType_Get="+contentType(result_get))
+      contentType(result_get) mustEqual Some("application/json")
+      val json: JsValue = Json.parse(contentAsString(result_get))
+      val readableString: String = Json.prettyPrint(json)
+      info("Pretty JSON format")
+      info(readableString)
+    }
 
-   "respond to the deleteDataset(id:UUID) function routed by DELETE /api/datasets/:id for Dataset 2 " in {
-     val Some(result_get) = route(FakeRequest(DELETE, "/api/datasets/" + dataset2Id + "?key=" + secretKey))
-     info("Status_Get="+status(result_get))
-     status(result_get) mustEqual OK
-     info("contentType_Get="+contentType(result_get))
-     contentType(result_get) mustEqual Some("application/json")
-     val json: JsValue = Json.parse(contentAsString(result_get))
-     val readableString: String = Json.prettyPrint(json)
-     info("Pretty JSON format")
-     info(readableString)
-   }
+    "respond to the deleteDataset(id:UUID) function routed by DELETE /api/datasets/:id for Dataset 2 " in {
+      val Some(result_get) = route(FakeRequest(DELETE, "/api/datasets/" + dataset2Id + "?key=" + secretKey))
+      info("Status_Get="+status(result_get))
+      status(result_get) mustEqual OK
+      info("contentType_Get="+contentType(result_get))
+      contentType(result_get) mustEqual Some("application/json")
+      val json: JsValue = Json.parse(contentAsString(result_get))
+      val readableString: String = Json.prettyPrint(json)
+      info("Pretty JSON format")
+      info(readableString)
+    }
 
- "respond to the listCollections() function routed by GET /api/collections" in {
+    "respond to the listCollections() function routed by GET /api/collections" in {
       val Some(result) = route(FakeRequest(GET, "/api/collections?key=" + secretKey))
       info("Status="+status(result))
       status(result) mustEqual OK
@@ -313,7 +313,7 @@ class CollectionsAPIAppSpec extends PlaySpec with ConfiguredApp with FakeMultipa
       info("content"+contentAsString(result))
     }
 
-  "respond to the listCollections() function routed by GET /api/collections/list" in {
+    "respond to the listCollections() function routed by GET /api/collections/list" in {
       val Some(result) = route(FakeRequest(GET, "/api/collections/list"))
       info("Status="+status(result))
       status(result) mustEqual OK
@@ -350,5 +350,5 @@ class CollectionsAPIAppSpec extends PlaySpec with ConfiguredApp with FakeMultipa
     }
 
 
- } // End Test Suite Bracket
+  } // End Test Suite Bracket
 } // End Class Bracket

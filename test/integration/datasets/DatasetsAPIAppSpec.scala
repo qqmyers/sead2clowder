@@ -40,23 +40,23 @@ class DatasetsAPIAppSpec extends PlaySpec with ConfiguredApp with FakeMultipartU
 
   implicit val fileReads: Reads[FileName] = (
     (__ \ "size").read[String] and
-    (__ \ "date-created").read[String] and
-    (__ \ "id").read[String] and
-    (__ \ "content-type").read[String] and
-    (__ \ "filename").read[String]
-  )(FileName.apply _)
+      (__ \ "date-created").read[String] and
+      (__ \ "id").read[String] and
+      (__ \ "content-type").read[String] and
+      (__ \ "filename").read[String]
+    )(FileName.apply _)
 
 
   case class DataSet(description: String, thumbnail: String, id: String, datasetname: String, authorId: String, created: String)
 
   implicit val datasetReads: Reads[DataSet] = (
     (__ \ "description").read[String] and
-    (__ \ "thumbnail").read[String] and
-    (__ \ "id").read[String] and
-    (__ \ "datasetname").read[String] and
-    (__ \ "authorId").read[String] and
-    (__ \ "created").read[String]
-  )(DataSet.apply _)
+      (__ \ "thumbnail").read[String] and
+      (__ \ "id").read[String] and
+      (__ \ "datasetname").read[String] and
+      (__ \ "authorId").read[String] and
+      (__ \ "created").read[String]
+    )(DataSet.apply _)
 
 
   "The Datasets API Spec" must {
@@ -71,10 +71,10 @@ class DatasetsAPIAppSpec extends PlaySpec with ConfiguredApp with FakeMultipartU
       Play.maybeApplication mustBe Some(app)
     }
   }
-  
 
-  
- "The Datasets API Spec" must {
+
+
+  "The Datasets API Spec" must {
     "respond to the createDataset() function routed by POST /api/datasets" in {
       info("Working Directory: " + workingDir)
       val file1 = new java.io.File(workingDir + "/test/data/datasets/dataset-image.zip")
@@ -93,7 +93,7 @@ class DatasetsAPIAppSpec extends PlaySpec with ConfiguredApp with FakeMultipartU
       //val file_id = ""
 
       val req2 = FakeRequest(POST, "/api/datasets?key=" + secretKey).
-          withJsonBody(Json.toJson(Map("name" -> name, "description" -> description, "file_id" -> zipFileId, "space" -> "default")))
+        withJsonBody(Json.toJson(Map("name" -> name, "description" -> description, "file_id" -> zipFileId, "space" -> "default")))
       val result2 = route(req2).get
 
       info("Status=" + status(result2))
@@ -150,7 +150,7 @@ class DatasetsAPIAppSpec extends PlaySpec with ConfiguredApp with FakeMultipartU
 
     "respond to the updateLicense(id: UUID) function routed by POST /api/datasets/:id/license" in {
       val req = FakeRequest(POST, "/api/datasets/" + datasetId + "/license?key=" + secretKey).
-              withJsonBody(Json.toJson(Map("licenseType" -> "NCSA Open Source", "rightsHolder" -> "API Test Suite", "licenseText" -> "by", "licenseUrl" -> "https://medici.ncsa.illinois.edu", "allowDownload" -> "True")))
+        withJsonBody(Json.toJson(Map("licenseType" -> "NCSA Open Source", "rightsHolder" -> "API Test Suite", "licenseText" -> "by", "licenseUrl" -> "https://medici.ncsa.illinois.edu", "allowDownload" -> "True")))
       val result_get = route(req).get
 
       status(result_get) mustEqual OK
@@ -163,7 +163,7 @@ class DatasetsAPIAppSpec extends PlaySpec with ConfiguredApp with FakeMultipartU
 
     "respond to the comment(id: UUID) function routed by POST /api/datasets/:id/comment" in {
       val req = FakeRequest(POST, "/api/datasets/" + datasetId + "/comment?key=" + secretKey).
-              withJsonBody(Json.toJson(Map("text" -> "API Test Suite Comment")))
+        withJsonBody(Json.toJson(Map("text" -> "API Test Suite Comment")))
       val result_get = route(req).get
 
       status(result_get) mustEqual OK
@@ -193,7 +193,7 @@ class DatasetsAPIAppSpec extends PlaySpec with ConfiguredApp with FakeMultipartU
 
       //link up json file here before fake request.
       val Some(result_get) = route(FakeRequest(POST, "/api/datasets/" + datasetId + "/tags?key=" + secretKey).withJsonBody(json_tags))
-         // withJsonBody(Json.toJson(Map("tags" -> List("Dataset", "Test Suite", "Medici"), "extractor_id" -> "ncsa.cv.face")))
+      // withJsonBody(Json.toJson(Map("tags" -> List("Dataset", "Test Suite", "Medici"), "extractor_id" -> "ncsa.cv.face")))
       ///val result_get = route(req).get
 
       status(result_get) mustEqual OK
@@ -264,7 +264,7 @@ class DatasetsAPIAppSpec extends PlaySpec with ConfiguredApp with FakeMultipartU
 
       //link up json file here before fake request.
       val Some(result_get) = route(FakeRequest(POST, "/api/datasets/" + datasetId + "/tags?key=" + secretKey).withJsonBody(json_tags))
-         // withJsonBody(Json.toJson(Map("tags" -> List("Dataset", "Test Suite", "Medici"), "extractor_id" -> "ncsa.cv.face")))
+      // withJsonBody(Json.toJson(Map("tags" -> List("Dataset", "Test Suite", "Medici"), "extractor_id" -> "ncsa.cv.face")))
       ///val result_get = route(req).get
 
       status(result_get) mustEqual OK
@@ -341,7 +341,7 @@ class DatasetsAPIAppSpec extends PlaySpec with ConfiguredApp with FakeMultipartU
 
     //       //link up json file here before fake request.
     //       val Some(result_get) = route(FakeRequest(DELETE, "/api/datasets/" + id + "/tags?key=" + secretKey))//.withJsonBody(json_tags))
-          
+
     //       info("content"+contentAsString(result_get))
     //       status(result_get) mustEqual OK
     //       info("Status_Get="+status(result_get))
@@ -355,46 +355,46 @@ class DatasetsAPIAppSpec extends PlaySpec with ConfiguredApp with FakeMultipartU
     //   }
     // }
 
-// "respond to the removeAllTags(id:UUID) function routed by POST /api/datasets/:id/tags/remove_all  " in {
+    // "respond to the removeAllTags(id:UUID) function routed by POST /api/datasets/:id/tags/remove_all  " in {
 
-//       //link up json file here before fake request.
-//       val Some(result) = route(FakeRequest(GET, "/api/datasets"))
-//       info("Status="+status(result))
-//       status(result) mustEqual OK
-//       info("contentType="+contentType(result))
-//       contentType(result) mustEqual Some("application/json")
-//       contentAsString(result) must include ("datasetname")
-//       info("content"+contentAsString(result))
-//       val json: JsValue = Json.parse(contentAsString(result))
-//       val readableString: String = Json.prettyPrint(json)
-//       info("Pretty JSON format")
-//       info(readableString)
-//       val nameResult = json.validate[List[DataSet]]
-//       val fileInfo = nameResult match {
-//         case JsSuccess(list : List[DataSet], _) => (list)
-//           info("Mapping dataset model to Json worked")
-//           info("Number of datasets in System " + list.length.toString)
-//           info(list.toString)
-//           info(list.filter(_.datasetname contains "Dataset API Test Creation").toString.split(",")(2))
-//           val id = list.filter(_.datasetname contains "Dataset API Test Creation").toString.split(",")(2)
+    //       //link up json file here before fake request.
+    //       val Some(result) = route(FakeRequest(GET, "/api/datasets"))
+    //       info("Status="+status(result))
+    //       status(result) mustEqual OK
+    //       info("contentType="+contentType(result))
+    //       contentType(result) mustEqual Some("application/json")
+    //       contentAsString(result) must include ("datasetname")
+    //       info("content"+contentAsString(result))
+    //       val json: JsValue = Json.parse(contentAsString(result))
+    //       val readableString: String = Json.prettyPrint(json)
+    //       info("Pretty JSON format")
+    //       info(readableString)
+    //       val nameResult = json.validate[List[DataSet]]
+    //       val fileInfo = nameResult match {
+    //         case JsSuccess(list : List[DataSet], _) => (list)
+    //           info("Mapping dataset model to Json worked")
+    //           info("Number of datasets in System " + list.length.toString)
+    //           info(list.toString)
+    //           info(list.filter(_.datasetname contains "Dataset API Test Creation").toString.split(",")(2))
+    //           val id = list.filter(_.datasetname contains "Dataset API Test Creation").toString.split(",")(2)
 
-//           // After finding specific "id" of file call RESTful API to get JSON information
-//           info("GET /api/datasets/" + id + "/tags/remove_all")
-//           val Some(result_get) = route(FakeRequest(POST, "/api/datasets/" + id + "/tags/remove_all?key=" + secretKey))
-//           info("content"+contentAsString(result_get))
-//           info("Status_Get="+status(result_get))
-//           status(result_get) mustEqual OK
-//           info("contentType_Get="+contentType(result_get))
-//           contentType(result_get) mustEqual Some("application/json")
-//           val json: JsValue = Json.parse(contentAsString(result_get))
-//           val readableString: String = Json.prettyPrint(json)
-//           info("Pretty JSON format")
-//           info(readableString)
-//         case e: JsError => {
-//           info("Errors: " + JsError.toFlatJson(e).toString)
-//         }
-//       }
-//     }
+    //           // After finding specific "id" of file call RESTful API to get JSON information
+    //           info("GET /api/datasets/" + id + "/tags/remove_all")
+    //           val Some(result_get) = route(FakeRequest(POST, "/api/datasets/" + id + "/tags/remove_all?key=" + secretKey))
+    //           info("content"+contentAsString(result_get))
+    //           info("Status_Get="+status(result_get))
+    //           status(result_get) mustEqual OK
+    //           info("contentType_Get="+contentType(result_get))
+    //           contentType(result_get) mustEqual Some("application/json")
+    //           val json: JsValue = Json.parse(contentAsString(result_get))
+    //           val readableString: String = Json.prettyPrint(json)
+    //           info("Pretty JSON format")
+    //           info(readableString)
+    //         case e: JsError => {
+    //           info("Errors: " + JsError.toFlatJson(e).toString)
+    //         }
+    //       }
+    //     }
 
 
 
@@ -527,8 +527,8 @@ class DatasetsAPIAppSpec extends PlaySpec with ConfiguredApp with FakeMultipartU
       info("content"+contentAsString(result))
     }
 
-// // Add Tag/Remove Tag
-// // Add Notes
+    // // Add Tag/Remove Tag
+    // // Add Notes
 
     // "respond to the deleteDataset(id:UUID) function routed by POST /api/datasets/:datasetId/remove  " in {
 
@@ -583,8 +583,8 @@ class DatasetsAPIAppSpec extends PlaySpec with ConfiguredApp with FakeMultipartU
     }
 
 
-// Add Preview/Remove Preview
-// Datasets containing the file
+    // Add Preview/Remove Preview
+    // Datasets containing the file
 
- }
+  }
 }
