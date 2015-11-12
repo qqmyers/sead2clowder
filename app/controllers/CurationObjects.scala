@@ -156,9 +156,7 @@ class CurationObjects @Inject()(
   // is all done in this function. We use addDatasetUserMetadata to keep consistency with live objects
   def addDatasetUserMetadata(id: UUID) = PermissionAction(Permission.EditStagingArea, Some(ResourceRef(ResourceRef.curationObject, id))) (parse.json) { implicit request =>
     implicit val user = request.user
-    Logger.debug(s"Adding user metadata to curation's dataset $id")
-
-
+    Logger.debug(s"Adding user metadata to curation's dataset $id with " + request.body)
 
     curations.get(id) match {
       case Some(c) => {
@@ -258,7 +256,7 @@ class CurationObjects @Inject()(
     val maxDataset = if (!c.files.isEmpty)  c.files.map(_.length).max else 0
     val totalSize = if (!c.files.isEmpty) c.files.map(_.length).sum else 0
     val metadata = c.datasets(0).metadata ++ c.datasets(0).datasetXmlMetadata.map(metadata => metadata.xmlMetadata) ++ c.datasets(0).userMetadata
-    val metadataJson = metadata.map {
+    val metadataJson = metadata.filter(item =>isInstanceOf[Tuple2[String, BasicDBList]]).map {
       item => item.asInstanceOf[Tuple2[String, BasicDBList]]._1 -> Json.toJson(item.asInstanceOf[Tuple2[String, BasicDBList]]._2.get(0).toString())
     }
 
