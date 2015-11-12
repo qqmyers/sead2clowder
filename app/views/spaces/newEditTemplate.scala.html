@@ -14,11 +14,11 @@
           <p>Please fix all errors</p>
         </div>
       }
-      @flash.get("error").map { message =>
-        <div class="alert alert-error">
-          <p>@message</p>
-        </div>
-      }
+      @*flash.get("error").map { message =>*@
+        @*<div class="alert alert-error">*@
+          @*<p>@message</p>*@
+        @*</div>*@
+      @*}*@
 
       @form(action = routes.Spaces.submit, 'enctype -> "multipart/form-data", 'class -> "form-horizontal", 'id -> "spaceForm") {
         <fieldset  id="nameDescrFieldSet">
@@ -136,13 +136,16 @@
     $('.homePages .control-group').each(function () {
       var valueInput = $(this).find('input');
 
-      if (valueInput.val() === '') {
+      if (valueInput.val() == '') {
         $(this).next().remove();
         $(this).remove();
         renumberHomePageMap();
+      } else {
+      valueInput.val() = new URL(valueInput.val()).toString;
       }
 
     });
+
   });
   </script>
 }
