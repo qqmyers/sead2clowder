@@ -14,11 +14,6 @@
           <p>Please fix all errors</p>
         </div>
       }
-      @*flash.get("error").map { message =>*@
-        @*<div class="alert alert-error">*@
-          @*<p>@message</p>*@
-        @*</div>*@
-      @*}*@
 
       @form(action = routes.Spaces.submit, 'enctype -> "multipart/form-data", 'class -> "form-horizontal", 'id -> "spaceForm") {
         <fieldset  id="nameDescrFieldSet">
