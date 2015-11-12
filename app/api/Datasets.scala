@@ -101,7 +101,7 @@ class Datasets @Inject()(
   }
 
   /**
-   * Create new dataset
+   * Create new dataset. name, file_id are required, description and space,  are optional. If the space & file_id is wrong, refuse the request
    */
   @ApiOperation(value = "Create new dataset",
     notes = "New dataset containing one existing file, based on values of fields in attached JSON. Returns dataset id as JSON object.",
@@ -112,19 +112,32 @@ class Datasets @Inject()(
       val description = (request.body \ "description").asOpt[String].getOrElse("")
 
       var d : Dataset = null
-      (request.body \ "space").asOpt[String] match {
-        case Some(space) => d = Dataset(name=name,description=description, created=new Date(), author=request.user.get, licenseData = License.fromAppConfig(), spaces = List(UUID(space)))
-        case None => d = Dataset(name=name,description=description, created=new Date(), author=request.user.get, licenseData = License.fromAppConfig())
+      implicit val user = request.user
+      user match {
+        case Some(identity) => {
+          (request.body \ "space").asOpt[String] match {
+            case Some(spaceId) =>
+              spaces.get(UUID(spaceId)) match {
+                case Some(s) => d = Dataset(name=name,description=description, created=new Date(), author=identity, licenseData = License.fromAppConfig(), spaces = List(UUID(spaceId)))
+                case None => BadRequest(toJson("Bad space = " + spaceId))
+              }
+            case None => d = Dataset(name=name,description=description, created=new Date(), author=identity, licenseData = License.fromAppConfig())
+          }
+        }
+        case None => InternalServerError("User Not found")
       }
+      //event will be added whether creation is success.
       events.addObjectEvent(request.user, d.id, d.name, "create_dataset")
 
-      datasets.insert(d) match {
-        case Some(id) => {
-          (request.body \ "file_id").asOpt[String] match {
-            case Some(file_id) => {
+      (request.body \ "file_id").asOpt[String] match {
+        case Some(file_id) => {
+          files.get(UUID(file_id)) match {
+            case Some(file) =>
+              datasets.insert(d) match {
+                case Some(id) => {
+                  d.spaces.map{ s => spaces.addDataset(d.id, s)}
+                  attachExistingFileHelper(UUID(id), file.id, d, file, request.user)
 
-              files.get(UUID(file_id)) match {
-                case Some(file) =>
                   files.index(UUID(file_id))
                   if (!file.xmlMetadata.isEmpty) {
                     val xmlToJSON = files.getXMLMetadataJSON(UUID(file_id))
@@ -143,15 +156,14 @@ class Datasets @Inject()(
                     _.sendAdminsNotification(Utils.baseUrl(request), "Dataset", "added", id, name)
                   }
                   Ok(toJson(Map("id" -> id)))
-
-                case None => BadRequest(toJson("Bad file_id = " + file_id))
-
+                }
+                case None => Ok(toJson(Map("status" -> "error")))
               }
-            }
-            case None => Ok(toJson(Map("id" -> id)))
+            case None => BadRequest(toJson("Bad file_id = " + file_id))
+
           }
         }
-        case None => Ok(toJson(Map("status" -> "error")))
+        case None => BadRequest(toJson("Missing parameter [file_id]"))
       }
     }.getOrElse(BadRequest(toJson("Missing parameter [name]")))
   }
@@ -169,60 +181,66 @@ class Datasets @Inject()(
       responseClass = "None", httpMethod = "POST")
   def createEmptyDataset() = PermissionAction(Permission.CreateDataset)(parse.json) { implicit request =>
     (request.body \ "name").asOpt[String].map { name =>
-      (request.body \ "description").asOpt[String].map { description =>
-          (request.body \ "space").asOpt[List[String]].map { space =>
+      val description = (request.body \ "description").asOpt[String].getOrElse("")
+      var d : Dataset = null
+      implicit val user = request.user
+      user match {
+        case Some(identity) => {
+          (request.body \ "space").asOpt[List[String]] match {
+            case Some(space) =>
               var spaceList: List[UUID] = List.empty;
               space.map {
-                aSpace => spaceList = UUID(aSpace) :: spaceList
-              }
-              var d : Dataset = null
-              if (space == "default") {
-                  d = Dataset(name=name,description=description, created=new Date(), author=request.user.get, licenseData = License.fromAppConfig())
-              }
-              else {
-              	  d = Dataset(name=name,description=description, created=new Date(), author=request.user.get, licenseData = License.fromAppConfig(), spaces = spaceList)
-              }
-            events.addObjectEvent(request.user, d.id, d.name, "create_dataset")
-            datasets.insert(d) match {
-                case Some(id) => {
-                  //In this case, the dataset has been created and inserted. Now notify the space service and check
-                  //for the presence of existing files.
-                  Logger.debug("About to call addDataset on spaces service")
-                  //Below call is not what is needed? That already does what we are doing in the Dataset constructor...
-                  //Items from space model still missing. New API will be needed to update it most likely.
-
-                  space.map {
-                    aSpace => if(aSpace != "default") spaces.addDataset(UUID(id), UUID(aSpace))
-                  }
-                  (request.body \ "existingfiles").asOpt[String].map { fileString =>
-                    var idArray = fileString.split(",").map(_.trim())
-                    for (anId <- idArray) {
-                      datasets.get(UUID(id)) match {
-                        case Some(dataset) => {
-                          files.get(UUID(anId)) match {
-                            case Some(file) => {
-                              attachExistingFileHelper(UUID(id), UUID(anId), dataset, file, request.user)
-                              Ok(toJson(Map("status" -> "success")))
-                            }
-                            case None => {
-                              Logger.error("Error getting file" + anId)
-                              BadRequest(toJson(s"The given file id $anId is not a valid ObjectId."))
-                            }
-                          }
-                        }
-                        case None => {
-                          Logger.error("Error getting dataset" + id)
-                          BadRequest(toJson(s"The given dataset id $id is not a valid ObjectId."))
-                        }
-                      }
-                    }
-                    Ok(toJson(Map("id" -> id)))
-                  }.getOrElse(Ok(toJson(Map("id" -> id))))
+                aSpace => if (spaces.get(UUID(aSpace)).isDefined) {
+                  spaceList = UUID(aSpace) :: spaceList
+                } else {
+                  BadRequest(toJson("Bad space = " + aSpace))
                 }
-                case None => Ok(toJson(Map("status" -> "error")))
               }
-          }.getOrElse(BadRequest(toJson("Missing parameter [space]")))
-      }.getOrElse(BadRequest(toJson("Missing parameter [description]")))
+              d = Dataset(name = name, description = description, created = new Date(), author = identity, licenseData = License.fromAppConfig(), spaces = spaceList)
+            case None =>
+              d = Dataset(name = name, description = description, created = new Date(), author = identity, licenseData = License.fromAppConfig())
+          }
+        }
+        case None => InternalServerError("User Not found")
+      }
+      events.addObjectEvent(request.user, d.id, d.name, "create_dataset")
+      datasets.insert(d) match {
+        case Some(id) => {
+          //In this case, the dataset has been created and inserted. Now notify the space service and check
+          //for the presence of existing files.
+          Logger.debug("About to call addDataset on spaces service")
+          d.spaces.map{ s => spaces.addDataset(d.id, s)}
+          //Below call is not what is needed? That already does what we are doing in the Dataset constructor...
+          //Items from space model still missing. New API will be needed to update it most likely.
+
+          (request.body \ "existingfiles").asOpt[String].map { fileString =>
+            var idArray = fileString.split(",").map(_.trim())
+            for (anId <- idArray) {
+              datasets.get(UUID(id)) match {
+                case Some(dataset) => {
+                  files.get(UUID(anId)) match {
+                    case Some(file) => {
+                      attachExistingFileHelper(UUID(id), UUID(anId), dataset, file, request.user)
+                      Ok(toJson(Map("status" -> "success")))
+                    }
+                    case None => {
+                      Logger.error("Error getting file" + anId)
+                      BadRequest(toJson(s"The given file id $anId is not a valid ObjectId."))
+                    }
+                  }
+                }
+                case None => {
+                  Logger.error("Error getting dataset" + id)
+                  BadRequest(toJson(s"The given dataset id $id is not a valid ObjectId."))
+                }
+              }
+            }
+            Ok(toJson(Map("id" -> id)))
+          }.getOrElse(Ok(toJson(Map("id" -> id))))
+        }
+        case None => Ok(toJson(Map("status" -> "error")))
+      }
+
     }.getOrElse(BadRequest(toJson("Missing parameter [name]")))
   }
   
