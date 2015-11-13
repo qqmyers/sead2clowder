@@ -4,9 +4,7 @@
 package services.mongodb
 
 import akka.event.SubchannelClassification
-import com.mongodb.casbah.WriteConcern
 import models.{UUID, Collection, Dataset}
-import com.mongodb.casbah.commons.MongoDBObject
 import java.text.SimpleDateFormat
 import org.bson.types.ObjectId
 import play.api.Logger
@@ -18,6 +16,8 @@ import scala.Some
 import scala.util.Success
 import com.novus.salat.dao.{ModelCompanion, SalatDAO}
 import com.mongodb.casbah.Imports._
+import com.mongodb.casbah.commons.MongoDBObject
+import com.mongodb.casbah.WriteConcern
 import MongoContext.context
 import play.api.Play.current
 
