@@ -214,9 +214,10 @@ class Collections @Inject()(datasets: DatasetService, collections: CollectionSer
 
             }
           }
-
-          //Ok(views.html.collectionofdatasets(decodedDatasetsInside.toList, dCollection, filteredPreviewers.toList))
-          Ok(views.html.collectionofdatasets_with_childcollections(decodedChildCollections.toList,decodedDatasetsInside.toList, dCollection, filteredPreviewers.toList))
+          Ok(views.html.collectionofdatasets(decodedDatasetsInside.toList, dCollection, filteredPreviewers.toList))
+          //the below view renders a different template with child collections visible.
+          //commented out as that view is incomplete
+          //Ok(views.html.collectionofdatasets_with_childcollections(decodedChildCollections.toList,decodedDatasetsInside.toList, dCollection, filteredPreviewers.toList))
         }
         case None => {
           Logger.error("Error getting collection " + id); BadRequest("Collection not found")
