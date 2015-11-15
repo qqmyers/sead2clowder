@@ -93,7 +93,7 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
     }
   }
 
-  
+
   /**
    * Reindex the given collection, if recursive is set to true it will
    * also reindex all datasets and files.

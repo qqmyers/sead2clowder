@@ -75,24 +75,7 @@ trait CollectionService {
    */
   def removeDataset(collectionId: UUID, datasetId: UUID, ignoreNotFound: Boolean = true): Try[Unit]
 
-  /**
-   * Add subcollection to collection
-   *
-   */
-  def addSubCollection(collectionId: UUID, subCollectionId: UUID) : Try[Unit]
 
-
-  /**
-   *  Add parent to subcollection parent list
-   */
-  def addParentCollection(subCollectionId: UUID, parentCollectionId: UUID) : Try[Unit]
-
-  /**
-   * Remove subcollection from collection
-   */
-  def removeSubCollection(collectionId: UUID, subCollectionId: UUID, ignoreNotFound: Boolean = true) : Try[Unit]
-
-  def setRootFlag(collectionId: UUID, isRoot: Boolean) : Try[Unit]
 
   /**
    * Delete collection and any reference of it
@@ -135,5 +118,24 @@ trait CollectionService {
    * Remove follower from a collection.
    */
   def removeFollower(id: UUID, userId: UUID)
+
+  /**
+    * Add subcollection to collection
+    *
+    */
+  def addSubCollection(collectionId: UUID, subCollectionId: UUID) : Try[Unit]
+
+
+  /**
+    *  Add parent to subcollection parent list
+    */
+  def addParentCollection(subCollectionId: UUID, parentCollectionId: UUID) : Try[Unit]
+
+  /**
+    * Remove subcollection from collection
+    */
+  def removeSubCollection(collectionId: UUID, subCollectionId: UUID, ignoreNotFound: Boolean = true) : Try[Unit]
+
+  def setRootFlag(collectionId: UUID, isRoot: Boolean) : Try[Unit]
 
 }
