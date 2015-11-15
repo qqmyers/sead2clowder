@@ -11,9 +11,9 @@ case class Collection(
   description: String = "N/A",
   created: Date,
   datasets: List[Dataset] = List.empty,
-  parent_collection_ids : List[String] = List.empty,
-  child_collection_ids : List[String] = List.empty,
-  root_flag : Boolean = false,
   thumbnail_id: Option[String] = None,
   previews: List[Preview] = List.empty,
-  followers: List[UUID] = List.empty)
+  followers: List[UUID] = List.empty,
+  parent_collection_ids : List[String] = List.empty,
+  child_collection_ids : List[String] = List.empty,
+  root_flag : Boolean = false)
