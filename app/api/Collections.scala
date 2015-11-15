@@ -265,7 +265,7 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
       case Failure(t) => InternalServerError
     }
   }
-  
+
   @ApiOperation(value = "Remove collection",
       notes = "Does not delete the individual datasets in the collection.",
       responseClass = "None", httpMethod = "POST")

@@ -323,31 +323,32 @@ POST		   /api/dumpDatasetGroupings												@api.Datasets.dumpDatasetGroupings
 # ----------------------------------------------------------------------
 # COLLECTIONS ENDPOINT
 # ----------------------------------------------------------------------
-GET            /api/collections/getRootCollections                                      @api.Collections.getRootCollections
-GET            /api/collections/getTopLevelCollections                                  @api.Collections.getTopLevelCollections
+
 GET            /api/collections                                                         @api.Collections.listCollections
 POST           /api/collections                                                         @api.Collections.createCollection()
 GET            /api/collections/list                                                    @api.Collections.listCollections
-POST           /api/collections/newCollectionWithParent                                                @api.Collections.createCollectionWithParent
 POST           /api/collections/:id/follow                                              @api.Collections.follow(id: UUID, name: String)
 POST           /api/collections/:id/unfollow                                            @api.Collections.unfollow(id: UUID, name: String)
 POST           /api/collections/:coll_id/datasets/:ds_id                                @api.Collections.attachDataset(coll_id: UUID, ds_id: UUID)
-POST           /api/collections/:coll_id/addSubCollection/:sub_coll_id                  @api.Collections.attachSubCollection(coll_id: UUID, sub_coll_id: UUID)
 POST           /api/collections/:coll_id/datasetsRemove/:ds_id/:ignoreNotFound          @api.Collections.removeDataset(coll_id: UUID, ds_id: UUID,ignoreNotFound)
 DELETE         /api/collections/:coll_id/datasets/:ds_id                                @api.Collections.removeDataset(coll_id: UUID, ds_id: UUID, ignoreNotFound ?= "True")
 POST           /api/collections/:coll_id/remove                                         @api.Collections.removeCollection(coll_id: UUID)
 POST           /api/collections/:coll_id/reindex                                        @api.Collections.reindex(coll_id: UUID, recursive: Boolean ?= true)
+DELETE         /api/collections/:coll_id                                                @api.Collections.removeCollection(coll_id: UUID)
 GET            /api/collections/:coll_id/getDatasets                                    @api.Datasets.listInCollection(coll_id: UUID)
+POST           /api/collections/:c_id/previews/:p_id                                    @api.Collections.attachPreview(c_id: UUID, p_id: UUID)
+GET            /api/collections/:coll_id                                                @api.Collections.getCollection(coll_id: UUID)
+
+POST           /api/collections/:coll_id/removeSubCollection/:sub_coll_id               @api.Collections.removeSubCollection(coll_id: UUID,sub_coll_id:UUID, ignoreNotFound?="True")
+POST           /api/collections/:coll_id/rootFlag/:isRoot                               @api.Collections.rootFlag(coll_id: UUID, isRoot: Boolean )
+GET            /api/collections/getRootCollections                                      @api.Collections.getRootCollections
+GET            /api/collections/getTopLevelCollections                                  @api.Collections.getTopLevelCollections
+POST           /api/collections/newCollectionWithParent                                                @api.Collections.createCollectionWithParent
 GET            /api/collections/:coll_id/getChildCollectionIds                            @api.Collections.getChildCollectionIds(coll_id: UUID)
 GET            /api/collections/:coll_id/getChildCollections                            @api.Collections.getChildCollections(coll_id: UUID)
 GET            /api/collections/:coll_id/getParentCollectionIds                         @api.Collections.getParentCollectionIds(coll_id: UUID)
 GET            /api/collections/:coll_id/getParentCollections                           @api.Collections.getParentCollections(coll_id: UUID)
-DELETE         /api/collections/:coll_id                                                @api.Collections.removeCollection(coll_id: UUID)
-POST           /api/collections/:c_id/previews/:p_id                                    @api.Collections.attachPreview(c_id: UUID, p_id: UUID)
-GET            /api/collections/:coll_id                                                @api.Collections.getCollection(coll_id: UUID)
-POST           /api/collections/:coll_id/removeSubCollection/:sub_coll_id               @api.Collections.removeSubCollection(coll_id: UUID,sub_coll_id:UUID, ignoreNotFound?="True")
-POST           /api/collections/:coll_id/rootFlag/:isRoot                               @api.Collections.rootFlag(coll_id: UUID, isRoot: Boolean )
-
+POST           /api/collections/:coll_id/addSubCollection/:sub_coll_id                  @api.Collections.attachSubCollection(coll_id: UUID, sub_coll_id: UUID)
 
 
 # ----------------------------------------------------------------------
