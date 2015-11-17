@@ -1,0 +1,6 @@
+{ "name" : "geospatial-latlon",
+  "main" : "main.js",
+  "contentType" : [],
+  "dataset" : true,
+  "supported_previews" : []
+  }
