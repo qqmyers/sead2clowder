@@ -152,4 +152,23 @@ trait CollectionService {
    * Remove association between a collection and a space.
    */
   def removeFromSpace(collection: UUID, space: UUID)
+  /**
+    * Add subcollection to collection
+    *
+    */
+  def addSubCollection(collectionId: UUID, subCollectionId: UUID) : Try[Unit]
+
+
+  /**
+    *  Add parent to subcollection parent list
+    */
+  def addParentCollection(subCollectionId: UUID, parentCollectionId: UUID) : Try[Unit]
+
+  /**
+    * Remove subcollection from collection
+    */
+  def removeSubCollection(collectionId: UUID, subCollectionId: UUID, ignoreNotFound: Boolean = true) : Try[Unit]
+
+  def setRootFlag(collectionId: UUID, isRoot: Boolean) : Try[Unit]
+
 }
