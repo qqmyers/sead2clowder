@@ -158,20 +158,20 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
     notes = "This will check for Permission.ViewCollection",
     responseClass = "None", multiValueResponse=true, httpMethod = "GET")
   def list(title: Option[String], date: Option[String], limit: Int) = PrivateServerAction { implicit request =>
-    Ok(toJson(lisCollections(title, date, limit, Set[Permission](Permission.ViewCollection), request.user, request.superAdmin)))
+    Ok(toJson(listCollections(title, date, limit, Set[Permission](Permission.ViewCollection), request.user, request.superAdmin)))
   }
 
   @ApiOperation(value = "List all collections the user can edit",
     notes = "This will check for Permission.AddResourceToCollection and Permission.EditCollection",
     responseClass = "None", httpMethod = "GET")
   def listCanEdit(title: Option[String], date: Option[String], limit: Int) = PrivateServerAction { implicit request =>
-    Ok(toJson(lisCollections(title, date, limit, Set[Permission](Permission.AddResourceToCollection, Permission.EditCollection), request.user, request.superAdmin)))
+    Ok(toJson(listCollections(title, date, limit, Set[Permission](Permission.AddResourceToCollection, Permission.EditCollection), request.user, request.superAdmin)))
   }
 
   /**
    * Returns list of collections based on parameters and permissions.
    */
-  private def lisCollections(title: Option[String], date: Option[String], limit: Int, permission: Set[Permission], user: Option[User], superAdmin: Boolean) : List[Collection] = {
+  def listCollections(title: Option[String], date: Option[String], limit: Int, permission: Set[Permission], user: Option[User], superAdmin: Boolean) : List[Collection] = {
     (title, date) match {
       case (Some(t), Some(d)) => {
         collections.listAccess(d, true, limit, t, permission, user, superAdmin)
@@ -392,9 +392,7 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
   @ApiOperation(value = "Add subcollection to collection",
     notes = "",
     responseClass = "None", httpMethod = "POST")
-  def attachSubCollection(collectionId: UUID, subCollectionId: UUID) = SecuredAction(parse.anyContent,
-    authorization=WithPermission(Permission.CreateCollections), resourceId = Some(collectionId)) { request =>
-
+  def attachSubCollection(collectionId: UUID, subCollectionId: UUID) = PermissionAction(Permission.AddResourceToCollection, Some(ResourceRef(ResourceRef.collection, collectionId))) { implicit request =>
     collections.addSubCollection(collectionId, subCollectionId) match {
       case Success(_) => {
         collections.get(collectionId) match {
@@ -413,13 +411,14 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
     }
   }
 
+
+
   @ApiOperation(value = "Create a collection with parent",
     notes = "",
     responseClass = "None", httpMethod = "POST")
-  def createCollectionWithParent() = SecuredAction(authorization=WithPermission(Permission.CreateCollections)) {
-    request =>
+  def createCollectionWithParent() = PermissionAction(Permission.CreateCollection) (parse.json) { implicit request =>
       Logger.debug("Created new collection with parent")
-      (request.body \ "name").asOpt[String].map{
+      (request.body \ "name").asOpt[String].map {
         name =>
           (request.body \ "description").asOpt[String].map {
             description =>
@@ -428,12 +427,12 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
                   implicit val user = request.user
                   user match {
                     case Some(identity) => {
-                      val c = Collection(name = name, description = description, created = new Date(), author = Some(identity))
+                      val c = Collection(name = name, description = description, created = new Date(), datasetCount = 0,author = identity)
                       collections.insert(c) match {
                         case Some(id) => {
                           collections.get(UUID(parentId)) match {
                             case Some(parentCollection) => {
-                              collections.addSubCollection(UUID(parentId),UUID(id)) match {
+                              collections.addSubCollection(UUID(parentId), UUID(id)) match {
                                 case Success(_) => {
                                   Ok(toJson(Map("id" -> id)))
                                 }
@@ -446,23 +445,7 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
                       }
                     }
                     case None => {
-                      // create without author here
-                      val c = Collection(name = name, description = description, created = new Date())
-                      collections.insert(c) match {
-                        case Some(id) => {
-                          collections.get(UUID(parentId)) match {
-                            case Some(parentCollection) => {
-                              collections.addSubCollection(UUID(parentId),UUID(id)) match {
-                                case Success(_) => {
-                                  Ok(toJson(Map("id" -> id)))
-                                }
-                              }
-                            } case None => Ok(toJson("Invalid parentId"))
-                          }
-
-                        }
-                        case None => Ok(toJson(Map("status" -> "error")))
-                      }
+                      Ok(toJson("no author"))
                     }
                   }
               }.getOrElse(BadRequest(toJson("Missing parameter[parentId")))
@@ -474,8 +457,7 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
   @ApiOperation(value = "Remove subcollection from collection",
     notes="",
     responseClass = "None", httpMethod = "POST")
-  def removeSubCollection(collectionId: UUID, subCollectionId: UUID, ignoreNotFound: String) = SecuredAction(parse.anyContent,
-    authorization=WithPermission(Permission.CreateCollections), resourceId = Some(collectionId)) { request =>
+  def removeSubCollection(collectionId: UUID, subCollectionId: UUID, ignoreNotFound: String) = PermissionAction(Permission.AddResourceToCollection, Some(ResourceRef(ResourceRef.collection, collectionId))) { implicit request =>
 
     collections.removeSubCollection(collectionId, subCollectionId, Try(ignoreNotFound.toBoolean).getOrElse(true)) match {
       case Success(_) => {
@@ -516,8 +498,7 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
   @ApiOperation(value = "Change value of root flag for collection",
     notes = "",
     responseClass = "None",httpMethod = "POST")
-  def rootFlag(collectionId: UUID, isRoot: Boolean) = SecuredAction(parse.anyContent,
-    authorization = WithPermission(Permission.CreateCollections), resourceId = Some(collectionId)) { request =>
+  def rootFlag(collectionId: UUID, isRoot: Boolean)  = PermissionAction(Permission.EditCollection, Some(ResourceRef(ResourceRef.collection, collectionId))) {implicit  request =>
     Logger.debug("changing the value of the root flag")
     collections.get(collectionId) match {
       case Some(collection) => {
@@ -533,38 +514,27 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
   @ApiOperation(value = "Get all root collections",
     notes = "",
     responseClass = "None", httpMethod = "GET")
-  def getRootCollections() = SecuredAction(parse.anyContent,
-    authorization = WithPermission(Permission.ListCollections)) {request =>
-
-
-    val root_collections_list = for (collection <- collections.listCollections; if collection.root_flag == true)
+  def getRootCollections() = PermissionAction(Permission.ViewCollection) { implicit request =>
+    val root_collections_list = for (collection <- collections.listAccess(1,Set[Permission](Permission.ViewCollection),request.user,true); if collection.root_flag == true)
       yield jsonCollection(collection)
-
 
     Ok(toJson(root_collections_list))
   }
 
+
   @ApiOperation(value = "Get all root collections or collections that do not have a parent",
     notes = "",
     responseClass = "None", httpMethod = "GET")
-  def getTopLevelCollections() = SecuredAction(parse.anyContent,
-    authorization = WithPermission(Permission.ShowCollection)) {request =>
+  def getTopLevelCollections() = PermissionAction(Permission.ViewCollection){ implicit request =>
+    val top_level_collections = for (collection <- collections.listAccess(1,Set[Permission](Permission.ViewCollection),request.user,true); if (collection.root_flag == true || collection.parent_collection_ids.isEmpty))
+      yield jsonCollection(collection)
 
-    val topLevelCollections = ListBuffer.empty[JsValue]
-
-    for (collection <- collections.listCollections()) {
-      if (collection.root_flag == true || collection.parent_collection_ids.isEmpty){
-        topLevelCollections += jsonCollection(collection)
-      }
-    }
-
-    Ok(toJson(topLevelCollections))
+    Ok(toJson(top_level_collections))
   }
 
   @ApiOperation(value = "Get child collection ids in collection",
     responseClass = "None", httpMethod = "GET")
-  def getChildCollectionIds(collectionId: UUID) = SecuredAction(parse.anyContent,
-    authorization = WithPermission(Permission.ShowCollection)) { request =>
+  def getChildCollectionIds(collectionId: UUID) = PermissionAction(Permission.ViewCollection){implicit request =>
     collections.get(collectionId) match {
       case Some(collection) => {
         var childCollectionIds = collection.child_collection_ids
@@ -577,8 +547,7 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
 
   @ApiOperation(value = "Get parent collection ids in collection",
     responseClass = "None", httpMethod = "GET")
-  def getParentCollectionIds(collectionId: UUID) = SecuredAction(parse.anyContent,
-    authorization = WithPermission(Permission.ShowCollection)) { request =>
+  def getParentCollectionIds(collectionId: UUID) = PermissionAction(Permission.ViewCollection){implicit request =>
     collections.get(collectionId) match {
       case Some(collection) => {
         var parentCollectionIds = collection.parent_collection_ids
@@ -593,8 +562,7 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
 
   @ApiOperation(value = "Get child collections in collection",
     responseClass = "None", httpMethod = "GET")
-  def getChildCollections(collectionId: UUID) = SecuredAction(parse.anyContent,
-    authorization = WithPermission(Permission.ShowCollection)) { request =>
+  def getChildCollections(collectionId: UUID) = PermissionAction(Permission.ViewCollection){implicit request =>
     collections.get(collectionId) match {
       case Some(collection) => {
         val childCollections = ListBuffer.empty[JsValue]
@@ -617,8 +585,7 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
 
   @ApiOperation(value = "Get parent collections for collection",
     responseClass = "None", httpMethod = "GET")
-  def getParentCollections(collectionId: UUID) = SecuredAction(parse.anyContent,
-    authorization = WithPermission(Permission.ShowCollection)) { request =>
+  def getParentCollections(collectionId: UUID) = PermissionAction(Permission.ViewCollection){implicit request =>
     collections.get(collectionId) match {
       case Some(collection) => {
         val parentCollections = ListBuffer.empty[JsValue]

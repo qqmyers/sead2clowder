@@ -5,9 +5,7 @@ package services.mongodb
 
 import api.Permission
 import api.Permission.Permission
-import com.mongodb.casbah.WriteConcern
 import models.{User, UUID, Collection, Dataset}
-import com.mongodb.casbah.commons.MongoDBObject
 import java.text.SimpleDateFormat
 import org.bson.types.ObjectId
 import play.api.Logger
@@ -20,6 +18,8 @@ import scala.Some
 import scala.util.Success
 import com.novus.salat.dao.{ModelCompanion, SalatDAO}
 import com.mongodb.casbah.Imports._
+import com.mongodb.casbah.commons.MongoDBObject
+import com.mongodb.casbah.WriteConcern
 import MongoContext.context
 import play.api.Play._
 
@@ -649,13 +649,6 @@ class MongoDBCollectionService @Inject() (datasets: DatasetService, userService:
     Collection.update(MongoDBObject("_id" -> new ObjectId(collectionId.stringify)),$set("root_flag" -> isRoot), false, false, WriteConcern.Safe )
   }
 
-  private def isInCollection(dataset: Dataset, collection: Collection): Boolean = {
-    for(collDataset <- collection.datasets){
-      if(collDataset.id == dataset.id)
-        return true
-    }
-    return false
-  }
 
 
   private def isSubCollectionIdInCollection(subCollectionId: UUID, collection: Collection) : Boolean = {
