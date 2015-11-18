@@ -402,6 +402,10 @@ POST           /api/changeAppearance                                            
 GET            /api/collections                                                         @api.Collections.list(title: Option[String] ?= None, date: Option[String] ?= None, limit: Int ?= 12)
 GET            /api/collections/canEdit                                                 @api.Collections.listCanEdit(title: Option[String] ?= None, date: Option[String] ?= None, limit: Int ?= 12)
 POST           /api/collections                                                         @api.Collections.createCollection()
+GET            /api/collections/getRootCollections                                      @api.Collections.getRootCollections
+GET            /api/collections/getTopLevelCollections                                  @api.Collections.getTopLevelCollections
+
+
 # deprecrated
 GET            /api/collections/list                                                    @api.Collections.list(title: Option[String] ?= None, date: Option[String] ?= None, limit: Int ?= 12)
 POST           /api/collections/:id/follow                                              @api.Collections.follow(id: UUID, name: String)
@@ -424,8 +428,6 @@ PUT            /api/collections/:coll_id/description                            
 
 POST           /api/collections/:coll_id/removeSubCollection/:sub_coll_id               @api.Collections.removeSubCollection(coll_id: UUID,sub_coll_id:UUID, ignoreNotFound?="True")
 POST           /api/collections/:coll_id/rootFlag/:isRoot                               @api.Collections.rootFlag(coll_id: UUID, isRoot: Boolean )
-GET            /api/collections/getRootCollections                                      @api.Collections.getRootCollections
-GET            /api/collections/getTopLevelCollections                                  @api.Collections.getTopLevelCollections
 POST           /api/collections/newCollectionWithParent                                                @api.Collections.createCollectionWithParent
 GET            /api/collections/:coll_id/getChildCollectionIds                            @api.Collections.getChildCollectionIds(coll_id: UUID)
 GET            /api/collections/:coll_id/getChildCollections                            @api.Collections.getChildCollections(coll_id: UUID)

@@ -451,7 +451,62 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
               }.getOrElse(BadRequest(toJson("Missing parameter[parentId")))
           }.getOrElse(BadRequest(toJson("Missing parameter [description]")))
       }.getOrElse(BadRequest(toJson("Missing parameter [name]")))
+  }
 
+  @ApiOperation(value = "Create a collection with parent",
+    notes = "",
+    responseClass = "None", httpMethod = "POST")
+  def createCollectionWithParentNew() = PermissionAction(Permission.CreateCollection) (parse.json) { implicit request =>
+    (request.body \ "name").asOpt[String].map{ name =>
+      var c : Collection = null
+      implicit val user = request.user
+
+      user match {
+        case Some(identity) => {
+          val description = (request.body \ "description").asOpt[String].getOrElse("")
+          (request.body \ "space").asOpt[String] match {
+            case None | Some("default") =>  c = Collection(name = name, description = description, created = new Date(), datasetCount = 0, author = identity)
+            case Some(space) => if (spaces.get(UUID(space)).isDefined) {
+              c = Collection(name = name, description = description, created = new Date(), datasetCount = 0, author = identity, spaces = List(UUID(space)))
+            } else {
+              BadRequest(toJson("Bad space = " + space))
+            }
+          }
+
+          collections.insert(c) match {
+            case Some(id) => {
+              c.spaces.map{ s => spaces.addCollection(c.id, s)}
+
+              //do stuff with parent here
+              (request.body \"parentId").asOpt[String] match {
+                case Some(parentId) => {
+                  collections.get(UUID(parentId)) match {
+                    case Some(parentCollection) => {
+                      collections.addSubCollection(UUID(parentId), UUID(id)) match {
+                        case Success(_) => {
+                          Ok(toJson(Map("id" -> id)))
+                        }
+                      }
+                    }
+                    case None => {
+                      Ok(toJson("No collection with parentId found"))
+                    }
+                  }
+                }
+                case None => {
+                  Ok(toJson("No parentId supplied"))
+                }
+
+              }
+              Ok(toJson(Map("id" -> id)))
+            }
+            case None => Ok(toJson(Map("status" -> "error")))
+          }
+        }
+        case None => InternalServerError("User Not found")
+      }
+
+    }.getOrElse(BadRequest(toJson("Missing parameter [name]")))
   }
 
   @ApiOperation(value = "Remove subcollection from collection",
@@ -515,10 +570,11 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
     notes = "",
     responseClass = "None", httpMethod = "GET")
   def getRootCollections() = PermissionAction(Permission.ViewCollection) { implicit request =>
-    val root_collections_list = for (collection <- collections.listAccess(1,Set[Permission](Permission.ViewCollection),request.user,true); if collection.root_flag == true)
+    val root_collections_list = for (collection <- collections.listAccess(100,Set[Permission](Permission.ViewCollection),request.user,true); if collection.root_flag == true)
       yield jsonCollection(collection)
 
     Ok(toJson(root_collections_list))
+    //Ok("not impleneted")
   }
 
 
@@ -526,9 +582,10 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
     notes = "",
     responseClass = "None", httpMethod = "GET")
   def getTopLevelCollections() = PermissionAction(Permission.ViewCollection){ implicit request =>
-    val top_level_collections = for (collection <- collections.listAccess(1,Set[Permission](Permission.ViewCollection),request.user,true); if (collection.root_flag == true || collection.parent_collection_ids.isEmpty))
+    val top_level_collections = for (collection <- collections.listAccess(100,Set[Permission](Permission.ViewCollection),request.user,true); if (collection.root_flag == true || collection.parent_collection_ids.isEmpty))
       yield jsonCollection(collection)
 
+    //Ok("not implemented")
     Ok(toJson(top_level_collections))
   }
 
