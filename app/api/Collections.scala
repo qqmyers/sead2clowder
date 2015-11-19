@@ -412,7 +412,7 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
   }
 
 
-
+  /*
   @ApiOperation(value = "Create a collection with parent",
     notes = "",
     responseClass = "None", httpMethod = "POST")
@@ -452,11 +452,12 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
           }.getOrElse(BadRequest(toJson("Missing parameter [description]")))
       }.getOrElse(BadRequest(toJson("Missing parameter [name]")))
   }
+  */
 
   @ApiOperation(value = "Create a collection with parent",
     notes = "",
     responseClass = "None", httpMethod = "POST")
-  def createCollectionWithParentNew() = PermissionAction(Permission.CreateCollection) (parse.json) { implicit request =>
+  def createCollectionWithParent() = PermissionAction(Permission.CreateCollection) (parse.json) { implicit request =>
     (request.body \ "name").asOpt[String].map{ name =>
       var c : Collection = null
       implicit val user = request.user
