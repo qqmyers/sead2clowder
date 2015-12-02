@@ -146,7 +146,7 @@
 	});
 	
 	 $('body').on('click','#childCollectionsPagerNext',function(e){
-		 currentFirstChildCollections = currentFirstCollections + 10;
+		 currentFirstChildCollections = currentFirstChildCollections + 10;
 		 $("#collectionChildCollectionsTable tbody tr").each(function() {
         	    $(this).css('display','none');
          });
@@ -179,16 +179,18 @@
 		 return false;
 	 });
 
+
 	//TODO - MMF - Is this really necessary? The list of available datasets that are external to the collection should be available already.
 	//This would also unify the htmlDecoding on the server side instead of having to happen both here and there.
 	//Note - need to make the "replace" calls below more generic.
+	/*
 	 $('body').on('click','#addChildCollectionBtn',function(e){
 			var request = $.ajax({
 		       type: 'GET',
 		       url: collectionsIp,
 		       dataType: "json",
 		     });
-			
+
 			request.done(function (respJSON){
 		        console.log("Response " + respJSON);
 		        $('#addPagerPrev').css('visibility','hidden');
@@ -213,24 +215,24 @@
 		        								+ "<td style='white-space:pre-line;'>" + respJSON[i].description.replace(/\n/g, "<br>") + "</td>"
 		        								+ "<td>" + childCollectionThumbnail + "</td>"
 		        								+ "<td><a target='_blank' href='" +  jsRoutes.controllers.Collections.collection(respJSON[i].id).url + "'>View</a></td></tr>");
-		        	
+
 		        }
 		        $('#addChildCollectionsTable').show();
-		        
+
 		        for(var i = 0; i < 10; i++){
 		        	$("#addChildCollectionsTable tbody tr[id='resultRow" + (i+1) + "']").each(function() {
 		        	    $(this).css('display','table-row');
 		        	});
 		        }
-		        
+
 		        if(respJSON.length > 10){
 		        	currentFirstAdd = 1;
 		        	$('#addPagerNext').css('visibility','visible');
 		        }
-		        
+
 		        $("#hideAddChildCollectionsBtn").show();
 		        areRestChildCollectionsVisible = false;
-		        
+
 		        return false;
  			});
 			request.fail(function (jqXHR, textStatus, errorThrown){
@@ -238,9 +240,9 @@
 		        var errMsg = "You must be logged in to add a dataset to a collection.";
 		        if (!checkErrorAndRedirect(jqXHR, errMsg)) {
 		            notify("The dataset was not added to the collection due to : " + errorThrown, "error");
-		        }        		        		
+		        }
         		return false;
-     		});		 
+     		});
 	 });
 	 $('body').on('click','#hideAddChildCollectionsBtn',function(e){
 		 $('#addPagerPrev').css('visibility','hidden');
@@ -249,10 +251,10 @@
 	     $('#addChildCollectionsTable').css('display','none');
 	     $('#hideAddChildCollectionsBtn').css('display','none');
 	     areRestChildCollectionsVisible = false;
-	     
+
 	     return false;
 	 });
-	
+
 	 $('body').on('click','#addPagerNext',function(e){
 		 currentFirstAdd = currentFirstAdd + 10;
 		 $("#addChildCollectionsTable tbody tr").each(function() {
@@ -266,7 +268,7 @@
 		 $('#addPagerPrev').css('visibility','visible');
 		 if(currentFirstAdd + 10 > searchResultsCount)
 			 $('#addPagerNext').css('visibility','hidden');
-		 
+
 		 return false;
 	 });
 	 $('body').on('click','#addPagerPrev',function(e){
@@ -283,8 +285,11 @@
 			 $('#addPagerNext').css('visibility','visible');
 		 if(currentFirstAdd == 1)
 			 $('#addPagerPrev').css('visibility','hidden');
-		 
+
 		 return false;
-	 });	
-		
-		
+	 });
+
+	*/
+
+
+

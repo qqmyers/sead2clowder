@@ -1,4 +1,4 @@
-@(datasetsInCollection: List[models.Dataset],
+@(datasetsInCollection: List[models.Dataset],childCollectionsInCollection: List[models.Collection],
   collection: models.Collection,
   previewers: List[Previewer],
   collectionSpaces: Option[List[ProjectSpace]])(implicit flash: play.api.mvc.Flash, user: Option[models.User])
@@ -193,6 +193,58 @@
 					<li class ="next" id="datasetsPagerNext" style="visibility:hidden;"><a href="#!">Next</a></li>
 				</ul>
 			</div>
+				<div class="row">
+					<div class="col-md-12">
+						<h3>Child Collections in the Collection</h3>
+						<table id='collectionChildCollectionsTable' class="table table-bordered table-hover">
+							<thead>
+								<tr>
+									@if(user.isDefined) {
+										<th style="width: 27%">Name</th>
+										<th style="width: 17%">Created</th>
+										<th style="width: 36%">Description</th>
+										<th style="width: 10%"></th>
+										<th style="width: 10%"></th>
+									}
+									@if(!user.isDefined) {
+										<th style="width: 27%">Name</th>
+										<th style="width: 17%">Created</th>
+										<th style="width: 36%">Description</th>
+										<th style="width: 20%"></th>
+									}
+								</tr>
+							</thead>
+							<tbody>
+							@childCollectionsInCollection.map { child_collection =>
+								<tr data-childCollectionId="@(child_collection.id.toString)">
+									<td><a href="@(routes.Collections.collection(child_collection.id))">@Html(child_collection.name)</a></td>
+									<td>@child_collection.created.format("MMM dd, yyyy")</td>
+									<td>@Html(child_collection.description)</td>
+									<td>
+										@if(!child_collection.thumbnail_id.isEmpty){<img src="@(routes.Files.thumbnail(UUID(child_collection.thumbnail_id.toString().substring(5,child_collection.thumbnail_id.toString().length-1))))" alt="Thumbnail of @Html(child_collection.name)" width="120">}
+										@if(child_collection.thumbnail_id.isEmpty){No thumbnail available}
+									</td>
+									@if(user.isDefined) {
+										<td><a href="#!" onclick="removeChildCollection('@(child_collection.id.toString)',event)">Remove</a>
+												<!-- If user can delete, the button is enabled, otherwise the button is present but disabled to provide consistent UE. -->
+											@if(Permission.checkPermission(Permission.DeleteCollection, ResourceRef(ResourceRef.collection, child_collection.id))){
+												<button onclick="removeChildCollection('@(child_collection.id.toString)',event)" class="btn btn-link" style="text-align:right" title="Detach the Child Collection">
+													<span class="glyphicon glyphicon-trash"></span></button>
+											} else {
+												<button disabled onclick="removeChildCollection('@(child_collection.id.toString)',event)" class="btn btn-link" style="text-align:right" title="Detach the Child Collection">
+													<span class="glyphicon glyphicon-trash"></span></button>
+											}
+										</td>
+									}
+								</tr>
+							}
+							</tbody>
+						</table>
+						<ul class="pager" id="datasetsPager">
+							<li class="previous" id="datasetsPagerPrev" style="visibility:hidden;"><a href="#!">Previous</a></li>
+							<li class ="next" id="datasetsPagerNext" style="visibility:hidden;"><a href="#!">Next</a></li>
+						</ul>
+					</div>
 		</div>
 		</div>
 	<!-- right column -->
