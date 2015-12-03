@@ -33,7 +33,7 @@
                         }
                         <!-- If the user can edit the collection, the elements are enabled, otherwise they are present but disabled to provide consistent UE. -->
                         @if(Permission.checkPermission(Permission.EditCollection, ResourceRef(ResourceRef.collection, collection.id))) {
-                           | <a href="#" class="btn btn-link btn-xs" onclick="removeCollection( '@(collection.id)', '@dataset.id', event)" title="Remove from collection">
+                           | <a href="#" class="btn btn-link btn-xs" onclick="removeCollection( '@(collection.id)', '@currentCollection.id', event)" title="Remove from collection">
                                 Remove</a>
                         } else {
                             <a href="#" class="btn btn-link btn-xs disabled" onclick="return false;" title="Remove from collection">
@@ -53,7 +53,7 @@
             <select id="collectionAddSelect" class="form-control" style="width: 100%">
             </select>
             <span class="input-group-btn">
-                <a href="#" class="btn btn-default btn-large" id="addCollectionBtn" title="Add Collection to Parent Collection" onclick="addToCollection('@dataset.id')">
+                <a href="#" class="btn btn-default btn-large" id="addCollectionBtn" title="Add Collection to Parent Collection" onclick="addToCollection('@currentCollection.id')">
                     <span class="glyphicon glyphicon-plus"></span>
                 </a>
             </span>

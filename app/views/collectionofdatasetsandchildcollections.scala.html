@@ -306,6 +306,7 @@
             <!-- right column -->
         <div class="col-md-4">
             @spaces.spaceAllocation(collection.id, ResourceRef.collection, collectionSpaces.getOrElse(List.empty))
+            @collections.parent_collections(collection,parentCollectionsInCollection)
             <br />
             @if(user.isDefined && collectionSpaces.isDefined && !collectionSpaces.get.isEmpty){
                 <div id="collection-users">
@@ -319,24 +320,9 @@
                 </div>
             }
 
+            
 
-            <div>
-                <p>This is where collection stuff will go</p>
-            </div>
 
-            @spaces.spaceAllocation(collection.id, ResourceRef.collection, collectionSpaces.getOrElse(List.empty))
-            <br />
-            @if(user.isDefined && collectionSpaces.isDefined && !collectionSpaces.get.isEmpty){
-                <div id="collection-users">
-                    <a href="@routes.Collections.users(collection.id)">
-                        <span class="glyphicon glyphicon-hand-right"></span> Users with access to the collection
-                    </a>
-                    <br /> <br />
-                    <div class="alert-danger inner-item">
-                    @flash.get("error")
-                    </div>
-                </div>
-            }
         </div>
 
 
