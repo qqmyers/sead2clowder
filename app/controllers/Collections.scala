@@ -310,6 +310,20 @@ class Collections @Inject()(datasets: DatasetService, collections: CollectionSer
             }
           }
 
+          val parent_collection_ids = dCollection.parent_collection_ids
+          val decodedParentCollections = ListBuffer.empty[models.Collection]
+          for (parent_collection_id <- parent_collection_ids){
+            collections.get(UUID(parent_collection_id)) match {
+              case Some(parent_collection) => {
+                val decodedParent = Utils.decodeCollectionElements(parent_collection)
+                decodedParentCollections += decodedParent
+              } case None => {
+                Logger.debug("No parent collection found for" + parent_collection_id)
+              }
+
+            }
+          }
+
           var collectionSpaces: List[ProjectSpace] = List.empty[ProjectSpace]
           collection.spaces.map{
             sp=> spaceService.get(sp) match {
@@ -323,7 +337,8 @@ class Collections @Inject()(datasets: DatasetService, collections: CollectionSer
           val decodedSpaces: List[ProjectSpace] = collectionSpaces.map{aSpace => Utils.decodeSpaceElements(aSpace)}
 
           //Ok(views.html.collectionofdatasets(decodedDatasetsInside.toList, dCollection, filteredPreviewers.toList, Some(decodedSpaces)))
-          Ok(views.html.collectionofdatasetsandchildcollections(decodedDatasetsInside.toList, decodedChildCollections.toList,dCollection, filteredPreviewers.toList, Some(decodedSpaces)))
+          Ok(views.html.collectionofdatasetsandchildcollections(decodedDatasetsInside.toList, decodedChildCollections.toList,
+              decodedParentCollections.toList, dCollection, filteredPreviewers.toList, Some(decodedSpaces)))
 
         }
         case None => {
