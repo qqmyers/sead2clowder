@@ -11,6 +11,10 @@
 	
 	var areRestChildCollectionsVisible = false;
 
+	function foo(childCollectionId,collectionId,event){
+
+	}
+
 	function addChildCollection(childCollectionId, event){
 		
 		var request = jsRoutes.api.Collections.attachSubCollection(collectionId, childCollectionId).ajax({
@@ -20,14 +24,14 @@
 		//Note - need to make the "replace" calls below more generic.
 		request.done(function (response, textStatus, jqXHR){	        
 	        //Remove selected dataset from datasets not in collection.
-	        var resultId = event.target.parentNode.parentNode.getAttribute('data-childcollectionid');
-	        var inputDate = $("tr[data-childcollectionid='" + resultId + "'] td:nth-child(2)").text();
-	        var inputDescr = $("tr[data-childcollectionid='" + resultId + "'] td:nth-child(3)").html();
-	        var inputThumbnail = $("tr[data-childcollectionid='" + resultId + "'] td:nth-child(4)").html();
-	        $("#addChildCollectionsTable tbody tr[data-childcollectionid='" + resultId + "']").remove();
+	        var resultId = event.target.parentNode.parentNode.getAttribute('data-childCollectionId');
+	        var inputDate = $("tr[data-childCollectionId='" + resultId + "'] td:nth-child(2)").text();
+	        var inputDescr = $("tr[data-childCollectionId='" + resultId + "'] td:nth-child(3)").html();
+	        var inputThumbnail = $("tr[data-childCollectionId='" + resultId + "'] td:nth-child(4)").html();
+	        $("#addChildCollectionsTable tbody tr[data-childCollectionId='" + resultId + "']").remove();
 	        
 	        //Add the node to the contained datasets table, with associated data
-	        $('#collectionChildCollectionsTable tbody').append("<tr data-childcollectionid='" + childCollectionId + "'><td><a href='" + jsRoutes.controllers.Collections.collection(childCollectionId).url + "'>"+ event.target.innerHTML.replace(/\n/g, "<br>") + "</a></td>"
+	        $('#collectionChildCollectionsTable tbody').append("<tr data-childCollectionId='" + childCollectionId + "'><td><a href='" + jsRoutes.controllers.Collections.collection(childCollectionId).url + "'>"+ event.target.innerHTML.replace(/\n/g, "<br>") + "</a></td>"
 					+ "<td>" + inputDate + "</td>"
 					+ "<td style='white-space:pre-line;'>" + inputDescr.replace(/\n/g, "<br>") + "</td>"
 					+ "<td>" + inputThumbnail + "</td>"
@@ -48,21 +52,21 @@
 
 	//done up to here #tn
 	function removeChildCollection(childCollectionId, event){
-		
+		console.log("removing child collection");
 		var request = jsRoutes.api.Collections.removeSubCollection(collectionId, childCollectionId).ajax({
 			type: 'POST'
 		});
 		
 		request.done(function (response, textStatus, jqXHR){	        	       
 	      //Remove selected dataset from datasets in collection.
-	      var rowId = event.target.parentNode.parentNode.getAttribute('data-childcollectionid');
-	      var inputDate = $("tr[data-childcollectionid='" + rowId + "'] td:nth-child(2)").text();
-	      var inputDescr = $("tr[data-childcollectionid='" + rowId + "'] td:nth-child(3)").html();
-	      var inputThumbnail = $("tr[data-childcollectionid='" + rowId + "'] td:nth-child(4)").html();
-	      $("#collectionChildCollectionsTable tbody tr[data-childcollectionid='" + rowId + "']").remove();
+	      var rowId = event.target.parentNode.parentNode.getAttribute('data-childCollectionId');
+	      var inputDate = $("tr[data-childCollectionId='" + rowId + "'] td:nth-child(2)").text();
+	      var inputDescr = $("tr[data-childCollectionId='" + rowId + "'] td:nth-child(3)").html();
+	      var inputThumbnail = $("tr[data-childCollectionId='" + rowId + "'] td:nth-child(4)").html();
+	      $("#collectionChildCollectionsTable tbody tr[data-childCollectionId='" + rowId + "']").remove();
 	      
 	      //Add the data back to the uncontained datasets table
-	      var newChildCollectionHTML = "<tr data-childcollectionid='" + childCollectionId + "'><td><a href='#!' "
+	      var newChildCollectionHTML = "<tr data-childCollectionId='" + childCollectionId + "'><td><a href='#!' "
 	      + "onclick='addChildCollection(\"" + childCollection + "\",event)' "
 	      + ">"+ event.target.parentNode.parentNode.children[0].children[0].innerHTML + "</a></td>"
 	      + "<td>" + inputDate + "</td>"
@@ -201,14 +205,14 @@
 		        	var createdDateArray = respJSON[i].created.split(" ");
 		        	var createdDate = createdDateArray.slice(1,3).join(" ") + ", " + createdDateArray[5];
 		        	var childCollectionThumbnail = "";
-					var currentThumbnail = $("tr[data-childcollectionid='" + resultId + "'] td:nth-child(4)").html();
+					var currentThumbnail = $("tr[data-childCollectionId='" + resultId + "'] td:nth-child(4)").html();
 		        	if(respJSON[i].thumbnail != "None")
 		        		childCollectionThumbnail = "<img src='" + window.location.protocol + "//" + window.location.hostname + (window.location.port ? ':' + window.location.port: '') + "/fileThumbnail/" + respJSON[i].thumbnail + "/blob' "
 		        							+ "alt='Thumbnail of " + respJSON[i].name.replace(/\n/g, "<br>") + "' width='120'>";
 		        	else
 		        		childCollectionThumbnail = "No thumbnail available YO"
 
-		        	$('#addChildCollectionsTable tbody').append("<tr id='resultRow" + (i+1) + "' style='display:none;' data-childcollectionid='" + respJSON[i].id + "'><td><a href='#!' "
+		        	$('#addChildCollectionsTable tbody').append("<tr id='resultRow" + (i+1) + "' style='display:none;' data-childCollectionId='" + respJSON[i].id + "'><td><a href='#!' "
 		        								+ "onclick='addChildCollection(\"" + respJSON[i].id + "\",event)' "
 		        								+ ">"+ respJSON[i].id.replace(/\n/g, "<br>") + "</a></td>"
 		        								+ "<td>" + createdDate + "</td>"

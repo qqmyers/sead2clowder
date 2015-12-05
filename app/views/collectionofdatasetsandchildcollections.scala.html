@@ -23,6 +23,7 @@
     <script src="@routes.Assets.at("javascripts/errorRedirect.js")" type="text/javascript"></script>
     <script src="@routes.Assets.at("javascripts/collectionDatasetsList.js")" type="text/javascript"></script>
     <script src="@routes.Assets.at("javascripts/collectionListProcess.js")" type="text/javascript"></script>
+    <script src="@routes.Assets.at("javascripts/collectionChildCollectionsList.js")" type="text/javascript"></script>
     <script src="@routes.Assets.at("javascripts/htmlEncodeDecode.js")" language="javascript"></script>
 
 
@@ -226,13 +227,13 @@
                                     @if(child_collection.thumbnail_id.isEmpty){No thumbnail available}
                                 </td>
                                 @if(user.isDefined) {
-                                    <td><a href="#!" onclick="removeChildCollection('@(child_collection.id.toString)',event)">Remove</a>
+                                    <td><a href="#!" onclick="removeChildCollection('@(child_collection.id.toString)','@(collection.id.toString)',event)">Remove</a>
                                             <!-- If user can delete, the button is enabled, otherwise the button is present but disabled to provide consistent UE. -->
                                         @if(Permission.checkPermission(Permission.DeleteCollection, ResourceRef(ResourceRef.collection, collection.id))){
-                                            <button onclick="removeChildCollection('@(child_collection.id.toString)',event)" class="btn btn-link" style="text-align:right" title="Detach the Child Collection">
+                                            <button onclick="removeChildCollection('@(child_collection.id.toString)','@(collection.id.toString)',event)" class="btn btn-link" style="text-align:right" title="Detach the Child Collection">
                                                 <span class="glyphicon glyphicon-trash"></span></button>
                                         } else {
-                                            <button disabled onclick="removeChildCollection('@(child_collection.id.toString)',event)" class="btn btn-link" style="text-align:right" title="Detach the Child Collection">
+                                            <button disabled onclick="removeChildCollection('@(child_collection.id.toString)','@(collection.id.toString)',event)" class="btn btn-link" style="text-align:right" title="Detach the Child Collection">
                                                 <span class="glyphicon glyphicon-trash"></span></button>
                                         }
                                     </td>

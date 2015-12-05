@@ -55,6 +55,10 @@ function removeCollection(collectionId, datasetId, event){
     return false;
 }
 
-function addChildCollection(collectionId, childCollecctionIdd, event){
+function addChildCollection(collectionId, childCollecctionId, event){
+    return false;
+}
+
+function removeChildColection(collectionId, childCollectoinId, event ){
     return false;
 }

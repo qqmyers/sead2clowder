@@ -53,7 +53,7 @@
             <select id="collectionAddSelect" class="form-control" style="width: 100%">
             </select>
             <span class="input-group-btn">
-                <a href="#" class="btn btn-default btn-large" id="addCollectionBtn" title="Add Collection to Parent Collection" onclick="addToCollection('@currentCollection.id')">
+                <a href="#" class="btn btn-default btn-large" id="addCollectionBtn" title="Add Collection to Parent Collection" onclick="addChildCollection('@currentCollection.id')">
                     <span class="glyphicon glyphicon-plus"></span>
                 </a>
             </span>
@@ -92,3 +92,4 @@
 
 </script>
 <script src="@routes.Assets.at("javascripts/datasets/collections.js")" type="text/javascript"></script>
+<script src="@routes.Assets.at("javascripts/collectionChildCollectionsList.js")" type="text/javascript"></script>
