@@ -25,11 +25,11 @@
                         <a href="@(routes.Collections.collection(collection.id))" id='@collection.id' class ="collection">@Html(collection.name)</a>
                     </div>
                     <div>
-                        @if(collection.datasetCount == 1) {
-                            @collection.datasetCount dataset
+                        @if(collection.childCollectionsCount == 0) {
+                            @collection.childCollectionsCount collection(s)
                         }
-                        @if(collection.datasetCount != 1) {
-                            @collection.datasetCount datasets
+                        @if(collection.childCollectionsCount != 0) {
+                            @collection.childCollectionsCount collection(s)
                         }
                         <!-- If the user can edit the collection, the elements are enabled, otherwise they are present but disabled to provide consistent UE. -->
                         @if(Permission.checkPermission(Permission.EditCollection, ResourceRef(ResourceRef.collection, collection.id))) {

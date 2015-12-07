@@ -200,7 +200,8 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
   def jsonCollection(collection: Collection): JsValue = {
     toJson(Map("id" -> collection.id.toString, "name" -> collection.name, "description" -> collection.description,
       "created" -> collection.created.toString,"author"-> collection.author.toString, "root_flag" -> collection.root_flag.toString,
-      "child_collection_ids"-> collection.child_collection_ids.toString, "parent_collection_ids" -> collection.parent_collection_ids.toString))
+      "child_collection_ids"-> collection.child_collection_ids.toString, "parent_collection_ids" -> collection.parent_collection_ids.toString,
+    "childCollectionsCount" -> collection.childCollectionsCount.toString))
   }
 
   @ApiOperation(value = "Update a collection name",

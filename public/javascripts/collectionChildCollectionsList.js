@@ -11,12 +11,8 @@
 	
 	var areRestChildCollectionsVisible = false;
 
-	function foo(childCollectionId,collectionId,event){
 
-	}
-
-
-	function addChildCollectionToCollection(childCollectionId, collectionId, event){
+	function addChildCollectionToCollection(childCollectionId, event){
 		var selectedId = $("#collectionAddSelect").val();
 		if (!selectedId) return false;
 		var selectedName = $("#collectionAddSelect option:selected").text();
@@ -32,7 +28,7 @@
 			$("#collectionsList").append('<div id="col_'+selectedId+'" class="row bottom-padding">' +
 					'<div class="col-md-2"></div>' +
 					'<div class="col-md-10"><div><a href="'+jsRoutes.controllers.Collections.collection(selectedId).url+'" id='+selectedId+' class ="collection">'+selectedName+'</a></div><div>' +
-					o.childCollectionsInCollection+' child collection(s) | <a href="#" class="btn btn-link btn-xs" onclick="removeChildCollection(\''+selectedId+'\', \''+childCollectionId+'\', event)" title="Remove from collection">' +
+					o.childCollectionsCount+' child collection(s) | <a href="#" class="btn btn-link btn-xs" onclick="removeChildCollection(\''+selectedId+'\', event)" title="Remove from collection">' +
 					' Remove</a></div></div></div>');
 			$("#collectionAddSelect").select2("val", "");
 		});
@@ -49,10 +45,12 @@
 	}
 
 
+
 	//note - this is not used anywhere at this time.
-	function addChildCollection(childCollectionId,collectionId, event){
+	/*
+	function addChildCollection(childCollectionId, event){
 		
-		var request = jsRoutes.api.Collections.attachSubCollection(collectionId, childCollectionId).ajax({
+		var request = jsRoutes.api.Collections.attachSubCollection(childCollectionId, event).ajax({
 			type: 'POST'
 		});
 
@@ -84,17 +82,19 @@
  		});
 		
 	}
+	*/
 
 
 	//done up to here #tn
-	function removeChildCollection(childCollectionId, event){
+	function removeChildCollection(childCollectionId,collectionId, event){
 		console.log("removing child collection");
+
 		var request = jsRoutes.api.Collections.removeSubCollection(collectionId, childCollectionId).ajax({
 			type: 'POST'
 		});
 		
 		request.done(function (response, textStatus, jqXHR){	        	       
-	      //Remove selected dataset from datasets in collection.
+	      //Remove selected child collection from child collections in collection.
 	      var rowId = event.target.parentNode.parentNode.getAttribute('data-childCollectionId');
 	      var inputDate = $("tr[data-childCollectionId='" + rowId + "'] td:nth-child(2)").text();
 	      var inputDescr = $("tr[data-childCollectionId='" + rowId + "'] td:nth-child(3)").html();
@@ -103,7 +103,7 @@
 	      
 	      //Add the data back to the uncontained datasets table
 	      var newChildCollectionHTML = "<tr data-childCollectionId='" + childCollectionId + "'><td><a href='#!' "
-	      + "onclick='addChildCollection(\"" + childCollection + "\",event)' "
+	      + "onclick='addChildCollection(\"" + childCollectionId + "\",event)' "
 	      + ">"+ event.target.parentNode.parentNode.children[0].children[0].innerHTML + "</a></td>"
 	      + "<td>" + inputDate + "</td>"
 	      + "<td style='white-space:pre-line;'>" + inputDescr + "</td>"

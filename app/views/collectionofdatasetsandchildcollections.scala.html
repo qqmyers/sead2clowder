@@ -198,7 +198,7 @@
             <div class="row">
                 <div class="col-md-12">
                     <h3>Child collections</h3>
-                    <table id='collectionChildCollectionssTable' class="table table-bordered table-hover">
+                    <table id='collectionChildCollectionsTable' class="table table-bordered table-hover">
                         <thead>
                             <tr>
                                 @if(user.isDefined) {
@@ -248,59 +248,7 @@
                     </ul>
                 </div>
             </div>
-            <div class="row">
-                <div class="col-md-12">
-                    <h3>Parent collections</h3>
-                    <table id='collectionParentCollectionsTable' class="table table-bordered table-hover">
-                        <thead>
-                            <tr>
-                                @if(user.isDefined) {
-                                    <th style="width: 27%">Name</th>
-                                    <th style="width: 17%">Created</th>
-                                    <th style="width: 36%">Description</th>
-                                    <th style="width: 10%"></th>
-                                    <th style="width: 10%"></th>
-                                }
-                                @if(!user.isDefined) {
-                                    <th style="width: 27%">Name</th>
-                                    <th style="width: 17%">Created</th>
-                                    <th style="width: 36%">Description</th>
-                                    <th style="width: 20%"></th>
-                                }
-                            </tr>
-                        </thead>
-                        <tbody>
-                        @parentCollectionsInCollection.map { parent_collection =>
-                            <tr data-parentCollectionId="@(parent_collection.id.toString)">
-                                <td><a href="@(routes.Collections.collection(parent_collection.id))">@Html(parent_collection.name)</a></td>
-                                <td>@parent_collection.created.format("MMM dd, yyyy")</td>
-                                <td>@Html(parent_collection.description)</td>
-                                <td>
-                                    @if(!parent_collection.thumbnail_id.isEmpty){<img src="@(routes.Files.thumbnail(UUID(parent_collection.thumbnail_id.toString().substring(5,parent_collection.thumbnail_id.toString().length-1))))" alt="Thumbnail of @Html(parent_collection.name)" width="120">}
-                                    @if(parent_collection.thumbnail_id.isEmpty){No thumbnail available}
-                                </td>
-                                @if(user.isDefined) {
-                                    <td><a href="#!" onclick="removeParentCollection('@(parent_collection.id.toString)',event)">Remove</a>
-                                            <!-- If user can delete, the button is enabled, otherwise the button is present but disabled to provide consistent UE. -->
-                                        @if(Permission.checkPermission(Permission.DeleteCollection, ResourceRef(ResourceRef.collection, collection.id))){
-                                            <button onclick="removeParentCollection('@(parent_collection.id.toString)',event)" class="btn btn-link" style="text-align:right" title="Remove from Parent Collection">
-                                                <span class="glyphicon glyphicon-trash"></span></button>
-                                        } else {
-                                            <button disabled onclick="removeParentCollection('@(parent_collection.id.toString)',event)" class="btn btn-link" style="text-align:right" title="Remove from Parent Collection">
-                                                <span class="glyphicon glyphicon-trash"></span></button>
-                                        }
-                                    </td>
-                                }
-                            </tr>
-                        }
-                        </tbody>
-                    </table>
-                    <ul class="pager" id="parentCollectionsPager">
-                        <li class="previous" id="parentCollectionsPagerPrev" style="visibility:hidden;"><a href="#!">Previous</a></li>
-                        <li class ="next" id="parentCollectionsPagerNext" style="visibility:hidden;"><a href="#!">Next</a></li>
-                    </ul>
-                </div>
-            </div>
+
         </div>
 
 
