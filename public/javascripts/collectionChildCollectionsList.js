@@ -15,7 +15,42 @@
 
 	}
 
-	function addChildCollection(childCollectionId, event){
+
+	function addChildCollectionToCollection(childCollectionId, collectionId, event){
+		var selectedId = $("#collectionAddSelect").val();
+		if (!selectedId) return false;
+		var selectedName = $("#collectionAddSelect option:selected").text();
+		selectedName = selectedName.replace(/\n/g, "<br>");
+
+		var request = jsRoutes.api.Collections.attachSubCollection(selectedId, childCollectionId).ajax({
+			type: 'POST'
+		});
+
+		request.done(function (response, textStatus, jqXHR) {
+			var o =$.parseJSON(jqXHR.responseText);
+			// TODO retrieve more information about collection from API and show it in the GUI
+			$("#collectionsList").append('<div id="col_'+selectedId+'" class="row bottom-padding">' +
+					'<div class="col-md-2"></div>' +
+					'<div class="col-md-10"><div><a href="'+jsRoutes.controllers.Collections.collection(selectedId).url+'" id='+selectedId+' class ="collection">'+selectedName+'</a></div><div>' +
+					o.childCollectionsInCollection+' child collection(s) | <a href="#" class="btn btn-link btn-xs" onclick="removeChildCollection(\''+selectedId+'\', \''+childCollectionId+'\', event)" title="Remove from collection">' +
+					' Remove</a></div></div></div>');
+			$("#collectionAddSelect").select2("val", "");
+		});
+
+		request.fail(function (jqXHR, textStatus, errorThrown){
+			console.error("The following error occured: " + textStatus, errorThrown);
+			var errMsg = "You must be logged in to add a child collection to a collection.";
+			if (!checkErrorAndRedirect(jqXHR, errMsg)) {
+				notify("The child collection was not added to the collection due to the following : " + errorThrown, "error");
+			}
+		});
+
+		return false;
+	}
+
+
+	//note - this is not used anywhere at this time.
+	function addChildCollection(childCollectionId,collectionId, event){
 		
 		var request = jsRoutes.api.Collections.attachSubCollection(collectionId, childCollectionId).ajax({
 			type: 'POST'
@@ -36,7 +71,7 @@
 					+ "<td style='white-space:pre-line;'>" + inputDescr.replace(/\n/g, "<br>") + "</td>"
 					+ "<td>" + inputThumbnail + "</td>"
 					+ "<td><a href='#!' onclick='removeChildCollection(\"" + childCollectionId + "\",event)'>Remove</a>"
-					+ "<button class='btn btn-link' title='Detach the ChildCollection' style='text-align:right' onclick='removeChildCollection(\"" + childCollectionId + "\",event)'>"
+					+ "<button class='btn btn-link' title='Detach the Child Collection' style='text-align:right' onclick='removeChildCollection(\"" + childCollectionId + "\",event)'>"
 					+ "<span class='glyphicon glyphicon-trash'></span></button></td></tr>");
 		});	
 		
@@ -49,6 +84,7 @@
  		});
 		
 	}
+
 
 	//done up to here #tn
 	function removeChildCollection(childCollectionId, event){
