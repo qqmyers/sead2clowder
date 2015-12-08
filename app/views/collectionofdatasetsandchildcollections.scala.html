@@ -179,9 +179,6 @@
                                         @if(Permission.checkPermission(Permission.DeleteCollection, ResourceRef(ResourceRef.collection, collection.id))){
                                             <button onclick="removeDataset('@(dataset.id.toString)',event)" class="btn btn-link" style="text-align:right" title="Detach the Dataset">
                                                 <span class="glyphicon glyphicon-trash"></span></button>
-                                        } else {
-                                            <button disabled onclick="removeDataset('@(dataset.id.toString)',event)" class="btn btn-link" style="text-align:right" title="Detach the Dataset">
-                                                <span class="glyphicon glyphicon-trash"></span></button>
                                         }
                                     </td>
                                 }
@@ -231,9 +228,6 @@
                                             <!-- If user can delete, the button is enabled, otherwise the button is present but disabled to provide consistent UE. -->
                                         @if(Permission.checkPermission(Permission.DeleteCollection, ResourceRef(ResourceRef.collection, collection.id))){
                                             <button onclick="removeChildCollection('@(child_collection.id.toString)','@(collection.id.toString)',event)" class="btn btn-link" style="text-align:right" title="Detach the Child Collection">
-                                                <span class="glyphicon glyphicon-trash"></span></button>
-                                        } else {
-                                            <button disabled onclick="removeChildCollection('@(child_collection.id.toString)','@(collection.id.toString)',event)" class="btn btn-link" style="text-align:right" title="Detach the Child Collection">
                                                 <span class="glyphicon glyphicon-trash"></span></button>
                                         }
                                     </td>

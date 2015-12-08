@@ -26,10 +26,10 @@
                     </div>
                     <div>
                         @if(collection.childCollectionsCount == 1) {
-                            @collection.childCollectionsCount collection(s)
+                            @collection.childCollectionsCount.getOrElse() child collection(s)
                         }
                         @if(collection.childCollectionsCount != 1) {
-                            @collection.childCollectionsCount collection(s)
+                            @collection.childCollectionsCount.getOrElse() child collection(s)
                         }
                         <!-- If the user can edit the collection, the elements are enabled, otherwise they are present but disabled to provide consistent UE. -->
                         @if(Permission.checkPermission(Permission.EditCollection, ResourceRef(ResourceRef.collection, collection.id))) {

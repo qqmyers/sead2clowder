@@ -65,10 +65,6 @@
 									<button id="deleteButton" onclick="removeCollectionAndRedirect('@(collection.id)','@(routes.Collections.list(""))')"
 											style="margin-right:15px;" class="btn btn-danger btn-sm" title="Delete Collection but not Enclosed Datasets">
 									<span class="glyphicon glyphicon-trash"></span> Delete</button>
-							} else {
-									<button disabled id="deleteButton" onclick="removeCollectionAndRedirect('@(collection.id)','@(routes.Collections.list(""))')"
-											style="margin-right:15px;" class="btn btn-danger btn-sm" title="Delete Collection but not Enclosed Datasets">
-									<span class="glyphicon glyphicon-trash"></span> Delete</button>
 							}
 							@if(user.isDefined) {
 								@if(!collection.followers.contains(user.get.id)) {
@@ -176,9 +172,6 @@
 									<!-- If user can delete, the button is enabled, otherwise the button is present but disabled to provide consistent UE. -->
 									@if(Permission.checkPermission(Permission.DeleteCollection, ResourceRef(ResourceRef.collection, collection.id))){
 										<button onclick="removeDataset('@(dataset.id.toString)',event)" class="btn btn-link" style="text-align:right" title="Detach the Dataset">
-										<span class="glyphicon glyphicon-trash"></span></button>
-									} else {
-										<button disabled onclick="removeDataset('@(dataset.id.toString)',event)" class="btn btn-link" style="text-align:right" title="Detach the Dataset">
 										<span class="glyphicon glyphicon-trash"></span></button>
 									}
 								</td>
