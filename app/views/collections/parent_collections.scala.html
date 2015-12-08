@@ -25,10 +25,10 @@
                         <a href="@(routes.Collections.collection(collection.id))" id='@collection.id' class ="collection">@Html(collection.name)</a>
                     </div>
                     <div>
-                        @if(collection.childCollectionsCount == 0) {
+                        @if(collection.childCollectionsCount == 1) {
                             @collection.childCollectionsCount collection(s)
                         }
-                        @if(collection.childCollectionsCount != 0) {
+                        @if(collection.childCollectionsCount != 1) {
                             @collection.childCollectionsCount collection(s)
                         }
                         <!-- If the user can edit the collection, the elements are enabled, otherwise they are present but disabled to provide consistent UE. -->
