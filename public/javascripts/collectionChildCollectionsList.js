@@ -46,43 +46,6 @@
 
 
 
-	//note - this is not used anywhere at this time.
-	/*
-	function addChildCollection(childCollectionId, event){
-		
-		var request = jsRoutes.api.Collections.attachSubCollection(childCollectionId, event).ajax({
-			type: 'POST'
-		});
-
-		//Note - need to make the "replace" calls below more generic.
-		request.done(function (response, textStatus, jqXHR){	        
-	        //Remove selected dataset from datasets not in collection.
-	        var resultId = event.target.parentNode.parentNode.getAttribute('data-childCollectionId');
-	        var inputDate = $("tr[data-childCollectionId='" + resultId + "'] td:nth-child(2)").text();
-	        var inputDescr = $("tr[data-childCollectionId='" + resultId + "'] td:nth-child(3)").html();
-	        var inputThumbnail = $("tr[data-childCollectionId='" + resultId + "'] td:nth-child(4)").html();
-	        $("#addChildCollectionsTable tbody tr[data-childCollectionId='" + resultId + "']").remove();
-	        
-	        //Add the node to the contained datasets table, with associated data
-	        $('#collectionChildCollectionsTable tbody').append("<tr data-childCollectionId='" + childCollectionId + "'><td><a href='" + jsRoutes.controllers.Collections.collection(childCollectionId).url + "'>"+ event.target.innerHTML.replace(/\n/g, "<br>") + "</a></td>"
-					+ "<td>" + inputDate + "</td>"
-					+ "<td style='white-space:pre-line;'>" + inputDescr.replace(/\n/g, "<br>") + "</td>"
-					+ "<td>" + inputThumbnail + "</td>"
-					+ "<td><a href='#!' onclick='removeChildCollection(\"" + childCollectionId + "\",event)'>Remove</a>"
-					+ "<button class='btn btn-link' title='Detach the Child Collection' style='text-align:right' onclick='removeChildCollection(\"" + childCollectionId + "\",event)'>"
-					+ "<span class='glyphicon glyphicon-trash'></span></button></td></tr>");
-		});	
-		
-		request.fail(function (jqXHR, textStatus, errorThrown){
-			console.error("The following error occured: "+textStatus, errorThrown);
-	        var errMsg = "You must be logged in to add a child collection to a collection.";
-	        if (!checkErrorAndRedirect(jqXHR, errMsg)) {
-	            notify("The child collection was not added to the collection due to : " + errorThrown, "error");
-	        }    		
- 		});
-		
-	}
-	*/
 
 	function removeFromParent(childCollectionId, parentCollectionId, event){
 		var request = jsRoutes.api.Collections.removeSubCollection(childCollectionId, parentCollectionId).ajax({
@@ -139,6 +102,10 @@
 	            notify("The child collection was not removed from the collection due to : " + errorThrown, "error");
 	        }
  		});	
+	}
+
+	function removeChildFromParent(childCollectionId, collectionId, event) {
+		notify("You must be viewing the parent collection to remove a child");
 	}
 
 	function removeChildCollectionFromParent(childCollectionId,collectionId, event){
