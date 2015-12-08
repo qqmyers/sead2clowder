@@ -84,6 +84,25 @@
 	}
 	*/
 
+	function removeFromParent(childCollectionId, parentCollectionId, event){
+		var request = jsRoutes.api.Collections.removeSubCollection(childCollectionId, parentCollectionId).ajax({
+			type: 'POST'
+		});
+
+		request.done(function (response, textStatus, jqXHR){
+			$('#col_'+parentCollectionId).remove();
+		});
+		console.log('before the fail');
+		request.fail(function (jqXHR, textStatus, errorThrown){
+			console.error("The following error occured: " + textStatus, errorThrown);
+			var errMsg = "You must be logged in to remove a child collection from a collection.";
+			if (!checkErrorAndRedirect(jqXHR, errMsg)) {
+				notify("The child collection was not removed from the collection due to : " + errorThrown, "error");
+			}
+		});
+		return false;
+	}
+
 
 	//done up to here #tn
 	function removeChildCollection(childCollectionId,collectionId, event){
@@ -120,6 +139,46 @@
 	            notify("The child collection was not removed from the collection due to : " + errorThrown, "error");
 	        }
  		});	
+	}
+
+	function removeChildCollectionFromParent(childCollectionId,collectionId, event){
+		console.log("removing child collection");
+
+		var request = jsRoutes.api.Collections.removeSubCollection(collectionId, childCollectionId).ajax({
+			type: 'POST'
+		});
+
+		request.done(function (response, textStatus, jqXHR){
+			$('#col_'+collectionId).remove();
+		});
+
+		request.done(function (response, textStatus, jqXHR){
+			//Remove selected child collection from child collections in collection.
+			var rowId = event.target.parentNode.parentNode.getAttribute('data-childCollectionId');
+			var inputDate = $("tr[data-childCollectionId='" + rowId + "'] td:nth-child(2)").text();
+			var inputDescr = $("tr[data-childCollectionId='" + rowId + "'] td:nth-child(3)").html();
+			var inputThumbnail = $("tr[data-childCollectionId='" + rowId + "'] td:nth-child(4)").html();
+			$("#collectionChildCollectionsTable tbody tr[data-childCollectionId='" + rowId + "']").remove();
+
+			//Add the data back to the uncontained datasets table
+			var newChildCollectionHTML = "<tr data-childCollectionId='" + childCollectionId + "'><td><a href='#!' "
+					+ "onclick='addChildCollection(\"" + childCollectionId + "\",event)' "
+					+ ">"+ event.target.parentNode.parentNode.children[0].children[0].innerHTML + "</a></td>"
+					+ "<td>" + inputDate + "</td>"
+					+ "<td style='white-space:pre-line;'>" + inputDescr + "</td>"
+					+ "<td>" + inputThumbnail + "</td>"
+					+ "<td><a target='_blank' href='" + jsRoutes.controllers.Collections.collection(childCollectionId).url + "'>View</a></td></tr>";
+
+			$('#addChildCollectionsTable tbody').append(newChildCollectionHTML);
+		});
+
+		request.fail(function (jqXHR, textStatus, errorThrown){
+			console.error("The following error occured: "+textStatus, errorThrown);
+			var errMsg = "You must be logged in to remove a child collection from a collection.";
+			if (!checkErrorAndRedirect(jqXHR, errMsg)) {
+				notify("The child collection was not removed from the collection due to : " + errorThrown, "error");
+			}
+		});
 	}
 	
 	function findPos(reqNode){
