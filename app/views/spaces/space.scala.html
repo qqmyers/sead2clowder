@@ -15,12 +15,11 @@
     }
 
     <div class="row space-head vertical-align">
-
-            <div class="col-md-12 col-lg-12 col-sm-12">
-
-            <h1 id="spacenamedisplay">@space.name
-
-            </h1>
+        <div class="col-md-12 col-lg-12 col-sm-12">
+            <h1 id="spacenamedisplay">@space.name</h1>
+            @if(user.isDefined && userRoleMap(user.get) != "Admin") {
+                <p>Your role is: @userRoleMap(user.get)</p>
+            }
             <p><span id="spacedescdisplay">@space.description</span></p>
         </div>
     </div>
