@@ -55,7 +55,11 @@ class Collections @Inject()(datasets: DatasetService, collections: CollectionSer
    * Utility method to modify the elements in a collection that are encoded when submitted and stored. These elements
    * are decoded when a view requests the objects, so that they can be human readable.
    *
-   * Currently, the following collection elements are encoded:
+   * Currently, t
+    *
+    *
+    *
+    * he following collection elements are encoded:
    *
    * name
    * description
@@ -287,16 +291,16 @@ class Collections @Inject()(datasets: DatasetService, collections: CollectionSer
 
           var collection : Collection = null
           if (colSpace(0) == "default") {
-              collection = Collection(name = colName(0), description = colDesc(0), datasetCount = 0, created = new Date, author = identity)
+              collection = Collection(name = colName(0), description = colDesc(0), datasetCount = 0, created = new Date, author = identity, childCollectionsCount = Some(0))
           }
           else {
             val stringSpaces = colSpace(0).split(",").toList
             val colSpaces: List[UUID] = stringSpaces.map(aSpace => if(aSpace != "") UUID(aSpace) else None).filter(_ != None).asInstanceOf[List[UUID]]
-            collection = Collection(name = colName(0), description = colDesc(0), datasetCount = 0, created = new Date, author = identity, spaces = colSpaces)
+            collection = Collection(name = colName(0), description = colDesc(0), datasetCount = 0, created = new Date, author = identity, spaces = colSpaces, childCollectionsCount = Some(0))
           }
 
           Logger.debug("Saving collection " + collection.name)
-          collections.insert(Collection(id = collection.id, name = collection.name, description = collection.description, datasetCount = 0, created = collection.created, author = collection.author, spaces = collection.spaces))
+          collections.insert(Collection(id = collection.id, name = collection.name, description = collection.description, datasetCount = 0, childCollectionsCount = Some(0), created = collection.created, author = collection.author, spaces = collection.spaces))
           collection.spaces.map{
             sp => spaceService.get(sp) match {
               case Some(s) => {
@@ -359,6 +363,34 @@ class Collections @Inject()(datasets: DatasetService, collections: CollectionSer
             decodedDatasetsInside += dDataset
           }
 
+          val child_collections_ids = dCollection.child_collection_ids
+          val decodedChildCollections = ListBuffer.empty[models.Collection]
+          for (child_collection_id <- child_collections_ids) {
+            collections.get(UUID(child_collection_id)) match {
+              case Some(child_collection) => {
+                val decodedChild = Utils.decodeCollectionElements(child_collection)
+                decodedChildCollections += decodedChild
+              } case None => {
+                Logger.debug("No child collection found for" + child_collection_id)
+              }
+
+            }
+          }
+
+          val parent_collection_ids = dCollection.parent_collection_ids
+          val decodedParentCollections = ListBuffer.empty[models.Collection]
+          for (parent_collection_id <- parent_collection_ids){
+            collections.get(UUID(parent_collection_id)) match {
+              case Some(parent_collection) => {
+                val decodedParent = Utils.decodeCollectionElements(parent_collection)
+                decodedParentCollections += decodedParent
+              } case None => {
+                Logger.debug("No parent collection found for" + parent_collection_id)
+              }
+
+            }
+          }
+
           var collectionSpaces: List[ProjectSpace] = List.empty[ProjectSpace]
           collection.spaces.map{
             sp=> spaceService.get(sp) match {
@@ -371,7 +403,9 @@ class Collections @Inject()(datasets: DatasetService, collections: CollectionSer
 
           val decodedSpaces: List[ProjectSpace] = collectionSpaces.map{aSpace => Utils.decodeSpaceElements(aSpace)}
 
-          Ok(views.html.collectionofdatasets(decodedDatasetsInside.toList, dCollection, filteredPreviewers.toList, Some(decodedSpaces)))
+          //Ok(views.html.collectionofdatasets(decodedDatasetsInside.toList, dCollection, filteredPreviewers.toList, Some(decodedSpaces)))
+          Ok(views.html.collectionofdatasetsandchildcollections(decodedDatasetsInside.toList, decodedChildCollections.toList,
+              decodedParentCollections.toList, dCollection, filteredPreviewers.toList, Some(decodedSpaces)))
 
         }
         case None => {

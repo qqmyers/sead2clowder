@@ -54,4 +54,3 @@ function removeCollection(collectionId, datasetId, event){
     });
     return false;
 }
-
