@@ -1,0 +1,20 @@
+@(datasets: List[models.Dataset], parentCollectionId: String)(implicit user: Option[models.User])
+
+@import api.Permission
+<h3>Datasets</h3>
+@if(datasets.size == 0) {
+    @if(user.isDefined &&  Permission.checkPermission(Permission.EditCollection, ResourceRef(ResourceRef.collection, UUID(parentCollectionId)))) {
+        <a id="create-dataset" href="@routes.Datasets.newDatasetWithParentCollection(Some(parentCollectionId))" class="btn btn-primary btn-xs">
+            <span class="glyphicon glyphicon-ok"></span> Create Dataset
+        </a>
+    } else {
+        @if(user.isDefined) {
+            <p> Please request access to add datasets to this space</p>
+        } else {
+            <p> There are no datasets associated with this space. </p>
+        }
+    }
+
+} else {
+    @collections.datasetsGrid(datasets, parentCollectionId)
+}

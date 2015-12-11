@@ -47,16 +47,15 @@
 	}
 	
 	function removeDataset(datasetId, event){
-		
 		var request = jsRoutes.api.Collections.removeDataset(collectionId, datasetId).ajax({
 			type: 'POST'
 		});
 		
-		request.done(function (response, textStatus, jqXHR){	        	       
-	      //Remove selected dataset from datasets in collection.
+		request.done(function (response, textStatus, jqXHR){
+			//Remove selected dataset from datasets in collection.
 			$('#'+datasetId).remove();
-		});  	
-		
+		});
+
 		request.fail(function (jqXHR, textStatus, errorThrown){
 			console.error("The following error occured: "+textStatus, errorThrown);
 	        var errMsg = "You must be logged in to remove a dataset from a collection.";

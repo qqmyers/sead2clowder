@@ -72,6 +72,9 @@ class Datasets @Inject()(
     }
   }
 
+  def newDatasetWithParentCollection(parentCollectionId: Option[String]) = PermissionAction(Permission.CreateCollection) { implicit request =>
+    Ok("not yet implemented");
+  }
 
   def addToDataset(id: UUID) = PermissionAction(Permission.CreateDataset, Some(ResourceRef(ResourceRef.dataset, id))) { implicit request =>
       implicit val user = request.user

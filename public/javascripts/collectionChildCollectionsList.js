@@ -1,14 +1,14 @@
 	//Counters for DOM node uniqueness.
 	var elementCounterChildCollections = 1;
 	var elementCounterAdd = 1;
-	
+
 	var currentFirstChildCollections = 1;
 	var currentFirstAdd = 1;
 	var searchResultsCount = 0;
-	
+
 	var childCollectionsInCollection = $("#collectionChildCollectionsTable tbody tr");
 	var childCollectionsInCollectionCount = childCollectionsInCollection.length;
-	
+
 	var areRestChildCollectionsVisible = false;
 
 
@@ -49,20 +49,20 @@
 	//note - this is not used anywhere at this time.
 	/*
 	function addChildCollection(childCollectionId, event){
-		
+
 		var request = jsRoutes.api.Collections.attachSubCollection(childCollectionId, event).ajax({
 			type: 'POST'
 		});
 
 		//Note - need to make the "replace" calls below more generic.
-		request.done(function (response, textStatus, jqXHR){	        
+		request.done(function (response, textStatus, jqXHR){
 	        //Remove selected dataset from datasets not in collection.
 	        var resultId = event.target.parentNode.parentNode.getAttribute('data-childCollectionId');
 	        var inputDate = $("tr[data-childCollectionId='" + resultId + "'] td:nth-child(2)").text();
 	        var inputDescr = $("tr[data-childCollectionId='" + resultId + "'] td:nth-child(3)").html();
 	        var inputThumbnail = $("tr[data-childCollectionId='" + resultId + "'] td:nth-child(4)").html();
 	        $("#addChildCollectionsTable tbody tr[data-childCollectionId='" + resultId + "']").remove();
-	        
+
 	        //Add the node to the contained datasets table, with associated data
 	        $('#collectionChildCollectionsTable tbody').append("<tr data-childCollectionId='" + childCollectionId + "'><td><a href='" + jsRoutes.controllers.Collections.collection(childCollectionId).url + "'>"+ event.target.innerHTML.replace(/\n/g, "<br>") + "</a></td>"
 					+ "<td>" + inputDate + "</td>"
@@ -71,16 +71,16 @@
 					+ "<td><a href='#!' onclick='removeChildCollection(\"" + childCollectionId + "\",event)'>Remove</a>"
 					+ "<button class='btn btn-link' title='Detach the Child Collection' style='text-align:right' onclick='removeChildCollection(\"" + childCollectionId + "\",event)'>"
 					+ "<span class='glyphicon glyphicon-trash'></span></button></td></tr>");
-		});	
-		
+		});
+
 		request.fail(function (jqXHR, textStatus, errorThrown){
 			console.error("The following error occured: "+textStatus, errorThrown);
 	        var errMsg = "You must be logged in to add a child collection to a collection.";
 	        if (!checkErrorAndRedirect(jqXHR, errMsg)) {
 	            notify("The child collection was not added to the collection due to : " + errorThrown, "error");
-	        }    		
+	        }
  		});
-		
+
 	}
 	*/
 
@@ -103,6 +103,9 @@
 		return false;
 	}
 
+	function removeChildFromParent(childCollectionId, collectionId, event) {
+		notify("You must be viewing the parent collection to remove a child");
+	}
 
 	//done up to here #tn
 	function removeChildCollection(childCollectionId,collectionId, event){
@@ -111,15 +114,21 @@
 		var request = jsRoutes.api.Collections.removeSubCollection(collectionId, childCollectionId).ajax({
 			type: 'POST'
 		});
-		
-		request.done(function (response, textStatus, jqXHR){	        	       
+
+		request.done(function (response, textStatus, jqXHR){
+			//Remove selected dataset from datasets in collection.
+			$('#'+childCollectionId).remove();
+		});
+
+		/*
+		request.done(function (response, textStatus, jqXHR){
 	      //Remove selected child collection from child collections in collection.
 	      var rowId = event.target.parentNode.parentNode.getAttribute('data-childCollectionId');
 	      var inputDate = $("tr[data-childCollectionId='" + rowId + "'] td:nth-child(2)").text();
 	      var inputDescr = $("tr[data-childCollectionId='" + rowId + "'] td:nth-child(3)").html();
 	      var inputThumbnail = $("tr[data-childCollectionId='" + rowId + "'] td:nth-child(4)").html();
 	      $("#collectionChildCollectionsTable tbody tr[data-childCollectionId='" + rowId + "']").remove();
-	      
+
 	      //Add the data back to the uncontained datasets table
 	      var newChildCollectionHTML = "<tr data-childCollectionId='" + childCollectionId + "'><td><a href='#!' "
 	      + "onclick='addChildCollection(\"" + childCollectionId + "\",event)' "
@@ -128,21 +137,22 @@
 	      + "<td style='white-space:pre-line;'>" + inputDescr + "</td>"
 	      + "<td>" + inputThumbnail + "</td>"
 	      + "<td><a target='_blank' href='" + jsRoutes.controllers.Collections.collection(childCollectionId).url + "'>View</a></td></tr>";
-	      
+
 	      $('#addChildCollectionsTable tbody').append(newChildCollectionHTML);
-		});  	
-		
+		});
+		*/
+
 		request.fail(function (jqXHR, textStatus, errorThrown){
 			console.error("The following error occured: "+textStatus, errorThrown);
 	        var errMsg = "You must be logged in to remove a child collection from a collection.";
 	        if (!checkErrorAndRedirect(jqXHR, errMsg)) {
 	            notify("The child collection was not removed from the collection due to : " + errorThrown, "error");
 	        }
- 		});	
+ 		});
 	}
 
 	function removeChildCollectionFromParent(childCollectionId,collectionId, event){
-		console.log("removing child collection");
+		console.log("removing child collection from parent");
 
 		var request = jsRoutes.api.Collections.removeSubCollection(collectionId, childCollectionId).ajax({
 			type: 'POST'
@@ -180,9 +190,9 @@
 			}
 		});
 	}
-	
+
 	function findPos(reqNode){
-		
+
 		var dateString = reqNode.children[1].innerHTML.split(" ");
 		dateString[1] = dateString[1].replace(",","");
 		dateString[0] = dateString[0].replace("Jan","01");
@@ -196,7 +206,7 @@
 		dateString[0] = dateString[0].replace("Sep","09");
 		dateString[0] = dateString[0].replace("Oct","10");
 		dateString[0] = dateString[0].replace("Nov","11");
-		dateString[0] = dateString[0].replace("Dec","12");		
+		dateString[0] = dateString[0].replace("Dec","12");
 		for(var pos = 1;pos <= searchResultsCount; pos++){
 			var currRowDate = $("#addChildCollectionsTable tbody tr[id='resultRow" + pos + "'] td:nth-child(2)").text().split(" ");
 			currRowDate[1] = currRowDate[1].replace(",","");
@@ -228,14 +238,14 @@
 						continue;
 					else
 						return pos;
-			}	
+			}
 		}
 		return searchResultsCount+1;
 	}
-	
-	
+
+
 	childCollectionsInCollection.slice(0,10).each(function() {
-			$(this).css('display','table-row');	
+			$(this).css('display','table-row');
 	});
 	if(childCollectionsInCollection.length > 10)
 		$('#childCollectionsPagerNext').css('visibility','visible');
@@ -243,7 +253,7 @@
 		$(this).attr("id","childCollectionRow" + elementCounterChildCollections);
 		elementCounterChildCollections++;
 	});
-	
+
 	 $('body').on('click','#childCollectionsPagerNext',function(e){
 		 currentFirstChildCollections = currentFirstChildCollections + 10;
 		 $("#collectionChildCollectionsTable tbody tr").each(function() {
@@ -257,7 +267,7 @@
 		 $('#childCollectionsPagerPrev').css('visibility','visible');
 		 if(currentFirstChildCollections + 10 > childCollectionsInCollectionCount)
 			 $('#childCollectionsPagerNext').css('visibility','hidden');
-		 
+
 		 return false;
 	 });
 	 $('body').on('click','#childCollectionsPagerPrev',function(e){
@@ -274,7 +284,7 @@
 			 $('#childCollectionsPagerNext').css('visibility','visible');
 		 if(currentFirstChildCollections == 1)
 			 $('#childCollectionsPagerPrev').css('visibility','hidden');
-		 
+
 		 return false;
 	 });
 

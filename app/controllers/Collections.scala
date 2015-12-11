@@ -51,6 +51,10 @@ class Collections @Inject()(datasets: DatasetService, collections: CollectionSer
 
   }
 
+  def newCollectionWithParent(parentCollectionId: Option[String]) = PermissionAction(Permission.CreateCollection) { implicit request =>
+    Ok("not yet implemented");
+  }
+
   /**
    * Utility method to modify the elements in a collection that are encoded when submitted and stored. These elements
    * are decoded when a view requests the objects, so that they can be human readable.
@@ -401,11 +405,18 @@ class Collections @Inject()(datasets: DatasetService, collections: CollectionSer
             }
           }
 
+          var userRoleMap: Map[User, String] = Map.empty
+
           val decodedSpaces: List[ProjectSpace] = collectionSpaces.map{aSpace => Utils.decodeSpaceElements(aSpace)}
 
-          //Ok(views.html.collectionofdatasets(decodedDatasetsInside.toList, dCollection, filteredPreviewers.toList, Some(decodedSpaces)))
-          Ok(views.html.collectionofdatasetsandchildcollections(decodedDatasetsInside.toList, decodedChildCollections.toList,
-              decodedParentCollections.toList, dCollection, filteredPreviewers.toList, Some(decodedSpaces)))
+          Ok(views.html.collections.collection_parent(dCollection,decodedChildCollections.toList,
+          decodedParentCollections.toList,decodedDatasetsInside.toList,Some(decodedSpaces),userRoleMap))
+
+          //Ok(views.html.collection_ofdatasets(decodedDatasetsInside.toList, decodedChildCollections.toList,decodedParentCollections.toList,
+            //dCollection, filteredPreviewers.toList, Some(decodedSpaces)))
+
+          //Ok(views.html.collectionofdatasetsandchildcollections(decodedDatasetsInside.toList, decodedChildCollections.toList,
+            //  decodedParentCollections.toList, dCollection, filteredPreviewers.toList, Some(decodedSpaces)))
 
         }
         case None => {

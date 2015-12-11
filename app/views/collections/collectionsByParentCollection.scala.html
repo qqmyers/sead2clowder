@@ -1,0 +1,19 @@
+@(childCollections: List[Collection], parentCollectionId: String)(implicit user: Option[models.User])
+@import api.Permission
+<h3>Collections</h3>
+@if(childCollections.size == 0) {
+    @if(user.isDefined &&  Permission.checkPermission(Permission.EditSpace, ResourceRef(ResourceRef.collection, UUID(parentCollectionId)))) {
+        <a id="create-collection"href="@routes.Collections.newCollectionWithParent(Some(parentCollectionId))" class="btn btn-primary btn-xs">
+            <span class="glyphicon glyphicon-ok"></span> Create Collection
+        </a>
+    } else {
+        @if(user.isDefined) {
+            <p> Please request access to add child collections to this collection</p>
+        } else {
+            <p> There are no child collections associated with this collection. </p>
+        }
+    }
+
+} else {
+    @collections.collectionsGrid(childCollections,parentCollectionId)
+}

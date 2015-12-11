@@ -1,0 +1,31 @@
+@(collection: Collection, childCollections: List[Collection],
+        parentCollections: List[Collection],
+        datasets: List[Dataset], collectionSpaces: Option[List[ProjectSpace]],userRoleMap: Map[User, String])(implicit user: Option[models.User])
+
+@import play.api.Play.current
+
+@main(collection.name) {
+
+
+    <div class="row space-head vertical-align">
+
+            <div class="col-md-12 col-lg-12 col-sm-12">
+
+            <h1 id="collectionnamedisplay">@collection.name
+
+            </h1>
+            <p><span id="collectiondescdisplay">@collection.description</span></p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8 col-lg-8 col-sm-8 space-col-left">
+            @collections.collectionsByParentCollection(childCollections, collection.id.stringify)
+            @collections.datasetsByCollection(datasets, collection.id.stringify)
+        </div>
+        <div class="col-md-4 col-lg-4 col-sm-4 space-col-right">
+            @spaces.spaceAllocation(collection.id, ResourceRef.collection, collectionSpaces.getOrElse(List.empty))
+            @collections.parent_collections(collection,parentCollections)
+        </div>
+    </div>
+}
