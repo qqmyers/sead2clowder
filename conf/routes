@@ -106,6 +106,7 @@ GET            /datasets/:id                                                    
 GET            /datasets/:id/users                                                      @controllers.Datasets.users(id: UUID)
 GET            /datasets_by_section/:id                                                 @controllers.Datasets.datasetBySection(id: UUID)
 POST           /dataset/submit                                                          @controllers.Datasets.submit
+GET            /datasets/parentCollection/:parentCollectionId                           @controllers.Datasets.listByCollection(parentCollectionId: UUID)
 
 # ----------------------------------------------------------------------
 # COLLECTIONS
@@ -118,6 +119,7 @@ POST           /collection/submit                                               
 GET            /collection/:id                                                          @controllers.Collections.collection(id: UUID)
 GET            /collection/:id/users                                                    @controllers.Collections.users(id: UUID)
 GET            /collections/:collection_id/previews                                     @controllers.Collections.previews(collection_id: UUID)
+GET            /collections/listChildCollections/:parentCollectionId                    @controllers.Collections.listChildCollections(parentCollectionId: UUID)
 
 # ----------------------------------------------------------------------
 # Spaces

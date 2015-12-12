@@ -279,6 +279,10 @@ class Datasets @Inject()(
     Ok(views.html.datasetList(decodedDatasetList.toList, commentMap, prev, next, limit, viewMode, space, title, owner))
   }
 
+  def listByCollection(parentCollectionId : UUID) = PrivateServerAction {implicit request =>
+    Ok("not yet implemented")
+  }
+
   def addViewer(id: UUID, user: Option[securesocial.core.Identity]) = {
       user match{
             case Some(viewer) => {

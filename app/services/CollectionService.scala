@@ -171,4 +171,6 @@ trait CollectionService {
 
   def setRootFlag(collectionId: UUID, isRoot: Boolean) : Try[Unit]
 
+
+
 }

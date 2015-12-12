@@ -652,7 +652,6 @@ class MongoDBCollectionService @Inject() (datasets: DatasetService, userService:
   }
 
 
-
   private def isSubCollectionIdInCollection(subCollectionId: UUID, collection: Collection) : Boolean = {
     for(child_collection_id <- collection.child_collection_ids){
       if(child_collection_id == subCollectionId.stringify)

@@ -409,8 +409,10 @@ class Collections @Inject()(datasets: DatasetService, collections: CollectionSer
 
           val decodedSpaces: List[ProjectSpace] = collectionSpaces.map{aSpace => Utils.decodeSpaceElements(aSpace)}
 
+          //Ok(views.html.collectionofdatasets(decodedDatasetsInside.toList, dCollection, filteredPreviewers.toList, Some(decodedSpaces)))
+
           Ok(views.html.collections.collection_parent(dCollection,decodedChildCollections.toList,
-          decodedParentCollections.toList,decodedDatasetsInside.toList,Some(decodedSpaces),userRoleMap))
+           decodedParentCollections.toList,decodedDatasetsInside.toList,Some(decodedSpaces),userRoleMap))
 
           //Ok(views.html.collection_ofdatasets(decodedDatasetsInside.toList, decodedChildCollections.toList,decodedParentCollections.toList,
             //dCollection, filteredPreviewers.toList, Some(decodedSpaces)))
@@ -492,5 +494,10 @@ class Collections @Inject()(datasets: DatasetService, collections: CollectionSer
         }
       }
   }
+
+  def listChildCollections(parentCollectionId : UUID) = PrivateServerAction { implicit request =>
+    Ok("not yet implemented")
+  }
+
 }
 
