@@ -579,6 +579,17 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
     //Ok("not impleneted")
   }
 
+  @ApiOperation(value = "Get all collections",
+    notes = "",
+    responseClass = "None", httpMethod = "GET")
+  def getAllCollections() = PermissionAction(Permission.ViewCollection) { implicit request =>
+    val all_collections_list = for (collection <- collections.listAccess(100,Set[Permission](Permission.ViewCollection),request.user,true))
+      yield jsonCollection(collection)
+    Ok(toJson(all_collections_list))
+    //Ok("not impleneted")
+  }
+
+
 
   @ApiOperation(value = "Get all root collections or collections that do not have a parent",
     notes = "",

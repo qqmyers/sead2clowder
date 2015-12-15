@@ -414,6 +414,7 @@ GET            /api/collections/canEdit                                         
 POST           /api/collections                                                         @api.Collections.createCollection()
 GET            /api/collections/getRootCollections                                      @api.Collections.getRootCollections
 GET            /api/collections/getTopLevelCollections                                  @api.Collections.getTopLevelCollections
+GET            /api/collections/getAllCollections                                       @api.Collections.getAllCollections()
 
 
 # deprecrated

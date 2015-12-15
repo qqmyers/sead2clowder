@@ -298,18 +298,19 @@ class Collections @Inject()(datasets: DatasetService, collections: CollectionSer
   def jsonCollection(collection: Collection): JsValue = {
     toJson(Map("id" -> collection.id.toString, "name" -> collection.name, "description" -> collection.description, "created" -> collection.created.toString))
   }
-  
+
   /**
    * Controller flow to create a new collection. Takes two parameters, name, a String, and description, a String. On success,
    * the browser is redirected to the new collection's page. On error, it is redirected back to the dataset creation
    * page with the appropriate error to be displayed.
-   *  
+   *
    */
   def submit() = PermissionAction(Permission.CreateCollection)(parse.multipartFormData) { implicit request =>
       Logger.debug("------- in Collections.submit ---------")
       var colName = request.body.asFormUrlEncoded.getOrElse("name", null)
       var colDesc = request.body.asFormUrlEncoded.getOrElse("description", null)
       var colSpace = request.body.asFormUrlEncoded.getOrElse("space", List.empty)
+      var colParentCollection = request.body.asFormUrlEncoded.getOrElse("collection", List.empty)
 
       implicit val user = request.user
       user match {
@@ -323,6 +324,9 @@ class Collections @Inject()(datasets: DatasetService, collections: CollectionSer
             //This case shouldn't happen as it is validated on the client.
             BadRequest(views.html.newCollection("Name, Description, or Space was missing during collection creation.", decodedSpaceList.toList, RequiredFieldsConfig.isNameRequired, RequiredFieldsConfig.isDescriptionRequired, None))
           }
+
+          var stringParentCollections = colParentCollection(0).split(",").toList
+
 
           var collection : Collection = null
           if (colSpace(0) == "default") {
@@ -370,7 +374,7 @@ class Collections @Inject()(datasets: DatasetService, collections: CollectionSer
       implicit val user = request.user
 
       collections.get(id) match {
-        case Some(collection) => { 
+        case Some(collection) => {
           Logger.debug(s"Found collection $id")
           // only show previewers that have a matching preview object associated with collection
           Logger.debug("Num previewers " + Previewers.findCollectionPreviewers.size)
