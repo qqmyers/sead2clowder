@@ -325,7 +325,7 @@ class Collections @Inject()(datasets: DatasetService, collections: CollectionSer
             BadRequest(views.html.newCollection("Name, Description, or Space was missing during collection creation.", decodedSpaceList.toList, RequiredFieldsConfig.isNameRequired, RequiredFieldsConfig.isDescriptionRequired, None))
           }
 
-          var stringParentCollections = colParentCollection(0).split(",").toList
+          //var stringParentCollections = colParentCollection(0).split(",").toList
 
 
           var collection : Collection = null
