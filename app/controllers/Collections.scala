@@ -325,7 +325,8 @@ class Collections @Inject()(datasets: DatasetService, collections: CollectionSer
             BadRequest(views.html.newCollection("Name, Description, or Space was missing during collection creation.", decodedSpaceList.toList, RequiredFieldsConfig.isNameRequired, RequiredFieldsConfig.isDescriptionRequired, None))
           }
 
-          //var stringParentCollections = colParentCollection(0).split(",").toList
+
+          var parentCollectionIds = colParentCollection(0).split(",").toList
 
 
           var collection : Collection = null
@@ -348,6 +349,19 @@ class Collections @Inject()(datasets: DatasetService, collections: CollectionSer
               case None => Logger.error(s"space with id $sp on collection $collection.id doesn't exist.")
             }
           }
+
+          for (parentCollectionId <- parentCollectionIds){
+            collections.get(UUID(parentCollectionId)) match {
+              case Some(parentCollection) => {
+                collections.addSubCollection(UUID(parentCollectionId),collection.id)
+              }
+              case None =>{
+                //not sure what to do here or if necessary
+              }
+            }
+          }
+
+
           //index collection
             val dateFormat = new SimpleDateFormat("dd/MM/yyyy")
             current.plugin[ElasticsearchPlugin].foreach{_.index("data", "collection", collection.id,
