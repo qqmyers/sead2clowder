@@ -73,7 +73,40 @@ class Datasets @Inject()(
   }
 
   def newDatasetWithParentCollection(parentCollectionId: Option[String]) = PermissionAction(Permission.CreateCollection) { implicit request =>
-    Ok("not yet implemented");
+    implicit val user = request.user
+
+    val spacesList = user.get.spaceandrole.map(_.spaceId).flatMap(spaceService.get(_))
+    var decodedSpaceList = new ListBuffer[models.ProjectSpace]()
+    for (aSpace <- spacesList) {
+      //For each space in the list, check if the user has permission to add something to it, if so
+      //decode it and add it to the list to pass back to the view.
+      if (Permission.checkPermission(Permission.AddResourceToSpace, ResourceRef(ResourceRef.space, aSpace.id))) {
+        decodedSpaceList += Utils.decodeSpaceElements(aSpace)
+      }
+    }
+
+    //get list of possible parent collections
+    val decodedCollectionslist = new ListBuffer[models.Collection]()
+
+    val collectionsList = collections.listAccess(10, Set[Permission](Permission.EditCollection), request.user, request.superAdmin)
+
+    for (aCollection <- collectionsList){
+      if (Permission.checkPermission(Permission.AddResourceToCollection, ResourceRef(ResourceRef.collection, aCollection.id))){
+        decodedCollectionslist += Utils.decodeCollectionElements(aCollection)
+      }
+    }
+
+
+    parentCollectionId match {
+      case Some(parent_id) => {
+        collections.get(UUID(parent_id)) match {
+          case Some(parentCollection) => Ok(views.html.newDatasetWithParentCollection(decodedSpaceList.toList, decodedCollectionslist.toList, RequiredFieldsConfig.isNameRequired, RequiredFieldsConfig.isDescriptionRequired, parentCollectionId)).flashing("error" -> "Please select ONE file (upload new or existing)")
+          case None => Ok("newDatasetWithParentCollection, no collection for parentid")
+        }
+      }
+      case None => Ok("newDatasetWithParentCollection, no parentId supplied")
+    }
+
   }
 
   def addToDataset(id: UUID) = PermissionAction(Permission.CreateDataset, Some(ResourceRef(ResourceRef.dataset, id))) { implicit request =>

@@ -64,7 +64,7 @@ class Collections @Inject()(datasets: DatasetService, collections: CollectionSer
       }
     }
 
-    //get list of parent collections
+    //get list of possible parent collections
     val decodedCollectionslist = new ListBuffer[models.Collection]()
 
     val collectionsList = collections.listAccess(10, Set[Permission](Permission.EditCollection), request.user, request.superAdmin)
