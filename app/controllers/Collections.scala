@@ -326,6 +326,7 @@ class Collections @Inject()(datasets: DatasetService, collections: CollectionSer
           }
 
 
+
           var parentCollectionIds = colParentCollection(0).split(",").toList
 
 
@@ -350,13 +351,19 @@ class Collections @Inject()(datasets: DatasetService, collections: CollectionSer
             }
           }
 
-          for (parentCollectionId <- parentCollectionIds){
-            collections.get(UUID(parentCollectionId)) match {
-              case Some(parentCollection) => {
-                collections.addSubCollection(UUID(parentCollectionId),collection.id)
-              }
-              case None =>{
-                //not sure what to do here or if necessary
+          if (parentCollectionIds.length > 0) {
+            for (parentCollectionId <- parentCollectionIds) {
+              try {
+                collections.get(UUID(parentCollectionId)) match {
+                  case Some(parentCollection) => {
+                    collections.addSubCollection(UUID(parentCollectionId), collection.id)
+                  }
+                  case None => {
+                    //not sure what to do here or if necessary
+                  }
+                }
+              } catch {
+                case e : Exception => Logger.debug("error cannot convert to UUID")
               }
             }
           }
@@ -460,7 +467,7 @@ class Collections @Inject()(datasets: DatasetService, collections: CollectionSer
 
           //Ok(views.html.collectionofdatasets(decodedDatasetsInside.toList, dCollection, filteredPreviewers.toList, Some(decodedSpaces)))
 
-          Ok(views.html.collections.collection_parent(dCollection,decodedChildCollections.toList,
+          Ok(views.html.collections.parentCollection(dCollection,decodedChildCollections.toList,
            decodedParentCollections.toList,decodedDatasetsInside.toList,Some(decodedSpaces),userRoleMap))
 
           //Ok(views.html.collection_ofdatasets(decodedDatasetsInside.toList, decodedChildCollections.toList,decodedParentCollections.toList,
