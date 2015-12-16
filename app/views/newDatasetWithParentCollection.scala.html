@@ -69,7 +69,7 @@ of the blueimp jQuery File Upload library. An open source project locatd here: h
         <tr>
             <td style="width: 20%; vertical-align:top;" class="input-table-cell">Parent collection (optional):</td>
             <td style="width: 35%; vertical-align:top;" class="input-table-cell" id="desccell">
-                <select name="collection" id="parentid" style="width: 415px;" class ="form-control chosen-select" multiple>
+                <select name="collection" id="parentcollectionid" style="width: 415px;" class ="form-control chosen-select" multiple>
 
 			        @collections.map { collection =>
 			            <option id="@(collection.id)" value="@(collection.id)">@(collection.name)</option>
@@ -278,7 +278,7 @@ of the blueimp jQuery File Upload library. An open source project locatd here: h
 
     if(@parentCollectionId.isDefined) {
         $('#@parentCollectionId').prop('selected','selected');
-        $('#parentid').trigger("chosen:updated");
+        $('#parentcollectionid').trigger("chosen:updated");
     }
 
 

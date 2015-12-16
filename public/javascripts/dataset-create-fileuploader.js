@@ -28,6 +28,7 @@ function disableFields() {
 	$('#description').addClass("hiddenholdspace");	
 	$("input[name=radiogroup]").attr('disabled', true);
 	$("#spaceid").attr('disabled', true);
+	$("#parentcollectionid").attr('disabled',true);
 	$('#namelabel').html(htmlEncode(name).replace(/\n/g, "<br>"));
 	$('#namelabel').show();
 	$('#desclabel').html(htmlEncode(desc).replace(/\n/g, "<br>"));
@@ -42,6 +43,7 @@ function enableFields() {
     $('#description').removeClass("hiddenholdspace");
     $("input[name=radiogroup]").attr('disabled', false);
     $("#spaceid").attr('disabled', false);
+	$("#parentcollectionid").attr('disabled',false);
 }
 
 //Remove the error messages that are provided to the user
@@ -141,6 +143,12 @@ function createEmptyDataset(data) {
 	$('#spaceid').find(":selected").each(function(i, selected) {
 		spaceList[i] = $(selected).val();
 	});
+
+	var parentCollectionList = [];
+	$('#parentcollectionid').find(":selected").each(function(i, selected) {
+		parentCollectionList[i] = $(selected).val();
+	});
+
     //Add errors and return false if validation fails. Validation comes from the host page, passing in the isNameRequired and isDescRequired
     //variables.
     var error = false;
@@ -182,7 +190,7 @@ function createEmptyDataset(data) {
     if (id == "__notset") {
     	//Case for the primary file that is submitted. It will create the dataset and obtain the id.     
     	console.log("spaces are " + spaceList);
-    	var jsonData = JSON.stringify({"name":encName, "description":encDescription, "space":spaceList});
+    	var jsonData = JSON.stringify({"name":encName, "description":encDescription, "space":spaceList, "parentCollections":parentCollectionList});
     	console.log("jsondata is " + jsonData);
         var request = null;		                         	                        
         request = jsRoutes.api.Datasets.createEmptyDataset().ajax({
@@ -275,6 +283,11 @@ function attachFiles() {
 		$('#spaceid').find(":selected").each(function(i, selected) {
 			spaceList[i] = $(selected).val();
 		});
+
+		var parentCollectionList = [];
+		$('#parentcollectionid').find(":selected").each(function(i, selected) {
+			parentCollectionList[i] = $(selected).val();
+		});
 	    
 	    console.log("isNameRequried is " + isNameRequired);
 	    console.log("isDescRequired is " + isDescRequired);
@@ -300,10 +313,10 @@ function attachFiles() {
 		var encDescription = htmlEncode(desc.val());
 	    
 		if (ids.length == 0) {
-			jsonData = JSON.stringify({"name":encName, "description":encDescription, "space":spaceList});
+			jsonData = JSON.stringify({"name":encName, "description":encDescription, "space":spaceList, "parentCollections" : parentCollectionList});
 		}
 		else {
-			jsonData = JSON.stringify({"name":encName, "description":encDescription, "space":spaceList, "existingfiles":ids});
+			jsonData = JSON.stringify({"name":encName, "description":encDescription, "space":spaceList, "parentCollections": parentCollectionList, "existingfiles":ids});
 		}	
 	    	                         	                        
 	    request = jsRoutes.api.Datasets.createEmptyDataset().ajax({

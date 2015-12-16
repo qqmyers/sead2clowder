@@ -222,6 +222,20 @@ class Datasets @Inject()(
           //Below call is not what is needed? That already does what we are doing in the Dataset constructor...
           //Items from space model still missing. New API will be needed to update it most likely.
 
+          //add dataset to each collection here ?
+          (request.body \ "parentCollections").asOpt[List[String]] match {
+            case None => {
+              //do nothing
+            }
+            case Some(parentCollections) => {
+              for (parentCollection <- parentCollections){
+                if (collections.get(UUID(parentCollection)).isDefined) {
+                  collections.addDataset(UUID(parentCollection), UUID(id))
+                }
+              }
+            }
+          }
+
           (request.body \ "existingfiles").asOpt[String].map { fileString =>
             var idArray = fileString.split(",").map(_.trim())
             for (anId <- idArray) {
