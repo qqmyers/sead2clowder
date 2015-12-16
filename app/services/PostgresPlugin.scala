@@ -488,13 +488,28 @@ class PostgresPlugin(application: Application) extends Plugin {
     counts
   }
   
-  def searchDatapoints(since: Option[String], until: Option[String], geocode: Option[String], stream_id: Option[String], sensor_id: Option[String], source: List[String], attributes: List[String], sortByStation: Boolean): Iterator[JsObject] = {
+  def searchDatapoints(since: Option[String],
+                       until: Option[String],
+                       geocode: Option[String],
+                       stream_id: Option[String],
+                       sensor_id: Option[String],
+                       source: List[String],
+                       attributes: List[String],
+                       semi: Option[String],
+                       limit: Option[String],
+                       offset: Option[String],
+                       orderBy: Option[String],
+                       sort: Option[String]): Iterator[JsObject] = {
     val parts = geocode match {
       case Some(x) => x.split(",")
       case None => Array[String]()
     }
     var query = "SELECT to_json(t) As datapoint FROM " +
-      "(SELECT datapoints.gid As id, to_char(datapoints.created AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SSZ') AS created, to_char(datapoints.start_time AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SSZ') AS start_time, to_char(datapoints.end_time AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SSZ') AS end_time, data As properties, 'Feature' As type, ST_AsGeoJson(1, datapoints.geog, 15, 0)::json As geometry, stream_id::text, sensor_id::text, sensors.name as sensor_name FROM sensors, streams, datapoints" +
+      "(SELECT datapoints.gid As id, to_char(datapoints.created AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SSZ') AS created, " +
+      "to_char(datapoints.start_time AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SSZ') AS start_time, " +
+      "to_char(datapoints.end_time AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SSZ') AS end_time, " +
+      "data As properties, 'Feature' As type, ST_AsGeoJson(1, datapoints.geog, 15, 0)::json As geometry, " +
+      "stream_id::text, sensor_id::text, sensors.name as sensor_name FROM sensors, streams, datapoints" +
       " WHERE sensors.gid = streams.sensor_id AND datapoints.stream_id = streams.gid"
 //    if (since.isDefined || until.isDefined || geocode.isDefined || stream_id.isDefined) query += " WHERE "
     if (since.isDefined) query += " AND datapoints.start_time >= ?"
@@ -528,11 +543,31 @@ class PostgresPlugin(application: Application) extends Plugin {
     if (stream_id.isDefined) query += " AND stream_id = ?"
     //sensor
     if (sensor_id.isDefined) query += " AND sensor_id = ?"
+
+    // sort results
     query += " order by "
-    if (sortByStation) {
-      query += "sensor_name, "
+
+    // orderBy
+    if (orderBy.isDefined) {
+      query += orderBy.get.toString
+    } else {
+      query += "start_time"
     }
-    query += "start_time asc) As t;"
+
+    // asc|desc sort
+    if (sort.isDefined && sort.get.toString == "desc") {
+      query += " desc"
+    } else {
+      query += " asc"
+    }
+    query += ") As t"
+
+    // limit results
+    if (limit.isDefined) query += " LIMIT ?"
+
+    // offset results
+    if (offset.isDefined) query += " OFFSET ?"
+
     val st = conn.prepareStatement(query)
     var i = 0
     if (since.isDefined) {
@@ -581,6 +616,14 @@ class PostgresPlugin(application: Application) extends Plugin {
     if (sensor_id.isDefined) {
       i = i + 1
       st.setInt(i, sensor_id.get.toInt)
+    }
+    if (limit.isDefined) {
+      i = i + 1
+      st.setInt(i, limit.get.toInt)
+    }
+    if (offset.isDefined) {
+      i = i + 1
+      st.setInt(i, offset.get.toInt)
     }
     st.setFetchSize(50)
     Logger.debug("Geostream search: " + st)
@@ -717,6 +760,6 @@ class PostgresPlugin(application: Application) extends Plugin {
 
   def test() {
     addDatapoint(new java.util.Date(), None, "Feature", """{"value":"test"}""", 40.110588, -88.207270, 0.0, "http://test/stream")
-    Logger.info("Searching postgis: " + searchDatapoints(None, None, None, None, None, List.empty, List.empty, false))
+    Logger.info("Searching postgis: " + searchDatapoints(None, None, None, None, None, List.empty, List.empty, None, None, None, None, None))
   }
 }

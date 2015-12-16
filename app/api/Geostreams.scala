@@ -349,7 +349,7 @@ object Geostreams extends ApiController {
   //     ]
   //   ]
   // }
-  def binDatapoints(time: String, depth: Double, keepRaw: Boolean, since: Option[String], until: Option[String], geocode: Option[String], stream_id: Option[String], sensor_id: Option[String], sources: List[String], attributes: List[String]) =  PermissionAction(Permission.ViewGeoStream) { implicit request =>
+  def binDatapoints(time: String, depth: Double, keepRaw: Boolean, since: Option[String], until: Option[String], geocode: Option[String], stream_id: Option[String], sensor_id: Option[String], sources: List[String], attributes: List[String], semi: Option[String], limit: Option[String], offset: Option[String], orderBy: Option[String], sort: Option[String]) =  PermissionAction(Permission.ViewGeoStream) { implicit request =>
     current.plugin[PostgresPlugin] match {
       case Some(plugin) => {
         val description = Json.obj("time" -> time,
@@ -360,11 +360,16 @@ object Geostreams extends ApiController {
           "stream_id" -> stream_id.getOrElse("").toString,
           "sensor_id" -> sensor_id.getOrElse("").toString,
           "sources" -> Json.toJson(sources),
-          "attributes" -> Json.toJson(attributes))
+          "attributes" -> Json.toJson(attributes),
+          "limit" -> limit.getOrElse("").toString,
+          "offset" -> offset.getOrElse("").toString,
+          "orderBy" -> orderBy.getOrElse("").toString,
+          "sort" -> sort.getOrElse("").toString
+        )
         cacheFetch(description) match {
           case Some(data) => jsonp(data.through(Enumeratee.map(new String(_))), request)
           case None => {
-            val raw = new PeekIterator(plugin.searchDatapoints(since, until, geocode, stream_id, sensor_id, sources, attributes, true))
+            val raw = new PeekIterator(plugin.searchDatapoints(since, until, geocode, stream_id, sensor_id, sources, attributes, semi, limit, offset, orderBy, sort))
             val data = new Iterator[JsObject] {
               var nextObject: Option[JsObject] = None
 
@@ -637,7 +642,7 @@ object Geostreams extends ApiController {
     result.toMap
   }
 
-  def searchDatapoints(operator: String, since: Option[String], until: Option[String], geocode: Option[String], stream_id: Option[String], sensor_id: Option[String], sources: List[String], attributes: List[String], format: String, semi: Option[String]) =
+  def searchDatapoints(operator: String, since: Option[String], until: Option[String], geocode: Option[String], stream_id: Option[String], sensor_id: Option[String], sources: List[String], attributes: List[String], format: String, semi: Option[String], limit: Option[String], offset: Option[String], orderBy: Option[String], sort: Option[String]) =
     PermissionAction(Permission.ViewGeoStream) { implicit request =>
       current.plugin[PostgresPlugin] match {
         case Some(plugin) => {
@@ -650,7 +655,12 @@ object Geostreams extends ApiController {
             "sensor_id" -> sensor_id.getOrElse("").toString,
             "sources" -> Json.toJson(sources),
             "attributes" -> Json.toJson(attributes),
-            "semi" -> semi.getOrElse("").toString)
+            "semi" -> semi.getOrElse("").toString,
+            "limit" -> limit.getOrElse("").toString,
+            "offset" -> offset.getOrElse("").toString,
+            "orderBy" -> orderBy.getOrElse("").toString,
+            "sort" -> sort.getOrElse("").toString
+          )
           cacheFetch(description) match {
             case Some(data) => {
               if (format == "csv") {
@@ -665,9 +675,9 @@ object Geostreams extends ApiController {
             case None => {
               // if computing trends need all data
               val raw = if (operator == "trends") {
-                plugin.searchDatapoints(None, None, geocode, stream_id, sensor_id, sources, attributes, operator != "")
+                plugin.searchDatapoints(None, None, geocode, stream_id, sensor_id, sources, attributes, semi, limit, offset, orderBy, sort)
               } else {
-                plugin.searchDatapoints(since, until, geocode, stream_id, sensor_id, sources, attributes, operator != "")
+                plugin.searchDatapoints(since, until, geocode, stream_id, sensor_id, sources, attributes, semi, limit, offset, orderBy, sort)
               }
 
               val filtered = raw.filter(p => filterDataBySemi(p, semi))
