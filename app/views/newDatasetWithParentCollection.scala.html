@@ -69,7 +69,7 @@ of the blueimp jQuery File Upload library. An open source project locatd here: h
         <tr>
             <td style="width: 20%; vertical-align:top;" class="input-table-cell">Parent collection (optional):</td>
             <td style="width: 35%; vertical-align:top;" class="input-table-cell" id="desccell">
-                <select name="collection" id="parentcollectionid" style="width: 415px;" class ="form-control chosen-select" multiple>
+                <select name="collection" id="parentid" style="width: 415px;" class ="form-control chosen-select" multiple>
 
 			        @collections.map { collection =>
 			            <option id="@(collection.id)" value="@(collection.id)">@(collection.name)</option>
@@ -81,7 +81,7 @@ of the blueimp jQuery File Upload library. An open source project locatd here: h
         <tr>
             <td style="width: 20%; vertical-align:top;" class="input-table-cell">Share with spaces (optional):</td>
             <td style="width: 35%; vertical-align:top;" class="input-table-cell" id="desccell">
-                <select name="space" id="spaceid" style="width: 415px;" class ="form-control chosen-select" multiple>
+                <select name="space" id="spaceid" style="width: 415px;" class ="form-control chosen-select" multiple >
 
                 @spaces.map { space =>
                     <option id="@(space.id)" value="@(space.id)">@(space.name)</option>
@@ -227,10 +227,7 @@ of the blueimp jQuery File Upload library. An open source project locatd here: h
 
 <script language = "javascript">
 
-    $(".chosen-select").chosen({
-        width: "100%",
-        placeholder_text_multiple: "Select parent collections for this dataset."
-    })
+
 
     var idNameObj = {};
 
@@ -249,7 +246,9 @@ of the blueimp jQuery File Upload library. An open source project locatd here: h
         $(".chosen-choices").addClass("form-control");
     });
 
+
     $(".chosen-select").chosen().change(function(event, params) {
+
         var targetId = this.getAttribute("id");
         if(!isUndefined(params.selected)) {
             var addedId = params.selected;
@@ -277,7 +276,7 @@ of the blueimp jQuery File Upload library. An open source project locatd here: h
 
     if(@parentCollectionId.isDefined) {
         $('#@parentCollectionId').prop('selected','selected');
-        $('#parentcollectionid').trigger("chosen:updated");
+        $('#parentid').trigger("chosen:updated");
     }
 
 
@@ -285,18 +284,57 @@ of the blueimp jQuery File Upload library. An open source project locatd here: h
 
 
 
-
-
-
-
-
 <script language = "javascript">
 
-        $(".chosen-select").chosen({
-        width: "100%",
-        placeholder_text_multiple: "Select spaces for this dataset."
+    var idNameObj = {};
+
+    function isUndefined(value) {
+        return typeof value === 'undefined';
+    }
+
+    function getName(id) {
+        return idNameObj[id];
+    }
+
+    $(document).ready(function() {
+        @for(space <- spaces) {
+            idNameObj["@space.name"] = "@space.id";
+        }
+        $(".chosen-choices").addClass("form-control");
+    });
+
+
+
+    $(".chosen-select").chosen().change(function(event, params) {
+        var targetId = this.getAttribute("id");
+        if(!isUndefined(params.selected)) {
+            var addedId = params.selected;
+            @for(space <- spaces) {
+                var currentId = "@space";
+                if(currentId != targetId) {
+                    $('#@space.id option [value='+addedId+']').remove();
+                    $('#@space.id').trigger("chosen:updated");
+
+                }
+            }
+            $('ul.chosen-choices li.search-field').css("width", "0");
+        }
+        else if(!isUndefined(params.deselected)) {
+            var removedId = params.deselected;
+            @for(space <- spaces) {
+                var currentId = "@space";
+                if(currentId != targetId) {
+                    $('#@space.id').prepend($("<option></option>").attr("value", removedId).text(getName(removedId)));
+                    $('#@space.id').trigger("chosen:updated");
+                }
+            }
+        }
     })
 
+
+</script>
+
+<script language = "javascript">
     var idNameObj = {};
 
     function isUndefined(value) {
