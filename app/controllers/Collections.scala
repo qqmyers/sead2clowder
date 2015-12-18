@@ -327,7 +327,13 @@ class Collections @Inject()(datasets: DatasetService, collections: CollectionSer
 
 
 
-          var parentCollectionIds = colParentCollection(0).split(",").toList
+          var parentCollectionIds = List.empty[String]
+          try {
+            parentCollectionIds = colParentCollection(0).split(",").toList
+          }  catch {
+            case e : Exception => Logger.debug("error cannot split ")
+          }
+
 
 
           var collection : Collection = null
