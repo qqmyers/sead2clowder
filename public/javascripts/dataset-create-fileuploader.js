@@ -28,7 +28,7 @@ function disableFields() {
 	$('#description').addClass("hiddenholdspace");	
 	$("input[name=radiogroup]").attr('disabled', true);
 	$("#spaceid").attr('disabled', true);
-	$("#parentcollectionid").attr('disabled',true);
+	$("#parentid").attr('disabled',true);
 	$('#namelabel').html(htmlEncode(name).replace(/\n/g, "<br>"));
 	$('#namelabel').show();
 	$('#desclabel').html(htmlEncode(desc).replace(/\n/g, "<br>"));
@@ -43,7 +43,7 @@ function enableFields() {
     $('#description').removeClass("hiddenholdspace");
     $("input[name=radiogroup]").attr('disabled', false);
     $("#spaceid").attr('disabled', false);
-	$("#parentcollectionid").attr('disabled',false);
+	$("#parentid").attr('disabled',false);
 }
 
 //Remove the error messages that are provided to the user
@@ -145,7 +145,7 @@ function createEmptyDataset(data) {
 	});
 
 	var parentCollectionList = [];
-	$('#parentcollectionid').find(":selected").each(function(i, selected) {
+	$('#parentid').find(":selected").each(function(i, selected) {
 		parentCollectionList[i] = $(selected).val();
 	});
 
@@ -285,7 +285,7 @@ function attachFiles() {
 		});
 
 		var parentCollectionList = [];
-		$('#parentcollectionid').find(":selected").each(function(i, selected) {
+		$('#parentid').find(":selected").each(function(i, selected) {
 			parentCollectionList[i] = $(selected).val();
 		});
 	    

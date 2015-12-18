@@ -313,7 +313,8 @@ class Datasets @Inject()(
   }
 
   def listByCollection(parentCollectionId : UUID) = PrivateServerAction {implicit request =>
-    Ok("not yet implemented")
+    var datasetsInCollection = datasets.listCollection(parentCollectionId.toString())
+    Ok("listByCollection not implemented yet")
   }
 
   def addViewer(id: UUID, user: Option[securesocial.core.Identity]) = {
