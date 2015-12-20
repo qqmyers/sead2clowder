@@ -393,9 +393,22 @@ class MongoDBCollectionService @Inject() (datasets: DatasetService, userService:
         }
       }
       case None => {
-        Logger.error("Error getting collection" + collectionId);
+        Logger.error("Error getting collection" + collectionId)
         Failure
       }
+    }
+  }
+
+  def listChildCollections(parentCollectionId : UUID): List[Collection] = {
+    val childCollections = List.empty[Collection]
+    Collection.findOneById(new ObjectId(parentCollectionId.stringify)) match {
+      case Some(collection) => {
+        val childCollectionIds = collection.child_collection_ids
+        //val list = for (collection <- listAccess(0, Set[Permission](Permission.ViewCollection), user, showAll); if (isInDataset(dataset, collection))) yield collection
+        val childList = for (childCollectionId <- childCollectionIds; if (get(UUID(childCollectionId)).isDefined)) yield (get(UUID(childCollectionId))).get
+        return childList
+      }
+      case None => return childCollections
     }
   }
 

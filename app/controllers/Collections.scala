@@ -171,8 +171,8 @@ class Collections @Inject()(datasets: DatasetService, collections: CollectionSer
   }
 
   /**
-   * List collections.
-   */
+    * List collections.
+    */
   def list(when: String, date: String, limit: Int, space: Option[String], mode: String, owner: Option[String]) = PrivateServerAction { implicit request =>
     implicit val user = request.user
 
@@ -437,7 +437,7 @@ class Collections @Inject()(datasets: DatasetService, collections: CollectionSer
                 val decodedChild = Utils.decodeCollectionElements(child_collection)
                 decodedChildCollections += decodedChild
               } case None => {
-                Logger.debug("No child collection found for" + child_collection_id)
+                Logger.debug("No child collection found for " + child_collection_id)
               }
 
             }
@@ -562,33 +562,38 @@ class Collections @Inject()(datasets: DatasetService, collections: CollectionSer
 
     val nextPage = (when == "a")
     val person = owner.flatMap(o => users.get(UUID(o)))
-    val datasetSpace = space.flatMap(o => spaceService.get(UUID(o)))
+    //val datasetSpace = space.flatMap(o => spaceService.get(UUID(o)))
+    val parentCollection = collections.get(UUID(parentCollectionId))
     var title: Option[String] = Some("Collections")
 
     val collectionList = person match {
       case Some(p) => {
-        space match {
-          case Some(s) => {
-            title = Some(person.get.fullName + "'s Collections in Space " + datasetSpace.get.name)
+        parentCollection match {
+          case Some(parent) => {
+            title = Some(person.get.fullName + "'s Collections in Parent Collection " + parent.name)
           }
           case None => {
             title = Some(person.get.fullName + "'s Collections")
           }
         }
         if (date != "") {
-          collections.listUser(date, nextPage, limit, request.user, request.superAdmin, p)
+          //collections.listUser(date, nextPage, limit, request.user, request.superAdmin, p)
+          collections.listChildCollections(UUID(parentCollectionId))
         } else {
-          collections.listUser(limit, request.user, request.superAdmin, p)
+          //collections.listUser(limit, request.user, request.superAdmin, p)
+          collections.listChildCollections(UUID(parentCollectionId))
         }
       }
       case None => {
-        space match {
-          case Some(s) => {
-            title = Some("Collections in Space " + datasetSpace.get.name)
+        parentCollection match {
+          case Some(parent) => {
+            title = Some("Collections in Parent Collection  " + parent.name)
             if (date != "") {
-              collections.listSpace(date, nextPage, limit, s)
+              //collections.listSpace(date, nextPage, limit, s)
+              collections.listChildCollections(UUID(parentCollectionId))
             } else {
-              collections.listSpace(limit, s)
+              //collections.listSpace(limit, s)
+              collections.listChildCollections(UUID(parentCollectionId))
             }
           }
           case None => {
@@ -609,8 +614,8 @@ class Collections @Inject()(datasets: DatasetService, collections: CollectionSer
       val c = person match {
         case Some(p) => collections.listUser(first, nextPage=false, 1, request.user, request.superAdmin, p)
         case None => {
-          space match {
-            case Some(s) => collections.listSpace(first, nextPage = false, 1, s)
+          parentCollection match {
+            case Some(parent) => collections.listChildCollections(UUID(parentCollectionId))//collections.listSpace(first, nextPage = false, 1, s)
             case None => collections.listAccess(first, nextPage = false, 1, Set[Permission](Permission.ViewCollection), request.user, request.superAdmin)
           }
         }
@@ -628,10 +633,10 @@ class Collections @Inject()(datasets: DatasetService, collections: CollectionSer
     val next = if (collectionList.nonEmpty) {
       val last = Formatters.iso8601(collectionList.last.created)
       val ds = person match {
-        case Some(p) => collections.listUser(last, nextPage=true, 1, request.user, request.superAdmin, p)
+        case Some(p) => collections.listChildCollections(UUID(parentCollectionId)) //collections.listUser(last, nextPage=true, 1, request.user, request.superAdmin, p)
         case None => {
-          space match {
-            case Some(s) => collections.listSpace(last, nextPage = true, 1, s)
+          parentCollection match {
+            case Some(parent) => collections.listChildCollections(UUID(parentCollectionId)) ////collections.listSpace(last, nextPage = true, 1, s)
             case None => collections.listAccess(last, nextPage = true, 1, Set[Permission](Permission.ViewCollection), request.user, request.superAdmin)
           }
         }

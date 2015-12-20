@@ -312,9 +312,137 @@ class Datasets @Inject()(
     Ok(views.html.datasetList(decodedDatasetList.toList, commentMap, prev, next, limit, viewMode, space, title, owner))
   }
 
-  def listByCollection(parentCollectionId : UUID) = PrivateServerAction {implicit request =>
-    var datasetsInCollection = datasets.listCollection(parentCollectionId.toString())
-    Ok("listByCollection not implemented yet")
+  def listByCollection(parentCollectionId : String, when: String, date: String, limit: Int, space: Option[String], mode: String, owner: Option[String]) = PrivateServerAction {implicit request =>
+    implicit val user = request.user
+
+    var datasetsInCollection = datasets.listCollection(parentCollectionId)
+
+    val nextPage = (when == "a")
+    val person = owner.flatMap(o => users.get(UUID(o)))
+    //val datasetSpace = space.flatMap(o => spaceService.get(UUID(o)))
+    var title: Option[String] = Some("Datasets")
+
+    val parentCollection = collections.get(UUID(parentCollectionId))
+
+    val datasetList = person match {
+      case Some(p) => {
+        parentCollection match {
+          case Some(parent) => {
+            title = Some(person.get.fullName + "'s Datasets in Parent Collection " + parent.name)
+          }
+          case None => {
+            title = Some(person.get.fullName + "'s Datasets")
+          }
+        }
+        if (date != "") {
+          //datasets.listUser(date, nextPage, limit, request.user, request.superAdmin, p)
+          datasets.listCollection(parentCollectionId)
+
+        } else {
+          //datasets.listUser(limit, request.user, request.superAdmin, p)
+          datasets.listCollection(parentCollectionId)
+        }
+      }
+      case None => {
+        parentCollection match {
+          case Some(parent) => {
+            title = Some("Datasets in Collection " + parent.name)
+            if (date != "") {
+              //datasets.listSpace(date, nextPage, limit, s)
+              datasets.listCollection(parentCollectionId)
+            } else {
+              //datasets.listSpace(limit, s)
+              datasets.listCollection(parentCollectionId)
+            }
+          }
+          case None => {
+            if (date != "") {
+              datasets.listAccess(date, nextPage, limit, Set[Permission](Permission.ViewDataset), request.user, request.superAdmin)
+            } else {
+              datasets.listAccess(limit, Set[Permission](Permission.ViewDataset), request.user, request.superAdmin)
+            }
+
+          }
+        }
+      }
+    }
+
+    // check to see if there is a prev page
+    val prev = if (datasetList.nonEmpty && date != "") {
+      val first = Formatters.iso8601(datasetList.head.created)
+      val ds = person match {
+        case Some(p) => datasets.listUser(first, nextPage=false, 1, request.user, request.superAdmin, p)
+        case None => {
+          parentCollection match {
+            case Some(parent) => datasets.listCollection(parentCollectionId) //datasets.listSpace(first, nextPage = false, 1, s)
+            case None => datasets.listAccess(first, nextPage = false, 1, Set[Permission](Permission.ViewDataset), request.user, request.superAdmin)
+          }
+        }
+      }
+      if (ds.nonEmpty && ds.head.id != datasetList.head.id) {
+        first
+      } else {
+        ""
+      }
+    } else {
+      ""
+    }
+
+    // check to see if there is a next page
+    val next = if (datasetList.nonEmpty) {
+      val last = Formatters.iso8601(datasetList.last.created)
+      val ds = person match {
+        case Some(p) => datasets.listCollection(parentCollectionId)//datasets.listUser(last, nextPage=true, 1, request.user, request.superAdmin, p)
+        case None => {
+          parentCollection match {
+            case Some(parentCollection) => datasets.listCollection(parentCollectionId) //datasets.listSpace(last, nextPage=true, 1, s)
+            case None => datasets.listAccess(last, nextPage=true, 1, Set[Permission](Permission.ViewDataset), request.user, request.superAdmin)
+          }
+        }
+      }
+      if (ds.nonEmpty && ds.head.id != datasetList.last.id) {
+        last
+      } else {
+        ""
+      }
+    } else {
+      ""
+    }
+
+    val commentMap = datasetList.map { dataset =>
+      var allComments = comments.findCommentsByDatasetId(dataset.id)
+      dataset.files.map { file =>
+        allComments ++= comments.findCommentsByFileId(file)
+        sections.findByFileId(file).map { section =>
+          allComments ++= comments.findCommentsBySectionId(section.id)
+        }
+      }
+      dataset.id -> allComments.size
+    }.toMap
+
+    //Modifications to decode HTML entities that were stored in an encoded fashion as part
+    //of the datasets names or descriptions
+    val decodedDatasetList = ListBuffer.empty[models.Dataset]
+    for (aDataset <- datasetList) {
+      decodedDatasetList += Utils.decodeDatasetElements(aDataset)
+    }
+
+    //Code to read the cookie data. On default calls, without a specific value for the mode, the cookie value is used.
+    //Note that this cookie will, in the long run, pertain to all the major high-level views that have the similar
+    //modal behavior for viewing data. Currently the options are tile and list views. MMF - 12/14
+    val viewMode: Option[String] =
+      if (mode == null || mode == "") {
+        request.cookies.get("view-mode") match {
+          case Some(cookie) => Some(cookie.value)
+          case None => None //If there is no cookie, and a mode was not passed in, the view will choose its default
+        }
+      } else {
+        Some(mode)
+      }
+
+    //Pass the viewMode into the view
+    Ok(views.html.datasetList(decodedDatasetList.toList, commentMap, prev, next, limit, viewMode, space, title, owner))
+
   }
 
   def addViewer(id: UUID, user: Option[securesocial.core.Identity]) = {
