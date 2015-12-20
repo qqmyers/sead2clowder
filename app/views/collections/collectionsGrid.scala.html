@@ -11,7 +11,8 @@
             </a>
         }
 
-        <a href="@(routes.Collections.listChildCollections(UUID(parentCollectionId)))" class="btn btn-link btn-xs">
+
+        <a href="@(routes.Collections.listChildCollections( "", "", 12, parentCollectionId , Some("")))" class="btn btn-link btn-xs">
             <span class="glyphicon glyphicon-hand-right"></span>
             All Collections
         </a>

@@ -557,8 +557,126 @@ class Collections @Inject()(datasets: DatasetService, collections: CollectionSer
       }
   }
 
-  def listChildCollections(parentCollectionId : UUID) = PrivateServerAction { implicit request =>
-    Ok("not yet implemented")
+  def listChildCollections( when: String, date: String, limit: Int, parentCollectionId : String, space: Option[String], mode: String, owner: Option[String]) = PrivateServerAction { implicit request =>
+    implicit val user = request.user
+
+    val nextPage = (when == "a")
+    val person = owner.flatMap(o => users.get(UUID(o)))
+    val datasetSpace = space.flatMap(o => spaceService.get(UUID(o)))
+    var title: Option[String] = Some("Collections")
+
+    val collectionList = person match {
+      case Some(p) => {
+        space match {
+          case Some(s) => {
+            title = Some(person.get.fullName + "'s Collections in Space " + datasetSpace.get.name)
+          }
+          case None => {
+            title = Some(person.get.fullName + "'s Collections")
+          }
+        }
+        if (date != "") {
+          collections.listUser(date, nextPage, limit, request.user, request.superAdmin, p)
+        } else {
+          collections.listUser(limit, request.user, request.superAdmin, p)
+        }
+      }
+      case None => {
+        space match {
+          case Some(s) => {
+            title = Some("Collections in Space " + datasetSpace.get.name)
+            if (date != "") {
+              collections.listSpace(date, nextPage, limit, s)
+            } else {
+              collections.listSpace(limit, s)
+            }
+          }
+          case None => {
+            if (date != "") {
+              collections.listAccess(date, nextPage, limit, Set[Permission](Permission.ViewCollection), request.user, request.superAdmin)
+            } else {
+              collections.listAccess(limit, Set[Permission](Permission.ViewCollection), request.user, request.superAdmin)
+            }
+
+          }
+        }
+      }
+    }
+
+    // check to see if there is a prev page
+    val prev = if (collectionList.nonEmpty && date != "") {
+      val first = Formatters.iso8601(collectionList.head.created)
+      val c = person match {
+        case Some(p) => collections.listUser(first, nextPage=false, 1, request.user, request.superAdmin, p)
+        case None => {
+          space match {
+            case Some(s) => collections.listSpace(first, nextPage = false, 1, s)
+            case None => collections.listAccess(first, nextPage = false, 1, Set[Permission](Permission.ViewCollection), request.user, request.superAdmin)
+          }
+        }
+      }
+      if (c.nonEmpty && c.head.id != collectionList.head.id) {
+        first
+      } else {
+        ""
+      }
+    } else {
+      ""
+    }
+
+    // check to see if there is a next page
+    val next = if (collectionList.nonEmpty) {
+      val last = Formatters.iso8601(collectionList.last.created)
+      val ds = person match {
+        case Some(p) => collections.listUser(last, nextPage=true, 1, request.user, request.superAdmin, p)
+        case None => {
+          space match {
+            case Some(s) => collections.listSpace(last, nextPage = true, 1, s)
+            case None => collections.listAccess(last, nextPage = true, 1, Set[Permission](Permission.ViewCollection), request.user, request.superAdmin)
+          }
+        }
+      }
+      if (ds.nonEmpty && ds.head.id != collectionList.last.id) {
+        last
+      } else {
+        ""
+      }
+    } else {
+      ""
+    }
+
+
+    val collectionsWithThumbnails = collectionList.map {c =>
+      if (c.thumbnail_id.isDefined) {
+        c
+      } else {
+        val collectionThumbnail = datasets.listCollection(c.id.stringify).find(_.thumbnail_id.isDefined).flatMap(_.thumbnail_id)
+        c.copy(thumbnail_id = collectionThumbnail)
+      }
+    }
+
+    //Modifications to decode HTML entities that were stored in an encoded fashion as part
+    //of the collection's names or descriptions
+    val decodedCollections = ListBuffer.empty[models.Collection]
+    for (aCollection <- collectionsWithThumbnails) {
+      decodedCollections += Utils.decodeCollectionElements(aCollection)
+    }
+
+    //Code to read the cookie data. On default calls, without a specific value for the mode, the cookie value is used.
+    //Note that this cookie will, in the long run, pertain to all the major high-level views that have the similar
+    //modal behavior for viewing data. Currently the options are tile and list views. MMF - 12/14
+    val viewMode: Option[String] =
+      if (mode == null || mode == "") {
+        request.cookies.get("view-mode") match {
+          case Some(cookie) => Some(cookie.value)
+          case None => None //If there is no cookie, and a mode was not passed in, the view will choose its default
+        }
+      } else {
+        Some(mode)
+      }
+
+    //Pass the viewMode into the view
+    Ok(views.html.collectionList(decodedCollections.toList, prev, next, limit, viewMode, space, title, owner))
   }
 
 }
