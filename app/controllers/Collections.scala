@@ -557,16 +557,17 @@ class Collections @Inject()(datasets: DatasetService, collections: CollectionSer
       }
   }
 
-  def listChildCollections( when: String, date: String, limit: Int, parentCollectionId : String, space: Option[String], mode: String, owner: Option[String]) = PrivateServerAction { implicit request =>
+  def listChildCollections(parentCollectionId : String ,when: String, date: String, limit: Int, space: Option[String], mode: String, owner: Option[String]) = PrivateServerAction { implicit request =>
     implicit val user = request.user
 
     val nextPage = (when == "a")
     val person = owner.flatMap(o => users.get(UUID(o)))
-    //val datasetSpace = space.flatMap(o => spaceService.get(UUID(o)))
+    val datasetSpace = space.flatMap(o => spaceService.get(UUID(o)))
+
     val parentCollection = collections.get(UUID(parentCollectionId))
     var title: Option[String] = Some("Collections")
 
-    val collectionList = person match {
+    var collectionList = person match {
       case Some(p) => {
         parentCollection match {
           case Some(parent) => {
@@ -577,23 +578,23 @@ class Collections @Inject()(datasets: DatasetService, collections: CollectionSer
           }
         }
         if (date != "") {
-          //collections.listUser(date, nextPage, limit, request.user, request.superAdmin, p)
-          collections.listChildCollections(UUID(parentCollectionId))
+          collections.listUser(date, nextPage, limit, request.user, request.superAdmin, p)
+          //collections.listChildCollections(UUID(parentCollectionId))
         } else {
-          //collections.listUser(limit, request.user, request.superAdmin, p)
-          collections.listChildCollections(UUID(parentCollectionId))
+          collections.listUser(limit, request.user, request.superAdmin, p)
+          //collections.listChildCollections(UUID(parentCollectionId))
         }
       }
       case None => {
-        parentCollection match {
-          case Some(parent) => {
-            title = Some("Collections in Parent Collection  " + parent.name)
+        space match {
+          case Some(s) => {
+            title = Some("Collections in Parent Collection  " + parentCollection.get.name)
             if (date != "") {
-              //collections.listSpace(date, nextPage, limit, s)
-              collections.listChildCollections(UUID(parentCollectionId))
+              collections.listSpace(date, nextPage, limit, s)
+              //collections.listChildCollections(UUID(parentCollectionId))
             } else {
-              //collections.listSpace(limit, s)
-              collections.listChildCollections(UUID(parentCollectionId))
+              collections.listSpace(limit, s)
+              //collections.listChildCollections(UUID(parentCollectionId))
             }
           }
           case None => {
@@ -608,14 +609,18 @@ class Collections @Inject()(datasets: DatasetService, collections: CollectionSer
       }
     }
 
+    collectionList = collectionList.filter((c : Collection) => c.parent_collection_ids.contains(parentCollectionId) == true)
+
+
+
     // check to see if there is a prev page
     val prev = if (collectionList.nonEmpty && date != "") {
       val first = Formatters.iso8601(collectionList.head.created)
       val c = person match {
         case Some(p) => collections.listUser(first, nextPage=false, 1, request.user, request.superAdmin, p)
         case None => {
-          parentCollection match {
-            case Some(parent) => collections.listChildCollections(UUID(parentCollectionId))//collections.listSpace(first, nextPage = false, 1, s)
+          space match {
+            case Some(s) => collections.listSpace(first, nextPage = false, 1, s)
             case None => collections.listAccess(first, nextPage = false, 1, Set[Permission](Permission.ViewCollection), request.user, request.superAdmin)
           }
         }
@@ -633,10 +638,10 @@ class Collections @Inject()(datasets: DatasetService, collections: CollectionSer
     val next = if (collectionList.nonEmpty) {
       val last = Formatters.iso8601(collectionList.last.created)
       val ds = person match {
-        case Some(p) => collections.listChildCollections(UUID(parentCollectionId)) //collections.listUser(last, nextPage=true, 1, request.user, request.superAdmin, p)
+        case Some(p) => collections.listUser(last, nextPage=true, 1, request.user, request.superAdmin, p)
         case None => {
-          parentCollection match {
-            case Some(parent) => collections.listChildCollections(UUID(parentCollectionId)) ////collections.listSpace(last, nextPage = true, 1, s)
+          space match {
+            case Some(s) => collections.listSpace(last, nextPage = true, 1, s)
             case None => collections.listAccess(last, nextPage = true, 1, Set[Permission](Permission.ViewCollection), request.user, request.superAdmin)
           }
         }
@@ -664,7 +669,7 @@ class Collections @Inject()(datasets: DatasetService, collections: CollectionSer
     //of the collection's names or descriptions
     val decodedCollections = ListBuffer.empty[models.Collection]
     for (aCollection <- collectionsWithThumbnails) {
-      decodedCollections += Utils.decodeCollectionElements(aCollection)
+        decodedCollections += Utils.decodeCollectionElements(aCollection)
     }
 
     //Code to read the cookie data. On default calls, without a specific value for the mode, the cookie value is used.
