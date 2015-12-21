@@ -93,7 +93,7 @@ object AppConfiguration {
   /** Set the Sensors title */
   def setSensorsTitle(sensorsTitle: String) = appConfig.setProperty("sensors.title", sensorsTitle)
 
-  /** Get the welcome message */
+  /** Get the sensors title */
   def getSensorsTitle: String = appConfig.getProperty("sensors.title", "Sensors")
 
   // ----------------------------------------------------------------------
@@ -101,10 +101,21 @@ object AppConfiguration {
   /** Set the Sensor title */
   def setSensorTitle(sensorTitle: String) = appConfig.setProperty("sensor.title", sensorTitle)
 
-  /** Get the welcome message */
+  /** Get the sensor title */
   def getSensorTitle: String = appConfig.getProperty("sensor.title", "Sensor")
 
   // ----------------------------------------------------------------------
+  /** Assign a Metadata Definition to the Sensor Variable field */
+  def setVariableDefinition(variableDefinition: String) = appConfig.setProperty("sensor.variableDefinition", variableDefinition)
+
+  /** Get the metadata definition */
+  def getVariableDefinition: String = appConfig.getProperty("sensor.variableDefinition", "None")
+
+  /** Remove the Variable Definition Requirement */
+  def removeVariableDefinition() = appConfig.removeProperty("sensor.variableDefinition")
+
+  // ----------------------------------------------------------------------
+
   /**
    * Add the given admin to list of admins. This list is primarily used when a new user signs
    * up (requires registerThroughAdmins to be set to true in application.conf) or when the

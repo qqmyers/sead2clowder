@@ -48,7 +48,7 @@ class Admin @Inject() (sectionIndexInfo: SectionIndexInfoService, userService: U
 
   def sensors = ServerAdminAction { implicit request =>
     implicit val user = request.user
-    Ok(views.html.sensors.admin(AppConfiguration.getSensorsTitle, AppConfiguration.getSensorTitle))
+    Ok(views.html.sensors.admin(AppConfiguration.getSensorsTitle, AppConfiguration.getSensorTitle, metadataService.getDefinitions()))
   }
 
   /**

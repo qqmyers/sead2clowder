@@ -1,8 +1,12 @@
-@(sensors: String, sensor: String)(implicit user: Option[models.User])
+@(sensors: String, sensor: String, definitions: List[models.MetadataDefinition])(implicit user: Option[models.User])
 
 @import services.AppConfiguration
+
 @title = @{
     AppConfiguration.getSensorsTitle + " Administration"
+}
+@definition = @{
+    AppConfiguration.getVariableDefinition
 }
 
 @main(title) {
@@ -19,11 +23,24 @@
                             <label for="sensorsTitle">Plural Title</label>
                             <input id="sensorsTitle" name="sensorsTitle" type="text" value="@(sensors)" />
                             <span id="sensorsTitle_error" style="display:none;">Plural Title must have a value.</span>
+                            <br /><br />
 
                             <label for="sensorTitle">Singular Title</label>
                             <input id="sensorTitle" name="sensorTitle" type="text" value="@(sensor)" />
                             <span id="sensorTitle_error" style="display:none;">Singular Title must have a value.</span>
                             <br /><br />
+
+                            <label for="variableDefinition">Assign a Vocabulary to Variable Names</label>
+
+                                <select id="variableDefinition" name="variableDefinition">
+                                    <option value="" @if(definition.isEmpty){selected}>None</option>
+                                    @for(d <- definitions) {
+                                        <option value="@d.id" @if(definition && d.id.toString == definition.toString){selected}>@((d.json \ "label").asOpt[String])</option>
+                                    }
+                                </select>
+                                <span id="sensorTitle_error" style="display:none;">Singular Title must have a value.</span>
+                            <br /><br />
+
                         }
                         case None => {}
                     }
@@ -35,12 +52,17 @@
     </div>
     <script language="javascript">
     function updateSensorConfig(){
-        var sensorsTitle = $("#sensorsTitle").val() ? $("#sensorsTitle").val().trim() : "";
-        var sensorTitle = $("#sensorTitle").val() ? $("#sensorTitle").val().trim() : "";
+        var sensorsTitle = $("#sensorsTitle").val() ? $("#sensorsTitle").val().trim() : "Sensors";
+        var sensorTitle = $("#sensorTitle").val() ? $("#sensorTitle").val().trim() : "Sensor";
+        var variableDefinition = $("#variableDefinition").val() ? $("#variableDefinition").val() : false;
+
+        var data = {sensors: sensorsTitle, sensor: sensorTitle};
+        if (variableDefinition) data['variableDefinition'] = variableDefinition;
+
 
         var request = $.ajax({
             url:  "@api.routes.Admin.sensorsConfig",
-            data: JSON.stringify({ sensors: sensorsTitle, sensor: sensorTitle }),
+            data: JSON.stringify(data),
             type: "POST",
             contentType: "application/json"
         });
