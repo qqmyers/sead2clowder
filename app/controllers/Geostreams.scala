@@ -92,4 +92,31 @@ object Geostreams extends Controller with SecuredController {
     }
   }
 
+  def view(id: String)= PermissionAction(Permission.ViewSensor) { implicit request =>
+    implicit val user = request.user
+    plugin match {
+      case Some(db) => {
+        val sensor = Json.parse(db.getSensor(id).getOrElse("{}"))
+        val stream_ids: JsValue = Json.parse(db.getSensorStreams(id).getOrElse("[]"))
+
+        val streamsResult = stream_ids.validate[List[JsValue]]
+        val list = streamsResult match {
+          case JsSuccess(list : List[JsValue], _) => list
+          case e: JsError => {
+            Logger.debug("Errors: " + JsError.toFlatJson(e).toString())
+            List()
+          }
+        }
+        Logger.debug(list.toString)
+        val streams = list.map { stream =>
+          // val stream_id = (stream \ "stream_id").toString
+          Json.parse(db.getStream((stream \ "stream_id").toString).getOrElse("{}"))
+        }
+
+        Ok(views.html.geostreams.view(sensor, streams))
+      }
+      case None => pluginNotEnabled
+    }
+  }
+
 }
