@@ -413,47 +413,6 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
   }
 
 
-  /*
-  @ApiOperation(value = "Create a collection with parent",
-    notes = "",
-    responseClass = "None", httpMethod = "POST")
-  def createCollectionWithParent() = PermissionAction(Permission.CreateCollection) (parse.json) { implicit request =>
-      Logger.debug("Created new collection with parent")
-      (request.body \ "name").asOpt[String].map {
-        name =>
-          (request.body \ "description").asOpt[String].map {
-            description =>
-              (request.body \ "parentId").asOpt[String].map {
-                parentId =>
-                  implicit val user = request.user
-                  user match {
-                    case Some(identity) => {
-                      val c = Collection(name = name, description = description, created = new Date(), datasetCount = 0,author = identity)
-                      collections.insert(c) match {
-                        case Some(id) => {
-                          collections.get(UUID(parentId)) match {
-                            case Some(parentCollection) => {
-                              collections.addSubCollection(UUID(parentId), UUID(id)) match {
-                                case Success(_) => {
-                                  Ok(toJson(Map("id" -> id)))
-                                }
-                              }
-                            }
-                            case None => Ok(toJson("Invalid parentId"))
-                          }
-                        }
-                        case None => Ok(toJson(Map("status" -> "error")))
-                      }
-                    }
-                    case None => {
-                      Ok(toJson("no author"))
-                    }
-                  }
-              }.getOrElse(BadRequest(toJson("Missing parameter[parentId")))
-          }.getOrElse(BadRequest(toJson("Missing parameter [description]")))
-      }.getOrElse(BadRequest(toJson("Missing parameter [name]")))
-  }
-  */
 
   @ApiOperation(value = "Create a collection with parent",
     notes = "",

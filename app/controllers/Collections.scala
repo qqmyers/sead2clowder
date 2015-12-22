@@ -312,7 +312,14 @@ class Collections @Inject()(datasets: DatasetService, collections: CollectionSer
       var colSpace = request.body.asFormUrlEncoded.getOrElse("space", List.empty)
       var colParentCollection = request.body.asFormUrlEncoded.getOrElse("collection", List.empty)
 
-      implicit val user = request.user
+      var colRootFlag = request.body.asFormUrlEncoded.getOrElse("rootflag",List.empty)
+
+      var rootFlag = false
+      if (colRootFlag(0) == "true")
+        rootFlag = true
+
+
+     implicit val user = request.user
       user match {
         case Some(identity) => {
           if (colName == null || colDesc == null || colSpace == null) {
