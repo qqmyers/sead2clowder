@@ -319,12 +319,12 @@ class Datasets @Inject()(
 
     val nextPage = (when == "a")
     val person = owner.flatMap(o => users.get(UUID(o)))
-    //val datasetSpace = space.flatMap(o => spaceService.get(UUID(o)))
+    val datasetSpace = space.flatMap(o => spaceService.get(UUID(o)))
     var title: Option[String] = Some("Datasets")
 
     val parentCollection = collections.get(UUID(parentCollectionId))
 
-    val datasetList = person match {
+    var datasetList = person match {
       case Some(p) => {
         parentCollection match {
           case Some(parent) => {
@@ -335,24 +335,24 @@ class Datasets @Inject()(
           }
         }
         if (date != "") {
-          //datasets.listUser(date, nextPage, limit, request.user, request.superAdmin, p)
-          datasets.listCollection(parentCollectionId)
+          datasets.listUser(date, nextPage, limit, request.user, request.superAdmin, p)
+          //datasets.listCollection(parentCollectionId)
 
         } else {
-          //datasets.listUser(limit, request.user, request.superAdmin, p)
-          datasets.listCollection(parentCollectionId)
+          datasets.listUser(limit, request.user, request.superAdmin, p)
+          //datasets.listCollection(parentCollectionId)
         }
       }
       case None => {
-        parentCollection match {
-          case Some(parent) => {
-            title = Some("Datasets in Collection " + parent.name)
+        space match {
+          case Some(s) => {
+            title = Some("Datasets in Collection " + parentCollection.get.name)
             if (date != "") {
-              //datasets.listSpace(date, nextPage, limit, s)
-              datasets.listCollection(parentCollectionId)
+              datasets.listSpace(date, nextPage, limit, s)
+              //datasets.listCollection(parentCollectionId)
             } else {
-              //datasets.listSpace(limit, s)
-              datasets.listCollection(parentCollectionId)
+              datasets.listSpace(limit, s)
+              //datasets.listCollection(parentCollectionId)
             }
           }
           case None => {
@@ -367,15 +367,20 @@ class Datasets @Inject()(
       }
     }
 
+
+
+    //datasetList = datasetList.filter((d: Dataset) => (datasets.isInCollection(d.id,parentCollectionId)))
+
+    datasetList = datasetList.filter((d : Dataset) => d.collections.contains(UUID(parentCollectionId)) == true)
     // check to see if there is a prev page
     val prev = if (datasetList.nonEmpty && date != "") {
       val first = Formatters.iso8601(datasetList.head.created)
       val ds = person match {
-        case Some(p) => datasets.listUser(first, nextPage=false, 1, request.user, request.superAdmin, p)
+        case Some(p) => datasets.listUser(first, nextPage=false, 1, request.user, request.superAdmin, p).filter((d : Dataset) => d.collections.contains(UUID(parentCollectionId)) == true)
         case None => {
-          parentCollection match {
-            case Some(parent) => datasets.listCollection(parentCollectionId) //datasets.listSpace(first, nextPage = false, 1, s)
-            case None => datasets.listAccess(first, nextPage = false, 1, Set[Permission](Permission.ViewDataset), request.user, request.superAdmin)
+          space match {
+            case Some(s) => datasets.listSpace(first, nextPage = false, 1, s).filter((d : Dataset) => d.collections.contains(UUID(parentCollectionId)) == true)
+            case None => datasets.listAccess(first, nextPage = false, 1, Set[Permission](Permission.ViewDataset), request.user, request.superAdmin).filter((d : Dataset) => d.collections.contains(UUID(parentCollectionId)) == true)
           }
         }
       }
@@ -392,11 +397,11 @@ class Datasets @Inject()(
     val next = if (datasetList.nonEmpty) {
       val last = Formatters.iso8601(datasetList.last.created)
       val ds = person match {
-        case Some(p) => datasets.listCollection(parentCollectionId)//datasets.listUser(last, nextPage=true, 1, request.user, request.superAdmin, p)
+        case Some(p) => datasets.listUser(last, nextPage=true, 1, request.user, request.superAdmin, p).filter((d : Dataset) => d.collections.contains(UUID(parentCollectionId)) == true)
         case None => {
-          parentCollection match {
-            case Some(parentCollection) => datasets.listCollection(parentCollectionId) //datasets.listSpace(last, nextPage=true, 1, s)
-            case None => datasets.listAccess(last, nextPage=true, 1, Set[Permission](Permission.ViewDataset), request.user, request.superAdmin)
+          space match {
+            case Some(s) => datasets.listSpace(last, nextPage=true, 1, s).filter((d : Dataset) => d.collections.contains(UUID(parentCollectionId)) == true)
+            case None => datasets.listAccess(last, nextPage=true, 1, Set[Permission](Permission.ViewDataset), request.user, request.superAdmin).filter((d : Dataset) => d.collections.contains(UUID(parentCollectionId)) == true)
           }
         }
       }
