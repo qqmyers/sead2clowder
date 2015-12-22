@@ -69,16 +69,15 @@ of the blueimp jQuery File Upload library. An open source project locatd here: h
         <tr>
             <td style="width: 20%; vertical-align:top;" class="input-table-cell">Parent collection (optional):</td>
             <td style="width: 35%; vertical-align:top;" class="input-table-cell" id="desccell">
-                <select name="collection" id="parentid" style="width: 415px;" class ="form-control chosen-select" multiple style="width: 342px;">
-
-			        @collections.map { collection =>
+                <select name="collection" id="parentid" style="width: 415px;" class ="form-control chosen-select" multiple >
+                    @collections.map { collection =>
 			            <option id="@(collection.id)" value="@(collection.id)">@(collection.name)</option>
 			        }                    
 			    </select>
                 <script language = "javascript">
                     $(".chosen-select").chosen({
                         width: "100%",
-                        placeholder_text_multiple: "Select parent collections for this dataset."
+                        placeholder_text: "Select parent collections for this dataset."
                     })
                 </script>
             </td>
@@ -88,11 +87,16 @@ of the blueimp jQuery File Upload library. An open source project locatd here: h
             <td style="width: 20%; vertical-align:top;" class="input-table-cell">Share with spaces (optional):</td>
             <td style="width: 35%; vertical-align:top;" class="input-table-cell" id="desccell">
                 <select name="space" id="spaceid" style="width: 415px;" class ="form-control chosen-select" multiple >
-
-                @spaces.map { space =>
-                    <option id="@(space.id)" value="@(space.id)">@(space.name)</option>
-                }
+                    @spaces.map { space =>
+                        <option id="@(space.id)" value="@(space.id)">@(space.name)</option>
+                    }
                 </select>
+                <script language = "javascript">
+                    $(".chosen-select").chosen({
+                        width: "100%",
+                        placeholder_text: "Share with spaces."
+                    })
+                </script>
             </td>
         </tr>
         <tr>
