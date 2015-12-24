@@ -5,6 +5,8 @@ package services.mongodb
 
 import api.Permission
 import api.Permission.Permission
+import com.novus.salat.dao.{ModelCompanion, SalatDAO}
+import com.mongodb.casbah.Imports._
 import com.mongodb.casbah.WriteConcern
 import models.{User, UUID, Collection, Dataset}
 import com.mongodb.casbah.commons.MongoDBObject
@@ -18,8 +20,6 @@ import javax.inject.{Singleton, Inject}
 import scala.util.Failure
 import scala.Some
 import scala.util.Success
-import com.novus.salat.dao.{ModelCompanion, SalatDAO}
-import com.mongodb.casbah.Imports._
 import MongoContext.context
 import play.api.Play._
 
@@ -399,6 +399,19 @@ class MongoDBCollectionService @Inject() (datasets: DatasetService, userService:
     }
   }
 
+  def listChildCollections(parentCollectionId : UUID): List[Collection] = {
+    val childCollections = List.empty[Collection]
+    Collection.findOneById(new ObjectId(parentCollectionId.stringify)) match {
+      case Some(collection) => {
+        val childCollectionIds = collection.child_collection_ids
+        //val list = for (collection <- listAccess(0, Set[Permission](Permission.ViewCollection), user, showAll); if (isInDataset(dataset, collection))) yield collection
+        val childList = for (childCollectionId <- childCollectionIds; if (get(UUID(childCollectionId)).isDefined)) yield (get(UUID(childCollectionId))).get
+        return childList
+      }
+      case None => return childCollections
+    }
+  }
+
   def removeDataset(collectionId: UUID, datasetId: UUID, ignoreNotFound: Boolean = true) = Try {
     Logger.debug(s"Removing dataset $datasetId from collection $collectionId")
 	  Collection.findOneById(new ObjectId(collectionId.stringify)) match{
@@ -560,6 +573,104 @@ class MongoDBCollectionService @Inject() (datasets: DatasetService, userService:
   def removeFollower(id: UUID, userId: UUID) {
     Collection.update(MongoDBObject("_id" -> new ObjectId(id.stringify)),
                       $pull("followers" -> new ObjectId(userId.stringify)), false, false, WriteConcern.Safe)
+  }
+
+  def removeSubCollection(collectionId: UUID, subCollectionId: UUID, ignoreNotFound: Boolean = true) = Try {
+    Collection.findOneById(new ObjectId(collectionId.stringify)) match{
+      case Some(collection) => {
+        Collection.findOneById(new ObjectId(subCollectionId.stringify)) match {
+          case Some(sub_collection) => {
+            if(isSubCollectionIdInCollection(subCollectionId,collection)){
+              // remove sub collection from list of child collection
+              Collection.update(MongoDBObject("_id" -> new ObjectId(collectionId.stringify)), $pull("child_collection_ids" -> subCollectionId.stringify), false, false, WriteConcern.Safe)
+              Collection.update(MongoDBObject("_id" -> new ObjectId(collectionId.stringify)), $inc("childCollectionsCount" -> -1), upsert=false, multi=false, WriteConcern.Safe)
+              //remove collection from the list of parent collection for sub collection
+              Collection.update(MongoDBObject("_id" -> new ObjectId(subCollectionId.stringify)), $pull("parent_collection_ids" -> collectionId.stringify), false, false, WriteConcern.Safe)
+              Logger.info("Removing subcollection from collection completed")
+            }
+            else{
+              Logger.info("Subcollection was already out of the collection.")
+            }
+            Success
+          }
+          case None => Success
+        }
+      }
+      case None => {
+        ignoreNotFound match{
+          case true => Success
+          case false =>
+            Logger.error("Error getting collection" + collectionId)
+            Failure
+        }
+      }
+    }
+  }
+
+
+  def addParentCollection(subCollectionId: UUID, parentCollectionId: UUID) =Try {
+    Collection.findOneById(new ObjectId(subCollectionId.stringify)) match {
+      case Some(sub_collection) => {
+        Collection.findOneById(new ObjectId(parentCollectionId.stringify)) match {
+          case Some(parent_collection) => {
+            Collection.update(MongoDBObject("_id" -> new ObjectId(subCollectionId.stringify)),
+              $addToSet("parent_collections" ->  Collection.toDBObject(parent_collection)), false, false, WriteConcern.Safe)
+          } case None => {
+            Logger.error("Error getting subcollection" + subCollectionId);
+            Failure
+          }
+        }
+      } case None => {
+        Logger.error("Error getting collection" + subCollectionId);
+        Failure
+      }
+    }
+  }
+
+  def addSubCollection(collectionId :UUID, subCollectionId: UUID) = Try{
+    Collection.findOneById(new ObjectId(collectionId.stringify)) match {
+      case Some(collection) => {
+
+        if (!isSubCollectionIdInCollection(subCollectionId,collection)){
+          addSubCollectionId(subCollectionId,collection)
+          addParentCollectionId(subCollectionId,collectionId)
+          index(collection.id)
+          Collection.findOneById(new ObjectId(subCollectionId.stringify)) match {
+            case Some(sub_collection) => {
+              index(sub_collection.id)
+            } case None =>
+              Logger.error("Error getting subcollection" + subCollectionId);
+              Failure
+          }
+        }
+      } case None => {
+        Logger.error("Error getting collection" + collectionId);
+        Failure
+      }
+    }
+  }
+
+
+  def addSubCollectionId(subCollectionId: UUID, collection: Collection) = Try {
+    Collection.update(MongoDBObject("_id" -> new ObjectId((collection.id).stringify)), $addToSet("child_collection_ids" -> subCollectionId.stringify), false, false, WriteConcern.Safe)
+    Collection.update(MongoDBObject("_id" -> new ObjectId(collection.id.stringify)), $inc("childCollectionsCount" -> 1), upsert=false, multi=false, WriteConcern.Safe)
+  }
+
+  def addParentCollectionId(subCollectionId: UUID, parentCollectionId: UUID) = Try {
+    Collection.update(MongoDBObject("_id" -> new ObjectId(subCollectionId.stringify)), $addToSet("parent_collection_ids" -> parentCollectionId.stringify), false, false, WriteConcern.Safe)
+  }
+
+  def setRootFlag(collectionId : UUID, isRoot : Boolean) = Try {
+    Collection.update(MongoDBObject("_id" -> new ObjectId(collectionId.stringify)),$set("root_flag" -> isRoot), false, false, WriteConcern.Safe )
+  }
+
+
+  private def isSubCollectionIdInCollection(subCollectionId: UUID, collection: Collection) : Boolean = {
+    for(child_collection_id <- collection.child_collection_ids){
+      if(child_collection_id == subCollectionId.stringify)
+        return true
+    }
+    return false
   }
 }
 
