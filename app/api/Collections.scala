@@ -542,10 +542,12 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
     notes = "",
     responseClass = "None", httpMethod = "GET")
   def getAllCollections() = PermissionAction(Permission.ViewCollection) { implicit request =>
-    val all_collections_list = for (collection <- collections.listAccess(100,Set[Permission](Permission.ViewCollection),request.user,true))
+    implicit val user = request.user
+    var count : Long  = collections.countAccess(Set[Permission](Permission.ViewCollection),user,true);
+    var limit = count.toInt
+    val all_collections_list = for (collection <- collections.listAccess(limit,Set[Permission](Permission.ViewCollection),request.user,true))
       yield jsonCollection(collection)
     Ok(toJson(all_collections_list))
-    //Ok("not impleneted")
   }
 
 
@@ -554,10 +556,12 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
     notes = "",
     responseClass = "None", httpMethod = "GET")
   def getTopLevelCollections() = PermissionAction(Permission.ViewCollection){ implicit request =>
-    val top_level_collections = for (collection <- collections.listAccess(100,Set[Permission](Permission.ViewCollection),request.user,true); if (collection.root_flag == true || collection.parent_collection_ids.isEmpty))
+    implicit val user = request.user
+    var count = collections.countAccess(Set[Permission](Permission.ViewCollection),user,true);
+    var limit = count.toInt
+    val top_level_collections = for (collection <- collections.listAccess(limit,Set[Permission](Permission.ViewCollection),request.user,true); if (collection.root_flag == true || collection.parent_collection_ids.isEmpty))
       yield jsonCollection(collection)
 
-    //Ok("not implemented")
     Ok(toJson(top_level_collections))
   }
 
