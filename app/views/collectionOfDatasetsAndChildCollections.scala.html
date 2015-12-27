@@ -1,6 +1,7 @@
 @(datasetsInCollection: List[models.Dataset],childCollectionsInCollection : List[models.Collection],
   collection: models.Collection,
   previewers: List[Previewer],
+  parentCollections : Option[List[models.Collection]],
   collectionSpaces: Option[List[ProjectSpace]])(implicit flash: play.api.mvc.Flash, user: Option[models.User])
 
 @import models.ResourceRef
@@ -21,6 +22,7 @@
 
 <script src="@routes.Assets.at("javascripts/errorRedirect.js")" type="text/javascript"></script>
 <script src="@routes.Assets.at("javascripts/collectionDatasetsList.js")" type="text/javascript"></script>
+<script src="@routes.Assets.at("javascripts/collectionChildCollectionsList.js")" type="text/javascript"></script>
 <script src="@routes.Assets.at("javascripts/collectionListProcess.js")" type="text/javascript"></script>
 <script src="@routes.Assets.at("javascripts/htmlEncodeDecode.js")" language="javascript"></script>
 
@@ -212,7 +214,7 @@
 	<div class="col-md-4">
 		@spaces.spaceAllocation(collection.id, ResourceRef.collection, collectionSpaces.getOrElse(List.empty))
 		<br/>
-		@spaces.spaceAllocation(collection.id, ResourceRef.collection, collectionSpaces.getOrElse(List.empty))
+		@collections.parentCollections(collection,parentCollections.getOrElse(List.empty))
 		<br />
 		@if(user.isDefined && collectionSpaces.isDefined && !collectionSpaces.get.isEmpty){
 			<div id="collection-users">

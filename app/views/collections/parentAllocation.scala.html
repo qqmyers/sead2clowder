@@ -1,0 +1,123 @@
+@(currentCollection: models.Collection, resourceId: UUID, resourceType: Symbol, parentCollections: List[Collection])(implicit user: Option[models.User])
+@import api.Permission
+@import play.api.libs.json.Json
+    <div class="row bottom-padding">
+        <div class="col-md-12">
+        @if(resourceType == ResourceRef.collection) {
+            <h4>Parent collections containing the collection</h4>
+        } else {
+            <h4>Parent collections containing the dataset</h4>
+        }
+        </div>
+    </div>
+
+    <div class="row">
+        <div id="parentCollectionsList" class="col-md-12">
+        @parentCollections.map { p =>
+            <div id="col_@p.id" class="row bottom-padding">
+                <div class="col-md-2">
+                    @if(p.logoURL.isDefined) {
+                        <img src="@p.logoURL.get" width="100%">
+                    }
+                </div>
+                <div class="col-md-10">
+                    <div>
+                        <a href="@routes.Collections.collection(p.id)" id='@p.id' class ="collection">@Html(p.name)</a>
+                    </div>
+                    <div>
+                        @if(resourceType == ResourceRef.dataset) {
+                            @if(p.childCollectionsCount ==1){
+                                1 collection
+                            } else {
+                                @p.childCollectionsCount collections
+                            }
+
+                            @if(Permission.checkPermission(Permission.EditCollection, ResourceRef(ResourceRef.collection, p.id))) {
+                                | <a href="#" class="btn btn-link btn-xs" onclick="removeChildFromParent( '@(currentCollection.id)', '@(p.id)', event)" title="Remove from parent collection">
+                                    <span class="glyphicon glyphicon-remove"></span>Remove</a>
+                            } else {
+                                 |  <a href="#" class="btn btn-link btn-xs disabled" title="Remove dataset from parent collection">
+                                    <span class="glyphicon glyphicon-remove"></span> Remove</a>
+                            }
+                        }
+                        @if(resourceType == ResourceRef.collection) {
+                            @if(p.childCollectionsCount ==1){
+                                1 collection
+                            } else {
+                                @p.childCollectionsCount collections
+                            }
+                            @if(Permission.checkPermission(Permission.EditCollection, ResourceRef(ResourceRef.collection, p.id))) {
+                                | <a href="#" class="btn btn-link btn-xs" onclick="removeChildFromParent('@(currentCollection.id)', '@(p.id)', event)" title="Remove from parent collection">
+                                    <span class="glyphicon glyphicon-remove"></span>  Remove</a>
+                            } else {
+                                | <a href="#" class="btn btn-link btn-xs disabled" title="Remove collection from space">
+                                    <span class="glyphicon glyphicon-remove"></span> Remove</a>
+                            }
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+        </div>
+    </div>
+
+
+
+    <!-- If the user can edit the dataset, the elements are enabled, otherwise they are present but disabled to provide consistent UE. -->
+    @if(user.isDefined) {
+        <div class="form-inline">
+            <div class="input-group input-group-sm col-md-8">
+                <select id="parentCollectionAddSelect" class="form-control add-resource">
+                </select>
+                @if(resourceType == ResourceRef.dataset) {
+                    <span class="input-group-btn">
+                    <a href="#" class="btn btn-default btn-large" id="addSpaceBtn" title="Add dataset to Space" onclick="addDatasetToSpace('@resourceId')">
+                        <span class="glyphicon glyphicon-plus"></span>
+                    </a>
+                    </span>
+                } else {
+                    <span class="input-group-btn">
+                    <a href="#" class="btn btn-default btn-large" id="addSpaceBtn" title="Add collection to Space" onclick="addChildCollectionToCollection('@currentCollection.id')">
+                        <span class="glyphicon glyphicon-plus"></span>
+                    </a>
+                    </span>
+                }
+            </div>
+        </div>
+    }
+
+
+<link rel="stylesheet" href="@routes.Assets.at("stylesheets/chosen.css")">
+<script src="@routes.Assets.at("javascripts/chosen.jquery.js")" type="text/javascript"></script>
+<script src="@routes.Assets.at("javascripts/collectionChildCollectionsList.js")" type="text/javascript"></script>
+<script src="@routes.Assets.at("javascripts/spaceModify.js")" type="text/javascript"></script>
+
+<script language="javascript">
+    $("#parentCollectionAddSelect").select2({
+        theme: "bootstrap",
+        placeholder: "Select a parent collection",
+        allowClear: true,
+        ajax: {
+            url: function(params) {
+                return jsRoutes.api.Collections.listCanEdit(params.term, null, 5).url;
+            },
+            data: function(params) {
+                return { title: params.term };
+            },
+            processResults: function(data, page) {
+                return {results: data.filter(function(x) {
+                    var ids = $('.collection').map(function() {
+                        return $(this).attr('id');
+                    });
+                    return $.inArray(x["id"], ids) == -1;
+                }).map(function(x) {
+                    return {
+                        text: x["name"],
+                        id: x["id"]
+                    }
+                })};
+            }
+        }
+    });
+
+</script>
