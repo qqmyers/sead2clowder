@@ -212,9 +212,9 @@
 		</div>
 	<!-- right column -->
 	<div class="col-md-4">
-		@spaces.spaceAllocation(collection.id, ResourceRef.collection, collectionSpaces.getOrElse(List.empty))
+		@spaces.spaceAllocation(collection.id,ResourceRef.collection, collectionSpaces.getOrElse(List.empty))
 		<br/>
-		@collections.parentCollections(collection,parentCollections.getOrElse(List.empty))
+		@collections.parentAllocation(collection.id,ResourceRef.collection, parentCollections.getOrElse(List.empty))
 		<br />
 		@if(user.isDefined && collectionSpaces.isDefined && !collectionSpaces.get.isEmpty){
 			<div id="collection-users">
