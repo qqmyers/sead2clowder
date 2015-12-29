@@ -157,7 +157,7 @@
 										@if(user.isDefined) {
 											<div>
 												@if(Permission.checkPermission(Permission.DeleteCollection, ResourceRef(ResourceRef.collection, collection.id))){
-													<a onclick="removeChildCollection('@(childCollection.id.toString),'@(collection.id.toString())',event)" title="Remove the Child Collection">
+													<a onclick="removeChildCollection('@(childCollection.id.toString)','@(collection.id.toString)',event)" title="Remove the Child Collection">
 														<span class="glyphicon glyphicon-trash"></span></a>
 												}
 											</div>
