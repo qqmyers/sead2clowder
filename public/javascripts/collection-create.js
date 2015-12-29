@@ -22,7 +22,13 @@ function createCollection() {
     $('#spaceid').find(":selected").each(function(i, selected) {
         spaceList[i] = $(selected).val()
     });
-    
+
+    var parent = $('#parentid').find(":selected").val();
+    var collectionList = [];
+    $('#parentid').find(":selected").each(function(i,selected) {
+        collectionList[i] = $(selected).val()
+    });
+
     //Add errors and return false if validation fails. Validation comes from the host page, passing in the isNameRequired and isDescRequired
     //variables.
     var error = false;
@@ -43,7 +49,8 @@ function createCollection() {
 	$('#hiddenname').val(encName);
     $('#hiddendescription').val(encDescription);
     $('#hiddenspace').val(spaceList);
-    
+    $('#hiddencollection').val(collectionList);
+
 	//Submit the form
     $('#collectioncreate').submit();
     

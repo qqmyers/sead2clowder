@@ -1,4 +1,4 @@
-@(datasetsInCollection: List[models.Dataset],childCollectionsInCollection : List[models.Collection],
+@(datasetsInCollection: List[models.Dataset],childCollections : List[models.Collection],
   collection: models.Collection,
   previewers: List[Previewer],
   parentCollections : Option[List[models.Collection]],
@@ -142,22 +142,22 @@
 			</div>
 			<div class="row">
 			<div class="col-md-12">
-				<h3>Datasets in the collection</h3>
-					@datasetsInCollection.map { dataset =>
-						<div class="panel panel-default" id="@dataset.id">
+				<h3>Child collections in the collection</h3>
+					@childCollections.map { childCollection =>
+						<div class="panel panel-default" id="@childCollection.id">
 							<div class="panel-body">
 								<div class="row">
 									<div class="col-md-2 col-sm-2 col-lg-2">
-										@if(!dataset.thumbnail_id.isEmpty){<img src="@(routes.Files.thumbnail(UUID(dataset.thumbnail_id.toString().substring(5,dataset.thumbnail_id.toString().length-1))))" alt="Thumbnail of @Html(dataset.name)" width="120">}
+										@if(!childCollection.thumbnail_id.isEmpty){<img src="@(routes.Files.thumbnail(UUID(childCollection.thumbnail_id.toString().substring(5,childCollection.thumbnail_id.toString().length-1))))" alt="Thumbnail of @Html(childCollection.name)" width="120">}
 									</div>
 									<div class="col-md-10 col-sm-10 col-lg-10">
-										<div><a href="@(routes.Datasets.dataset(dataset.id))">@Html(dataset.name)</a></div>
-										<div>@Html(dataset.description)</div>
-										<div>@dataset.created.format("MMM dd, yyyy")</div>
+										<div><a href="@(routes.Collections.collection(childCollection.id))">@Html(childCollection.name)</a></div>
+										<div>@Html(childCollection.description)</div>
+										<div>@childCollection.created.format("MMM dd, yyyy")</div>
 										@if(user.isDefined) {
 											<div>
 												@if(Permission.checkPermission(Permission.DeleteCollection, ResourceRef(ResourceRef.collection, collection.id))){
-													<a onclick="removeDataset('@(dataset.id.toString)',event)" title="Detach the Dataset">
+													<a onclick="removeChildCollection('@(childCollection.id.toString),'@(collection.id.toString())',event)" title="Remove the Child Collection">
 														<span class="glyphicon glyphicon-trash"></span></a>
 												}
 											</div>
@@ -214,7 +214,7 @@
 	<div class="col-md-4">
 		@spaces.spaceAllocation(collection.id,ResourceRef.collection, collectionSpaces.getOrElse(List.empty))
 		<br/>
-		@collections.parentAllocation(collection.id,ResourceRef.collection, parentCollections.getOrElse(List.empty))
+		@collections.parentAllocation(collection,collection.id,ResourceRef.collection, parentCollections.getOrElse(List.empty))
 		<br />
 		@if(user.isDefined && collectionSpaces.isDefined && !collectionSpaces.get.isEmpty){
 			<div id="collection-users">
