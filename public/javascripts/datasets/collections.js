@@ -15,12 +15,22 @@ function addToCollection(datasetId) {
     request.done(function (response, textStatus, jqXHR) {
         var o =$.parseJSON(jqXHR.responseText);
         // TODO retrieve more information about collection from API and show it in the GUI
-        $("#collectionsList").append('<div id="col_'+selectedId+'" class="row bottom-padding">' +
-        '<div class="col-md-2"></div>' +
-        '<div class="col-md-10"><div><a href="'+jsRoutes.controllers.Collections.collection(selectedId).url+'" id='+selectedId+' class ="collection">'+selectedName+'</a></div><div>' +
-            o.datasetsInCollection+' dataset(s) | <a href="#" class="btn btn-link btn-xs" onclick="removeCollection(\''+selectedId+'\', \''+datasetId+'\', event)" title="Remove from collection">' +
-        '<span class="glyphicon glyphicon-remove"></span> Remove</a></div></div></div>');
-        $("#collectionAddSelect").select2("val", "");
+        if (o.datasetsInCollection == 1){
+            console.log("just one ");
+            $("#collectionsList").append('<div id="col_'+selectedId+'" class="row bottom-padding">' +
+                '<div class="col-md-2"></div>' +
+                '<div class="col-md-10"><div><a href="'+jsRoutes.controllers.Collections.collection(selectedId).url+'" id='+selectedId+' class ="collection">'+selectedName+'</a></div><div>' +
+                o.datasetsInCollection+' dataset | <a href="#" class="btn btn-link btn-xs" onclick="removeCollection(\''+selectedId+'\', \''+datasetId+'\', event)" title="Remove from collection">' +
+                '<span class="glyphicon glyphicon-remove"></span> Remove</a></div></div></div>');
+            $("#collectionAddSelect").select2("val", "");
+        } else {
+            $("#collectionsList").append('<div id="col_' + selectedId + '" class="row bottom-padding">' +
+                '<div class="col-md-2"></div>' +
+                '<div class="col-md-10"><div><a href="' + jsRoutes.controllers.Collections.collection(selectedId).url + '" id=' + selectedId + ' class ="collection">' + selectedName + '</a></div><div>' +
+                o.datasetsInCollection + ' datasets | <a href="#" class="btn btn-link btn-xs" onclick="removeCollection(\'' + selectedId + '\', \'' + datasetId + '\', event)" title="Remove from collection">' +
+                '<span class="glyphicon glyphicon-remove"></span> Remove</a></div></div></div>');
+            $("#collectionAddSelect").select2("val", "");
+        }
     });
 
     request.fail(function (jqXHR, textStatus, errorThrown){

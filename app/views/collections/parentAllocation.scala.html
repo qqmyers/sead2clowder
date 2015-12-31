@@ -13,24 +13,24 @@
 
     <div class="row">
         <div id="collectionsList" class="col-md-12">
-        @parentCollections.map { s =>
-            <div id="col_@s.id" class="row bottom-padding">
+        @parentCollections.map { p =>
+            <div id="col_@p.id" class="row bottom-padding">
                 <div class="col-md-2">
                 </div>
                 <div class="col-md-10">
                     <div>
-                        <a href="@routes.Collections.collection(s.id)" id='@s.id' class ="collection">@Html(s.name)</a>
+                        <a href="@routes.Collections.collection(p.id)" id='@p.id' class ="collection">@Html(p.name)</a>
                     </div>
                     <div>
                         @if(resourceType == ResourceRef.dataset) {
-                            @if(s.datasetCount ==1){
+                            @if(p.datasetCount ==1){
                                 1 dataset
                             } else {
-                                @s.datasetCount datasets
+                                @p.datasetCount datasets
                             }
 
-                            @if(Permission.checkPermission(Permission.EditCollection, ResourceRef(ResourceRef.collection, s.id))) {
-                                | <a href="#" class="btn btn-link btn-xs" onclick="removeChildFromParent( '@(currentCollection.id)', '@(s.id)', event)" title="Remove from parent">
+                            @if(Permission.checkPermission(Permission.EditCollection, ResourceRef(ResourceRef.collection, p.id))) {
+                                | <a href="#" class="btn btn-link btn-xs" onclick="removeChildFromParent( '@(currentCollection.id)', '@(p.id)', event)" title="Remove from parent">
                                     <span class="glyphicon glyphicon-remove"></span>Remove</a>
                             } else {
                                  |  <a href="#" class="btn btn-link btn-xs disabled" title="Remove child collection from collection">
@@ -38,13 +38,13 @@
                             }
                         }
                         @if(resourceType == ResourceRef.collection) {
-                            @if(s.childCollectionsCount ==1){
+                            @if(p.childCollectionsCount ==1){
                                 1 collection
                             } else {
-                                @s.childCollectionsCount collections
+                                @p.childCollectionsCount collections
                             }
-                            @if(Permission.checkPermission(Permission.EditCollection, ResourceRef(ResourceRef.collection, s.id))) {
-                                | <a href="#" class="btn btn-link btn-xs" onclick="removeChildFromParent( '@(currentCollection.id)', '@(s.id)', event)" title="Remove from parent">
+                            @if(Permission.checkPermission(Permission.EditCollection, ResourceRef(ResourceRef.collection, p.id))) {
+                                | <a href="#" class="btn btn-link btn-xs" onclick="removeChildFromParent( '@(currentCollection.id)', '@(p.id)', event)" title="Remove from parent">
                                     <span class="glyphicon glyphicon-remove"></span>  Remove</a>
                             } else {
                                 | <a href="#" class="btn btn-link btn-xs disabled" title="Remove child collection from collection">
@@ -88,7 +88,7 @@
 <script src="@routes.Assets.at("javascripts/chosen.jquery.js")" type="text/javascript"></script>
 <script src="@routes.Assets.at("javascripts/collectionModify.js")" type="text/javascript"></script>
 <script src="@routes.Assets.at("javascripts/datasets/collections.js")" type="text/javascript"></script>
-<script src="@routes.Assets.at("javascripts/collection__ChildCollectionsList.js")" type="text/javascript"></script>
+<script src="@routes.Assets.at("javascripts/collectionChildCollectionsList.js")" type="text/javascript"></script>
 
 <script language="javascript">
     $("#collectionAddSelect").select2({
