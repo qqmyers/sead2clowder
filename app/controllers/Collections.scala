@@ -342,7 +342,7 @@ class Collections @Inject()(datasets: DatasetService, collections: CollectionSer
 
           var collection : Collection = null
           if (colSpace(0) == "default") {
-              collection = Collection(name = colName(0), description = colDesc(0), datasetCount = 0, created = new Date, author = identity)
+              collection = Collection(name = colName(0), description = colDesc(0), datasetCount = 0, created = new Date, author = identity, root_flag = rootFlag)
           }
           else {
             val stringSpaces = colSpace(0).split(",").toList
@@ -351,7 +351,7 @@ class Collections @Inject()(datasets: DatasetService, collections: CollectionSer
           }
 
           Logger.debug("Saving collection " + collection.name)
-          collections.insert(Collection(id = collection.id, name = collection.name, description = collection.description, datasetCount = 0, created = collection.created, author = collection.author, spaces = collection.spaces))
+          collections.insert(Collection(id = collection.id, name = collection.name, description = collection.description, datasetCount = 0, created = collection.created, author = collection.author, spaces = collection.spaces, root_flag = collection.root_flag))
           collection.spaces.map{
             sp => spaceService.get(sp) match {
               case Some(s) => {
@@ -369,7 +369,7 @@ class Collections @Inject()(datasets: DatasetService, collections: CollectionSer
                     collections.addSubCollection(UUID(parentCollectionId), collection.id)
                   }
                   case None => {
-                    //not sure what to do here or if necessary
+                    Logger.error("Unable to add collection to parent collection with id " + parentCollectionId)
                   }
                 }
               } catch {
@@ -475,7 +475,10 @@ class Collections @Inject()(datasets: DatasetService, collections: CollectionSer
 
 
 
+          //this view is based on the spaces
+
           Ok(views.html.collectionOfDatasetsAndChildCollections(decodedDatasetsInside.toList, decodedChildCollections.toList ,dCollection, filteredPreviewers.toList, Some(decodedParentCollections.toList),Some(decodedSpaces)))
+          // the below view shows only datasets, no child collections and no parent collections
           //Ok(views.html.collectionofdatasets(decodedDatasetsInside.toList, dCollection, filteredPreviewers.toList, Some(decodedSpaces)))
 
         }
