@@ -1,16 +1,16 @@
-@(collectionsList: List[Collection], space: String)(implicit user: Option[models.User])
+@(collectionsList: List[Collection], parentCollectionId: String)(implicit user: Option[models.User])
 
 @import api.Permission
 <p>
     Most recent collections:
     <span class="pull-right">
-        @if(user.isDefined && Permission.checkPermission(Permission.EditSpace, ResourceRef(ResourceRef.space, UUID(space)))) {
-            <a id="create-collection" href="@routes.Collections.newCollection(Some(space))" class="btn btn-link btn-xs"><span class="glyphicon glyphicon-ok"></span>
+        @if(user.isDefined && Permission.checkPermission(Permission.EditCollection, ResourceRef(ResourceRef.collection, UUID(parentCollectionId)))) {
+            <a id="create-collection" href="@routes.Collections.newCollection(Some(parentCollectionId))" class="btn btn-link btn-xs"><span class="glyphicon glyphicon-ok"></span>
                 Create Collection
             </a>
         }
 
-        <a href="@(routes.Collections.list("", "", 12, Some(space)))" class="btn btn-link btn-xs">
+        <a href="@(routes.Collections.list("", "", 12, Some(parentCollectionId)))" class="btn btn-link btn-xs">
             <span class="glyphicon glyphicon-hand-right"></span>
             All Collections
         </a>

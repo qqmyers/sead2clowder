@@ -475,9 +475,14 @@ class Collections @Inject()(datasets: DatasetService, collections: CollectionSer
 
 
 
-          //this view is based on the spaces
 
-          Ok(views.html.collectionOfDatasetsAndChildCollections(decodedDatasetsInside.toList, decodedChildCollections.toList ,dCollection, filteredPreviewers.toList, Some(decodedParentCollections.toList),Some(decodedSpaces)))
+          //this view is based on the spaces
+          Ok(views.html.collections.parentCollection(dCollection,decodedChildCollections.toList, decodedParentCollections.toList, decodedDatasetsInside.toList))
+
+
+
+
+          //Ok(views.html.collectionOfDatasetsAndChildCollections(decodedDatasetsInside.toList, decodedChildCollections.toList ,dCollection, filteredPreviewers.toList, Some(decodedParentCollections.toList),Some(decodedSpaces)))
           // the below view shows only datasets, no child collections and no parent collections
           //Ok(views.html.collectionofdatasets(decodedDatasetsInside.toList, dCollection, filteredPreviewers.toList, Some(decodedSpaces)))
 
