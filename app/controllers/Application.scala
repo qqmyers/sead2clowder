@@ -166,7 +166,7 @@ class Application @Inject() (files: FileService, collections: CollectionService,
     Ok(views.html.index(latestFiles, datasetsCount, datasetsCountAccess, filesCount, collectionsCount, collectionsCountAccess,
         spacesCount, spacesCountAccess, usersCount, AppConfiguration.getDisplayName, AppConfiguration.getWelcomeMessage))
   }
-  
+
   def options(path:String) = UserAction { implicit request =>
     Logger.info("---controller: PreFlight Information---")
     Ok("")
@@ -180,7 +180,7 @@ class Application @Inject() (files: FileService, collections: CollectionService,
   def bookmarklet() = AuthenticatedAction { implicit request =>
     Ok(views.html.bookmarklet(Utils.baseUrl(request))).as("application/javascript")
   }
-  
+
   /**
    *  Javascript routing.
    */
@@ -212,13 +212,14 @@ class Application @Inject() (files: FileService, collections: CollectionService,
         routes.javascript.Collections.collection,
         routes.javascript.RedirectUtility.authenticationRequiredMessage,
         routes.javascript.Profile.viewProfileUUID,
-        api.routes.javascript.Admin.removeAdmin,        
+        api.routes.javascript.Admin.removeAdmin,
         api.routes.javascript.Comments.comment,
         api.routes.javascript.Comments.removeComment,
         api.routes.javascript.Comments.editComment,
         api.routes.javascript.Datasets.get,
         api.routes.javascript.Datasets.list,
         api.routes.javascript.Datasets.listCanEdit,
+        api.routes.javascript.Datasets.listInCollection,
         api.routes.javascript.Datasets.comment,
         api.routes.javascript.Datasets.createEmptyDataset,
         api.routes.javascript.Datasets.attachExistingFile,
@@ -227,7 +228,6 @@ class Application @Inject() (files: FileService, collections: CollectionService,
         api.routes.javascript.Datasets.detachAndDeleteDataset,
         api.routes.javascript.Datasets.datasetFilesList,
         api.routes.javascript.Datasets.getTechnicalMetadataJSON,
-        api.routes.javascript.Datasets.listInCollection,
         api.routes.javascript.Datasets.getTags,
         api.routes.javascript.Datasets.addTags,
         api.routes.javascript.Datasets.removeTag,
@@ -340,7 +340,7 @@ class Application @Inject() (files: FileService, collections: CollectionService,
         controllers.routes.javascript.CurationObjects.savePublishedObject,
         controllers.routes.javascript.CurationObjects.getStatusFromRepository
       )
-    ).as(JSON) 
+    ).as(JSON)
   }
-  
+
 }

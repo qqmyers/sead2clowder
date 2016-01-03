@@ -326,6 +326,135 @@ class Datasets @Inject()(
     Ok(views.html.datasetList(decodedDatasetList.toList, commentMap, prev, next, limit, viewMode, space, title, owner))
   }
 
+  def listByCollection(parentCollectionId: String, when: String, date: String, limit: Int, space: Option[String], mode: String, owner: Option[String]) = PrivateServerAction { implicit request =>
+
+    //datasetList = datasetList.filter((d : Dataset) => d.collections.contains(UUID(parentCollectionId)) == true)
+    implicit val user = request.user
+
+    val nextPage = (when == "a")
+    val person = owner.flatMap(o => users.get(UUID(o)))
+    val datasetSpace = space.flatMap(o => spaceService.get(UUID(o)))
+    var title: Option[String] = Some("Datasets")
+
+
+    var datasetList = person match {
+      case Some(p) => {
+        space match {
+          case Some(s) => {
+            title = Some(person.get.fullName + "'s Datasets in Space " + datasetSpace.get.name)
+          }
+          case None => {
+            title = Some(person.get.fullName + "'s Datasets")
+          }
+        }
+        if (date != "") {
+          datasets.listUser(date, nextPage, limit, request.user, request.superAdmin, p)
+        } else {
+          datasets.listUser(limit, request.user, request.superAdmin, p)
+        }
+      }
+      case None => {
+        space match {
+          case Some(s) => {
+            title = Some("Datasets in Space " + datasetSpace.get.name)
+            if (date != "") {
+              datasets.listSpace(date, nextPage, limit, s)
+            } else {
+              datasets.listSpace(limit, s)
+            }
+          }
+          case None => {
+            if (date != "") {
+              datasets.listAccess(date, nextPage, limit, Set[Permission](Permission.ViewDataset), request.user, request.superAdmin)
+            } else {
+              datasets.listAccess(limit, Set[Permission](Permission.ViewDataset), request.user, request.superAdmin)
+            }
+
+          }
+        }
+      }
+    }
+
+    datasetList = datasetList.filter((d : Dataset) => d.collections.contains(UUID(parentCollectionId)) == true)
+
+    // check to see if there is a prev page
+    val prev = if (datasetList.nonEmpty && date != "") {
+      val first = Formatters.iso8601(datasetList.head.created)
+      val ds = person match {
+        case Some(p) => (datasets.listUser(first, nextPage=false, 1, request.user, request.superAdmin, p)).filter((d : Dataset) => d.collections.contains(UUID(parentCollectionId)) == true)
+        case None => {
+          space match {
+            case Some(s) => (datasets.listSpace(first, nextPage = false, 1, s)).filter((d : Dataset) => d.collections.contains(UUID(parentCollectionId)) == true)
+            case None => (datasets.listAccess(first, nextPage = false, 1, Set[Permission](Permission.ViewDataset), request.user, request.superAdmin)).filter((d : Dataset) => d.collections.contains(UUID(parentCollectionId)) == true)
+          }
+        }
+      }
+      if (ds.nonEmpty && ds.head.id != datasetList.head.id) {
+        first
+      } else {
+        ""
+      }
+    } else {
+      ""
+    }
+
+    // check to see if there is a next page
+    val next = if (datasetList.nonEmpty) {
+      val last = Formatters.iso8601(datasetList.last.created)
+      val ds = person match {
+        case Some(p) => (datasets.listUser(last, nextPage=true, 1, request.user, request.superAdmin, p)).filter((d : Dataset) => d.collections.contains(UUID(parentCollectionId)) == true)
+        case None => {
+          space match {
+            case Some(s) => (datasets.listSpace(last, nextPage=true, 1, s)).filter((d : Dataset) => d.collections.contains(UUID(parentCollectionId)) == true)
+            case None => (datasets.listAccess(last, nextPage=true, 1, Set[Permission](Permission.ViewDataset), request.user, request.superAdmin)).filter((d : Dataset) => d.collections.contains(UUID(parentCollectionId)) == true)
+          }
+        }
+      }
+      if (ds.nonEmpty && ds.head.id != datasetList.last.id) {
+        last
+      } else {
+        ""
+      }
+    } else {
+      ""
+    }
+
+    val commentMap = datasetList.map { dataset =>
+      var allComments = comments.findCommentsByDatasetId(dataset.id)
+      dataset.files.map { file =>
+        allComments ++= comments.findCommentsByFileId(file)
+        sections.findByFileId(file).map { section =>
+          allComments ++= comments.findCommentsBySectionId(section.id)
+        }
+      }
+      dataset.id -> allComments.size
+    }.toMap
+
+    //Modifications to decode HTML entities that were stored in an encoded fashion as part
+    //of the datasets names or descriptions
+    val decodedDatasetList = ListBuffer.empty[models.Dataset]
+    for (aDataset <- datasetList) {
+      decodedDatasetList += Utils.decodeDatasetElements(aDataset)
+    }
+
+    //Code to read the cookie data. On default calls, without a specific value for the mode, the cookie value is used.
+    //Note that this cookie will, in the long run, pertain to all the major high-level views that have the similar
+    //modal behavior for viewing data. Currently the options are tile and list views. MMF - 12/14
+    val viewMode: Option[String] =
+      if (mode == null || mode == "") {
+        request.cookies.get("view-mode") match {
+          case Some(cookie) => Some(cookie.value)
+          case None => None //If there is no cookie, and a mode was not passed in, the view will choose its default
+        }
+      } else {
+        Some(mode)
+      }
+
+    //Pass the viewMode into the view
+    Ok(views.html.datasetList(decodedDatasetList.toList, commentMap, prev, next, limit, viewMode, space, title, owner))
+  }
+
+
   def addViewer(id: UUID, user: Option[securesocial.core.Identity]) = {
       user match{
             case Some(viewer) => {
@@ -487,10 +616,10 @@ class Datasets @Inject()(
   }
 
   /**
-   * Controller flow that handles the new multi file uploader workflow for creating a new dataset. Requires name, description, 
+   * Controller flow that handles the new multi file uploader workflow for creating a new dataset. Requires name, description,
    * and id for the dataset. The interface should validate to ensure that these are present before reaching this point, but
-   * the checks are made here as well. 
-   * 
+   * the checks are made here as well.
+   *
    */
   def submit() = PermissionAction(Permission.CreateDataset)(parse.multipartFormData) { implicit request =>
     implicit val user = request.user
