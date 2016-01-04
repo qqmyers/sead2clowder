@@ -3,7 +3,7 @@
 <h3>Collections</h3>
 @if(childCollections.size == 0) {
     @if(user.isDefined &&  Permission.checkPermission(Permission.EditCollection, ResourceRef(ResourceRef.collection, UUID(parentCollectionId)))) {
-        <a id="create-collection"href="@routes.Collections.newCollection(Some(parentCollectionId))" class="btn btn-primary btn-xs">
+        <a id="create-collection"href="@routes.Collections.newCollectionWithParent(Some(parentCollectionId))" class="btn btn-primary btn-xs">
             <span class="glyphicon glyphicon-ok"></span> Create Collection
         </a>
     } else {

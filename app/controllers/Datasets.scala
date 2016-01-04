@@ -341,33 +341,33 @@ class Datasets @Inject()(
       case Some(p) => {
         space match {
           case Some(s) => {
-            title = Some(person.get.fullName + "'s Datasets in Space " + datasetSpace.get.name)
+            title = Some(person.get.fullName + "'s Datasets in Space!!! " + datasetSpace.get.name)
           }
           case None => {
-            title = Some(person.get.fullName + "'s Datasets")
+            title = Some(person.get.fullName + "'s Datasets!!!")
           }
         }
         if (date != "") {
-          datasets.listUser(date, nextPage, limit, request.user, request.superAdmin, p)
+          (datasets.listUser(date, nextPage, limit, request.user, request.superAdmin, p)).filter((d : Dataset) => d.collections.contains(UUID(parentCollectionId)) == true)
         } else {
-          datasets.listUser(limit, request.user, request.superAdmin, p)
+          (datasets.listUser(limit, request.user, request.superAdmin, p)).filter((d : Dataset) => d.collections.contains(UUID(parentCollectionId)) == true)
         }
       }
       case None => {
         space match {
           case Some(s) => {
-            title = Some("Datasets in Space " + datasetSpace.get.name)
+            title = Some("Datasets in Space!!! " + datasetSpace.get.name)
             if (date != "") {
-              datasets.listSpace(date, nextPage, limit, s)
+              (datasets.listSpace(date, nextPage, limit, s)).filter((d : Dataset) => d.collections.contains(UUID(parentCollectionId)) == true)
             } else {
-              datasets.listSpace(limit, s)
+              (datasets.listSpace(limit, s)).filter((d : Dataset) => d.collections.contains(UUID(parentCollectionId)) == true)
             }
           }
           case None => {
             if (date != "") {
-              datasets.listAccess(date, nextPage, limit, Set[Permission](Permission.ViewDataset), request.user, request.superAdmin)
+              (datasets.listAccess(date, nextPage, limit, Set[Permission](Permission.ViewDataset), request.user, request.superAdmin)).filter((d : Dataset) => d.collections.contains(UUID(parentCollectionId)) == true)
             } else {
-              datasets.listAccess(limit, Set[Permission](Permission.ViewDataset), request.user, request.superAdmin)
+              (datasets.listAccess(limit, Set[Permission](Permission.ViewDataset), request.user, request.superAdmin)).filter((d : Dataset) => d.collections.contains(UUID(parentCollectionId)) == true)
             }
 
           }
@@ -375,7 +375,7 @@ class Datasets @Inject()(
       }
     }
 
-    datasetList = datasetList.filter((d : Dataset) => d.collections.contains(UUID(parentCollectionId)) == true)
+    //datasetList = datasetList.filter((d : Dataset) => d.collections.contains(UUID(parentCollectionId)) == true)
 
     // check to see if there is a prev page
     val prev = if (datasetList.nonEmpty && date != "") {

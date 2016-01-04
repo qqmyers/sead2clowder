@@ -5,7 +5,7 @@
     Most recent collections:
     <span class="pull-right">
         @if(user.isDefined && Permission.checkPermission(Permission.EditCollection, ResourceRef(ResourceRef.collection, UUID(parentCollectionId)))) {
-            <a id="create-collection" href="@routes.Collections.newCollection(Some(parentCollectionId))" class="btn btn-link btn-xs"><span class="glyphicon glyphicon-ok"></span>
+            <a id="create-collection" href="@routes.Collections.newCollectionWithParent(Some(parentCollectionId))" class="btn btn-link btn-xs"><span class="glyphicon glyphicon-ok"></span>
                 Create Collection
             </a>
         }
