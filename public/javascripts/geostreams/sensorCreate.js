@@ -57,6 +57,29 @@ $(document).ready(function() {
     }
   });
 
+  // set the link to sensor types dynamically - TODO store this in the sensor config
+  var sensorTypesUrl = "https://opensource.ncsa.illinois.edu/confluence/display/IMLCZO/Data+Types";
+  var sensorTypesUrlElement = $("#sensorTypesUrl");
+  sensorTypesUrlElement.attr('href', sensorTypesUrl);
+
+  // set the sensor types dynamically - TODO store this in the sensor config
+  var sensorTypes = {
+    1: "1 Instrument, 1 Measurement, No Depth, No Time-Series",
+    2: "1 Instrument, 1 Measurement, No Depth, Yes Time-Series",
+    3: "1 Instrument, Many Measurements, No Depth, No Time-Series",
+    4: "1 Instrument, Many Measurements, No Depth, Yes Time-Series",
+    5: "Many Instruments, 1 Measurement, Many Depths, Yes Time-Series",
+    6: "Many Instruments, Many Measurements, Many Depths, Yes Time-Series",
+    7: "1 Instrument, Many Measurements, One Depth, Yes Time-Series"
+  };
+
+  var sensorType = $("#sensorType");
+  sensorType.empty();
+  $.each(sensorTypes, function(key, value) {
+    sensorType.append($("<option></option>").attr("value", key).text(value));
+  });
+
+
   var insertInstrumentForm = function(data) {
     var instrumentTemplate = Handlebars.getTemplate("/assets/templates/sensors/stream-form");
     $("#instruments").append(instrumentTemplate(data));
@@ -82,7 +105,8 @@ $(document).ready(function() {
   });
 
 
-  $("#sensorType").on('change', function() {
+  // TODO store this in the sensor config
+  sensorType.on('change', function() {
     var sensorType = $(this).val();
     var hasDepth = $("#hasDepth");
     var sensorTypeSensorCount = $("#sensorTypeSensorCount");
@@ -117,12 +141,13 @@ $(document).ready(function() {
   // enable tooltips
   $('[data-toggle="tooltip"]').tooltip();
 
-  var sensorsValid = true;
   $("#formSubmit").click(function(event) {
     event.preventDefault();
     if (!sensorForm.valid()) {
       return;
     }
+    var sensorsValid = true;
+
     $('.stream-tmpl').each(function() {
 
       $(this).validate({
@@ -154,6 +179,7 @@ $(document).ready(function() {
     data.geometry.coordinates[1] = +$("#sensorLocationLat").val();
     data.properties.type.id = $("#sensorDataSource").val().toLowerCase();
     data.properties.type.title = $("#sensorDataSource").val();
+    data.properties.type.sensorType = +$("#sensorType").val();
     data.properties.region = $("#sensorRegion").val();
 
     var sensorPOSTpromise = deferredPost(mediciSensorsURL, JSON.stringify(data));
@@ -193,21 +219,4 @@ $(document).ready(function() {
 
 
   });
-
-  if (window.L) {
-    var map = L.map('map', {scrollWheelZoom: false}).setView([39, -90 ], 5);
-
-    L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
-    }).addTo(map);
-
-    var marker = L.marker([39, -90], {draggable: true});
-    marker.addTo(map);
-    marker.on('dragend', function(event){
-      $('#sensorLocationLat').val(event.target._latlng.lat);
-      $('#sensorLocationLong').val(event.target._latlng.lng);
-    })
-  } else {
-    console.log('no L found');
-  }
 });
