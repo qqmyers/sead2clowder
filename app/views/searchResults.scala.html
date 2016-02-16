@@ -37,7 +37,7 @@
 						<dd>@file.contentType</dd>
 						<dt>Uploaded on:</dt>
 						<dd>@file.uploadDate</dd>
-						<dt>Dataset name(s):</dt>
+						<dt>Dataset:</dt>
 						<dd>
 							@for(currMapping <- mapdatasetIds.get(file.id.toString).get){
 								<a href="@(routes.Datasets.dataset(UUID(currMapping._1.trim)))">@currMapping._2.trim</a><br/>
@@ -70,11 +70,11 @@
 			</div>
 			<div class="col-md-10">
 				<dl class="dl-horizontal">
-					<dt> Name:</dt>
+					<dt>Name:</dt>
 					<dd><a href="@(routes.Datasets.dataset(dataset.id))">@Html(dataset.name)</a></dd>
-					<dt>  Descriptions:</dt>
-					<dd> @Html(dataset.description)</dd>
-					<dt>Collection name(s):</dt>
+					<dt>Description:</dt>
+					<dd>@Html(dataset.description)</dd>
+					<dt>Collection:</dt>
 					<dd>
 						@for(currMapping <- mapcollectionIds.get(dataset.id.toString).get){
 							<a href="@(routes.Collections.collection(UUID(currMapping._1.trim)))">@currMapping._2.trim</a><br/>
@@ -106,10 +106,10 @@
 			</div>
 			<div class="col-md-10">
 				<dl class="dl-horizontal">
-					<dt> Name:</dt>
+					<dt>Name:</dt>
 					<dd><a href="@(routes.Collections.collection(collection.id))">@Html(collection.name)</a></dd>
-					<dt>  Description:</dt>
-					<dd> @Html(collection.description)</dd>
+					<dt>Description:</dt>
+					<dd>@Html(collection.description)</dd>
 				</dl>
 			</div>
 		</div>
