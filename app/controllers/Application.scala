@@ -46,6 +46,10 @@ class Application @Inject() (files: FileService, collections: CollectionService,
     var newsfeedEvents = user.fold(List.empty[Event])(u => events.getEvents(u.followedEntities, Some(20)).sorted(Ordering.by((_: Event).created).reverse))
     newsfeedEvents =  (newsfeedEvents ::: events.getRequestEvents(user, Some(20)))
       .sorted(Ordering.by((_: Event).created).reverse).take(20)
+    if (newsfeedEvents.size < 5) {
+      newsfeedEvents =  (newsfeedEvents ::: events.getUserEvents(user.getOrElse(User.anonymous).id, Some(20)))
+        .sorted(Ordering.by((_: Event).created).reverse).take(10)
+    }
     user match {
       case Some(clowderUser) if !clowderUser.active => {
         Redirect(routes.Error.notActivated())

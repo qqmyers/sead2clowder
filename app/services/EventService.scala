@@ -63,7 +63,7 @@ trait EventService {
 	def getEvents(id: String, id_type: String, limit: Option[Integer]): SalatMongoCursor[Event]
 
 	/**
-	* Get limit number of events which come after a specificied time
+	* Get limit number of events which come after a specified time
 	*/
 
 	def getEventsByTime(followedEntities:List[TypedID], time: Date, limit: Option[Integer]): List[Event]
@@ -77,6 +77,11 @@ trait EventService {
 	 * Get the request event and loginuser is targetuser
 	 */
 	def getRequestEvents( targetuser: Option[User], limit: Option[Integer]): List[Event]
+
+	/**
+		* Get the User related events, used when news feed is empty
+		*/
+	def getUserEvents( userId: UUID, limit: Option[Integer]): List[Event]
 
 }
 

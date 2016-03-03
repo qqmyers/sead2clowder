@@ -12,11 +12,7 @@ import com.mongodb.casbah.commons.MongoDBObject
 import com.mongodb.casbah.Imports._
 import com.novus.salat.dao.SalatMongoCursor
 
-/**
- * @author Varun Kethineedi
- */
 class MongoDBEventService extends EventService {
-
 
   def listEvents(): List[Event] = {
     (for (event <- Event.find(MongoDBObject())) yield event).toList
@@ -144,7 +140,6 @@ class MongoDBEventService extends EventService {
        case Some(modeluser) => {
          val eventList = Event.find(
            MongoDBObject(
-             // "targetuser" -> MongoDBObject( "_id" -> new ObjectId(targetuser.id.stringify))
              "targetuser._id" -> new ObjectId(modeluser.id.stringify)
            )
          ).toList
@@ -159,7 +154,16 @@ class MongoDBEventService extends EventService {
      }
    }
 
-
+  def getUserEvents( userId: UUID, limit: Option[Integer]): List[Event] ={
+    val orlist = scala.collection.mutable.ListBuffer.empty[MongoDBObject]
+    orlist += MongoDBObject("user._id" -> new ObjectId(userId.toString))
+    orlist += MongoDBObject("object_id" -> new ObjectId(userId.toString))
+    val eventList = Event.find(($or(orlist.map(_.asDBObject)))).toList
+    limit match {
+      case Some(x) => eventList.take(x)
+      case None => eventList
+    }
+  }
 }
 
 object Event extends ModelCompanion[Event, ObjectId] {
