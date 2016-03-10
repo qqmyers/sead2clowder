@@ -147,6 +147,7 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
     collections.get(collectionId) match {
       case Some(collection) => {
         events.addObjectEvent(request.user , collection.id, collection.name, "delete_collection")
+        collection.parent_collection_ids.map( parent => collections.removeSubCollection(parent, collectionId, true))
         collections.delete(collectionId)
         current.plugin[AdminsNotifierPlugin].foreach {
           _.sendAdminsNotification(Utils.baseUrl(request),"Collection","removed",collection.id.stringify, collection.name)
