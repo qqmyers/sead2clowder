@@ -18,6 +18,7 @@ object Permission extends Enumeration {
     DeleteSpace,
     EditSpace,
     AddResourceToSpace,
+    RemoveResourceFromSpace,
     EditStagingArea,
 
     // datasets

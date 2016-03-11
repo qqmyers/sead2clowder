@@ -43,7 +43,6 @@ function addCollectionToSpace(id) {
     return false;
 }
 
-
 function removeCollectionFromSpace(spaceId, id, event){
 
     var request = jsRoutes.api.Spaces.removeCollection(spaceId, id).ajax({
@@ -64,6 +63,28 @@ function removeCollectionFromSpace(spaceId, id, event){
     return false;
 }
 
+//Method to remove the collection from space and redirect back to a specific URL on completion
+function removeCollectionFromSpaceAndRedirect(spaceId, collectionId, url){
+    if(url === undefined) reloadPage = "/spaces";
+
+    var request = jsRoutes.api.Spaces.removeCollection(spaceId, collectionId).ajax({
+        type: 'POST'
+    });
+
+    request.done(function (response, textStatus, jqXHR){
+        $('#col_'+spaceId).remove();
+        //console.log("Response " + response);
+        window.location.href=url;
+    });
+
+    request.fail(function (jqXHR, textStatus, errorThrown){
+        console.error("The following error occured: " + textStatus, errorThrown);
+        var errMsg = "You must be logged in to remove a collection from a space.";
+        if (!checkErrorAndRedirect(jqXHR, errMsg)) {
+            notify("The collection was not removed from the space due to : " + errorThrown, "error");
+        }
+    });
+}
 
 function addDatasetToSpace(id) {
     var selectedId = $("#spaceAddSelect").val();
@@ -104,9 +125,8 @@ function addDatasetToSpace(id) {
 }
 
 
-function removeDatasetFromSpace(spaceId, id, event){
-
-    var request = jsRoutes.api.Spaces.removeDataset(spaceId, id).ajax({
+function removeDatasetFromSpace(spaceId, datasetId, event){
+    var request = jsRoutes.api.Spaces.removeDataset(spaceId, datasetId).ajax({
         type: 'POST'
     });
 
@@ -124,6 +144,28 @@ function removeDatasetFromSpace(spaceId, id, event){
     return false;
 }
 
+//Method to remove the dataset from space and redirect back to a specific URL on completion
+function removeDatasetFromSpaceAndRedirect(spaceId, datasetId, url){
+    if(url === undefined) reloadPage = "/spaces";
+
+    var request = jsRoutes.api.Spaces.removeDataset(spaceId, datasetId).ajax({
+        type: 'POST'
+    });
+
+    request.done(function (response, textStatus, jqXHR){
+        $('#col_'+spaceId).remove();
+        //console.log("Response " + response);
+        window.location.href=url;
+    });
+
+    request.fail(function (jqXHR, textStatus, errorThrown){
+        console.error("The following error occured: " + textStatus, errorThrown);
+        var errMsg = "You must be logged in to remove a dataset from a space.";
+        if (!checkErrorAndRedirect(jqXHR, errMsg)) {
+            notify("The dataset was not removed from the space due to : " + errorThrown, "error");
+        }
+    });
+}
 
 function updateSpaceEditLink(space_id, space_name) {
     $('#space_link').attr("href", jsRoutes.controllers.Spaces.getSpace(space_id).url).text(space_name);

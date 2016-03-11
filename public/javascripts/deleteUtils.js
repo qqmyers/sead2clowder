@@ -1,9 +1,8 @@
-// Functions to Confirm deleting resources.
+// Functions to Confirm deleting or removing resources.
 //
-//Created by mo on 2/2/16.
+//Created by mo on 3/2/16.
 function confirmDeleteResource(resourceType, resourceId, resourceName, url) {
     var msg = "Are you sure you want to delete the " + resourceType + " '" + resourceName + "'?";
-
     var modalHTML = confirmDeleteTemplate(msg);
 
     $(document).on("click", "#OKModalButton", function(event) {
@@ -16,6 +15,40 @@ function confirmDeleteResource(resourceType, resourceId, resourceName, url) {
             removeCollectionAndRedirect(resourceId, url);
         } else if (resourceType == "space") {
             removeSpaceAndRedirect(resourceId, url);
+        }
+    });
+
+    var confirmModal = $(modalHTML);
+    confirmModal.modal("show");
+}
+
+function confirmRemoveResourceFromSpaceEvent(spaceId, resourceType, resourceId, event) {
+    var msg = "Are you sure you want to remove the " + resourceType + " from the space?";
+    var modalHTML = confirmDeleteTemplate(msg);
+
+    $(document).on("click", "#OKModalButton", function(event) {
+        confirmModal.modal("hide");
+        if (resourceType == "dataset") {
+            removeDatasetFromSpace(spaceId, resourceId, event);
+        } else if (resourceType == "collection") {
+            removeCollectionFromSpace(spaceId, resourceId, event);
+        }
+    });
+
+    var confirmModal = $(modalHTML);
+    confirmModal.modal("show");
+}
+
+function confirmRemoveResourceFromSpace(spaceId, resourceType, resourceId, resourceName, url) {
+    var msg = "Are you sure you want to remove the " + resourceType + " '" + resourceName + "' from this space?";
+    var modalHTML = confirmDeleteTemplate(msg);
+
+    $(document).on("click", "#OKModalButton", function(event) {
+        confirmModal.modal("hide");
+        if (resourceType == "dataset") {
+            removeDatasetFromSpaceAndRedirect(spaceId, resourceId, url);
+        } else if (resourceType == "collection") {
+            removeCollectionFromSpaceAndRedirect(spaceId, resourceId, url);
         }
     });
 
