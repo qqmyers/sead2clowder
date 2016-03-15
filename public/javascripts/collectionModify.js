@@ -23,13 +23,12 @@ function addCollectionToParentCollection(id) {
         var o = $.parseJSON(jqXHR.responseText);
         var txt = '<div id="col_'+selectedId+'" class="row bottom-padding">' +
             '<div class="col-md-2"></div>' +
-            '<div class="col-md-10"><div><a href="'+jsRoutes.controllers.Collections.collection(selectedId).url+'" id='+selectedId+' class ="collection">'+selectedName+'</a></div>' +
-            '<div>';
-        if (o.childCollectionsCount == 1) {
-            txt = txt + o.childCollectionsCount +' collection';
-        } else {
-            txt = txt + o.childCollectionsCount +' collections';
-        }
+            '<div class="col-md-10">' +
+            '<div><a href="'+jsRoutes.controllers.Collections.collection(selectedId).url+'" id='+selectedId+' class ="collection">'+selectedName+'</a> ' +
+            '<span class="glyphicon glyphicon glyphicon-file" title="Child collections in this collection."></span>';
+        txt = txt + o.childCollectionsCount;
+        txt = txt + '</div>';
+        txt = txt + '</div>';
         $("#collectionsList").append(txt);
         $("#collectionAddSelect").select2("val", "");
     });
@@ -59,15 +58,15 @@ function addDatasetToCollection(id) {
         var o =$.parseJSON(jqXHR.responseText);
         var txt = '<div id="col_'+selectedId+'" class="row bottom-padding">' +
             '<div class="col-md-2"></div>' +
-            '<div class="col-md-10"><div><a href="'+jsRoutes.controllers.Collections.collection(selectedId).url+'" id='+selectedId+' class ="collection">'+selectedName+'</a></div>' +
-            '<div>';
-        if (o.datasetCount == 1) {
-            txt = txt + o.datasetCount +' dataset';
-        } else {
-            txt = txt + o.datasetCount +' datasets';
-        }
-        txt = txt + ' | <a href="#" class="btn btn-link btn-xs" onclick="removeDataset(\''+selectedId+'\', \''+id+'\', event)" title="Remove from space">' +
-            '<span class="glyphicon glyphicon-remove"></span> Remove</a></div></div></div>';
+            '<div class="col-md-10">' +
+            '<div><a href="'+jsRoutes.controllers.Collections.collection(selectedId).url+'" id='+selectedId+' class ="collection">'+selectedName+'</a> ' +
+            '<span class="glyphicon glyphicon glyphicon-file" title="datasets in this collection"></span>';
+        txt = txt + o.datasetCount;
+        //onclick="removeDataset(\''+selectedId+'\', \''+id+'\', event)" title="Remove from space">'
+        txt = txt + ' | <button class="btn btn-link btn-xs" onclick="confirmRemoveResourceFromResourceEvent(\'collection\',\''+selectedId+'\',\'dataset\',\''+id+'\', event)" title="Remove the dataset from the collection">' +
+            '<span class="glyphicon glyphicon-remove"></span> Remove</button>';
+        txt = txt + '</div>';
+        txt = txt + '</div>';
         $("#collectionsList").append(txt);
         $("#collectionAddSelect").select2("val", "");
     });

@@ -16,13 +16,7 @@
                 <div class="col-md-10">
                     <div>
                         <a href="@routes.Collections.collection(p.id)" id='@p.id' class ="collection">@Html(p.name)</a>
-                    </div>
-                    <div>
-                    @if(p.childCollectionsCount ==1){
-                        1 collection
-                    } else {
-                        @p.childCollectionsCount collections
-                    }
+                        <span class="glyphicon glyphicon glyphicon-th-large" title="collections in the parent collection"></span> @p.childCollectionsCount
                     </div>
                 </div>
             </div>
@@ -53,6 +47,7 @@
 <script src="@routes.Assets.at("javascripts/chosen.jquery.js")" type="text/javascript"></script>
 <script src="@routes.Assets.at("javascripts/collectionModify.js")" type="text/javascript"></script>
 <script src="@routes.Assets.at("javascripts/datasets/collections.js")" type="text/javascript"></script>
+<script src="@routes.Assets.at("javascripts/deleteUtils.js")" type="text/javascript"></script>
 <script src="@routes.Assets.at("javascripts/collectionChildCollectionsList.js")" type="text/javascript"></script>
 
 <script language="javascript">

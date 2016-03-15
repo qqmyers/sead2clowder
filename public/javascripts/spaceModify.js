@@ -19,15 +19,14 @@ function addCollectionToSpace(id) {
         var o = $.parseJSON(jqXHR.responseText);
         var txt = '<div id="col_'+selectedId+'" class="row bottom-padding">' +
             '<div class="col-md-2"></div>' +
-            '<div class="col-md-10"><div><a href="'+jsRoutes.controllers.Spaces.getSpace(selectedId).url+'" id='+selectedId+' class ="space">'+selectedName+'</a></div>' +
-            '<div>';
-        if (o.collectionInSpace == 1) {
-            txt = txt + o.collectionInSpace +' collection';
-        } else {
-            txt = txt + o.collectionInSpace +' collections';
-        }
-        txt = txt + ' | <a href="#" class="btn btn-link btn-xs" onclick="removeCollectionFromSpace(\''+selectedId+'\', \''+id+'\', event)" title="Remove from space">' +
-            '<span class="glyphicon glyphicon-remove"></span> Remove</a></div></div></div>';
+            '<div class="col-md-10">' +
+            '<div><a href="'+jsRoutes.controllers.Spaces.getSpace(selectedId).url+'" id='+selectedId+' class ="space">'+selectedName+'</a> ' +
+            '<span class="glyphicon glyphicon glyphicon-th-large" title="collections in this space"></span>';
+        txt = txt + o.collectionInSpace;
+        txt = txt + ' | <button class="btn btn-link btn-xs" onclick="confirmRemoveResourceFromResourceEvent(\'space\',\''+selectedId+'\',\'collection\',\''+id+'\', event)" title="Remove the collection from the space">' +
+            '<span class="glyphicon glyphicon-remove"></span> Remove</button>';
+        txt = txt + '</div>';
+        txt = txt + '</div>';
         $("#spacesList").append(txt);
         $("#spaceAddSelect").select2("val", "");
     });
@@ -100,15 +99,14 @@ function addDatasetToSpace(id) {
         var o =$.parseJSON(jqXHR.responseText);
         var txt = '<div id="col_'+selectedId+'" class="row bottom-padding">' +
             '<div class="col-md-2"></div>' +
-            '<div class="col-md-10"><div><a href="'+jsRoutes.controllers.Spaces.getSpace(selectedId).url+'" id='+selectedId+' class ="space">'+selectedName+'</a></div>' +
-            '<div>';
-        if (o.datasetsInSpace == 1) {
-            txt = txt + o.datasetsInSpace +' dataset';
-        } else {
-            txt = txt + o.datasetsInSpace +' datasets';
-        }
-        txt = txt + ' | <a href="#" class="btn btn-link btn-xs" onclick="removeDatasetFromSpace(\''+selectedId+'\', \''+id+'\', event)" title="Remove from space">' +
-            '<span class="glyphicon glyphicon-remove"></span> Remove</a></div></div></div>';
+            '<div class="col-md-10">' +
+            '<div><a href="'+jsRoutes.controllers.Spaces.getSpace(selectedId).url+'" id='+selectedId+' class ="space">'+selectedName+'</a> ' +
+            '<span class="glyphicon glyphicon glyphicon-file" title="datasets in this space"></span>';
+        txt = txt + o.datasetsInSpace;
+        txt = txt + ' | <button class="btn btn-link btn-xs" onclick="confirmRemoveResourceFromResourceEvent(\'space\',\''+selectedId+'\',\'dataset\',\''+id+'\', event)" title="Remove the dataset from the space">' +
+            '<span class="glyphicon glyphicon-remove"></span> Remove</button>';
+        txt = txt + '</div>';
+        txt = txt + '</div>';
         $("#spacesList").append(txt);
         $("#spaceAddSelect").select2("val", "");
     });

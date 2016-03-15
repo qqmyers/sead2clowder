@@ -25,19 +25,21 @@
                 @if(user.isDefined) {
                     @if(space.isDefined) {
                         @if(Permission.checkPermission(Permission.RemoveResourceFromSpace, ResourceRef(ResourceRef.collection, collection.id))) {
-                            <button onclick="confirmRemoveResourceFromSpace('@(UUID(space.getOrElse("")))','collection','@(collection.id)','@(collection.name.replace("'","&#39;"))','@redirect.url')" class="btn btn-link" title="Remove the collection from the space">
+                            <button onclick="confirmRemoveResourceFromResource('space','@(UUID(space.getOrElse("")))','collection','@(collection.id)','@(collection.name.replace("'","&#39;"))','@redirect.url')" class="btn btn-link" title="Remove the collection from the space">
                                 <span class="glyphicon glyphicon-remove"></span></button>
                         } else {
-                            <button disabled class="btn btn-link">
-                                <span class="glyphicon glyphicon-remove"></span></button>
+                            <div class="inline" title="No permission to remove from the space.">
+                                <button disabled class="btn btn-link"><span class="glyphicon glyphicon-remove"></span></button>
+                            </div>
                         }
                     } else {
                         @if(user.get.identityId.userId.equals(collection.author.identityId.userId) || Permission.checkPermission(Permission.DeleteCollection, ResourceRef(ResourceRef.collection, collection.id))) {
                             <button onclick="confirmDeleteResource('collection','@(collection.id)','@(collection.name.replace("'","&#39;"))','@redirect.url')" class="btn btn-link" title="Delete the collection">
                                 <span class="glyphicon glyphicon-trash"></span></button>
                         } else {
-                            <button disabled class="btn btn-link">
-                                <span class="glyphicon glyphicon-trash"></span></button>
+                            <div class="inline" title="No permission to delete collection.">
+                                <button disabled class="btn btn-link"><span class="glyphicon glyphicon-trash"></span></button>
+                            </div>
                         }
                     }
                 }
