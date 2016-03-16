@@ -698,3 +698,21 @@ GET         /api/vocabularies/:name/getByNameAuthor                             
 
 POST        /api/vocabularies/:vocab_id/addToSpace/:space_id                            @api.Vocabularies.addToSpace(vocab_id: UUID, space_id : UUID)
 POST        /api/vocabuliaries/:vocab_id/removeFromSpace/:space_id                      @api.Vocabularies.removeFromSpace(vocab_id: UUID, space_id : UUID)
+
+# ----------------------------------------------------------------------
+# TEMPLATES ENDPOINT
+# ----------------------------------------------------------------------
+
+POST        /t2c2/templates/createExperimentTemplate                                                   @api.Vocabularies.createVocabularyFromForm()
+GET         /t2c2/templates/listExperimentTemplates                                                    @api.Vocabularies.list()
+GET         /t2c2/templates/getExperimentTemplateById/:id                                              @api.Vocabularies.get(id: UUID)
+GET         /t2c2/templates/getExperimentTemplateByName/:name                                          @api.Vocabularies.getByName(name : String)
+POST        /t2c2/templates/getExperimentTemplateByDescription                                         @api.Vocabularies.findByDescription()
+DELETE      /t2c2/templates/deleteTemplate/:id                                                         @api.Vocabularies.removeVocabulary(id: UUID)
+
+#----------------------------------------------------
+# T2C2 endpoints
+#----------------------------------------------------
+
+POST        /t2c2/uploadToDataset/:id                                                                   @api.Files.uploadToDatasetWithDescription(id: UUID, showPreviews: String ?= "DatasetLevel", originalZipFile: String ?= "", flags: String ?= "")
+PUT         /t2c2/files/:id/updateDescription                                                           @api.Files.updateDescription(id: UUID)

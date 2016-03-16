@@ -911,6 +911,46 @@ class Files @Inject()(
     }
   }
 
+  @ApiOperation(value = "Upload a file to a specific dataset",
+    notes = "Uploads the file, then links it with the dataset. Returns file id as JSON object, or ids with filenames if multiple files are sent. ID can be used to work on the file using the API. Uploaded file can be an XML metadata file to be added to the dataset.",
+    responseClass = "None", httpMethod = "POST")
+  def uploadToDatasetWithDescription(dataset_id: UUID, showPreviews: String="DatasetLevel", originalZipFile: String = "", flagsFromPrevious: String = "") () = PermissionAction(Permission.CreateDataset, Some(ResourceRef(ResourceRef.dataset, dataset_id)))(parse.multipartFormData) { implicit request =>
+    request.user match {
+      case Some(user) => {
+        datasets.get(dataset_id) match {
+          case Some(dataset) => {
+            val creator_url = controllers.routes.Profile.viewProfileUUID(user.id).absoluteURL()
+            val uploaded_files = uploadFiles(request, user, creator_url, dataset, showPreviews=showPreviews, originalZipFile=originalZipFile, flagsFromPrevious=flagsFromPrevious)
+            if (uploaded_files.length == 1) {
+              // Only one file was uploaded so return its ID only
+              var formDesc = request.body.asFormUrlEncoded.getOrElse("description", null)
+
+              var desc = ""
+
+              try {
+                desc = formDesc(0)
+              }  catch {
+                case e : Exception => Logger.debug("cannot obtain description")
+              }
+
+              files.updateDescription(uploaded_files(0).id, desc)
+
+              Ok(toJson(Map("id" -> uploaded_files(0).id)))
+            } else {
+              // If multiple files, return the full list of IDs with their filenames
+              Ok(toJson(Map("ids" -> uploaded_files.toList)))
+            }
+          }
+          case None => {
+            Logger.error("Error getting dataset" + dataset_id);
+            InternalServerError
+          }
+        }
+      }
+      case None => BadRequest(toJson("Not authorized."))
+    }
+  }
+
   /**
    * Upload intermediate file of extraction chain using multipart form enconding and continue chaining.
    */
@@ -1994,6 +2034,7 @@ class Files @Inject()(
       case None => BadRequest("No file exists with that id")
     }
   }
+
 
   /**
    * List datasets satisfying a user metadata search tree.
