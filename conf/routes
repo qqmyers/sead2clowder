@@ -682,3 +682,19 @@ GET            /spaces/curations/:id/updatedFilesAndFolders                     
 
 
 POST           /sendEmail                                                               @api.Events.sendExceptionEmail()
+
+# ----------------------------------------------------------------------
+# VOCABULARIES API
+# ----------------------------------------------------------------------
+
+GET         /api/vocabularies/list                                                      @api.Vocabularies.list()
+POST        /api/vocabularies/createVocabulary                                          @api.Vocabularies.createVocabularyFromForm()
+GET         /api/vocabularies/getByAuthor                                               @api.Vocabularies.getByAuthor()
+POST        /api/vocabularies/findByDescription                                        @api.Vocabularies.findByDescription()
+
+GET         /api/vocabularies/:vocab_id                                                 @api.Vocabularies.get(vocab_id : UUID)
+GET         /api/vocabularies/:name                                                     @api.Vocabularies.getByName(name : String)
+GET         /api/vocabularies/:name/getByNameAuthor                                     @api.Vocabularies.getByNameAndAuthor(name: String)
+
+POST        /api/vocabularies/:vocab_id/addToSpace/:space_id                            @api.Vocabularies.addToSpace(vocab_id: UUID, space_id : UUID)
+POST        /api/vocabuliaries/:vocab_id/removeFromSpace/:space_id                      @api.Vocabularies.removeFromSpace(vocab_id: UUID, space_id : UUID)
