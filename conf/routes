@@ -645,7 +645,7 @@ GET            /users/followers                                                 
 GET            /users/following                                                         @controllers.Users.getFollowing(index: Int ?= 0, limit: Int ?=12)
 
 # ----------------------------------------------------------------------
-# MEDICI STATUS API
+# STATUS API
 # ----------------------------------------------------------------------
 GET            /api/version                                                             @api.Status.version
 GET            /api/status                                                              @api.Status.status
@@ -659,7 +659,6 @@ GET            /rss/:etype                                                      
 # ----------------------------------------------------------------------
 # CURATIONS ENDPOINT
 # ----------------------------------------------------------------------
-
 GET            /dataset/:id/curations/new                                               @controllers.CurationObjects.newCO(id:UUID, space:String ?= "")
 POST           /dataset/:id/curations/spaces/:spaceId/submit                            @controllers.CurationObjects.submit(id:UUID, spaceId:UUID)
 GET            /spaces/:id/stagingArea                                                  @controllers.Spaces.stagingArea(id: UUID, index: Int ?=0, limit: Int ?= 12)
@@ -679,5 +678,14 @@ DELETE         /spaces/curations/:id/files/:curationFileId                      
 DELETE         /spaces/curations/:id/folders/:curationFolderId                          @api.CurationObjects.deleteCurationFolder(id:UUID, parentId: UUID, curationFolderId: UUID)
 GET            /spaces/curations/:id/updatedFilesAndFolders                             @controllers.CurationObjects.getUpdatedFilesAndFolders(id: UUID, curationFolderId: String, limit: Int, pageIndex:Int)
 
+# ----------------------------------------------------------------------
+# API keys
+# ----------------------------------------------------------------------
+POST           /api/keys                                                                @api.APIKeys.createKey()
+GET            /api/keys/:key                                                           @api.APIKeys.getKeyInfo(key)
+DELETE         /api/keys/:key                                                           @api.APIKeys.deleteKey(key)
 
+# ----------------------------------------------------------------------
+# Emails
+# ----------------------------------------------------------------------
 POST           /sendEmail                                                               @api.Events.sendExceptionEmail()

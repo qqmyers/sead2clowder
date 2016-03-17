@@ -24,7 +24,6 @@ class MongoDBProjectService extends ProjectService {
 
 }
 
-
 object Project extends ModelCompanion[Project, ObjectId] {
   val dao = current.plugin[MongoSalatPlugin] match {
     case None => throw new RuntimeException("No MongoSalatPlugin");
