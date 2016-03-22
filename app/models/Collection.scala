@@ -18,8 +18,6 @@ case class Collection(
   followers: List[UUID] = List.empty,
   parent_collection_ids : List[UUID] = List.empty,
   child_collection_ids : List[UUID] = List.empty,
-  parent_collection_ids_uuids : List[UUID] = List.empty,
-  child_collection_ids_uuids : List[UUID] = List.empty,
   root_flag : Boolean = true,
   metadataCount: Long = 0,
   childCollectionsCount: Integer = 0,

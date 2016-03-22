@@ -715,7 +715,6 @@ DELETE      /t2c2/templates/deleteTemplate/:id                                  
 # T2C2 endpoints
 #----------------------------------------------------
 
-GET         /t2c2/collections/fixCollections                                                            @api.Collections.fixParentChildIds()
 GET         /api/collections/getAllCollections                                      @api.Collections.getAllCollections()
 POST        /t2c2/uploadToDataset/:id                                                                   @api.Files.uploadToDatasetWithDescription(id: UUID, showPreviews: String ?= "DatasetLevel", originalZipFile: String ?= "", flags: String ?= "")
 PUT         /t2c2/files/:id/updateDescription                                                           @api.Files.updateDescription(id: UUID)

@@ -695,20 +695,5 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
     }
   }
 
-  @ApiOperation(value = "Fixes ids",
-    responseClass = "None", httpMethod = "GET")
-  def fixParentChildIds() = PrivateServerAction{ implicit request =>
-    val user = request.user
-
-    val allCollections : List[Collection] = collections.listAllCollections()
-    for (col <- allCollections) {
-      collections.addNewUUIDFields(col)
-      //remove old fields
-      //collections.deleteOldStringIds(col)
-    }
-
-    Ok("finished")
-  }
-
 }
 
