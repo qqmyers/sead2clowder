@@ -188,5 +188,6 @@ trait CollectionService {
 
   def hasParentInSpace(collectionId : UUID, spaceId: UUID) : Boolean
 
+  def addNewUUIDFields(collection: Collection) : Try[Unit]
 
 }

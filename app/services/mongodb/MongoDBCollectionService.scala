@@ -798,6 +798,19 @@ class MongoDBCollectionService @Inject() (datasets: DatasetService, userService:
     return false
   }
 
+  def addNewUUIDFields(collection : Collection) = Try {
+    val current_child_ids = collection.child_collection_ids
+    val current_parent_ids = collection.parent_collection_ids
+
+    for (child <- current_child_ids){
+      Collection.update(MongoDBObject("_id" -> new ObjectId((collection.id.stringify))), $addToSet("child_collection_ids_uuids" -> Some(new ObjectId(child))), false, false, WriteConcern.Safe)
+    }
+    for (parent <- current_parent_ids) {
+      Collection.update(MongoDBObject("_id" -> new ObjectId(collection.id.stringify)), $addToSet("parent_collection_ids_uuids" -> Some(new ObjectId(parent))), false, false, WriteConcern.Safe)
+    }
+
+  }
+
   private def isSubCollectionIdInCollection(subCollectionId: UUID, collection: Collection) : Boolean = {
     if (collection.child_collection_ids.contains(subCollectionId)){
       return true
