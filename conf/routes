@@ -429,7 +429,7 @@ POST           /api/collections                                                 
 GET            /api/collections/rootCollections                                         @api.Collections.getRootCollections
 GET            /api/collections/topLevelCollections                                     @api.Collections.getTopLevelCollections
 GET            /api/collections/allCollections                                          @api.Collections.getAllCollections()
-
+GET            /api/collections/getAllCollections                                      @api.Collections.getAllCollections()
 # deprecrated
 GET            /api/collections/list                                                    @api.Collections.list(title: Option[String] ?= None, date: Option[String] ?= None, limit: Int ?= 12)
 POST           /api/collections/:id/follow                                              @api.Collections.follow(id: UUID, name: String)
@@ -715,6 +715,6 @@ DELETE      /t2c2/templates/deleteTemplate/:id                                  
 # T2C2 endpoints
 #----------------------------------------------------
 
-GET         /api/collections/getAllCollections                                      @api.Collections.getAllCollections()
+
 POST        /t2c2/uploadToDataset/:id                                                                   @api.Files.uploadToDatasetWithDescription(id: UUID, showPreviews: String ?= "DatasetLevel", originalZipFile: String ?= "", flags: String ?= "")
 PUT         /t2c2/files/:id/updateDescription                                                           @api.Files.updateDescription(id: UUID)
