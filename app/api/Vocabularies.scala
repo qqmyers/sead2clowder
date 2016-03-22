@@ -85,11 +85,35 @@ class Vocabularies @Inject() (vocabularyService: VocabularyService, userService 
     Ok(toJson(vocabs))
   }
 
-  @ApiOperation(value = "Create a vocabulary",
+
+  @ApiOperation(value = "Create a template",
     notes = "",
     responseClass = "None", httpMethod = "POST")
-  def createVocabulary() = PermissionAction(Permission.CreateVocabulary){ implicit request =>
-    Ok(toJson(Map("status"->"success")))
+  def createVocabularyFromJson() = AuthenticatedAction (parse.json) { implicit request =>
+    val user = request.user
+    var t : Vocabulary = null
+    user match {
+      case Some(identity) => {
+        (request.body \ "keys").asOpt[String] match {
+          case Some(keys) => {
+            val name = (request.body\"name").asOpt[String].getOrElse("")
+            val description = (request.body \ "description").asOpt[String].getOrElse("")
+            t = Vocabulary(author = Some(identity), created = new Date(),name = name,keys = keys.split(",").toList , description = description.split(',').toList)
+
+            vocabularyService.insert(t) match {
+              case Some(id) => {
+                Ok(toJson(Map("id" -> id)))
+              }
+              case None => Ok("ok")
+            }
+
+          }
+          case None => Ok("no keys")
+        }
+
+      }
+      case None => Ok("no user")
+    }
   }
 
 

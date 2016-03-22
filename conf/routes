@@ -690,7 +690,7 @@ POST           /sendEmail                                                       
 GET         /api/vocabularies/list                                                      @api.Vocabularies.list()
 POST        /api/vocabularies/createVocabulary                                          @api.Vocabularies.createVocabularyFromForm()
 GET         /api/vocabularies/getByAuthor                                               @api.Vocabularies.getByAuthor()
-POST        /api/vocabularies/findByDescription                                        @api.Vocabularies.findByDescription()
+POST        /api/vocabularies/findByDescription                                         @api.Vocabularies.findByDescription()
 
 GET         /api/vocabularies/:vocab_id                                                 @api.Vocabularies.get(vocab_id : UUID)
 GET         /api/vocabularies/:name                                                     @api.Vocabularies.getByName(name : String)
@@ -703,8 +703,9 @@ POST        /api/vocabuliaries/:vocab_id/removeFromSpace/:space_id              
 # TEMPLATES ENDPOINT
 # ----------------------------------------------------------------------
 
-POST        /t2c2/templates/createExperimentTemplate                                                   @api.Vocabularies.createVocabularyFromForm()
-GET         /t2c2/templates/listExperimentTemplates                                                    @api.Vocabularies.list()
+POST        /t2c2/templates/createExperimentTemplate                                      @api.Vocabularies.createVocabularyFromForm()
+POST        /t2c2/templates/createExperimentTemplateFromJson                              @api.Vocabularies.createVocabularyFromJson()
+GET         /t2c2/templates/listExperimentTemplates                                       @api.Vocabularies.list()
 GET         /t2c2/templates/getExperimentTemplateById/:id                                              @api.Vocabularies.get(id: UUID)
 GET         /t2c2/templates/getExperimentTemplateByName/:name                                          @api.Vocabularies.getByName(name : String)
 POST        /t2c2/templates/getExperimentTemplateByDescription                                         @api.Vocabularies.findByDescription()
@@ -714,5 +715,6 @@ DELETE      /t2c2/templates/deleteTemplate/:id                                  
 # T2C2 endpoints
 #----------------------------------------------------
 
+GET         /api/collections/getAllCollections                                      @api.Collections.getAllCollections()
 POST        /t2c2/uploadToDataset/:id                                                                   @api.Files.uploadToDatasetWithDescription(id: UUID, showPreviews: String ?= "DatasetLevel", originalZipFile: String ?= "", flags: String ?= "")
 PUT         /t2c2/files/:id/updateDescription                                                           @api.Files.updateDescription(id: UUID)
