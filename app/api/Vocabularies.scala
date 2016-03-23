@@ -104,15 +104,15 @@ class Vocabularies @Inject() (vocabularyService: VocabularyService, userService 
               case Some(id) => {
                 Ok(toJson(Map("id" -> id)))
               }
-              case None => Ok("ok")
+              case None => BadRequest("could not create or save")
             }
 
           }
-          case None => Ok("no keys")
+          case None => BadRequest("no keys supplied")
         }
 
       }
-      case None => Ok("no user")
+      case None => BadRequest("no user supplied")
     }
   }
 
