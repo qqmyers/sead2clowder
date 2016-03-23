@@ -703,7 +703,7 @@ POST        /api/vocabuliaries/:vocab_id/removeFromSpace/:space_id              
 # TEMPLATES ENDPOINT
 # ----------------------------------------------------------------------
 
-POST        /t2c2/templates/createExperimentTemplate                                      @api.Vocabularies.createVocabularyFromForm()
+POST        /t2c2/templates/createExperimentTemplate                                      @api.Vocabularies.createVocabularyFromJson()
 POST        /t2c2/templates/createExperimentTemplateFromJson                              @api.Vocabularies.createVocabularyFromJson()
 GET         /t2c2/templates/listExperimentTemplates                                       @api.Vocabularies.list()
 GET         /t2c2/templates/getExperimentTemplateById/:id                                              @api.Vocabularies.get(id: UUID)
