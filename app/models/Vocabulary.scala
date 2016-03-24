@@ -24,7 +24,7 @@ object Vocabulary{
     def writes(vocabulary : Vocabulary) : JsValue = {
       val vocabularyAuthor = vocabulary.author.get.identityId.userId
       Json.obj("id" -> vocabulary.id.toString,"author" -> vocabularyAuthor, "name" -> vocabulary.name,
-        "keys" -> vocabulary.keys.toList, "description" -> vocabulary.description.toList)
+        "keys" -> vocabulary.keys.toList.toString, "description" -> vocabulary.description.toList)
     }
   }
 }

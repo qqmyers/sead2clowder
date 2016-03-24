@@ -260,7 +260,7 @@ class Vocabularies @Inject() (vocabularyService: VocabularyService, userService 
 
 
   def jsonVocabulary(vocabulary : Vocabulary): JsValue = {
-    toJson(Map("id" -> vocabulary.id.toString, "name" -> vocabulary.name, "keys" -> vocabulary.keys, "description" -> vocabulary.description))
+    toJson(Map("id" -> vocabulary.id.toString, "name" -> vocabulary.name, "keys" -> vocabulary.keys.mkString(","), "description" -> vocabulary.description.mkString(",")))
   }
 
 }
