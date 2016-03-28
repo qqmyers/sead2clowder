@@ -5,18 +5,144 @@
     <div class="row">
         <div class="panel panel-default">
             <div class="panel-body">
-                <form class="form top-padding">
-                    <div class="form-group col-lg-4 col-md-4">
-                        <select id="add-metadata-select">
-                            <option value=""></option>
-                        </select>
-                    </div>
-                    <div class="form-group col-lg-4 col-md-4">
-                        <input type="text" class="form-control" id="v" placeholder="Type value here">
-                    </div>
-                    <div class="form-group col-lg-4 col-md-4">
-                        <button type="submit" class="btn btn-primary"><span class="glyphicon glyphicon-search"></span> Search</button>
-                        <span id="mt-search-feedback"></span>
+                <form class="form top-padding" id="search_form">
+                    <table align="center" valign="top">
+                        <tr>
+                            <th width="50px" align="center">And/Or</th>
+                            <th width="10px"></th>
+                            <th width="200px" align="center">Field Key</th>
+                            <th width="10px"></th>
+                            <th width="50px" align="center">Operator</th>
+                            <th width="10px"></th>
+                            <th width="200px" align="center">Field Value</th>
+                            <th width="10px"></th>
+                            <th width="10px"></th>
+                            <th width="10px"></th>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div style="width:50px;">
+                                    <select id="and-or-select">
+                                        <option value="" selected=""></option>
+                                        <option value="and_op">And</option>
+                                        <option value="or_op">Or</option>
+                                    </select>
+                                </div>
+                            </td>
+                            <td></td>
+                            <td>
+                                <div style="width:200px;">
+                                    <select id="add-metadata-select">
+                                        <option value=""></option>
+                                    </select>
+                                </div>
+                            </td>
+                            <td></td>
+                            <td>
+                                <div style="width:50px;">
+                                    <select id="operator-select">
+                                        <option value="eq-op" selected="=">=</option>
+                                        <option value="noeq_op">!=</option>
+                                        <option value="gt_op">></option>
+                                        <option value="gteq_op">>=</option>
+                                        <option value="lt_op"><</option>
+                                        <option value="lteq_op"><=</option>
+                                        <option value="like_op">like</option>
+                                    </select>
+                                </div>
+                            </td>
+                            <td></td>
+                            <td>
+                                <div style="width:200px;">
+                                    <input type="text" id="v" placeholder="Type value here" style="height:25px;">
+                                </div>
+                            </td>
+                            <td></td>
+                            <td>
+                                <div class="form-group col-lg-4 col-md-4">
+                                    <input type="button" name="addbtn"
+                                           class="btn btn-primary" value="Add Filter"
+                                           onmouseover="window.status='Add a query filter'; return true;"
+                                           onmouseout="window.status=' '; return true;"
+                                           onClick="add_filter()" />
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
+                    <div width="50%" heigh="10%">
+                        <table>
+                            <tr>
+                                 <tb>
+                                     <table align="center" valign="top" border="1" bordercolor="GREY">
+                                         <tr data-value="filter1">
+                                             <td id="d1" width="400px" align="left">filter1</td>
+                                             <td>
+                                                 <input type="button" name="d1btn"
+                                                 style="font-size:8pt;color:#ffffff;background-color:#cc0100;" value="Delete"
+                                                 onmouseover="window.status='Delete a query filter'; return true;"
+                                                 onmouseout="window.status=' '; return true;"
+                                                 onClick="del_filter(1)" />
+                                             </td>
+                                         </tr>
+                                         <tr data-value="filter2">
+                                             <td id="d2" width="400px" align="left">filter2</td>
+                                             <td>
+                                                 <input type="button" name="d1btn"
+                                                 style="font-size:8pt;color:#ffffff;background-color:#cc0100;" value="Delete"
+                                                 onmouseover="window.status='Delete a query filter'; return true;"
+                                                 onmouseout="window.status=' '; return true;"
+                                                 onClick="del_filter(2)" />
+                                             </td>
+                                         </tr>
+                                         <tr data-value="filter3">
+                                             <td id="d3" width="400px" align="left">filter3</td>
+                                             <td>
+                                                 <input type="button" name="d1btn"
+                                                 style="font-size:8pt;color:#ffffff;background-color:#cc0100;" value="Delete"
+                                                 onmouseover="window.status='Delete a query filter'; return true;"
+                                                 onmouseout="window.status=' '; return true;"
+                                                 onClick="del_filter(3)" />
+                                             </td>
+                                         </tr>
+                                         <tr data-value="filter4">
+                                             <td id="d4" width="400px" align="left">filter4</td>
+                                             <td>
+                                                 <input type="button" name="d1btn"
+                                                 style="font-size:8pt;color:#ffffff;background-color:#cc0100;" value="Delete"
+                                                 onmouseover="window.status='Delete a query filter'; return true;"
+                                                 onmouseout="window.status=' '; return true;"
+                                                 onClick="del_filter(4)" />
+                                             </td>
+                                         </tr>
+                                         <tr data-value="filter5">
+                                             <td id="d5" width="400px" align="left">filter5</td>
+                                             <td>
+                                                 <input type="button" name="d1btn"
+                                                 style="font-size:8pt;color:#ffffff;background-color:#cc0100;" value="Delete"
+                                                 onmouseover="window.status='Delete a query filter'; return true;"
+                                                 onmouseout="window.status=' '; return true;"
+                                                 onClick="del_filter(5)" />
+                                             </td>
+                                         </tr>
+                                     </table>
+                                  </tb>
+                            </tr>
+                            <tr>
+                                <td><br></td>
+                                <tb>
+                                    <div width="5%" hight="5%" align="center">
+                                        <input type="button" name="clearbtn"
+                                        class="btn btn-primary" value="Clear All"
+                                        onmouseover="window.status='Clear all query filters'; return true;"
+                                        onmouseout="window.status=' '; return true;"
+                                        onClick="clear_filters()" />
+
+                                        <button type="submit" class="btn btn-primary"><span class="glyphicon glyphicon-search"></span> Search</button>
+                                        <span id="mt-search-feedback"></span>
+                                    </div>
+                                </tb>
+                            </tr>
+                        </table>
                     </div>
                 </form>
             </div>
@@ -58,6 +184,166 @@
                 placeholder_text_single: "Select or type field key"});
         });
 
+        request.fail(function (jqXHR, textStatus, errorThrown){
+            console.error("The following error occured: " + textStatus, errorThrown);
+            var errMsg = "You must be logged in to retrieve metadata definitions";
+            if (!checkErrorAndRedirect(jqXHR, errMsg)) {
+                notify("Metadata was not added due to : " + errorThrown, "error");
+            }
+        });
+
+        function clear_filters () {
+            $("#d1").html("filter1");
+            $("#d2").html("filter2");
+            $("#d3").html("filter3");
+            $("#d4").html("filter4");
+            $("#d5").html("filter5");
+        }
+
+        function add_filter () {
+            var and_or = $("#and-or-select option:selected").text();
+            var key_name = $("#add-metadata-select option:selected").text();
+            var operator = $("#operator-select option:selected").text();
+            var key_value = $("#v").val()
+            // construct filters and display them in a table
+            var aFilter = "";
+            // if this is the query that is beyond the first, must have and/or specified
+            if (and_or == "" && ($("#d1").text().indexOf("filter") < 0)) {
+                notify ("You must specify AND / OR with the previous queries.", "info");
+                return;
+            }
+            if (and_or != "") {
+                // if this is the first query, ignore AND / OR
+                if ($("#d1").text().indexOf("filter") > -1) {
+                    aFilter = aFilter + "";
+                }
+                else {
+                    aFilter = aFilter + and_or + "\t";
+                }
+            }
+
+            if (key_name != "" && operator != "" && key_value != "") {
+                aFilter = aFilter + "'" + key_name + "'\t" + operator + "\t'" + key_value + "'";
+            }
+            else {
+                notify("You must specify Field Key, Operator and Field Value.", "info");
+                return;
+            }
+
+            if ($("#d1").text().indexOf("filter") > -1) {
+                $("#d1").html(aFilter);
+            }
+            else if ($("#d2").text().indexOf("filter") > -1) {
+                $("#d2").html(aFilter);
+            }
+            else if ($("#d3").text().indexOf("filter") > -1) {
+                $("#d3").html(aFilter);
+            }
+            else if ($("#d4").text().indexOf("filter") > -1) {
+                $("#d4").html(aFilter);
+            }
+            else if ($("#d5").text().indexOf("filter") > -1) {
+                $("#d5").html(aFilter);
+            }
+            else {
+                notify ("Only up to five filters are supported.", "info");
+            }
+
+            // reset the fields for specifying filters
+            $("#and-or-select option").prop("selected",function() {
+                return this.defaultSelected;
+            });
+            $("#operator-select option").prop("selected",function() {
+                return this.defaultSelected;
+            });
+            if (key_value != "") {
+                $("#v").val("");
+            }
+        }
+
+        function del_filter (filter_num) {
+            var aFilter = "";
+            if (filter_num == "1") {
+                aFilter = $("#d2").text();
+                if ((aFilter).indexOf("Or") > -1) {
+                    aFilter = aFilter.substring(3, (aFilter.length));
+                }
+                else if ((aFilter).indexOf("And") > -1) {
+                    aFilter = aFilter.substring(4, (aFilter.length));
+                }
+                $("#d1").html(aFilter);
+                aFilter = $("#d3").text();
+                $("#d2").html(aFilter);
+                aFilter = $("#d4").text();
+                $("#d3").html(aFilter);
+                aFilter = $("#d5").text();
+                $("#d4").html(aFilter);
+                $("#d5").html("filter");
+            }
+            else if (filter_num == "2") {
+                aFilter = $("#d3").text();
+                $("#d2").html(aFilter);
+                aFilter = $("#d4").text();
+                $("#d3").html(aFilter);
+                aFilter = $("#d5").text();
+                $("#d4").html(aFilter);
+                $("#d5").html("filter");
+            }
+            else if (filter_num == "3") {
+                aFilter = $("#d4").text();
+                $("#d3").html(aFilter);
+                aFilter = $("#d5").text();
+                $("#d4").html(aFilter);
+                $("#d5").html("filter");
+            }
+            else if (filter_num == "4") {
+                aFilter = $("#d5").text();
+                $("#d4").html(aFilter);
+                $("#d5").html("filter");
+            }
+            else if (filter_num == "5") {
+                $("#d5").html("filter");
+            }
+        }
+
+        function do_search(tokenList, count) {
+            if ( tokenList != "" ) {
+                var request = jsRoutes.api.Metadata.searchByFilters(tokenList, count).ajax({
+                    type: 'GET',
+                    contentType: "application/json"
+                });
+
+                request.done(function (response, textStatus, jqXHR){
+                    $( "#datasets-results" ).empty();
+                    $( "#files-results" ).empty();
+                    var datasets = response.datasets;
+                    var files = response.files;
+                    if (datasets.length == 0) $('#datasets-results').append("No datasets found");
+                    for (var i=0; i<datasets.length; i++) {
+                        var modalTemplate = Handlebars.getTemplate("@routes.Assets.at("templates/metadata/search_dataset_result")");
+                        var html = modalTemplate({'url': jsRoutes.controllers.Datasets.dataset(datasets[i].id).url, 'name': datasets[i].name});
+                        $('#datasets-results').append(html);
+                    }
+                    if (files.length == 0) $('#files-results').append("No files found");
+                    for (var i=0; i<files.length; i++) {
+                        var modalTemplate = Handlebars.getTemplate("@routes.Assets.at("templates/metadata/search_file_result")");
+                        var html = modalTemplate({'url': jsRoutes.controllers.Files.file(files[i].id).url, 'name': files[i].name});
+                        $('#files-results').append(html);
+                    }
+                    //$('#getmore').html('<a id="showmore" class="btn btn-link"><span class="glyphicon glyphicon-hand-down"></span> Show more results</a>');
+                    //$('#showmore').click( function() { search(key, value, count+10); } );
+                });
+
+                request.fail(function (jqXHR, textStatus, errorThrown){
+                    console.error("The following error occured: " + textStatus, errorThrown);
+                });
+
+                return;
+            }
+            $( "#mt-search-feedback" ).text( "Not valid!" ).show().fadeOut( 2000 );
+        }
+
+
         function search(key, value, count) {
             count = count || 10;
             if ( key != "" && value != "" ) {
@@ -83,8 +369,8 @@
                         var html = modalTemplate({'url': jsRoutes.controllers.Files.file(files[i].id).url, 'name': files[i].name});
                         $('#files-results').append(html);
                     }
-                    $('#getmore').html('<a id="showmore" class="btn btn-link"><span class="glyphicon glyphicon-hand-down"></span> Show more results</a>');
-                    $('#showmore').click( function() { search(key, value, count+10); } );
+                    //$('#getmore').html('<a id="showmore" class="btn btn-link"><span class="glyphicon glyphicon-hand-down"></span> Show more results</a>');
+                    //$('#showmore').click( function() { search(key, value, count+10); } );
                 });
 
                 request.fail(function (jqXHR, textStatus, errorThrown){
@@ -97,21 +383,87 @@
             $( "#mt-search-feedback" ).text( "Not valid!" ).show().fadeOut( 2000 );
         }
 
-        request.fail(function (jqXHR, textStatus, errorThrown){
-            console.error("The following error occured: " + textStatus, errorThrown);
-            var errMsg = "You must be logged in to retrieve metadata definitions";
-            if (!checkErrorAndRedirect(jqXHR, errMsg)) {
-                notify("Metadata was not added due to : " + errorThrown, "error");
-            }
-        });
-
         // form submission
         $( "form" ).submit(function( event ) {
             event.preventDefault();
-            var k = $("#add-metadata-select option:selected").text();
-            var predicate = $("#add-metadata-select option:selected").val();
-            var v = $( "#v" ).val();
-            search(k, v);
+
+            var aFilter = "";
+            var words = "";
+            var a_o = "";
+            var key = "";
+            var operator = "";
+            var value = "";
+            var tokenList = "";
+            var count = 0;
+
+
+            if ($("#d1").text().indexOf("filter") < 0) {
+                aFilter = $("#d1").text();
+                words = aFilter.split("\t");
+                // the first filter has no the and_or word
+                a_o = "none";
+                key = words[0];
+                key = key.substring(1,(key.length-1));
+                operator = words[1];
+                value = words[2];
+                value = value.substring(1,(value.length-1));
+                tokenList = tokenList + a_o + "\t" + key + "\t" + operator + "\t" + value;
+                count = count + 1;
+            }
+
+            if ($("#d2").text().indexOf("filter") < 0) {
+                aFilter = $("#d2").text();
+                words = aFilter.split("\t");
+                a_o = words[0];
+                key = words[1];
+                key = key.substring(1,(key.length-1));
+                operator = words[2];
+                value = words[3];
+                value = value.substring(1,(value.length-1));
+                tokenList = tokenList + "\t" + a_o + "\t" + key + "\t" + operator + "\t" + value;
+                count = count + 1;
+            }
+
+            if ($("#d3").text().indexOf("filter") < 0) {
+                aFilter = $("#d3").text();
+                words = aFilter.split("\t");
+                a_o = words[0];
+                key = words[1];
+                key = key.substring(1,(key.length-1));
+                operator = words[2];
+                value = words[3];
+                value = value.substring(1,(value.length-1));
+                tokenList = tokenList + "\t" + a_o + "\t" + key + "\t" + operator + "\t" + value;
+                count = count + 1;
+            }
+
+            if ($("#d4").text().indexOf("filter") < 0) {
+                aFilter = $("#d4").text();
+                words = aFilter.split("\t");
+                a_o = words[0];
+                key = words[1];
+                key = key.substring(1,(key.length-1));
+                operator = words[2];
+                value = words[3];
+                value = value.substring(1,(value.length-1));
+                tokenList = tokenList + "\t" + a_o + "\t" + key + "\t" + operator + "\t" + value;
+                count = count + 1;
+            }
+
+            if ($("#d5").text().indexOf("filter") < 0) {
+                aFilter = $("#d5").text();
+                words = aFilter.split("\t");
+                a_o = words[0];
+                key = words[1];
+                key = key.substring(1,(key.length-1));
+                operator = words[2];
+                value = words[3];
+                value = value.substring(1,(value.length-1));
+                tokenList = tokenList + "\t" + a_o + "\t" + key + "\t" + operator + "\t" + value;
+                count = count + 1;
+            }
+
+            do_search(tokenList, count);
         });
     </script>
 }

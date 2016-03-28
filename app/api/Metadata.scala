@@ -33,13 +33,16 @@ class Metadata @Inject()(
     Ok(toJson(results))
   }
 
+
   def searchByKeyValue(key: Option[String], value: Option[String], count: Int = 0) = PermissionAction(Permission.ViewDataset) {
       implicit request =>
         val response = for {
           k <- key
           v <- value
         } yield {
+          Logger.info("get into searchByKeyValue")
           val results = metadataService.search(k, v, count)
+          Logger.info("after getting results")
           val datasetsResults = results.flatMap { d =>
             if (d.resourceType == ResourceRef.dataset) datasets.get(d.id) else None
           }
@@ -53,6 +56,31 @@ class Metadata @Inject()(
         }
         response getOrElse BadRequest(toJson("You must specify key and value"))
   }
+
+  def searchByFilters(tokenList: Option[String], count: Option[Int]) = PermissionAction(Permission.ViewDataset) {
+    implicit request =>
+      val response = for {
+        t <- tokenList
+        c <- count
+      } yield {
+        Logger.info("get into searchByFilters")
+        val results = metadataService.search(t, c)
+        Logger.info("after getting results in searchByFilters")
+        val datasetsResults = results.flatMap { d =>
+          if (d.resourceType == ResourceRef.dataset) datasets.get(d.id) else None
+        }
+        val filesResults = results.flatMap { f =>
+          if (f.resourceType == ResourceRef.file) files.get(f.id) else None
+        }
+        import Dataset.datasetWrites
+        import File.FileWrites
+
+        Ok(JsObject(Seq("datasets" -> toJson(datasetsResults.distinct), "files" -> toJson(filesResults.distinct))))
+
+      }
+      response getOrElse BadRequest(toJson("You must specify key and value"))
+  }
+
 
   def getDefinitions() = PermissionAction(Permission.ViewDataset) {
     implicit request =>

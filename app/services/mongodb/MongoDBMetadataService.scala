@@ -138,6 +138,7 @@ class MongoDBMetadataService @Inject() (contextService: ContextLDService) extend
   /**
     * Update metadata
     * TODO: implement
+    *
     * @param metadataId
     * @param json
     */
@@ -149,11 +150,127 @@ class MongoDBMetadataService @Inject() (contextService: ContextLDService) extend
 
   /**
     * Search by metadata. Uses mongodb query structure.
+    *
     * @param query
     * @return
     */
+
+
   def search(query: JsValue): List[ResourceRef] = {
+    Logger.debug("get into search using JsValue Query")
     val doc = JSON.parse(Json.stringify(query)).asInstanceOf[DBObject]
+    val resources: List[ResourceRef] = MetadataDAO.find(doc).map(_.attachedTo).toList
+    resources
+  }
+
+  def search(tokenList: String, count: Int): List[ResourceRef] = {
+    Logger.info("get into search using token and count")
+
+    var c = 0
+    var and_or = ""
+    var field = ""
+    var oprtr = ""
+    var regexp = ""
+    var tokens = tokenList.split("\t")
+    val token_length = tokenList.length()
+    var idx = 0
+    var doc = MongoDBObject(field -> regexp)
+    var allDoc = doc
+    while (c < count && idx <= token_length) {
+      and_or = tokens(idx)
+      idx = idx + 1
+      field = "content." + tokens(idx).trim
+      idx = idx + 1
+      oprtr = tokens(idx)
+      idx = idx + 1
+      regexp = tokens(idx).trim
+      idx = idx + 1
+
+      Logger.info("4 tokens at " + c + " are: " + and_or + ", " + field + ", " + oprtr + ", " + regexp + ", ")
+      if (oprtr == "=") {
+        doc = MongoDBObject(field -> regexp)
+      }
+      else if (oprtr == "!=") {
+        doc = MongoDBObject(field -> MongoDBObject("$ne" -> regexp))
+      }
+      else if (oprtr == ">") {
+        doc = MongoDBObject(field -> MongoDBObject("$gt" -> regexp))
+      }
+      else if (oprtr == ">=") {
+        doc = MongoDBObject(field -> MongoDBObject("$gte" -> regexp))
+      }
+      else if (oprtr == "<") {
+        doc = MongoDBObject(field -> MongoDBObject("$lt" -> regexp))
+      }
+      else if (oprtr == "<=") {
+        doc = MongoDBObject(field -> MongoDBObject("$lte" -> regexp))
+      }
+      else if (oprtr == "like") {
+        val like_exp = (s"""(?i)$regexp""").r
+        doc = MongoDBObject(field -> like_exp)
+      }
+      else {
+        Logger.info("Invalid operator.")
+      }
+      if (c == 0) {
+        allDoc = doc
+      }
+      else if (c > 0) {
+        if (and_or == "Or") {
+          Logger.info("Using Or operator")
+          allDoc = MongoDBObject("$or" -> (allDoc, doc));
+        }
+        else if (and_or == "And") {
+          Logger.info("Using And operator")
+          allDoc = MongoDBObject("$and" -> (allDoc, doc));
+        }
+      }
+      c = c+1
+
+    }
+    val resources: List[ResourceRef] = MetadataDAO.find(allDoc).map(_.attachedTo).toList
+    resources
+  }
+
+
+
+
+
+
+
+
+
+  def search(key: String, operator: String, value: String): List[ResourceRef] = {
+    Logger.info("get into search using 3 string values")
+    val field = "content." + key.trim
+    val oprtr = operator.trim
+    val regexp = value.trim
+    var doc = MongoDBObject(field -> regexp)
+    if (oprtr == "=") {
+      doc = MongoDBObject(field -> regexp)
+    }
+    else if (oprtr == "!=") {
+      doc = MongoDBObject(field -> MongoDBObject( "$ne" -> regexp ))
+    }
+    else if (oprtr == ">") {
+      doc = MongoDBObject(field -> MongoDBObject( "$gt" -> regexp ))
+    }
+    else if (oprtr == ">=") {
+      doc = MongoDBObject(field -> MongoDBObject( "$gte" -> regexp ))
+    }
+    else if (oprtr == "<") {
+      doc = MongoDBObject(field -> MongoDBObject( "$lt" -> regexp ))
+    }
+    else if (oprtr == "<=") {
+      doc = MongoDBObject(field -> MongoDBObject( "$lte" -> regexp ))
+    }
+    else if (oprtr == "like") {
+      val like_exp = (s"""(?i)$regexp""").r
+      doc = MongoDBObject(field -> like_exp)
+    }
+    else {
+      Logger.info("Invalid operator.")
+    }
     val resources: List[ResourceRef] = MetadataDAO.find(doc).map(_.attachedTo).toList
     resources
   }

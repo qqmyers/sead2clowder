@@ -281,7 +281,7 @@ DELETE         /api/metadata.jsonld/:id                                         
 
 #GET            /api/metadata.jsonld                                                     @api.Metadata.getUserMetadata()
 
-GET            /api/metadata/search                                                     @api.Metadata.searchByKeyValue(mdkey: Option[String], mdvalue: Option[String], count: Int ?= 10)
+GET            /api/metadata/search                                                     @api.Metadata.searchByFilters(tokenList: Option[String], count: Option[Int])
 POST           /api/metadata/search                                                     @api.Metadata.search()
 
 GET            /api/metadata/definitions                                                @api.Metadata.getDefinitions()
