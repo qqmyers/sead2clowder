@@ -575,7 +575,7 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
     implicit val user = request.user
     var count : Long  = collections.countAccess(Set[Permission](Permission.ViewCollection),user,true);
     var limit = count.toInt
-    val all_collections_list = for (collection <- collections.listAccess(limit,Set[Permission](Permission.ViewCollection),request.user,true))
+    val all_collections_list = for (collection <- collections.listAccess(limit,Set[Permission](Permission.ViewCollection),request.user,false))
       yield jsonCollection(collection)
     Ok(toJson(all_collections_list))
   }
