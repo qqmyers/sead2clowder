@@ -12,11 +12,24 @@
     <div class="row featurette">
         <div class="col-md-6">
             <h1 class="featurette-heading">@profile.fullName</h1>
+            @profile.email; 
             <a href="@routes.Profile.viewProfileUUID(profile.id)" class="btn btn-link" title="Show profile"><span class="glyphicon glyphicon-user"></span> Profile</a>
             <a href="@routes.Spaces.newSpace()" class="btn btn-link" title="Create a new space"><span class="glyphicon glyphicon-ok"></span> Create Space</a>
             <a href="@routes.Datasets.newDataset(None, None)" class="btn btn-link" title="Create a new dataset"><span class="glyphicon glyphicon-ok"></span> Create Dataset</a>
             <a href="@routes.Collections.newCollection(None)" class="btn btn-link" title="Create a new collection"><span class="glyphicon glyphicon-ok"></span> Create Collection</a>
+            <h2> My Collections </h2>
+            <!-jstree goes here-->
+         
+            <div class="panel panel-default">
+                <div class="panel-body">
+                    <div class="media">
+                        <div id="collections">
+                        </div>   
+                    </div>
+                </div>
+            </div>
             <h2> My Events </h2>
+
             @for(event <- newsfeed) {
                 <div class="panel panel-default">
                     <div class="panel-body">
@@ -63,9 +76,6 @@
                     </div>
                 }
 
-            </div>
-            <!-jstree goes here-->
-            <div id="collections">
             </div>
 
             <div class="row top-padding">
@@ -407,15 +417,15 @@
     <script>
     //Get collections
     function getCollections() {
-        var username = "stevek"; 
-        var password = "sv,dm~43";
+        // var username = "stevek"; 
+        // var password = "sv,dm~43";
         $.ajax({
             url: "api/collections/allCollections",
             dataType: "json",
             beforeSend: function(xhr){
                 xhr.setRequestHeader("Content-Type", "application/json"); 
                 xhr.setRequestHeader("Accept", "application/json");
-                xhr.setRequestHeader("Authorization", "Basic " + btoa(username + ":" + password));
+                // xhr.setRequestHeader("Authorization", "Basic " + btoa(username + ":" + password));
             }, 
             success: function(data) {
                     createJSTrees(data);    
