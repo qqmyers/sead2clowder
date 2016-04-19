@@ -15,7 +15,7 @@
 
                   {{#nomorethan this.score 0}}
                       {{#ifCond this.score 0}}
-                            <li> <span class="yellow">This info is not required</span> <a href='{{../../href_metadata}}'> Edit Metadata</a><br/> </li>
+                            <li> <span class="yellow">This info is not required</span> <br/> </li>
                       {{else}}
                             <li> <span class="red">{{this.message}}</span> <a href='{{../../href_metadata}}'> Edit Metadata</a><br/> </li>
                       {{/ifCond}}
