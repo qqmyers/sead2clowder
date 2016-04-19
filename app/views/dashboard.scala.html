@@ -9,28 +9,111 @@
     <script src="@routes.Assets.at("javascripts/datasetListProcess.js")" type="text/javascript"></script>
     <script src="@routes.Assets.at("javascripts/spaceListProcess.js")" type="text/javascript"></script>
     <script src="@routes.Assets.at("javascripts/deleteUtils.js")" type="text/javascript"></script>
-    <div class="row featurette">
-        <div class="col-md-6">
-            <h1 class="featurette-heading">@profile.fullName</h1>
-            @profile.email; 
-            <a href="@routes.Profile.viewProfileUUID(profile.id)" class="btn btn-link" title="Show profile"><span class="glyphicon glyphicon-user"></span> Profile</a>
-            <a href="@routes.Spaces.newSpace()" class="btn btn-link" title="Create a new space"><span class="glyphicon glyphicon-ok"></span> Create Space</a>
-            <a href="@routes.Datasets.newDataset(None, None)" class="btn btn-link" title="Create a new dataset"><span class="glyphicon glyphicon-ok"></span> Create Dataset</a>
-            <a href="@routes.Collections.newCollection(None)" class="btn btn-link" title="Create a new collection"><span class="glyphicon glyphicon-ok"></span> Create Collection</a>
-            <h2> My Collections </h2>
-            <!-jstree goes here-->
-         
-            <div class="panel panel-default">
-                <div class="panel-body">
-                    <div class="media">
-                        <div id="collections">
-                        </div>   
+<div class="row featurette" style="display:margin:-150px;">
+    <div class="col-md-6">
+        <h1 class="featurette-heading">@profile.fullName</h1>
+        <a href="@routes.Profile.viewProfileUUID(profile.id)" class="btn btn-link" title="Show profile"><span class="glyphicon glyphicon-user"></span> Profile</a>
+        <a href="@routes.Spaces.newSpace()" class="btn btn-link" title="Create a new space"><span class="glyphicon glyphicon-ok"></span> Create Space</a>
+        <a href="@routes.Datasets.newDataset(None, None)" class="btn btn-link" title="Create a new dataset"><span class="glyphicon glyphicon-ok"></span> Create Dataset</a>
+        <a href="@routes.Collections.newCollection(None)" class="btn btn-link" title="Create a new collection"><span class="glyphicon glyphicon-ok"></span> Create Collection</a>
+        
+        <h2> My Collections </h2>
+        <!-jstree goes here-->
+        <div class="showSearch">
+            <input class="search-input form-control" placeholder="Search your collections"></input><br />
+        </div>         
+        <div class="panel panel-default">
+<!--             
+<div class="panel-body">
+<div class="media">
+-->        
+            <div id="collections">
+            </div>  
+
+
+        </div>
+        <h2 class="showDataset"> My Datasets </h2>
+
+        <div class="panel panel-default">
+      
+            <div id="datasets">
+            </div> 
+        </div>    </div>
+    <div class="col-md-6">
+        <h2>My Events</h2>
+            @for(event <- newsfeed) {
+                <div class="panel panel-default">
+                    <div class="panel-body">
+                        <div class="media">
+                            <div class="media-left">
+                                <a href="@routes.Profile.viewProfileUUID(event.user.id)">
+                                    <img class="media-object" src="@event.user.avatarURL">
+                                </a>
+                            </div>
+                            <div class="media-body">
+                                <a href="@routes.Profile.viewProfileUUID(event.user.id)">
+                                    <h4 class="media-heading">@event.user.fullName</h4>
+                                </a>
+                                @newsfeedCard(event)
+                            </div>
+                            <div class="media-right">
+                                @Formatters.humanReadableTimeSince(event.created)
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </div>
-            <h2> My Events </h2>
+            }
+            @if(newsfeed.size < 1) {
+                <p>You can follow <a href="@routes.Users.getUsers()">users</a>, <a href="@routes.Spaces.list("")">spaces</a>, <a href="@routes.Datasets.list("")">datasets</a> and <a href="@routes.Collections.list("")">collections</a>.
+                    Any updates on your followed instances will show here.</p>
+            } 
 
-            @for(event <- newsfeed) {
+    </div>    
+</div>
+
+<!--             <h2> My Events </h2>
+
+@for(event <- newsfeed) {
+<div class="panel panel-default">
+<div class="panel-body">
+<div class="media">
+<div class="media-left">
+<a href="@routes.Profile.viewProfileUUID(event.user.id)">
+<img class="media-object" src="@event.user.avatarURL">
+</a>
+</div>
+<div class="media-body">
+<a href="@routes.Profile.viewProfileUUID(event.user.id)">
+<h4 class="media-heading">@event.user.fullName</h4>
+</a>
+@newsfeedCard(event)
+</div>
+<div class="media-right">
+@Formatters.humanReadableTimeSince(event.created)
+</div>
+</div>
+</div>
+</div>
+}
+@if(newsfeed.size < 1) {
+<p>You can follow <a href="@routes.Users.getUsers()">users</a>, <a href="@routes.Spaces.list("")">spaces</a>, <a href="@routes.Datasets.list("")">datasets</a> and <a href="@routes.Collections.list("")">collections</a>.
+Any updates on your followed instances will show here.</p>
+} -->
+<!--        </div>
+-->      
+<div class="row top-padding">
+<!--                 <div class="col-lg-6 col-md-6 col-sm-6 col-xs-6">
+                    <h2> Followers</h2>
+                </div>
+                <div class="margin-top-h col-lg-6 col-md-6 col-sm-6 col-xs-6">
+                    <span class="pull-right"> <a href="@routes.Users.getFollowers()">See More</a></span>
+                </div> -->
+ <div class="col-lg-6 col-md-6 col-sm-6 col-xs-6">
+ <h2> My Events </h2>
+</div>
+<div class="margin-top-h col-lg-6 col-md-6 col-sm-6 col-xs-6">
+
+<!--             @for(event <- newsfeed) {
                 <div class="panel panel-default">
                     <div class="panel-body">
                         <div class="media">
@@ -55,16 +138,10 @@
             @if(newsfeed.size < 1) {
                 <p>You can follow <a href="@routes.Users.getUsers()">users</a>, <a href="@routes.Spaces.list("")">spaces</a>, <a href="@routes.Datasets.list("")">datasets</a> and <a href="@routes.Collections.list("")">collections</a>.
                     Any updates on your followed instances will show here.</p>
-            }
+            }  -->
+
+</div>
         </div>
-       <div class="row top-padding">
-                <div class="col-lg-6 col-md-6 col-sm-6 col-xs-6">
-                    <h2> Followers</h2>
-                </div>
-                <div class="margin-top-h col-lg-6 col-md-6 col-sm-6 col-xs-6">
-                    <span class="pull-right"> <a href="@routes.Users.getFollowers()">See More</a></span>
-                </div>
-            </div>
             <div class="row">
 
                 @for(row <- followers) {
@@ -417,18 +494,17 @@
     <script>
     //Get collections
     function getCollections() {
-        // var username = "stevek"; 
-        // var password = "sv,dm~43";
+        $(".showDataset").hide(); 
         $.ajax({
             url: "api/collections/allCollections",
             dataType: "json",
             beforeSend: function(xhr){
                 xhr.setRequestHeader("Content-Type", "application/json"); 
                 xhr.setRequestHeader("Accept", "application/json");
-                // xhr.setRequestHeader("Authorization", "Basic " + btoa(username + ":" + password));
             }, 
             success: function(data) {
-                    createJSTrees(data);    
+                    var col = "#collections";
+                    createJSTrees(data, col);    
             }, 
             error: function(xhr, status, error) {
 
@@ -436,42 +512,76 @@
         });
 
     }
+
+    //Get datasets
+    function getDatasets(collectionID) {
+        $.ajax({
+            url: "t2c2/collections/56fd5638d4c69c316c900f0c/datasets",
+            dataType: "json",
+            beforeSend: function(xhr){
+                xhr.setRequestHeader("Content-Type", "application/json"); 
+                xhr.setRequestHeader("Accept", "application/json");
+
+            }, 
+            success: function(data) {
+                var ds = "#datasets";
+                createJSTrees(data, ds);    
+            }, 
+            error: function(xhr, status, error) {
+            }   
+        });
+
+    }   
     </script>
 
     <script>
     //Create tree from js object
     getCollections();
-    function createJSTrees(jsonData) {
-        for(var i = 0; i < jsonData.length; i++){
+    function createJSTrees(jsonData, type) {
 
-            //create library supported key names (text,parent)
-            jsonData[i].text = jsonData[i]['name'];
-            jsonData[i].parent = jsonData[i]['parent_collection_ids'];
+        if (type == "#collections"){
+            for(var i = 0; i < jsonData.length; i++){
 
-            //remove old keys
-            delete jsonData[i].name;
-            delete jsonData[i].parent_collection_ids;
+                //create library supported key names (text,parent)
+                jsonData[i].text = jsonData[i]['name'];
+                jsonData[i].parent = jsonData[i]['parent_collection_ids'];
 
-            //Remove special characters from the values
-            if (jsonData[i].root_flag == "true"){
-                jsonData[i].parent = "#";
+                //remove old keys
+                delete jsonData[i].name;
+                delete jsonData[i].parent_collection_ids;
 
-            }else{
-                var str = "";
+                //Remove special characters from the values
+                if (jsonData[i].root_flag == "true"){
+                    jsonData[i].parent = "#";
 
-                str = jsonData[i].parent.replace(/[List()]+/gi, '');
-                jsonData[i].parent = str; 
+                }else{
+                    var str = "";
+
+                    str = jsonData[i].parent.replace(/[List()]+/gi, '');
+                    jsonData[i].parent = str; 
+                }
+
+                //For new root collections where the json requires a root parent to have a value of #
+                if (jsonData[i].parent == ""){
+                    jsonData[i].parent = "#";
+                }
+
             }
+        }else if (type == "#datasets"){
+            for (var i = 0; i < jsonData.length; i++){
+                jsonData[i].text = jsonData[i]['name'];
+                jsonData[i].parent = jsonData[i]['id'];
 
-            //For new root collections where the json requires a root parent to have a value of #
-            if (jsonData[i].parent == ""){
-                jsonData[i].parent = "#";
+                //remove old keys
+                delete jsonData[i].name;
+                delete jsonData[i].id;
+ 
             }
+        }else{
 
         }
-
         //jstree initialization and settings
-        $('#collections').jstree({ 
+        $(type).jstree({ 
 
             "core" : {
                 "check_callback" : true,
@@ -485,7 +595,6 @@
                   "case_insensitive": true,
                   "show_only_matches" : true
                 },
-
             },      
             "checkbox" : {
                 "keep_selected_style" : false,
@@ -493,7 +602,7 @@
              },
             "contextmenu":{         
                 "items": function($node) {
-                    var tree = $("#collections").jstree(true);
+                    var tree = $(type).jstree(true);
                     return {
                         "Create": {
                             "separator_before": false,
@@ -510,7 +619,7 @@
             },
             "plugins" : [
                 "checkbox", 
-                "contextmenu", 
+                // "contextmenu", 
                 "massload", 
                 "search", 
                 "sort", 
@@ -525,6 +634,40 @@
         });
 
     }    
+    //Search Plugin
+    $(".search-input").keyup(function() {
+        var searchString = $(this).val();
+        $("#collections").jstree('search', searchString);
+    });
+
+    //Prevent collection search from submitting the form
+    $('.search-input').keydown(function (e) {
+        if (e.keyCode == 13) {
+            e.preventDefault();
+        }
+    });
+
+    $("#collections").on("select_node.jstree", function(e, data){
+            var str = data.node.id;  
+            var res = str.match(/J/gi);
+            if (res != "j"){
+                getDatasets(str); 
+                $(".showDataset").show(); 
+
+                    // window.location.href = "/collection/" + data.node.id;
+            }
+            
+    });
+
+    $("#datasets").on("select_node.jstree", function(e, data){
+            var str = data.node.id;  
+            var res = str.match(/J/gi);
+
+            if (res != "j"){
+                    window.location.href = "/datasets/" + data.node.id;
+            }
+            
+    });    
     </script>
 
     <script>
