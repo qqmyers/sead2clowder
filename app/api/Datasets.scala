@@ -18,7 +18,7 @@ import play.api.libs.concurrent.Execution.Implicits._
 import play.api.libs.iteratee.Enumerator
 import play.api.libs.json._
 import play.api.libs.json.Json._
-import play.api.mvc.AnyContent
+import play.api.mvc.{Action, AnyContent}
 import services._
 import _root_.util.{JSONLD, License}
 import scala.concurrent.{ExecutionContext, Future}
@@ -468,6 +468,11 @@ class Datasets @Inject()(
 
   @ApiOperation(value = "List all datasets in a collection", notes = "Returns list of datasets and descriptions.", responseClass = "None", httpMethod = "GET")
   def listInCollection(collectionId: UUID) = PermissionAction(Permission.ViewCollection, Some(ResourceRef(ResourceRef.collection, collectionId))) { implicit request =>
+    Ok(toJson(datasets.listCollection(collectionId.stringify)))
+  }
+
+  @ApiOperation(value = "List all datasets in a collection", notes = "Returns list of datasets and descriptions.", responseClass = "None", httpMethod = "GET")
+  def listInCollectionNoPermission(collectionId: UUID) = Action {
     Ok(toJson(datasets.listCollection(collectionId.stringify)))
   }
 
