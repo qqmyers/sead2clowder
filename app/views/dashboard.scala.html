@@ -20,25 +20,23 @@
         <h2> My Collections </h2>
         <!-jstree goes here-->
         <div class="showSearch">
-            <input class="search-input form-control" placeholder="Search your collections"></input><br />
+            <input class="search-collection form-control" placeholder="Search your collections"></input><br />
         </div>         
         <div class="panel panel-default">
-<!--             
-<div class="panel-body">
-<div class="media">
--->        
             <div id="collections">
             </div>  
-
-
         </div>
+        
         <h2 class="showDataset"> My Datasets </h2>
+        <div class="showSearch">
+            <input class="search-dataset form-control" placeholder="Search your datasets"></input><br />
+        </div>         
 
         <div class="panel panel-default">
-      
             <div id="datasets">
             </div> 
-        </div>    </div>
+        </div>    
+    </div>
     <div class="col-md-6">
         <h2>My Events</h2>
             @for(event <- newsfeed) {
@@ -635,13 +633,26 @@ Any updates on your followed instances will show here.</p>
 
     }    
     //Search Plugin
-    $(".search-input").keyup(function() {
+    $(".search-collection").keyup(function() {
         var searchString = $(this).val();
         $("#collections").jstree('search', searchString);
     });
 
     //Prevent collection search from submitting the form
-    $('.search-input').keydown(function (e) {
+    $('.search-collection').keydown(function (e) {
+        if (e.keyCode == 13) {
+            e.preventDefault();
+        }
+    });
+
+    //Search Plugin
+    $(".search-dataset").keyup(function() {
+        var searchString = $(this).val();
+        $("#datasets").jstree('search', searchString);
+    });
+
+    //Prevent collection search from submitting the form
+    $('.search-dataset').keydown(function (e) {
         if (e.keyCode == 13) {
             e.preventDefault();
         }
@@ -653,10 +664,28 @@ Any updates on your followed instances will show here.</p>
             if (res != "j"){
                 getDatasets(str); 
                 $(".showDataset").show(); 
-
                     // window.location.href = "/collection/" + data.node.id;
             }
             
+    });
+
+
+
+    $("#collections").on("deselect_node.jstree", function(e, data){
+        $("#datasets").empty(); 
+    });
+
+
+    $("#collections").bind("loaded.jstree open_node.jstree", function (event, data) {
+        $('.jstree-leaf').attr("data-trigger", "hover");
+    })
+
+    $("#collections").on("hover_node.jstree", function(e, data){
+                // $('.jstree-leaf').attr("data-trigger", "hover");
+        $("#"+data.node.id).attr("data-trigger", "hover");
+        //$("#"+data.node.id).prop('title', "add your custom title here");
+
+        //alert(data.node.id).attr("id");
     });
 
     $("#datasets").on("select_node.jstree", function(e, data){
