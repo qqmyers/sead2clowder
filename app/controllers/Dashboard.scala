@@ -17,7 +17,7 @@ import scala.collection.mutable.ListBuffer
 class Dashboard  @Inject() (files: FileService, collections: CollectionService, datasets: DatasetService,
                              spaces: SpaceService, events: EventService, comments: CommentService,
                              sections: SectionService, users: UserService) extends SecuredController {
-  
+
 
   def index = UserAction(needActive = false) { implicit request =>
   	implicit val user = request.user
