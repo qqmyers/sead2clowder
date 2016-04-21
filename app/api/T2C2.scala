@@ -18,7 +18,7 @@ class T2C2 @Inject() (datasets : DatasetService)  extends ApiController{
     var datasets_incollection = datasets.listCollection(collectionId.stringify)
 
     var dataset_name_collectionid = for (dataset <- datasets_incollection)
-      yield(Json.obj("name"->dataset.name,"collection"->collectionId))
+      yield(Json.obj("id"->dataset.id,"name"->dataset.name,"collection"->collectionId))
     Ok(toJson(dataset_name_collectionid))
   }
 
