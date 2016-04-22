@@ -5,13 +5,13 @@ import com.wordnik.swagger.annotations.{ApiOperation, Api}
 import models.{ResourceRef, UUID}
 import play.api.libs.json.Json
 import play.api.libs.json.Json.toJson
-import services.DatasetService
+import services.{CollectionService, DatasetService}
 
 /**
   * Created by todd_n on 4/21/16.
   */
 @Api(value = "/api/t2c2", description = "Controller for t2c2 routes.")
-class T2C2 @Inject() (datasets : DatasetService)  extends ApiController{
+class T2C2 @Inject() (datasets : DatasetService, collections: CollectionService)  extends ApiController{
 
   @ApiOperation(value = "List all datasets in a collection", notes = "Returns list of datasets and descriptions.", responseClass = "None", httpMethod = "GET")
   def getDatasetsInCollectionWithColId(collectionId : UUID) = PermissionAction(Permission.ViewCollection, Some(ResourceRef(ResourceRef.collection, collectionId))){implicit request=>
@@ -20,6 +20,11 @@ class T2C2 @Inject() (datasets : DatasetService)  extends ApiController{
     var dataset_name_collectionid = for (dataset <- datasets_incollection)
       yield(Json.obj("id"->dataset.id,"name"->dataset.name,"collection"->collectionId))
     Ok(toJson(dataset_name_collectionid))
+  }
+
+  @ApiOperation(value = "Lists all datasets and collections in a collection")
+  def allCollectionsAndDatasets() = {
+
   }
 
 }
