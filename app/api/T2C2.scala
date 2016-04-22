@@ -23,7 +23,7 @@ class T2C2 @Inject() (datasets : DatasetService, collections: CollectionService)
     Ok(toJson(dataset_name_collectionid))
   }
 
-  @ApiOperation(value = "Get all collections",
+  @ApiOperation(value = "Get all collections with dataset ids",
     notes = "",
     responseClass = "None", httpMethod = "GET")
   def getAllCollectionsWithDatasetIds() = PermissionAction(Permission.ViewCollection) { implicit request =>
