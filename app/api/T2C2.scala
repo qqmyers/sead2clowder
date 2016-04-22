@@ -37,10 +37,12 @@ class T2C2 @Inject() (datasets : DatasetService, collections: CollectionService)
 
   def jsonCollection(collection: Collection): JsValue = {
     var datasetsInCollection = datasets.listCollection(collection.id.stringify)
+    var datasetIds = for (dataset<-datasetsInCollection)
+      yield dataset.id
     toJson(Map("id" -> collection.id.toString, "name" -> collection.name, "description" -> collection.description,
       "created" -> collection.created.toString,"author"-> collection.author.toString, "root_flag" -> collection.root_flag.toString,
       "child_collection_ids"-> collection.child_collection_ids.toString, "parent_collection_ids" -> collection.parent_collection_ids.toString,
-      "dataset_ids"->datasetsInCollection.mkString(","),
+      "dataset_ids"->datasetIds.mkString(","),
       "childCollectionsCount" -> collection.childCollectionsCount.toString, "datasetCount"-> collection.datasetCount.toString, "spaces" -> collection.spaces.toString))
   }
 
