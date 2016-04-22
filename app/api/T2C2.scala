@@ -1,9 +1,10 @@
 package api
 
 import javax.inject.Inject
+import api.Permission._
 import com.wordnik.swagger.annotations.{ApiOperation, Api}
-import models.{ResourceRef, UUID}
-import play.api.libs.json.Json
+import models.{Collection, ResourceRef, UUID}
+import play.api.libs.json.{JsValue, Json}
 import play.api.libs.json.Json.toJson
 import services.{CollectionService, DatasetService}
 
@@ -22,9 +23,25 @@ class T2C2 @Inject() (datasets : DatasetService, collections: CollectionService)
     Ok(toJson(dataset_name_collectionid))
   }
 
-  @ApiOperation(value = "Lists all datasets and collections in a collection")
-  def allCollectionsAndDatasets() = {
+  @ApiOperation(value = "Get all collections",
+    notes = "",
+    responseClass = "None", httpMethod = "GET")
+  def getAllCollectionsWithDatasetIds() = PermissionAction(Permission.ViewCollection) { implicit request =>
+    implicit val user = request.user
+    var count : Long  = collections.countAccess(Set[Permission](Permission.ViewCollection),user,true);
+    var limit = count.toInt
+    val all_collections_list = for (collection <- collections.listAccess(limit,Set[Permission](Permission.ViewCollection),request.user,false))
+      yield jsonCollection(collection)
+    Ok(toJson(all_collections_list))
+  }
 
+  def jsonCollection(collection: Collection): JsValue = {
+    var datasetsInCollection = datasets.listCollection(collection.id.stringify)
+    toJson(Map("id" -> collection.id.toString, "name" -> collection.name, "description" -> collection.description,
+      "created" -> collection.created.toString,"author"-> collection.author.toString, "root_flag" -> collection.root_flag.toString,
+      "child_collection_ids"-> collection.child_collection_ids.toString, "parent_collection_ids" -> collection.parent_collection_ids.toString,
+      "dataset_ids"->datasetsInCollection.mkString(","),
+      "childCollectionsCount" -> collection.childCollectionsCount.toString, "datasetCount"-> collection.datasetCount.toString, "spaces" -> collection.spaces.toString))
   }
 
 }

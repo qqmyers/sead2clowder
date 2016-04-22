@@ -722,3 +722,4 @@ POST        /t2c2/uploadToDataset/:id                                           
 PUT         /t2c2/files/:id/updateDescription                                                           @api.Files.updateDescription(id: UUID)
 GET         /t2c2/collections/:coll_id/datasets                                                         @api.Datasets.listInCollection(coll_id: UUID)
 GET         /api/t2c2/collections/:coll_id/datasetsWithParentColId                                      @api.T2C2.getDatasetsInCollectionWithColId(coll_id: UUID)
+GET         /api/t2c2/allCollectionsWithDatasetIds                                                      @api.T2C2.getAllCollectionsWithDatasetIds()
