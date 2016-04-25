@@ -5,10 +5,10 @@
 @import _root_.util.Formatters
 
 @main(displayedName) {
-    <script src="@routes.Assets.at("javascripts/collectionListProcess.js")" type="text/javascript"></script>
-    <script src="@routes.Assets.at("javascripts/datasetListProcess.js")" type="text/javascript"></script>
-    <script src="@routes.Assets.at("javascripts/spaceListProcess.js")" type="text/javascript"></script>
-    <script src="@routes.Assets.at("javascripts/deleteUtils.js")" type="text/javascript"></script>
+<script src="@routes.Assets.at("javascripts/collectionListProcess.js")" type="text/javascript"></script>
+<script src="@routes.Assets.at("javascripts/datasetListProcess.js")" type="text/javascript"></script>
+<script src="@routes.Assets.at("javascripts/spaceListProcess.js")" type="text/javascript"></script>
+<script src="@routes.Assets.at("javascripts/deleteUtils.js")" type="text/javascript"></script>
 <div class="row featurette" style="display:margin:-150px;">
     <div class="col-md-6">
         <h1 class="featurette-heading">@profile.fullName</h1>
@@ -27,15 +27,6 @@
             </div>  
         </div>
         
-        <h2 class="showDataset"> My Datasets </h2>
-        <div class="showSearch">
-            <input class="search-dataset form-control" placeholder="Search your datasets"></input><br />
-        </div>         
-
-        <div class="panel panel-default">
-            <div id="datasets">
-            </div> 
-        </div>    
     </div>
     <div class="col-md-6">
         <h2>My Events</h2>
@@ -492,9 +483,8 @@ Any updates on your followed instances will show here.</p>
     <script>
     //Get collections
     function getCollections() {
-        $(".showDataset").hide(); 
         $.ajax({
-            url: "api/collections/allCollections",
+            url: "api/t2c2/allCollectionsWithDatasetIds",
             dataType: "json",
             beforeSend: function(xhr){
                 xhr.setRequestHeader("Content-Type", "application/json"); 
@@ -502,82 +492,109 @@ Any updates on your followed instances will show here.</p>
             }, 
             success: function(data) {
                     var col = "#collections";
-                    createJSTrees(data, col);    
+                    createJSTrees(data, col);   
             }, 
             error: function(xhr, status, error) {
 
             }   
         });
-
     }
 
-    //Get datasets
-    function getDatasets(collectionID) {
-        $.ajax({
-            url: "t2c2/collections/56fd5638d4c69c316c900f0c/datasets",
+    function setDatasetName(colId, datasetId){
+
+        return $.ajax({
+            url: "api/collections/" + colId + "/getDatasets",
             dataType: "json",
+            type: "GET",
             beforeSend: function(xhr){
                 xhr.setRequestHeader("Content-Type", "application/json"); 
                 xhr.setRequestHeader("Accept", "application/json");
-
             }, 
-            success: function(data) {
-                var ds = "#datasets";
-                createJSTrees(data, ds);    
-            }, 
-            error: function(xhr, status, error) {
-            }   
+            success: function(data){
+            } 
         });
+    }
 
-    }   
-    </script>
+    function getDatasetName(data /*, textStatus, jqXHR */ ) {
+        console.log(data);
+        // return data;
+    }
 
-    <script>
-    //Create tree from js object
+
+
+
+
     getCollections();
     function createJSTrees(jsonData, type) {
 
-        if (type == "#collections"){
-            for(var i = 0; i < jsonData.length; i++){
+        for (var x = 0; x < jsonData.length; x++){
+            if (jsonData[x]['dataset_ids']){
 
-                //create library supported key names (text,parent)
-                jsonData[i].text = jsonData[i]['name'];
-                jsonData[i].parent = jsonData[i]['parent_collection_ids'];
+                var parent_collection_ids = jsonData[x]['id'];
+                //var name = jsonData[x]['dataset_ids'];
 
-                //remove old keys
-                delete jsonData[i].name;
-                delete jsonData[i].parent_collection_ids;
+                var root_flag = "false"
+                var id = jsonData[x]['dataset_ids'];
+                // var name = setDatasetName(parent_collection_ids, id);
+                // var name1 = getDatasetName(); 
+                var name = setDatasetName().done(getDatasetName);
 
-                //Remove special characters from the values
-                if (jsonData[i].root_flag == "true"){
-                    jsonData[i].parent = "#";
+                console.log(name);
 
-                }else{
-                    var str = "";
 
-                    str = jsonData[i].parent.replace(/[List()]+/gi, '');
-                    jsonData[i].parent = str; 
-                }
 
-                //For new root collections where the json requires a root parent to have a value of #
-                if (jsonData[i].parent == ""){
-                    jsonData[i].parent = "#";
-                }
-
+                jsonData.push({parent_collection_ids : parent_collection_ids, name : name, root_flag : root_flag, id : id });                
             }
-        }else if (type == "#datasets"){
-            for (var i = 0; i < jsonData.length; i++){
-                jsonData[i].text = jsonData[i]['name'];
-                jsonData[i].parent = jsonData[i]['id'];
-
-                //remove old keys
-                delete jsonData[i].name;
-                delete jsonData[i].id;
- 
-            }
-        }else{
 
         }
+
+        for(var i = 0; i < jsonData.length; i++){
+            // console.log(jsonData);
+            //create library supported key names (text,parent)
+            jsonData[i].text = jsonData[i]['name'];
+            jsonData[i].parent = jsonData[i]['parent_collection_ids'];
+            // console.log(jsonData[i]['dataset_ids']); 
+           
+            // console.log(jsonData[i].text);
+            // console.log(jsonData[i].parent);
+            //remove old keys
+            delete jsonData[i].name;
+            delete jsonData[i].parent_collection_ids;
+
+            //Does this collection have a dataset? If so....
+            if (jsonData[i]['dataset_ids']){
+                var x = jsonData[i]['dataset_ids'];
+
+                // var jsonData[i]['parent_collection_ids'] = 
+                // var title = news.title;
+                // var link = news.link;
+                // arr.push({title : link});                
+                // jsonData[i].parent = jsonData[i]['parent_collection_ids'];
+                // console.log(jsonData[i]['dataset_ids']);
+                // console.log(jsonData[i].parent);
+
+                // jsonData[i].text = x;               
+                // console.log(x);
+            }
+            // Remove special characters from the values
+            // Is this a root collection?
+            if (jsonData[i].root_flag == "true"){
+                jsonData[i].parent = "#";
+
+            }else{
+                var str = "";
+
+                str = jsonData[i].parent.replace(/[List()]+/gi, '');
+                jsonData[i].parent = str; 
+            }
+
+            //For new root collections where the json requires a root parent to have a value of #
+            if (jsonData[i].parent == ""){
+                jsonData[i].parent = "#";
+            }
+
+        }
+        //Create tree from js object
         //jstree initialization and settings
         $(type).jstree({ 
 
@@ -645,58 +662,15 @@ Any updates on your followed instances will show here.</p>
         }
     });
 
-    //Search Plugin
-    $(".search-dataset").keyup(function() {
-        var searchString = $(this).val();
-        $("#datasets").jstree('search', searchString);
-    });
-
-    //Prevent collection search from submitting the form
-    $('.search-dataset').keydown(function (e) {
-        if (e.keyCode == 13) {
-            e.preventDefault();
-        }
-    });
-
     $("#collections").on("select_node.jstree", function(e, data){
             var str = data.node.id;  
             var res = str.match(/J/gi);
             if (res != "j"){
-                getDatasets(str); 
-                $(".showDataset").show(); 
                     // window.location.href = "/collection/" + data.node.id;
             }
             
     });
 
-
-
-    $("#collections").on("deselect_node.jstree", function(e, data){
-        $("#datasets").empty(); 
-    });
-
-
-    $("#collections").bind("loaded.jstree open_node.jstree", function (event, data) {
-        $('.jstree-leaf').attr("data-trigger", "hover");
-    })
-
-    $("#collections").on("hover_node.jstree", function(e, data){
-                // $('.jstree-leaf').attr("data-trigger", "hover");
-        $("#"+data.node.id).attr("data-trigger", "hover");
-        //$("#"+data.node.id).prop('title', "add your custom title here");
-
-        //alert(data.node.id).attr("id");
-    });
-
-    $("#datasets").on("select_node.jstree", function(e, data){
-            var str = data.node.id;  
-            var res = str.match(/J/gi);
-
-            if (res != "j"){
-                    window.location.href = "/datasets/" + data.node.id;
-            }
-            
-    });    
     </script>
 
     <script>
