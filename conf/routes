@@ -717,7 +717,6 @@ DELETE      /t2c2/templates/deleteTemplate/:id                                  
 # T2C2 endpoints
 #----------------------------------------------------
 
-
 POST        /t2c2/uploadToDataset/:id                                                                   @api.Files.uploadToDatasetWithDescription(id: UUID, showPreviews: String ?= "DatasetLevel", originalZipFile: String ?= "", flags: String ?= "")
 PUT         /t2c2/files/:id/updateDescription                                                           @api.Files.updateDescription(id: UUID)
 GET         /t2c2/collections/:coll_id/datasets                                                         @api.Datasets.listInCollection(coll_id: UUID)
