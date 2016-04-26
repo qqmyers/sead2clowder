@@ -506,6 +506,7 @@ Any updates on your followed instances will show here.</p>
 
         //build key/value pairs for datasets that exist
         for (var i = 0; i < jsonData.length; i++){
+
             //if there are multiple datasets then split the string
             if (jsonData[i]['dataset_ids']){
                 
@@ -517,7 +518,9 @@ Any updates on your followed instances will show here.</p>
 
                     var dataset_name = val.split(':')[0].replace(/[^a-zA-Z 0-9]+/g,'');
                     var dataset_id = val.substring(val.indexOf(":") + 1);
-                    jsonData.push({parent_collection_ids : parent_collection_ids, name : dataset_name, root_flag : root_flag, id : dataset_id });    
+                    //differentiate between collections and datasets
+                    var ds = "#dataset_id" + dataset_id;
+                    jsonData.push({parent_collection_ids : parent_collection_ids, name : dataset_name, root_flag : root_flag, id : ds });    
                 });            
                 
             }
@@ -547,7 +550,6 @@ Any updates on your followed instances will show here.</p>
             }
 
         }
-
 
         //Create tree from js object
         //jstree initialization and settings
@@ -605,7 +607,6 @@ Any updates on your followed instances will show here.</p>
 
     }    
 
-
     //Search Plugin
     $(".search-collection").keyup(function() {
         var searchString = $(this).val();
@@ -622,9 +623,16 @@ Any updates on your followed instances will show here.</p>
     $("#collections").on("select_node.jstree", function(e, data){
             var str = data.node.id;  
             var res = str.match(/J/gi);
+
             //how to determine if dataset
             if (res != "j"){
-                    window.location.href = "/datasets/" + data.node.id;
+                if (str.match("^#dataset_id")){
+                    var newStr = str.replace("#dataset_id", "");
+                    window.location.href = "/datasets/" + newStr;
+
+                }else{
+                    window.location.href = "/collection/" + str;
+                }
             }
             
     });
