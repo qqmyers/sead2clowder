@@ -17,7 +17,7 @@
         <a href="@routes.Datasets.newDataset(None, None)" class="btn btn-link" title="Create a new dataset"><span class="glyphicon glyphicon-ok"></span> Create Dataset</a>
         <a href="@routes.Collections.newCollection(None)" class="btn btn-link" title="Create a new collection"><span class="glyphicon glyphicon-ok"></span> Create Collection</a>
         
-        <h2> My Collections </h2>
+        <h2> My Collections and Datasets</h2>
         <!-jstree goes here-->
         <div class="showSearch">
             <input class="search-collection form-control" placeholder="Search your collections"></input><br />
@@ -97,12 +97,12 @@ Any updates on your followed instances will show here.</p>
                 <div class="margin-top-h col-lg-6 col-md-6 col-sm-6 col-xs-6">
                     <span class="pull-right"> <a href="@routes.Users.getFollowers()">See More</a></span>
                 </div> -->
- <div class="col-lg-6 col-md-6 col-sm-6 col-xs-6">
+<!--  <div class="col-lg-6 col-md-6 col-sm-6 col-xs-6">
  <h2> My Events </h2>
 </div>
 <div class="margin-top-h col-lg-6 col-md-6 col-sm-6 col-xs-6">
 
-<!--             @for(event <- newsfeed) {
+            @for(event <- newsfeed) {
                 <div class="panel panel-default">
                     <div class="panel-body">
                         <div class="media">
@@ -127,9 +127,9 @@ Any updates on your followed instances will show here.</p>
             @if(newsfeed.size < 1) {
                 <p>You can follow <a href="@routes.Users.getUsers()">users</a>, <a href="@routes.Spaces.list("")">spaces</a>, <a href="@routes.Datasets.list("")">datasets</a> and <a href="@routes.Collections.list("")">collections</a>.
                     Any updates on your followed instances will show here.</p>
-            }  -->
+            } 
 
-</div>
+</div> -->
         </div>
             <div class="row">
 
@@ -502,40 +502,25 @@ Any updates on your followed instances will show here.</p>
 
     getCollections();
 
-    function setDatasetName(colId, datasetId){
-
-       return $.ajax({
-            url: "api/collections/" + colId + "/getDatasets",
-            dataType: "json",
-            type: "GET",
-            beforeSend: function(xhr){
-                xhr.setRequestHeader("Content-Type", "application/json"); 
-                xhr.setRequestHeader("Accept", "application/json");
-            }, 
-            success: function(data){
-            }
-        });
-    }
-
     function createJSTrees(jsonData, type) {
 
         //build key/value pairs for datasets that exist
         for (var i = 0; i < jsonData.length; i++){
-
             //if there are multiple datasets then split the string
             if (jsonData[i]['dataset_ids']){
+                
                 var arr = jsonData[i]['dataset_ids'].split(",");
+            
+                var parent_collection_ids = jsonData[i]['id'];
+                var root_flag = "false"
                 $.each(arr, function(key, val){
-                    var parent_collection_ids = jsonData[i]['id'];
-                    var root_flag = "false"
-                    var name = jsonData[i]['id'];
-                    jsonData.push({parent_collection_ids : parent_collection_ids, name : name, root_flag : root_flag, id : val });                
-                }); 
+
+                    var dataset_name = val.split(':')[0].replace(/[^a-zA-Z 0-9]+/g,'');
+                    var dataset_id = val.substring(val.indexOf(":") + 1);
+                    jsonData.push({parent_collection_ids : parent_collection_ids, name : dataset_name, root_flag : root_flag, id : dataset_id });    
+                });            
+                
             }
-
-        }
-
-        for(var i = 0; i < jsonData.length; i++){
 
             //create library supported key names (text,parent)
             jsonData[i].text = jsonData[i]['name'];
@@ -637,8 +622,9 @@ Any updates on your followed instances will show here.</p>
     $("#collections").on("select_node.jstree", function(e, data){
             var str = data.node.id;  
             var res = str.match(/J/gi);
+            //how to determine if dataset
             if (res != "j"){
-                    // window.location.href = "/collection/" + data.node.id;
+                    window.location.href = "/datasets/" + data.node.id;
             }
             
     });
