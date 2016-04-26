@@ -500,9 +500,11 @@ Any updates on your followed instances will show here.</p>
         });
     }
 
+    getCollections();
+
     function setDatasetName(colId, datasetId){
 
-        return $.ajax({
+       return $.ajax({
             url: "api/collections/" + colId + "/getDatasets",
             dataType: "json",
             type: "GET",
@@ -511,79 +513,45 @@ Any updates on your followed instances will show here.</p>
                 xhr.setRequestHeader("Accept", "application/json");
             }, 
             success: function(data){
-            } 
+            }
         });
     }
 
-    function getDatasetName(data /*, textStatus, jqXHR */ ) {
-        console.log(data);
-        // return data;
-    }
-
-
-
-
-
-    getCollections();
     function createJSTrees(jsonData, type) {
 
-        for (var x = 0; x < jsonData.length; x++){
-            if (jsonData[x]['dataset_ids']){
+        //build key/value pairs for datasets that exist
+        for (var i = 0; i < jsonData.length; i++){
 
-                var parent_collection_ids = jsonData[x]['id'];
-                //var name = jsonData[x]['dataset_ids'];
-
-                var root_flag = "false"
-                var id = jsonData[x]['dataset_ids'];
-                // var name = setDatasetName(parent_collection_ids, id);
-                // var name1 = getDatasetName(); 
-                var name = setDatasetName().done(getDatasetName);
-
-                console.log(name);
-
-
-
-                jsonData.push({parent_collection_ids : parent_collection_ids, name : name, root_flag : root_flag, id : id });                
+            //if there are multiple datasets then split the string
+            if (jsonData[i]['dataset_ids']){
+                var arr = jsonData[i]['dataset_ids'].split(",");
+                $.each(arr, function(key, val){
+                    var parent_collection_ids = jsonData[i]['id'];
+                    var root_flag = "false"
+                    var name = jsonData[i]['id'];
+                    jsonData.push({parent_collection_ids : parent_collection_ids, name : name, root_flag : root_flag, id : val });                
+                }); 
             }
 
         }
 
         for(var i = 0; i < jsonData.length; i++){
-            // console.log(jsonData);
+
             //create library supported key names (text,parent)
             jsonData[i].text = jsonData[i]['name'];
             jsonData[i].parent = jsonData[i]['parent_collection_ids'];
-            // console.log(jsonData[i]['dataset_ids']); 
            
-            // console.log(jsonData[i].text);
-            // console.log(jsonData[i].parent);
             //remove old keys
             delete jsonData[i].name;
             delete jsonData[i].parent_collection_ids;
 
-            //Does this collection have a dataset? If so....
-            if (jsonData[i]['dataset_ids']){
-                var x = jsonData[i]['dataset_ids'];
-
-                // var jsonData[i]['parent_collection_ids'] = 
-                // var title = news.title;
-                // var link = news.link;
-                // arr.push({title : link});                
-                // jsonData[i].parent = jsonData[i]['parent_collection_ids'];
-                // console.log(jsonData[i]['dataset_ids']);
-                // console.log(jsonData[i].parent);
-
-                // jsonData[i].text = x;               
-                // console.log(x);
-            }
-            // Remove special characters from the values
             // Is this a root collection?
             if (jsonData[i].root_flag == "true"){
                 jsonData[i].parent = "#";
 
             }else{
                 var str = "";
-
+                // Remove special characters from the values
                 str = jsonData[i].parent.replace(/[List()]+/gi, '');
                 jsonData[i].parent = str; 
             }
@@ -594,6 +562,8 @@ Any updates on your followed instances will show here.</p>
             }
 
         }
+
+
         //Create tree from js object
         //jstree initialization and settings
         $(type).jstree({ 
@@ -649,6 +619,8 @@ Any updates on your followed instances will show here.</p>
         });
 
     }    
+
+
     //Search Plugin
     $(".search-collection").keyup(function() {
         var searchString = $(this).val();
