@@ -705,8 +705,8 @@ POST        /api/vocabuliaries/:vocab_id/removeFromSpace/:space_id              
 # TEMPLATES ENDPOINT
 # ----------------------------------------------------------------------
 
-POST        /t2c2/templates/createExperimentTemplate                                      @api.Vocabularies.createVocabularyFromJson()
-POST        /t2c2/templates/createExperimentTemplateFromJson                              @api.Vocabularies.createVocabularyFromJson()
+POST        /t2c2/templates/createExperimentTemplate                                      @api.Vocabularies.createVocabularyFromJson(universal : Boolean ?= false)
+POST        /t2c2/templates/createExperimentTemplateFromJson                              @api.Vocabularies.createVocabularyFromJson(universal : Boolean ?= false)
 GET         /t2c2/templates/listExperimentTemplates                                       @api.Vocabularies.list()
 GET         /t2c2/templates/getExperimentTemplateById/:id                                              @api.Vocabularies.get(id: UUID)
 GET         /t2c2/templates/getExperimentTemplateByName/:name                                          @api.Vocabularies.getByName(name : String)
