@@ -1,77 +1,92 @@
 package services.mongodb
 
 import com.mongodb.casbah.Imports._
-import play.api.Logger
-import play.api.Play.current
-import services.AppConfigurationService
+import securesocial.core.Identity
+import services.mongodb.MongoContext.context
+import com.mongodb.casbah.commons.MongoDBObject
+
+import com.novus.salat.dao.{SalatMongoCursor, ModelCompanion, SalatDAO}
+import org.bson.types.ObjectId
+import models._
+import javax.inject.{Singleton, Inject}
+
+
+import com.mongodb.casbah.WriteConcern
+import services.{VocabularyService, UserService}
+import play.api.Play._
+import scala.util.{Success, Try}
 
 /**
-  * App Configuration Service.
- */
-class MongoDBVocabularyService extends AppConfigurationService {
-  def addPropertyValue(key: String, value: AnyRef) {
-    getCollection.update(MongoDBObject("key" -> key), $addToSet("value" -> value), upsert=true, concern=WriteConcern.Safe)
+  * Created by todd_n on 2/9/16.
+  */
+@Singleton
+class MongoDBVocabularyService @Inject() (userService: UserService) extends VocabularyService {
+
+  def count() : Long = {
+    Vocabulary.count( MongoDBObject())
   }
 
-  def removePropertyValue(key: String, value: AnyRef) {
-    getCollection.update(MongoDBObject("key" -> key), $pull("value" -> value), concern=WriteConcern.Safe)
+  def insert(vocabulary : Vocabulary) : Option[String] = {
+    Vocabulary.insert(vocabulary).map(_.toString)
   }
 
-  def hasPropertyValue(key: String, value: AnyRef) = {
-    getCollection.findOne(("value" $in value :: Nil) ++ ("key" -> key)).nonEmpty
+  def listAll() : List[Vocabulary] = {
+    Vocabulary.findAll().toList
   }
 
-  /**
-   * Gets the configuration property with the specified key. If the key is not found
-   * it wil return None.
-   */
-  def getProperty[objectType <: AnyRef](key: String): Option[objectType] = {
-    Logger.debug(s"Getting value for $key")
-    getCollection.findOne(MongoDBObject("key" -> key)) match {
-      case Some(x) => {
-        x.get("value") match {
-          case l:BasicDBList => Some(l.toList.asInstanceOf[objectType])
-          case y => Some(y.asInstanceOf[objectType])
-        }
+  def get(id: UUID) : Option[Vocabulary] = {
+    Vocabulary.findOneById(new ObjectId(id.stringify))
+  }
+
+  def getByName(name : String) : List[Vocabulary] = {
+    Vocabulary.dao.find(MongoDBObject("name"->name)).toList
+  }
+
+  def getByAuthor(author: Identity) : List[Vocabulary] = {
+    Vocabulary.findAll().toList.filter(p => p.author.get.identityId == author.identityId)
+  }
+
+  def getByAuthorAndName(author : Identity, name : String) : List[Vocabulary] = {
+    Vocabulary.findAll().toList.filter(p => (p.author.get.identityId == author.identityId ) && (p.name == name))
+  }
+
+  def delete(id : UUID) = Try {
+    Vocabulary.findOneById(new ObjectId(id.stringify)) match {
+      case Some(vocab) => {
+        Vocabulary.remove(MongoDBObject("_id" -> new ObjectId(vocab.id.stringify)))
+        Success
       }
-      case None => None
+      case None => Success
     }
   }
 
-  /**
-   * Sets the configuration property with the specified key to the specified value. If the
-   * key already existed it will return the old value, otherwise it returns None.
-   */
-  def setProperty(key: String, value: AnyRef): Option[AnyRef] = {
-    Logger.debug(s"Setting $key to $value")
-    val old = getProperty(key)
-    getCollection.update(MongoDBObject("key" -> key), $set("value" -> value), upsert=true, concern=WriteConcern.Safe)
-    old
+  def addToSpace(vocabId: UUID, spaceId: UUID) = Try{
+    val result = Vocabulary.update(
+      MongoDBObject("_id" -> new ObjectId(vocabId.stringify)),
+      $addToSet("spaces" -> Some(new ObjectId(spaceId.stringify))),
+      false, false)
   }
 
-  /**
-   * Remove the configuration property with the specified key and returns the value if any
-   * was set, otherwise it will return None.
-   */
-  def removeProperty(key: String): Option[AnyRef] = {
-    Logger.debug(s"Removing value for $key")
-    val collection = getCollection
-    collection.findOne(MongoDBObject("key" -> key)) match {
-      case Some(x) => {
-        collection.remove(MongoDBObject("key" -> key))
-        Some(x.get("value"))
-      }
-      case None => {
-        None
-      }
+  def removeFromSpace(vocabId: UUID, spaceId : UUID) = Try {
+    val result = Vocabulary.update(
+      MongoDBObject("_id" -> new ObjectId(vocabId.stringify)),
+      $pull("spaces" -> Some(new ObjectId(spaceId.stringify))),
+      false, false)
+  }
+
+  def findByDescription(desc : List[String], containsAll : Boolean ) : List[Vocabulary] = {
+    if (containsAll == false){
+      Vocabulary.findAll.toList.filter((v: Vocabulary )=> (!v.description.intersect(desc).isEmpty))
+    } else {
+      Vocabulary.findAll.toList.filter((v: Vocabulary )=> (desc.toSet[String].subsetOf(v.description.toSet[String])))
     }
   }
 
-  /** returns the collection with app configuration values */
-  def getCollection = {
-    current.plugin[MongoSalatPlugin] match {
-      case None => throw new RuntimeException("Mongo not configured");
-      case Some(mongo) => mongo.collection("app.configuration")
-    }
+}
+
+object Vocabulary extends ModelCompanion[Vocabulary, ObjectId] {
+  val dao = current.plugin[MongoSalatPlugin] match {
+    case None => throw new RuntimeException("No MongoSalatPlugin");
+    case Some(x) => new SalatDAO[Vocabulary, ObjectId](collection = x.collection("vocabularies")) {}
   }
 }
