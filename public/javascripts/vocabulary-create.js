@@ -1,6 +1,7 @@
 //Clear the input fields that are associated with this panel
 function clearFields() {
 	$('#name').val("");
+    $('#keys').val("");
 	$('#description').val("");
 }
 
@@ -10,12 +11,14 @@ function clearErrors() {
 }
 
 //Call on Create button click. Move to create a collection as specified after validating input fields
-function createCollection() {
+function createVocabulary() {
 	//Remove error messages if present
 	clearErrors();
 
 	//Update the input we are adding to the form programmatically
 	var name = $('#name');
+    var keys = $('#keys');
+    console.log(keys)
     var desc = $('#description');
     var space = $('#spaceid').find(":selected").val();
     var spaceList = [];
@@ -30,6 +33,10 @@ function createCollection() {
     	$('#nameerror').show();
     	error = true;
     }
+    if (!keys.val() && isKeysRequired) {
+        $('#keyerror').show();
+        error = true;
+    }
     if (!desc.val() && isDescRequired) {
         $('#descerror').show();
         error = true;
@@ -40,7 +47,9 @@ function createCollection() {
 
     var encName = htmlEncode(name.val());
 	var encDescription = htmlEncode(desc.val());
+    var encKeys = htmlEncode(keys.val());
 	$('#hiddenname').val(encName);
+    $('#hiddenkeys').val(encKeys)
     $('#hiddendescription').val(encDescription);
     $('#hiddenspace').val(spaceList);
 
