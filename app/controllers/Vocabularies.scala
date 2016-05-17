@@ -1,111 +1,127 @@
 package controllers
 
-import java.util.Calendar
-import javax.inject.Inject
+import java.text.SimpleDateFormat
+import java.util.Date
+import javax.inject.{Inject, Singleton}
 
-import models.ExtractionInfoSetUp
+import api.Permission
+import api.Permission._
+import models._
+import org.apache.commons.lang.StringEscapeUtils
 import play.api.Logger
 import play.api.Play.current
-import play.api.libs.concurrent.Execution.Implicits._
-import play.api.libs.json._
-import services.{ExtractionRequestsService, ExtractorService}
+import play.api.libs.json.JsValue
+import play.api.libs.json.Json.toJson
+import services.{CollectionService, DatasetService, _}
+import util.{Formatters, RequiredFieldsConfig}
 
+import scala.collection.immutable.List
+import scala.collection.mutable.ListBuffer
 
-class Vocabularies @Inject()(extractors: ExtractorService, dtsrequests: ExtractionRequestsService) extends SecuredController {
+@Singleton
+class Vocabularies @Inject()(vocabularies : VocabularyService, datasets: DatasetService, collections: CollectionService, previewsService: PreviewService,
+                             spaceService: SpaceService, users: UserService, events: EventService) extends SecuredController {
 
-  /**
-   * Directs currently running extractor's server IPs to the webpage
-   */
-
-  def getExtractorServersIP() = AuthenticatedAction.async(parse.json) { implicit request =>
-      for {
-        x <- ExtractionInfoSetUp.updateExtractorsInfo()
-        status <- x
-      } yield {
-
-        Logger.debug("Update Status:" + status)
-        val list_servers = extractors.getExtractorServerIPList()
-        var jarr = new JsArray()
-        var list_servers1=List[String]()
-        list_servers.map {
-          ls =>
-            Logger.debug("Server Name:  " + ls.substring(1, ls.size-1))
-            jarr = jarr :+ (Json.parse(ls))
-            list_servers1=ls.substring(1, ls.size-1)::list_servers1
-            }
-        Logger.debug("Json array for list of extractors server ips----" + jarr.toString)
-        Ok(views.html.extractorsServersIP(list_servers1,list_servers1.size))
+  def newVocabulary(space: Option[String]) = PermissionAction(Permission.CreateCollection) { implicit request =>
+    implicit val user = request.user
+    val spacesList = user.get.spaceandrole.map(_.spaceId).flatMap(spaceService.get(_))
+    var decodedSpaceList = new ListBuffer[models.ProjectSpace]()
+    for (aSpace <- spacesList) {
+      //For each space in the list, check if the user has permission to add something to it, if so
+      //decode it and add it to the list to pass back to the view.
+      if (Permission.checkPermission(Permission.AddResourceToSpace, ResourceRef(ResourceRef.space, aSpace.id))) {
+        decodedSpaceList += Utils.decodeSpaceElements(aSpace)
       }
     }
-
-/**
- * Directs currently running extractors information to the webpage 
- */
-  def getExtractorNames() = AuthenticatedAction { implicit request =>
-
-    val list_names = extractors.getExtractorNames()
-    var jarr = new JsArray()
-    var list_names1=List[String]()
-    list_names.map {
-      ls =>
-        Logger.debug("Extractor Name:  " + ls)
-        jarr = jarr :+ (Json.parse(ls))
-        list_names1=ls.substring(1, ls.size-1)::list_names1
-
+    space match {
+      case Some(spaceId) => {
+        spaceService.get(UUID(spaceId)) match {
+          case Some(s) => Ok(views.html.newVocabulary(null, decodedSpaceList.toList, RequiredFieldsConfig.isNameRequired, RequiredFieldsConfig.isDescriptionRequired, Some(spaceId)))
+          case None => Ok(views.html.newVocabulary(null, decodedSpaceList.toList, RequiredFieldsConfig.isNameRequired, RequiredFieldsConfig.isDescriptionRequired, None))
+        }
+      }
+      case None =>  Ok(views.html.newVocabulary(null, decodedSpaceList.toList, RequiredFieldsConfig.isNameRequired, RequiredFieldsConfig.isDescriptionRequired, None))
     }
-    Logger.debug("Json array for list of extractor names----" + jarr.toString)
-    Ok(views.html.extractors(list_names1,list_names1.size))
 
   }
-  
-/**
- * Directs input type supported by currently running extractors information to the webpage
- */
-  def getExtractorInputTypes() = AuthenticatedAction { implicit request =>
 
-    val list_inputtypes = extractors.getExtractorInputTypes()
-    var jarr = new JsArray()
-    var list_inputtypes1=List[String]()
-    list_inputtypes.map {
-      ls =>
-        Logger.debug("Extractor Input Type:  " + ls)
-        jarr = jarr :+ (Json.parse(ls))
-        list_inputtypes1=ls.substring(1, ls.size-1)::list_inputtypes1
+  def submit() = PermissionAction(Permission.CreateVocabulary)(parse.multipartFormData) { implicit request =>
+    Logger.debug("------- in Collections.submit ---------")
+    val colName = request.body.asFormUrlEncoded.getOrElse("name", null)
+    val colKeys = request.body.asFormUrlEncoded.getOrElse("keys", null)
+    val colDesc = request.body.asFormUrlEncoded.getOrElse("description", null)
+    val colSpace = request.body.asFormUrlEncoded.getOrElse("space", List.empty)
 
+    implicit val user = request.user
+    user match {
+      case Some(identity) => {
+        if (colName == null || colKeys == null || colDesc == null || colSpace == null) {
+          val spacesList = spaceService.list()
+          var decodedSpaceList = new ListBuffer[models.ProjectSpace]()
+          for (aSpace <- spacesList) {
+            decodedSpaceList += Utils.decodeSpaceElements(aSpace)
+          }
+          //This case shouldn't happen as it is validated on the client.
+          BadRequest(views.html.newVocabulary("Name, Description, or Space was missing during vocabulary creation.", decodedSpaceList.toList, RequiredFieldsConfig.isNameRequired, RequiredFieldsConfig.isDescriptionRequired, None))
+        }
+
+        var vocabulary: Vocabulary = null
+        if (colSpace.isEmpty || colSpace(0) == "default" || colSpace(0) == "") {
+          vocabulary = Vocabulary(name = colName(0).toString, keys = colKeys(0).split(',').toList, description = colDesc(0).split(',').toList, created = new Date, author = Some(identity))
+        }
+        else {
+          val stringSpaces = colSpace(0).split(",").toList
+          val colSpaces: List[UUID] = stringSpaces.map(aSpace => if (aSpace != "") UUID(aSpace) else None).filter(_ != None).asInstanceOf[List[UUID]]
+          vocabulary = Vocabulary(name = colName(0).toString, keys = colKeys(0).split(',').toList, description = colDesc(0).split(',').toList, created = new Date, author = Some(identity),spaces = colSpaces)
+        }
+
+        Logger.debug("Saving vocabulary " + vocabulary.name)
+        vocabularies.insert(vocabulary)
+        vocabulary.spaces.map {
+          sp => spaceService.get(sp) match {
+            case Some(s) => {
+              vocabularies.addToSpace(vocabulary.id, s.id)
+              //events.addSourceEvent(request.user, collection.id, collection.name, s.id, s.name, "add_collection_space")
+            }
+            case None => Logger.error(s"space with id $sp on collection $vocabulary.id doesn't exist.")
+          }
+        }
+
+        //index collection
+        val dateFormat = new SimpleDateFormat("dd/MM/yyyy")
+        //current.plugin[ElasticsearchPlugin].foreach{_.index("data", "vocabulary", vocabulary.id,
+        //List(("name",vocabulary.name), ("description", vocabulary.description), ("created",dateFormat.format(new Date())))}
+
+        //Add to Events Table
+        val option_user = users.findByIdentity(identity)
+        events.addObjectEvent(option_user, vocabulary.id, vocabulary.name, "create_vocabulary")
+
+        // redirect to collection page
+        current.plugin[AdminsNotifierPlugin].foreach {
+          _.sendAdminsNotification(Utils.baseUrl(request), "Collection", "added", vocabulary.id.toString, vocabulary.name)
+        }
+        Ok("not finished yet")
+      }
+      case None => Redirect(routes.Collections.list()).flashing("error" -> "You are not authorized to create new collections.")
     }
-    Logger.debug("Json array for list of input types supported by extractors----" + jarr.toString)
-    Ok(views.html.extractorsInputTypes(list_inputtypes1,list_inputtypes1.size))
-
   }
-  
-  /**
-   * Directs DTS extractions requests information to the webpage
-   */
-   def getDTSRequests() = AuthenticatedAction { implicit request =>
 
-    var list_requests = dtsrequests.getDTSRequests()
-    var startTime = models.ServerStartTime.startTime
-    var currentTime = Calendar.getInstance().getTime()
-    Ok(views.html.extractionRequests(list_requests, list_requests.size, startTime, currentTime))
-  }
-   
-   /**
-   * DTS Bookmarklet page
-   */
-   def getBookmarkletPage() = AuthenticatedAction { implicit request =>
-
-      Ok(views.html.dtsbookmarklet(Utils.baseUrl(request)))
-  }
 
   /**
-   * DTS Chrome Extension page
+   * Vocabulary.
    */
-  def getExtensionPage() = AuthenticatedAction { implicit request =>
-    val configuration = play.api.Play.configuration
-    val url = Utils.baseUrl(request)
-    var hostname = if (url.indexOf('.') == -1) { url.substring(url.indexOf('/') + 2, url.lastIndexOf(':')) } else { url.substring(url.indexOf('/') + 2, url.indexOf('.')) }
-    Logger.debug(" url= " + url + "  hostname " + hostname)
-    val extensionHostUrl = configuration.getString("dts.extension.host").getOrElse("")
-    Ok(views.html.dtsExtension(Utils.baseUrl(request), hostname, extensionHostUrl))
+  def vocabulary(id: UUID) = PermissionAction(Permission.ViewVocabulary, Some(ResourceRef(ResourceRef.vocabulary, id))){implicit request =>
+    implicit val user = request.user
+
+    vocabularies.get(id) match {
+      case Some(vocabulary)=> {
+        Ok("found vocabulary")
+      }
+      case None=> BadRequest("No such vocabulary")
+    }
   }
+
+
+
 }
+
