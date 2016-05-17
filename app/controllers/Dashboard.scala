@@ -25,6 +25,7 @@ class Dashboard  @Inject() (files: FileService, collections: CollectionService, 
     val datasetsCount = datasets.count()
     val datasetsCountAccess = datasets.countAccess(Set[Permission](Permission.ViewDataset), user, request.user.fold(false)(_.superAdminMode))
     val filesCount = files.count()
+    val filesBytes = files.bytes()
     val collectionsCount = collections.count()
     val collectionsCountAccess = collections.countAccess(Set[Permission](Permission.ViewCollection), user, request.user.fold(false)(_.superAdminMode))
     val spacesCount = spaces.count()
