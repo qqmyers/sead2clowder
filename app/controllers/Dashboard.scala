@@ -5,12 +5,13 @@ import javax.inject.{Inject, Singleton}
 import api.Permission
 import api.Permission._
 import play.api.{Logger, Routes}
-import play.api.mvc.Action
+import play.api.mvc.{Results, Action}
 import services._
 import models.{UUID, User, Event}
 import play.api.Logger
 
 import scala.collection.mutable.ListBuffer
+import scala.concurrent.Future
 
 
 @Singleton
@@ -131,7 +132,7 @@ class Dashboard  @Inject() (files: FileService, collections: CollectionService, 
         Ok(views.html.dashboard(AppConfiguration.getDisplayName, newsfeedEvents, clowderUser, datasetsUser, datasetcommentMap, decodedCollections.toList, spacesUser, true, followers, followedUsers.take(3),
        followedFiles.take(3), followedDatasets.take(3), followedCollections.take(3),followedSpaces.take(3), Some(true)))
       }
-      case _ => Ok("cannot display")
+      case _ => (Results.Redirect(securesocial.controllers.routes.LoginPage.login).flashing("error" -> "You must be logged in to access this page."))
         /*
         Ok(views.html.index(latestFiles, datasetsCount, datasetsCountAccess, filesCount, filesBytes, collectionsCount, collectionsCountAccess,
         spacesCount, spacesCountAccess, usersCount, AppConfiguration.getDisplayName, AppConfiguration.getWelcomeMessage))
