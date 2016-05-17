@@ -38,4 +38,5 @@ object ResourceRef {
   val curationFolder = 'curationFolder
   val curationFile = 'curationFile
   val metadata = 'metadata
+  val vocabulary = 'vocabulary
 }
