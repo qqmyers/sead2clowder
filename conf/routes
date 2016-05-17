@@ -13,7 +13,9 @@ GET            /*path/                                                          
 # HOME PAGE
 # ----------------------------------------------------------------------
 
-GET            /                                                                        @controllers.Application.index
+GET            /                                                                       @controllers.Application.index
+GET            /dashboard                                                              @controllers.Dashboard.index
+
 GET            /about                                                                   @controllers.Application.about
 GET            /email                                                                   @controllers.Application.email(subject: String ?= "")
 
@@ -439,7 +441,7 @@ POST           /api/collections                                                 
 GET            /api/collections/rootCollections                                         @api.Collections.getRootCollections
 GET            /api/collections/topLevelCollections                                     @api.Collections.getTopLevelCollections
 GET            /api/collections/allCollections                                          @api.Collections.getAllCollections()
-
+GET            /api/collections/getAllCollections                                       @api.Collections.getAllCollections()
 # deprecrated
 GET            /api/collections/list                                                    @api.Collections.list(title: Option[String] ?= None, date: Option[String] ?= None, limit: Int ?= 12)
 POST           /api/collections/:id/follow                                              @api.Collections.follow(id: UUID)
@@ -519,6 +521,14 @@ GET            /api/datasets/:id                                                
 DELETE         /api/datasets/:id                                                        @api.Datasets.deleteDataset(id: UUID)
 POST           /api/datasets/:id/detachdelete                                           @api.Datasets.detachAndDeleteDataset(id: UUID)
 POST           /api/datasets/:parentDatasetId/newFolder                                 @api.Folders.createFolder(parentDatasetId: UUID)
+
+# ----------------------------------------------------------------------
+# VOCABULARIES ENDPOINT
+# ----------------------------------------------------------------------
+
+GET             /vocabularies/new                                                       @controllers.Vocabularies.newVocabulary(space : Option[String])
+POST            /vocabularies/submit                                                    @controllers.Vocabularies.submit()
+GET             /vocabularies/:id                                                       @controllers.Vocabularies.vocabulary(id : UUID)
 
 # ----------------------------------------------------------------------
 # PREVIEWS ENDPOINT
@@ -704,7 +714,7 @@ GET         /api/vocabularies/list                                              
 POST        /api/vocabularies/createVocabularyFromJson                                  @api.Vocabularies.createVocabularyFromJson(isPublic : Boolean ?= false)
 POST        /api/vocabularies/createVocabulary                                          @api.Vocabularies.createVocabularyFromForm()
 GET         /api/vocabularies/getByAuthor                                               @api.Vocabularies.getByAuthor()
-GET        /api/vocabularies/findByDescription                                          @api.Vocabularies.findByDescription(containsAll : Boolean ?= false)
+POST        /api/vocabularies/findByDescription                                         @api.Vocabularies.findByDescription(containsAll : Boolean ?= false)
 
 GET         /api/vocabularies/:vocab_id                                                 @api.Vocabularies.get(vocab_id : UUID)
 GET         /api/vocabularies/:name                                                     @api.Vocabularies.getByName(name : String)
@@ -712,3 +722,32 @@ GET         /api/vocabularies/:name/getByNameAuthor                             
 
 POST        /api/vocabularies/:vocab_id/addToSpace/:space_id                            @api.Vocabularies.addToSpace(vocab_id: UUID, space_id : UUID)
 POST        /api/vocabuliaries/:vocab_id/removeFromSpace/:space_id                      @api.Vocabularies.removeFromSpace(vocab_id: UUID, space_id : UUID)
+
+# ----------------------------------------------------------------------
+# TEMPLATES ENDPOINT
+# ----------------------------------------------------------------------
+
+POST        /t2c2/templates/createExperimentTemplate                                      @api.Vocabularies.createVocabularyFromJson(isPublic : Boolean ?= false)
+POST        /t2c2/templates/createExperimentTemplateFromJson                              @api.Vocabularies.createVocabularyFromJson(isPublic : Boolean ?= false)
+GET         /t2c2/templates/listExperimentTemplates                                       @api.Vocabularies.list()
+GET         /t2c2/templates/getExperimentTemplateById/:id                                              @api.Vocabularies.get(id: UUID)
+GET         /t2c2/templates/getExperimentTemplateByName/:name                                          @api.Vocabularies.getByName(name : String)
+POST        /t2c2/templates/getExperimentTemplateByDescription                                         @api.Vocabularies.findByDescription(containsAll : Boolean ?= false)
+DELETE      /t2c2/templates/deleteTemplate/:id                                                         @api.Vocabularies.removeVocabulary(id: UUID)
+
+# ----------------------------------------------------------------------
+# TEMPLATES ENDPOINT / with views
+# ----------------------------------------------------------------------
+
+GET        /t2c2/templates/new                                                                        @controllers.T2C2.newTemplate(space : Option[String])
+
+#----------------------------------------------------
+# T2C2 endpoints
+#----------------------------------------------------
+
+POST        /t2c2/uploadToDataset/:id                                                                   @api.Files.uploadToDatasetWithDescription(id: UUID, showPreviews: String ?= "DatasetLevel", originalZipFile: String ?= "", flags: String ?= "")
+PUT         /t2c2/files/:id/updateDescription                                                           @api.Files.updateDescription(id: UUID)
+GET         /t2c2/collections/:coll_id/datasets                                                         @api.Datasets.listInCollection(coll_id: UUID)
+GET         /api/t2c2/collections/:coll_id/datasetsWithParentColId                                      @api.T2C2.getDatasetsInCollectionWithColId(coll_id: UUID)
+GET         /api/t2c2/allCollectionsWithDatasetIds                                                      @api.T2C2.getAllCollectionsWithDatasetIds()
+

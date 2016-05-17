@@ -307,6 +307,7 @@ class Application @Inject() (files: FileService, collections: CollectionService,
         api.routes.javascript.Collections.updateCollectionDescription,
         api.routes.javascript.Collections.getCollection,
         api.routes.javascript.Collections.removeFromSpaceAllowed,
+        api.routes.javascript.Collections.getAllCollections,
         api.routes.javascript.Spaces.get,
         api.routes.javascript.Spaces.removeSpace,
         api.routes.javascript.Spaces.list,
@@ -380,6 +381,7 @@ class Application @Inject() (files: FileService, collections: CollectionService,
         controllers.routes.javascript.CurationObjects.compareToRepository,
         controllers.routes.javascript.CurationObjects.deleteCuration,
         controllers.routes.javascript.CurationObjects.getStatusFromRepository,
+        controllers.routes.javascript.Vocabularies.submit,
         controllers.routes.javascript.Events.getEvents
       )
     ).as(JSON) 
