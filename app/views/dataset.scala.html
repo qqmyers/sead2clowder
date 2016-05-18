@@ -140,7 +140,7 @@
 	    	<div class="tabbable" id="bottomDatasetTabbable"> <!-- Only required for left/right tabs -->
                 <ul class="nav nav-tabs margin-bottom-20" >
                     <li role="presentation" class="active"><a href="#tab-files" role="tab" data-toggle="tab">Files </a></li>
-                    <li role="presentation"><a href="#tab-metadata" role="tab" data-toggle="tab">Metadata </a></li>
+                    <!--<li role="presentation"><a href="#tab-metadata" role="tab" data-toggle="tab">Metadata </a></li>-->
                     <li role="presentation"><a href="#tab-visua" role="tab" data-toggle="tab">Visualizations</a></li>
                     <li role="presentation"><a href="#tab-comments" role="tab" data-toggle="tab">Comments (@comments.size)</a></li>
                 </ul>
@@ -153,6 +153,7 @@
                         }
                         <div class="list-unstyled" id="reply_@dataset.id.toString"> @comment(comments)</div>
                     </div>
+                    @**
                     <div role="tabpanel" class="tab-pane fade" id="tab-metadata">
                         <div class="row">
                             <div class="col-md-12">
@@ -165,6 +166,8 @@
                             </div>
                         </div>
                     </div>
+                        commented out metadata tag - todd_n
+                        **@
                     <div role="tabpanel" class="tab-pane fade" id="tab-visua">
                         @datasets.previews(dataset, previewers)
                     </div>

@@ -13,7 +13,8 @@ GET            /*path/                                                          
 # HOME PAGE
 # ----------------------------------------------------------------------
 
-GET            /                                                                       @controllers.Application.index
+#GET            /original                                                                       @controllers.Application.index
+GET            /                                                                        @controllers.Application.index()
 GET            /dashboard                                                              @controllers.Dashboard.index
 
 GET            /about                                                                   @controllers.Application.about
