@@ -107,6 +107,7 @@
                         }
                     }
                     @if(Permission.checkPermission(Permission.AddResourceToDataset, ResourceRef(ResourceRef.dataset, dataset.id))) {
+                        @**
                         <a data-toggle="modal" data-target="#folder-modal" class="btn btn-link btn-sm btn-margin-bottom">
                             <span class="glyphicon glyphicon-ok"></span> Create Folder
                         </a>
@@ -134,6 +135,7 @@
                                 </div>
                             </div>
                         </div>
+                            **@
                     }
                 </div>
             </div>
