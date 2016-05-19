@@ -24,8 +24,10 @@ import play.api.libs.json.Json._
 import play.api.mvc.AnyContent
 import services._
 import _root_.util.{JSONLD, License}
+import views.html.dataset
 import scala.concurrent.{ExecutionContext, Future}
 import scala.collection.mutable.ListBuffer
+import org.apache.commons.io.input.CountingInputStream
 
 /**
  * Dataset API.
@@ -1924,7 +1926,7 @@ class  Datasets @Inject()(
   private def addFileToZip(folderName: String, file: models.File, zip: ZipOutputStream): Option[InputStream] = {
     files.getBytes(file.id) match {
       case Some((inputStream, filename, contentType, contentLength)) => {
-        zip.putNextEntry(new ZipEntry(folderName + "/" + filename))
+        zip.putNextEntry(new ZipEntry(folderName+"."+filename + "/" + filename))
         Some(inputStream)
       }
       case None => None
