@@ -89,6 +89,7 @@
                     }
                     @datasets.deleteButton(dataset)
                     @datasets.follow(dataset)
+                    @**
                     @if(user.isDefined && play.api.Play.current.plugin[services.StagingAreaPlugin].isDefined) {
                         @if(toPublish && currentSpace.isDefined && Permission.checkPermission(Permission.EditStagingArea, ResourceRef(ResourceRef.space, UUID(currentSpace.getOrElse(""))))) {
                             <a href="@(routes.CurationObjects.newCO(dataset.id, currentSpace.get))" class="btn btn-link btn-sm btn-margin-bottom">
@@ -106,6 +107,7 @@
                             }
                         }
                     }
+                        **@
                     @if(Permission.checkPermission(Permission.AddResourceToDataset, ResourceRef(ResourceRef.dataset, dataset.id))) {
                         @**
                         <a data-toggle="modal" data-target="#folder-modal" class="btn btn-link btn-sm btn-margin-bottom">
