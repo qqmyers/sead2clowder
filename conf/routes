@@ -13,7 +13,8 @@ GET            /*path/                                                          
 # HOME PAGE
 # ----------------------------------------------------------------------
 
-GET            /                                                                        @controllers.Application.index
+GET            /                                                                       @controllers.Application.index
+GET            /dashboard                                                              @controllers.Dashboard.index
 GET            /about                                                                   @controllers.Application.about
 GET            /email                                                                   @controllers.Application.email(subject: String ?= "")
 
@@ -727,3 +728,31 @@ POST        /api/vocabuliaries/:vocab_id/removeFromSpace/:space_id              
 
 GET         /api/vocabterms/list                                                        @api.VocabularyTerms.list()
 GET         /api/vocabterms/:id                                                         @api.VocabularyTerms.get(id : UUID)
+
+# ----------------------------------------------------------------------
+# TEMPLATES ENDPOINT
+# ----------------------------------------------------------------------
+
+POST        /t2c2/templates/createExperimentTemplate                                      @api.Vocabularies.createVocabularyFromJson(isPublic : Boolean ?= false)
+POST        /t2c2/templates/createExperimentTemplateFromJson                              @api.Vocabularies.createVocabularyFromJson(isPublic : Boolean ?= false)
+GET         /t2c2/templates/listExperimentTemplates                                       @api.Vocabularies.list()
+GET         /t2c2/templates/getExperimentTemplateById/:id                                              @api.Vocabularies.get(id: UUID)
+GET         /t2c2/templates/getExperimentTemplateByName/:name                                          @api.Vocabularies.getByName(name : String)
+POST        /t2c2/templates/getExperimentTemplateByDescription                                         @api.Vocabularies.findByDescription(containsAll : Boolean ?= false)
+DELETE      /t2c2/templates/deleteTemplate/:id                                                         @api.Vocabularies.removeVocabulary(id: UUID)
+
+# ----------------------------------------------------------------------
+# TEMPLATES ENDPOINT / with views
+# ----------------------------------------------------------------------
+
+GET        /t2c2/templates/new                                                                        @controllers.T2C2.newTemplate(space : Option[String])
+
+#----------------------------------------------------
+# T2C2 endpoints
+#----------------------------------------------------
+
+POST        /t2c2/uploadToDataset/:id                                                                   @api.Files.uploadToDatasetWithDescription(id: UUID, showPreviews: String ?= "DatasetLevel", originalZipFile: String ?= "", flags: String ?= "")
+PUT         /t2c2/files/:id/updateDescription                                                           @api.Files.updateDescription(id: UUID)
+GET         /t2c2/collections/:coll_id/datasets                                                         @api.Datasets.listInCollection(coll_id: UUID)
+GET         /api/t2c2/collections/:coll_id/datasetsWithParentColId                                      @api.T2C2.getDatasetsInCollectionWithColId(coll_id: UUID)
+GET         /api/t2c2/allCollectionsWithDatasetIds                                                      @api.T2C2.getAllCollectionsWithDatasetIds()
