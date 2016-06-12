@@ -106,9 +106,8 @@ class T2C2 @Inject()(vocabularies : VocabularyService, datasets: DatasetService,
   /**
    * Vocabulary.
    */
-  def vocabulary(id: UUID) = PermissionAction(Permission.ViewVocabulary, Some(ResourceRef(ResourceRef.vocabulary, id))){implicit request =>
+  def vocabulary(id: UUID) = PermissionAction(Permission.ViewVocabulary, Some(ResourceRef(ResourceRef.vocabulary, id))) {implicit request =>
     implicit val user = request.user
-
     vocabularies.get(id) match {
       case Some(vocabulary)=> {
         Ok("found vocabulary")
