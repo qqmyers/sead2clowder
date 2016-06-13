@@ -137,7 +137,7 @@ class MongoDBCollectionService @Inject() (
    * Return count of the requested collections
    */
   private def count(date: Option[String], nextPage: Boolean, title: Option[String], space: Option[String], permissions: Set[Permission], user: Option[User], showAll: Boolean, owner: Option[User]): Long = {
-    val (filter, _) = filteredQuery(date, nextPage, title, space, Set[Permission](Permission.ViewCollection), user, showAll, owner)
+    val (filter, _) = filteredQuery(date, nextPage, title, space, permissions, user, showAll, owner)
     Collection.count(filter)
   }
 
