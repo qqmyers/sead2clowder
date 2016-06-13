@@ -28,9 +28,9 @@ class T2C2 @Inject() (datasets : DatasetService, collections: CollectionService)
     responseClass = "None", httpMethod = "GET")
   def getAllCollectionsWithDatasetIds() = PermissionAction(Permission.ViewCollection) { implicit request =>
     implicit val user = request.user
-    var count : Long  = collections.countAccess(Set[Permission](Permission.ViewCollection),user,true);
+    var count : Long  = collections.countAccess(Set[Permission](Permission.AddResourceToCollection),user,true);
     var limit = count.toInt
-    val all_collections_list = for (collection <- collections.listAccess(limit,Set[Permission](Permission.ViewCollection),request.user,false))
+    val all_collections_list = for (collection <- collections.listAccess(limit,Set[Permission](Permission.AddResourceToCollection),request.user,false))
       yield jsonCollection(collection)
     Ok(toJson(all_collections_list))
   }
