@@ -714,6 +714,7 @@ POST        /api/vocabularies/createVocabularyFromJson                          
 POST        /api/vocabularies/createVocabulary                                          @api.Vocabularies.createVocabularyFromForm()
 GET         /api/vocabularies/getByAuthor                                               @api.Vocabularies.getByAuthor()
 POST        /api/vocabularies/findByDescription                                         @api.Vocabularies.findByDescription(containsAll : Boolean ?= false)
+GET         /api/vocabularies/getPublic                                                 @api.Vocabularies.getPublicVocabularies()
 
 
 GET         /api/vocabularies/:vocab_id                                                 @api.Vocabularies.get(vocab_id : UUID)
@@ -741,6 +742,7 @@ POST        /t2c2/templates/createExperimentTemplateDefaultValues               
 GET         /t2c2/templates/findByDescriptionOrName                                       @api.Vocabularies.findByDescription(containsAll : Boolean ?= false)
 GET         /t2c2/templates/listExperimentTemplates                                       @api.Vocabularies.list()
 POST        /t2c2/templates/getExperimentTemplateByDescription                                         @api.Vocabularies.findByDescription(containsAll : Boolean ?= false)
+GET         /t2c2/templates/getPublic                                                   @api.Vocabularies.getPublicVocabularies()
 GET         /t2c2/templates/getExperimentTemplateById/:id                                              @api.Vocabularies.get(id: UUID)
 GET         /t2c2/templates/getExperimentTemplateByName/:name                                          @api.Vocabularies.getByName(name : String)
 GET         /t2c2/templates/findByTag/:tag                                                  @api.Vocabularies.getByNameDescription(tag : String)
