@@ -57,7 +57,6 @@ class T2C2 @Inject() (datasets : DatasetService, collections: CollectionService)
       var first = listPair(0)
       var second = listPair(1)
       key_value_pairs = key_value_pairs + (first -> second)
-      Logger.info("here")
 
     }
     return key_value_pairs
