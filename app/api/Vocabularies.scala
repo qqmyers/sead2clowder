@@ -57,10 +57,10 @@ class Vocabularies @Inject() (vocabularyService: VocabularyService, vocabularyTe
 
     user match {
       case Some(identity) => {
-        val result = vocabularyService.listAll().filter( (v : Vocabulary) => (v.isPublic))
+        val result = vocabularyService.listAll().filter( (v : Vocabulary) => (v.isPublic)).map((v : Vocabulary)=>jsonVocabulary(v))
         Ok(toJson(result))
       }
-      case None => BadRequest("No public vocubularies foundr")
+      case None => BadRequest("No public vocabularies found")
     }
   }
 
@@ -77,6 +77,27 @@ class Vocabularies @Inject() (vocabularyService: VocabularyService, vocabularyTe
       }
       case None => BadRequest("No user matches that user")
     }
+  }
+
+  def jsonVocabulary(vocabulary: Vocabulary): JsValue = {
+    val terms = getVocabularyTerms(vocabulary)
+    val author = vocabulary.author.get.identityId.userId
+    Json.obj("id" -> vocabulary.id.stringify, "author" -> author, "name" -> vocabulary.name, "terms" -> terms, "keys" -> vocabulary.keys.mkString(","), "description" -> vocabulary.description.mkString(","), "isPublic" -> vocabulary.isPublic.toString, "spaces" -> vocabulary.spaces.mkString(","))
+  }
+
+  def getVocabularyTerms(vocabulary: Vocabulary): List[VocabularyTerm] = {
+    var vocab_terms: ListBuffer[VocabularyTerm] = ListBuffer.empty
+    if (!vocabulary.terms.isEmpty) {
+      for (term <- vocabulary.terms) {
+        var current_term = vocabularyTermService.get(term) match {
+          case Some(vocab_term) => {
+            vocab_terms += vocab_term
+          }
+        }
+      }
+    }
+
+    vocab_terms.toList
   }
 
   @ApiOperation(value = "Get vocabulary by name or description",
@@ -245,27 +266,6 @@ class Vocabularies @Inject() (vocabularyService: VocabularyService, vocabularyTe
       }
       case None => BadRequest("no vocabulary matches  " + vocabId)
     }
-  }
-
-  def jsonVocabulary(vocabulary: Vocabulary): JsValue = {
-    val terms = getVocabularyTerms(vocabulary)
-    val author = vocabulary.author.get.identityId.userId
-    Json.obj("id" -> vocabulary.id.stringify, "author" -> author, "name" -> vocabulary.name, "terms" -> terms, "keys" -> vocabulary.keys.mkString(","), "description" -> vocabulary.description.mkString(","), "isPublic" -> vocabulary.isPublic.toString, "spaces" -> vocabulary.spaces.mkString(","))
-  }
-
-  def getVocabularyTerms(vocabulary: Vocabulary): List[VocabularyTerm] = {
-    var vocab_terms: ListBuffer[VocabularyTerm] = ListBuffer.empty
-    if (!vocabulary.terms.isEmpty) {
-      for (term <- vocabulary.terms) {
-        var current_term = vocabularyTermService.get(term) match {
-          case Some(vocab_term) => {
-            vocab_terms += vocab_term
-          }
-        }
-      }
-    }
-
-    vocab_terms.toList
   }
 
   @ApiOperation(value = "Add vocabulary to space",
