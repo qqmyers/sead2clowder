@@ -713,10 +713,12 @@ GET         /api/vocabularies/list                                              
 POST        /api/vocabularies/createVocabularyFromJson                                  @api.Vocabularies.createVocabularyFromJson(isPublic : Boolean ?= false)
 POST        /api/vocabularies/createVocabulary                                          @api.Vocabularies.createVocabularyFromForm()
 GET         /api/vocabularies/getByAuthor                                               @api.Vocabularies.getByAuthor()
-POST        /api/vocabularies/findByDescription                                          @api.Vocabularies.findByDescription(containsAll : Boolean ?= false)
+POST        /api/vocabularies/findByDescription                                         @api.Vocabularies.findByDescription(containsAll : Boolean ?= false)
+
 
 GET         /api/vocabularies/:vocab_id                                                 @api.Vocabularies.get(vocab_id : UUID)
 GET         /api/vocabularies/:name                                                     @api.Vocabularies.getByName(name : String)
+GET         /api/vocabularies/:tag                                                      @api.Vocabularies.getByNameDescription(tag : String)
 GET         /api/vocabularies/:name/getByNameAuthor                                     @api.Vocabularies.getByNameAndAuthor(name: String)
 
 POST        /api/vocabularies/:vocab_id/addToSpace/:space_id                            @api.Vocabularies.addToSpace(vocab_id: UUID, space_id : UUID)
@@ -736,11 +738,15 @@ GET         /api/vocabterms/:id                                                 
 POST        /t2c2/templates/createExperimentTemplate                                      @api.Vocabularies.createVocabularyFromJson(isPublic : Boolean ?= false)
 POST        /t2c2/templates/createExperimentTemplateFromJson                              @api.Vocabularies.createVocabularyFromJson(isPublic : Boolean ?= false)
 POST        /t2c2/templates/createExperimentTemplateDefaultValues                         @api.Vocabularies.createVocabularyFromJson(isPublic : Boolean ?= false)
+GET         /t2c2/templates/findByDescriptionOrName                                       @api.Vocabularies.findByDescription(containsAll : Boolean ?= false)
 GET         /t2c2/templates/listExperimentTemplates                                       @api.Vocabularies.list()
+POST        /t2c2/templates/getExperimentTemplateByDescription                                         @api.Vocabularies.findByDescription(containsAll : Boolean ?= false)
 GET         /t2c2/templates/getExperimentTemplateById/:id                                              @api.Vocabularies.get(id: UUID)
 GET         /t2c2/templates/getExperimentTemplateByName/:name                                          @api.Vocabularies.getByName(name : String)
-POST        /t2c2/templates/getExperimentTemplateByDescription                                         @api.Vocabularies.findByDescription(containsAll : Boolean ?= false)
+GET         /t2c2/templates/findByTag/:tag                                                  @api.Vocabularies.getByNameDescription(tag : String)
 DELETE      /t2c2/templates/deleteTemplate/:id                                                         @api.Vocabularies.removeVocabulary(id: UUID)
+
+
 
 # ----------------------------------------------------------------------
 # TEMPLATES ENDPOINT / with views
