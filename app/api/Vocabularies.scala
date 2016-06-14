@@ -107,7 +107,8 @@ class Vocabularies @Inject() (vocabularyService: VocabularyService, vocabularyTe
               val key = (each_term \ "key").asOpt[String].getOrElse("")
               val units = (each_term \ "units").asOpt[String]
               val default_value = (each_term \ "default_value").asOpt[String]
-              val current_vocabterm: VocabularyTerm = VocabularyTerm(key = key, author = Option(identity), created = new Date(), units = units, default_value = default_value)
+              val description = (each_term \ "description").asOpt[String]
+              val current_vocabterm: VocabularyTerm = VocabularyTerm(key = key, author = Option(identity), created = new Date(), units = units, default_value = default_value, description = description)
 
               vocabularyTermService.insert(current_vocabterm) match {
                 case Some(id) => {
