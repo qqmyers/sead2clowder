@@ -3,7 +3,8 @@ package api
 import javax.inject.Inject
 import api.Permission._
 import com.wordnik.swagger.annotations.{ApiOperation, Api}
-import models.{Collection, ResourceRef, UUID}
+import models.{Dataset, Collection, ResourceRef, UUID}
+import play.api.Logger
 import play.api.libs.json.{JsValue, Json}
 import play.api.libs.json.Json.toJson
 import services.{CollectionService, DatasetService}
@@ -28,16 +29,44 @@ class T2C2 @Inject() (datasets : DatasetService, collections: CollectionService)
     responseClass = "None", httpMethod = "GET")
   def getAllCollectionsWithDatasetIds() = PermissionAction(Permission.ViewCollection) { implicit request =>
     implicit val user = request.user
-    var count : Long  = collections.countAccess(Set[Permission](Permission.AddResourceToCollection),user,true);
-    var limit = count.toInt
     val all_collections_list = for (collection <- collections.listAccess(0,Set[Permission](Permission.AddResourceToCollection),request.user,false))
       yield jsonCollection(collection)
     Ok(toJson(all_collections_list))
   }
 
+
+  @ApiOperation(value = "Get key values from last dataset",
+    notes = "",
+    responseClass = "None", httpMethod = "GET")
+  def getKeysValuesFromLastDataset() = PermissionAction(Permission.ViewDataset) { implicit request =>
+    implicit val user = request.user
+    val lastDataset : List[Dataset] = datasets.listAccess(1,Set[Permission](Permission.ViewDataset),user,true)
+    val keyValues = getKeyValuePairsFromDataset(lastDataset(0))
+    val asMap  = Json.toJson(keyValues)
+    Ok(asMap)
+  }
+
+  private def getKeyValuePairsFromDataset(dataset : Dataset): Map[String,String] = {
+    var key_value_pairs : Map[String,String] = Map.empty[String,String]
+    val description = dataset.description
+    val keyValues = description.split("\n")
+    for (pair <- keyValues){
+      var currentPair = pair.replace("{","")
+      currentPair = currentPair.replace("}","")
+      var listPair = currentPair.split(":")
+      var first = listPair(0).replace(" ","")
+      var second = listPair(1).replace(" ","")
+      key_value_pairs = key_value_pairs + (first -> second)
+      Logger.info("here")
+
+    }
+    return key_value_pairs
+  }
+
+
   def jsonCollection(collection: Collection): JsValue = {
-    var datasetsInCollection = datasets.listCollection(collection.id.stringify)
-    var datasetIds = for (dataset<-datasetsInCollection)
+    val datasetsInCollection = datasets.listCollection(collection.id.stringify)
+    val datasetIds = for (dataset<-datasetsInCollection)
       yield (dataset.name +":"+ dataset.id)
     toJson(Map("id" -> collection.id.toString, "name" -> collection.name, "description" -> collection.description,
       "created" -> collection.created.toString,"author"-> collection.author.email.toString,
