@@ -30,7 +30,7 @@ class T2C2 @Inject() (datasets : DatasetService, collections: CollectionService)
     implicit val user = request.user
     var count : Long  = collections.countAccess(Set[Permission](Permission.AddResourceToCollection),user,true);
     var limit = count.toInt
-    val all_collections_list = for (collection <- collections.listAccess(limit,Set[Permission](Permission.AddResourceToCollection),request.user,false))
+    val all_collections_list = for (collection <- collections.listAccess(0,Set[Permission](Permission.AddResourceToCollection),request.user,false))
       yield jsonCollection(collection)
     Ok(toJson(all_collections_list))
   }
@@ -40,7 +40,7 @@ class T2C2 @Inject() (datasets : DatasetService, collections: CollectionService)
     var datasetIds = for (dataset<-datasetsInCollection)
       yield (dataset.name +":"+ dataset.id)
     toJson(Map("id" -> collection.id.toString, "name" -> collection.name, "description" -> collection.description,
-      "created" -> collection.created.toString,"author"-> collection.author.toString,
+      "created" -> collection.created.toString,"author"-> collection.author.email.toString,
       "child_collection_ids"-> collection.child_collection_ids.toString, "parent_collection_ids" -> collection.parent_collection_ids.toString,
       "dataset_ids"->datasetIds.mkString(","),
       "childCollectionsCount" -> collection.childCollectionsCount.toString, "datasetCount"-> collection.datasetCount.toString, "spaces" -> collection.spaces.toString))

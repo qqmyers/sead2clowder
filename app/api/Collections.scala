@@ -232,7 +232,7 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
 
   def jsonCollection(collection: Collection): JsValue = {
     toJson(Map("id" -> collection.id.toString, "name" -> collection.name, "description" -> collection.description,
-      "created" -> collection.created.toString,"author"-> collection.author.toString, "root_flag" -> collections.hasRoot(collection).toString,
+      "created" -> collection.created.toString,"author"-> collection.author.email.toString, "root_flag" -> collections.hasRoot(collection).toString,
       "child_collection_ids"-> collection.child_collection_ids.toString, "parent_collection_ids" -> collection.parent_collection_ids.toString,
     "childCollectionsCount" -> collection.childCollectionsCount.toString, "datasetCount"-> collection.datasetCount.toString, "spaces" -> collection.spaces.toString))
   }
@@ -607,7 +607,7 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
     val count : Long  = collections.countAccess(Set[Permission](Permission.AddResourceToCollection),user,true)
     val limit = count.toInt
     //val limit = 10000
-    val all_collections_list = for (collection <- collections.listAccess(limit,Set[Permission](Permission.AddResourceToCollection),request.user,true))
+    val all_collections_list = for (collection <- collections.listAccess(0,Set[Permission](Permission.AddResourceToCollection),request.user,true))
       yield jsonCollection(collection)
     Ok(toJson(all_collections_list))
   }
