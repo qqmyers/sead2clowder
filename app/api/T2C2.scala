@@ -9,6 +9,8 @@ import play.api.libs.json.{JsValue, Json}
 import play.api.libs.json.Json.toJson
 import services.{CollectionService, DatasetService}
 
+import scala.collection.mutable.ListBuffer
+
 /**
   * Created by todd_n on 4/21/16.
   */
@@ -34,6 +36,16 @@ class T2C2 @Inject() (datasets : DatasetService, collections: CollectionService)
     Ok(toJson(all_collections_list))
   }
 
+  def jsonCollection(collection: Collection): JsValue = {
+    val datasetsInCollection = datasets.listCollection(collection.id.stringify)
+    val datasetIds = for (dataset<-datasetsInCollection)
+      yield (dataset.name +":"+ dataset.id)
+    toJson(Map("id" -> collection.id.toString, "name" -> collection.name, "description" -> collection.description,
+      "created" -> collection.created.toString,"author"-> collection.author.email.toString,
+      "child_collection_ids"-> collection.child_collection_ids.toString, "parent_collection_ids" -> collection.parent_collection_ids.toString,
+      "dataset_ids"->datasetIds.mkString(","),
+      "childCollectionsCount" -> collection.childCollectionsCount.toString, "datasetCount"-> collection.datasetCount.toString, "spaces" -> collection.spaces.toString))
+  }
 
   @ApiOperation(value = "Get key values from last dataset",
     notes = "",
@@ -53,25 +65,32 @@ class T2C2 @Inject() (datasets : DatasetService, collections: CollectionService)
     for (pair <- keyValues){
       var currentPair = pair.replace("{","")
       currentPair = currentPair.replace("}","")
-      var listPair = currentPair.split(":")
-      var first = listPair(0)
-      var second = listPair(1)
+      val listPair = currentPair.split(":")
+      val first = listPair(0)
+      val second = listPair(1)
       key_value_pairs = key_value_pairs + (first -> second)
 
     }
     return key_value_pairs
   }
 
-
-  def jsonCollection(collection: Collection): JsValue = {
-    val datasetsInCollection = datasets.listCollection(collection.id.stringify)
-    val datasetIds = for (dataset<-datasetsInCollection)
-      yield (dataset.name +":"+ dataset.id)
-    toJson(Map("id" -> collection.id.toString, "name" -> collection.name, "description" -> collection.description,
-      "created" -> collection.created.toString,"author"-> collection.author.email.toString,
-      "child_collection_ids"-> collection.child_collection_ids.toString, "parent_collection_ids" -> collection.parent_collection_ids.toString,
-      "dataset_ids"->datasetIds.mkString(","),
-      "childCollectionsCount" -> collection.childCollectionsCount.toString, "datasetCount"-> collection.datasetCount.toString, "spaces" -> collection.spaces.toString))
+  @ApiOperation(value = "Get key values from last dataset",
+    notes = "",
+    responseClass = "None", httpMethod = "GET")
+  def getKeysValuesFromLastDatasets(limit : Int) = PermissionAction(Permission.ViewDataset) { implicit request =>
+    implicit val user = request.user
+    var result : ListBuffer[Map[String,String]] = ListBuffer.empty[Map[String,String]]
+    val lastDatasets : List[Dataset] = datasets.listAccess(limit,Set[Permission](Permission.ViewDataset),user,true)
+    for (each <- lastDatasets){
+      try {
+        val currentKeyValues = getKeyValuePairsFromDataset(each)
+        result += currentKeyValues
+      } catch {
+        case e : Exception => Logger.error("could not get key values for " + each.id)
+      }
+    }
+    val asMap  = Json.toJson(result)
+    Ok(asMap)
   }
 
 }

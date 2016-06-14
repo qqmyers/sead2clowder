@@ -766,3 +766,4 @@ GET         /t2c2/collections/:coll_id/datasets                                 
 GET         /api/t2c2/collections/:coll_id/datasetsWithParentColId                                      @api.T2C2.getDatasetsInCollectionWithColId(coll_id: UUID)
 GET         /api/t2c2/allCollectionsWithDatasetIds                                                      @api.T2C2.getAllCollectionsWithDatasetIds()
 GET         /t2c2/getKeyValuesLastDataset                                                               @api.T2C2.getKeysValuesFromLastDataset()
+GET         /t2c2/getKeyValuesForLastDatasets                                                           @api.T2C2.getKeysValuesFromLastDatasets(limit : Int ?= 10)
