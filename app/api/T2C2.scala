@@ -79,7 +79,7 @@ class T2C2 @Inject() (datasets : DatasetService, collections: CollectionService)
   @ApiOperation(value = "Get key values from last dataset",
     notes = "",
     responseClass = "None", httpMethod = "GET")
-  def getKeyValuesFromLastDatasets(limit : Int) = PermissionAction(Permission.ViewDataset) { implicit request =>
+  def getKeysValuesFromLastDatasets(limit : Int) = PermissionAction(Permission.ViewDataset) { implicit request =>
     implicit val user = request.user
     var result : ListBuffer[Map[String,String]] = ListBuffer.empty[Map[String,String]]
     val lastDatasets : List[Dataset] = datasets.listAccess(limit,Set[Permission](Permission.ViewDataset),user,true)
