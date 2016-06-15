@@ -78,6 +78,24 @@ class T2C2 @Inject() (datasets : DatasetService, collections: CollectionService)
     Ok(asMap)
   }
 
+  private def getKeyValuePairsFromDataset(dataset : Dataset): Map[String,String] = {
+    var key_value_pairs : Map[String,String] = Map.empty[String,String]
+    key_value_pairs = key_value_pairs + ("dataset_name" -> dataset.name)
+    key_value_pairs = key_value_pairs + ("dataset_id" -> dataset.id.toString())
+    val description = dataset.description
+    val keyValues = description.split("\n")
+    for (pair <- keyValues){
+      var currentPair = pair.replace("{","")
+      currentPair = currentPair.replace("}","")
+      val listPair = currentPair.split(":")
+      val first = listPair(0)
+      val second = listPair(1)
+      key_value_pairs = key_value_pairs + (first -> second)
+
+    }
+    return key_value_pairs
+  }
+
   @ApiOperation(value = "Get key values from dataset id",
     notes = "",
     responseClass = "None", httpMethod = "GET")
@@ -87,7 +105,7 @@ class T2C2 @Inject() (datasets : DatasetService, collections: CollectionService)
     datasets.get(id) match {
       case Some(dataset) => {
         try {
-          val currentKeyValues = getKeyValuePairsFromDataset(dataset)
+          val currentKeyValues = getKeyValuePairsFromDatasetNoNameId(dataset)
           result += currentKeyValues
         } catch {
           case e : Exception => Logger.error("could not get key values for " + id)
@@ -99,10 +117,8 @@ class T2C2 @Inject() (datasets : DatasetService, collections: CollectionService)
     Ok(asMap)
   }
 
-  private def getKeyValuePairsFromDataset(dataset : Dataset): Map[String,String] = {
+  private def getKeyValuePairsFromDatasetNoNameId(dataset : Dataset): Map[String,String] = {
     var key_value_pairs : Map[String,String] = Map.empty[String,String]
-    key_value_pairs = key_value_pairs + ("dataset_name" -> dataset.name)
-    key_value_pairs = key_value_pairs + ("dataset_id" -> dataset.id.toString())
     val description = dataset.description
     val keyValues = description.split("\n")
     for (pair <- keyValues){
