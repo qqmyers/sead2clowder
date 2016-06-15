@@ -55,6 +55,7 @@ class T2C2 @Inject() (datasets : DatasetService, collections: CollectionService)
     val lastDataset : List[Dataset] = datasets.listAccess(1,Set[Permission](Permission.ViewDataset),user,true)
     val keyValues = getKeyValuePairsFromDataset(lastDataset(0))
     val asMap  = Json.toJson(keyValues)
+    //
     Ok(asMap)
   }
 
