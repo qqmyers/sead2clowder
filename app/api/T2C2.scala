@@ -133,4 +133,18 @@ class T2C2 @Inject() (datasets : DatasetService, collections: CollectionService)
     return key_value_pairs
   }
 
+  @ApiOperation(value = "Make template pubilc",
+    notes = "",
+    responseClass = "None", httpMethod = "PUT")
+  def makeTemplatePublic(id : UUID) = PermissionAction(Permission.EditVocabulary, Some(ResourceRef(ResourceRef.vocabulary, id))) { implicit request=>
+    implicit val user = request.user
+    vocabularies.get(id) match {
+      case Some(vocabulary) => {
+        vocabularies.makePublic(id)
+        Ok(toJson(Map("status"->"success")))
+      }
+      case None =>  BadRequest("No template found")
+    }
+  }
+
 }

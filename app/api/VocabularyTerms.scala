@@ -23,7 +23,7 @@ class VocabularyTerms @Inject()(vocabularyTermService: VocabularyTermService, us
     responseClass = "None", httpMethod = "GET")
   def get(id: UUID) = PermissionAction(Permission.ViewVocabularyTerm, Some(ResourceRef(ResourceRef.vocabularyterm, id))) { implicit request =>
     vocabularyTermService.get(id) match {
-      case Some(vocabterm) => Ok(jsonVocabularyTerm(vocabterm))
+      case Some(vocabterm) => Ok(toJson(vocabterm))
       case None => BadRequest(toJson("vocabularyterm not found"))
     }
   }
@@ -65,8 +65,5 @@ class VocabularyTerms @Inject()(vocabularyTermService: VocabularyTermService, us
   }
 
 
-  def jsonVocabularyTerm(vocabularyTerm : VocabularyTerm) : JsValue = {
-    toJson(Map("id"->vocabularyTerm.id.toString,"key"->vocabularyTerm.key))
-  }
 
 }

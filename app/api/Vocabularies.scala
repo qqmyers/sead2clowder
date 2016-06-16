@@ -161,9 +161,9 @@ class Vocabularies @Inject() (vocabularyService: VocabularyService, vocabularyTe
 
             for (each_term <- request_terms) {
               val key = (each_term \ "key").asOpt[String].getOrElse("")
-              val units = (each_term \ "units").asOpt[String]
-              val default_value = (each_term \ "default_value").asOpt[String]
-              val description = (each_term \ "description").asOpt[String]
+              val units = (each_term \ "units").asOpt[String].getOrElse("")
+              val default_value = (each_term \ "default_value").asOpt[String].getOrElse("")
+              val description = (each_term \ "description").asOpt[String].getOrElse("")
               val current_vocabterm: VocabularyTerm = VocabularyTerm(key = key, author = Option(identity), created = new Date(), units = units, default_value = default_value, description = description)
 
               vocabularyTermService.insert(current_vocabterm) match {
