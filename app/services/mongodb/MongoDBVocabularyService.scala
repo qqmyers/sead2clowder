@@ -88,6 +88,11 @@ class MongoDBVocabularyService @Inject() (userService: UserService) extends Voca
       $addToSet("terms" -> Some(new ObjectId(vocabTermId.stringify))),
       false, false)
   }
+
+  def makePublic(vocabId : UUID) = Try {
+    Vocabulary.dao.update(MongoDBObject("_id" -> new ObjectId(vocabId.stringify)),
+      $set("isPublic" -> true), false, false, WriteConcern.Safe)
+  }
 }
 
 object Vocabulary extends ModelCompanion[Vocabulary, ObjectId] {

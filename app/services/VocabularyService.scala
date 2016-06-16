@@ -36,4 +36,6 @@ trait VocabularyService {
 
   def addVocabularyTerm(vocabId: UUID, vocabTermId : UUID) : Try[Unit]
 
+  def makePublic(vocabId : UUID) : Try[Unit]
+
 }
