@@ -38,4 +38,6 @@ trait VocabularyService {
 
   def makePublic(vocabId : UUID) : Try[Unit]
 
+  def makePrivate(vocabId : UUID) : Try[Unit]
+
 }

@@ -748,6 +748,7 @@ GET         /t2c2/templates/getExperimentTemplateByName/:name                   
 GET         /t2c2/templates/findByTag/:tag                                                  @api.Vocabularies.getByNameDescription(tag : String)
 DELETE      /t2c2/templates/deleteTemplate/:id                                                         @api.Vocabularies.removeVocabulary(id: UUID)
 PUT         /t2c2/templates/makePublic/:id                                                  @api.T2C2.makeTemplatePublic(id : UUID)
+PUT         /t2c2/templates/makePrivate/:id                                                 @api.T2C2.makePrivate(id : UUID)
 PUT         /t2c2/templates/editTemplates/:id
 
 # ----------------------------------------------------------------------
