@@ -150,11 +150,11 @@ class T2C2 @Inject() (datasets : DatasetService, collections: CollectionService)
   @ApiOperation(value = "Make template private",
     notes = "",
     responseClass = "None", httpMethod = "PUT")
-  def makeTemplatePublic(id : UUID) = PermissionAction(Permission.EditVocabulary, Some(ResourceRef(ResourceRef.vocabulary, id))) { implicit request=>
+  def makeTemplatePrivate(id : UUID) = PermissionAction(Permission.EditVocabulary, Some(ResourceRef(ResourceRef.vocabulary, id))) { implicit request=>
     implicit val user = request.user
     vocabularies.get(id) match {
       case Some(vocabulary) => {
-        vocabularies.makePrivate(id)
+        vocabularies.makePublic(id)
         Ok(toJson(Map("status"->"success")))
       }
       case None =>  BadRequest("No template found")
