@@ -79,6 +79,26 @@ class Vocabularies @Inject() (vocabularyService: VocabularyService, vocabularyTe
     }
   }
 
+  @ApiOperation(value = "Get vocabulary by name or description",
+    notes = "",
+    responseClass = "None", httpMethod = "GET")
+  def getByNameDescription(tag: String) = PrivateServerAction { implicit request =>
+    val user = request.user
+    var matching_vocabulary :  ListBuffer[JsValue] = ListBuffer.empty
+    user match {
+      case Some(identity) => {
+        val result_name = vocabularyService.getByName(tag)
+        val result_description = vocabularyService.findByDescription(List[String](tag),true)
+        val result = result_name ::: result_description
+        for (each <- result){
+          matching_vocabulary = matching_vocabulary += jsonVocabulary(each)
+        }
+        Ok(toJson(matching_vocabulary.toList))
+      }
+      case None => BadRequest("No user matches that user")
+    }
+  }
+
   def jsonVocabulary(vocabulary: Vocabulary): JsValue = {
     val terms = getVocabularyTerms(vocabulary)
     val author = vocabulary.author.get.identityId.userId
@@ -98,26 +118,6 @@ class Vocabularies @Inject() (vocabularyService: VocabularyService, vocabularyTe
     }
 
     vocab_terms.toList
-  }
-
-  @ApiOperation(value = "Get vocabulary by name or description",
-    notes = "",
-    responseClass = "None", httpMethod = "GET")
-  def getByNameDescription(tag: String) = PrivateServerAction { implicit request =>
-    val user = request.user
-    var matching_vocabulary :  ListBuffer[JsValue] = ListBuffer.empty
-    user match {
-      case Some(identity) => {
-        val result_name = vocabularyService.getByName(tag)
-        val result_description = vocabularyService.findByDescription(List[String](tag),true)
-        val result = result_name ::: result_description
-        for (each <- result){
-          matching_vocabulary = matching_vocabulary += jsonVocabulary(each)
-        }
-        Ok(toJson(matching_vocabulary.toList))
-      }
-      case None => BadRequest("No user matches that user")
-    }
   }
 
   @ApiOperation(value = "Get vocabulary by name and author",
@@ -231,8 +231,12 @@ class Vocabularies @Inject() (vocabularyService: VocabularyService, vocabularyTe
     }
   }
 
-  def editVocabulary() = {
 
+  @ApiOperation(value = "Delete vocabulary",
+    notes = "",
+    responseClass = "None", httpMethod = "PUT")
+  def editVocabulary(id : UUID, isPublic : Boolean) = {
+    Ok("nothing implemented yet")
   }
 
   @ApiOperation(value = "Delete vocabulary",
