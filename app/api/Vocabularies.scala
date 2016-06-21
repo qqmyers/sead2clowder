@@ -64,6 +64,31 @@ class Vocabularies @Inject() (vocabularyService: VocabularyService, vocabularyTe
     }
   }
 
+
+
+  @ApiOperation(value = "Get tags for all vocabularies",
+    notes = "",
+    responseClass = "None", httpMethod = "GET")
+  def getAllTagsOfAllVocabularies() = PrivateServerAction {implicit request =>
+    val user = request.user
+
+    var allTags = scala.collection.mutable.Set[String]()
+
+    user match {
+      case Some(identity) => {
+        val all_vocabularies : List[Vocabulary] = vocabularyService.listAll()
+        for (each_vocab <- all_vocabularies){
+          val current_tags = each_vocab.tags.toSet[String]
+          allTags ++= current_tags
+
+        }
+        Ok(toJson(allTags.toList))
+
+      }
+      case None => BadRequest("Bad request")
+    }
+  }
+
   @ApiOperation(value = "Get vocabulary by name",
     notes = "",
     responseClass = "None", httpMethod = "GET")
