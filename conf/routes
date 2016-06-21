@@ -746,8 +746,9 @@ GET         /t2c2/templates/getPublic                                           
 GET         /t2c2/templates/allTags                                                     @api.Vocabularies.getAllTagsOfAllVocabularies()
 GET         /t2c2/templates/getExperimentTemplateById/:id                                              @api.Vocabularies.get(id: UUID)
 GET         /t2c2/templates/getExperimentTemplateByName/:name                                          @api.Vocabularies.getByName(name : String)
-GET         /t2c2/templates/findByTag                                                       @api.Vocabularies.getBySingleTag(tag : String)
 POST         /t2c2/templates/findByTag                                                  @api.Vocabularies.getByTag(containsAll : Boolean ?= false)
+GET         /t2c2/templates/findByTag/:tag                                                       @api.Vocabularies.getBySingleTag(tag : String)
+
 DELETE      /t2c2/templates/deleteTemplate/:id                                                         @api.Vocabularies.removeVocabulary(id: UUID)
 PUT         /t2c2/templates/makePublic/:id                                                  @api.T2C2.makeTemplatePublic(id : UUID)
 PUT         /t2c2/templates/makePrivate/:id                                                 @api.T2C2.makeTemplatePrivate(id : UUID)
