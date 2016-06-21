@@ -286,6 +286,11 @@ class Vocabularies @Inject() (vocabularyService: VocabularyService, vocabularyTe
     Ok("nothing implemented yet")
   }
 
+  //this method will, for each key of each vocabulary, create a 'term' where we have key, '','',''
+  def moveKeysToTerms(): Unit = {
+
+  }
+
   @ApiOperation(value = "Delete vocabulary",
     notes = "",
     responseClass = "None", httpMethod = "POST")
