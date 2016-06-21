@@ -74,11 +74,11 @@ class MongoDBVocabularyService @Inject() (userService: UserService) extends Voca
       false, false)
   }
 
-  def findByDescription(desc : List[String], containsAll : Boolean ) : List[Vocabulary] = {
+  def findByTag(tag : List[String], containsAll : Boolean ) : List[Vocabulary] = {
     if (containsAll == false){
-      Vocabulary.findAll.toList.filter((v: Vocabulary )=> (!v.description.intersect(desc).isEmpty))
+      Vocabulary.findAll.toList.filter((v: Vocabulary )=> (!v.tags.intersect(tag).isEmpty))
     } else {
-      Vocabulary.findAll.toList.filter((v: Vocabulary )=> (desc.toSet[String].subsetOf(v.description.toSet[String])))
+      Vocabulary.findAll.toList.filter((v: Vocabulary )=> (tag.toSet[String].subsetOf(v.tags.toSet[String])))
     }
   }
 

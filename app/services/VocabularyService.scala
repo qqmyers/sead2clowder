@@ -32,7 +32,7 @@ trait VocabularyService {
 
   def removeFromSpace(vocabId : UUID, spaceId : UUID) : Try[Unit]
 
-  def findByDescription(desc : List[String], containsAll : Boolean) : List[Vocabulary]
+  def findByTag(tag : List[String], containsAll : Boolean) : List[Vocabulary]
 
   def addVocabularyTerm(vocabId: UUID, vocabTermId : UUID) : Try[Unit]
 
