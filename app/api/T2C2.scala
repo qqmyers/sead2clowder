@@ -3,7 +3,7 @@ package api
 import javax.inject.Inject
 import api.Permission._
 import com.wordnik.swagger.annotations.{ApiOperation, Api}
-import models.{Dataset, Collection, ResourceRef, UUID}
+import models._
 import play.api.Logger
 import play.api.libs.json.{JsValue, Json}
 import play.api.libs.json.Json.toJson
@@ -47,6 +47,31 @@ class T2C2 @Inject() (datasets : DatasetService, collections: CollectionService)
       "childCollectionsCount" -> collection.childCollectionsCount.toString, "datasetCount"-> collection.datasetCount.toString, "spaces" -> collection.spaces.toString))
   }
 
+  def moveKeysToTermsTemplates() = {
+    val allVocabularies : List[Vocabulary] = vocabularies.listAll()
+  }
+
+  def moveKeysToTerms(vocabulary : Vocabulary) = {
+      val keys : List[String] = vocabulary.keys
+      val author = vocabulary.author
+      var termsToAdd = ListBuffer[UUID] = List.empty[UUID]
+      for (key <- keys) {
+        val current_term = VocabularyTerm(author = author,key = key, units = "",default_value = "", description = "")
+        vocabularyterms.insert(current_term) match {
+          case Some(id) => {
+            Logger.info("Vocabulary Term inserted")
+            termsToAdd += id
+          }
+          case None => Logger.error("Could not insert vocabulary term")
+        }
+      }
+      //edit vocabulary here
+      for (term <- termsToAdd){
+        vocabularies.addVocabularyTerm(vocabulary.id,term)
+      }
+
+  }
+
   @ApiOperation(value = "Get key values from last dataset",
     notes = "",
     responseClass = "None", httpMethod = "GET")
@@ -56,25 +81,6 @@ class T2C2 @Inject() (datasets : DatasetService, collections: CollectionService)
     val keyValues = getKeyValuePairsFromDataset(lastDataset(0))
     val asMap  = Json.toJson(keyValues)
     //
-    Ok(asMap)
-  }
-
-  @ApiOperation(value = "Get key values from last dataset",
-    notes = "",
-    responseClass = "None", httpMethod = "GET")
-  def getKeysValuesFromLastDatasets(limit : Int) = PermissionAction(Permission.ViewDataset) { implicit request =>
-    implicit val user = request.user
-    var result : ListBuffer[Map[String,String]] = ListBuffer.empty[Map[String,String]]
-    val lastDatasets : List[Dataset] = datasets.listAccess(limit,Set[Permission](Permission.ViewDataset),user,true)
-    for (each <- lastDatasets){
-      try {
-        val currentKeyValues = getKeyValuePairsFromDataset(each)
-        result += currentKeyValues
-      } catch {
-        case e : Exception => Logger.error("could not get key values for " + each.id)
-      }
-    }
-    val asMap  = Json.toJson(result)
     Ok(asMap)
   }
 
@@ -94,6 +100,25 @@ class T2C2 @Inject() (datasets : DatasetService, collections: CollectionService)
 
     }
     return key_value_pairs
+  }
+
+  @ApiOperation(value = "Get key values from last dataset",
+    notes = "",
+    responseClass = "None", httpMethod = "GET")
+  def getKeysValuesFromLastDatasets(limit : Int) = PermissionAction(Permission.ViewDataset) { implicit request =>
+    implicit val user = request.user
+    var result : ListBuffer[Map[String,String]] = ListBuffer.empty[Map[String,String]]
+    val lastDatasets : List[Dataset] = datasets.listAccess(limit,Set[Permission](Permission.ViewDataset),user,true)
+    for (each <- lastDatasets){
+      try {
+        val currentKeyValues = getKeyValuePairsFromDataset(each)
+        result += currentKeyValues
+      } catch {
+        case e : Exception => Logger.error("could not get key values for " + each.id)
+      }
+    }
+    val asMap  = Json.toJson(result)
+    Ok(asMap)
   }
 
   @ApiOperation(value = "Get key values from dataset id",
