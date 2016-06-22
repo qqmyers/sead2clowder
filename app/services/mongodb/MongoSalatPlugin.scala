@@ -189,16 +189,6 @@ class MongoSalatPlugin(app: Application) extends Plugin {
   }
 
   /**
-   * Returns a collection in the database
-   */
-  def collection(collection: String): MongoCollection = getDB(collection)
-
-  /**
-   * Returns the database for the connection
-   */
-  def getDB: MongoDB = mongoConnection.getDB(mongoURI.database.getOrElse("medici"))
-  
-  /**
    * Returns a GridFS for writing files, the files will be placed in
    * two collections that start with the prefix (&lt;prefix&gt;.fs and
    * &lt;prefix.chunks&gt;).
@@ -274,7 +264,7 @@ class MongoSalatPlugin(app: Application) extends Plugin {
 
     Logger.debug("**DANGER** Data deleted **DANGER**")
   }
-
+  
   // ----------------------------------------------------------------------
   // CODE TO UPDATE THE DATABASE
   // ----------------------------------------------------------------------
@@ -533,7 +523,6 @@ class MongoSalatPlugin(app: Application) extends Plugin {
       }
     }
   }
-
 
   private def migrateMetadataRepresentationtoJSONLD() {
     val metadataService: MetadataService = DI.injector.getInstance(classOf[MetadataService])
@@ -1070,9 +1059,18 @@ class MongoSalatPlugin(app: Application) extends Plugin {
       } catch {
         case e: BSONException => Logger.error("Unable to update description of vocabulary with id : " + vocabId)
       }
-
     }
   }
+
+  /**
+   * Returns a collection in the database
+   */
+  def collection(collection: String): MongoCollection = getDB(collection)
+
+  /**
+   * Returns the database for the connection
+   */
+  def getDB: MongoDB = mongoConnection.getDB(mongoURI.database.getOrElse("medici"))
 
   private def renameAdminServerAdmin() {
     val q = MongoDBObject()
