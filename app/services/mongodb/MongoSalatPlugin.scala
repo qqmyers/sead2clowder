@@ -27,13 +27,11 @@ import scala.collection.JavaConverters._
  * Mongo Salat service.
  */
 class MongoSalatPlugin(app: Application) extends Plugin {
+  lazy val appConfig: AppConfigurationService = DI.injector.getInstance(classOf[AppConfigurationService])
   // URI to the mongodatabase, for example mongodb://127.0.0.1:27017/medici
   var mongoURI: MongoURI = null
-
   // hold the connection, if connection failed it will be tried to open next time
   var mongoConnection: MongoConnection = null
-
-  lazy val appConfig: AppConfigurationService = DI.injector.getInstance(classOf[AppConfigurationService])
 
   override def onStart() {
     mongoURI = if (play.api.Play.configuration.getString("mongodbURI").isDefined) {
@@ -167,16 +165,6 @@ class MongoSalatPlugin(app: Application) extends Plugin {
   }
 
   /**
-   * Returns the database for the connection
-   */
-  def getDB: MongoDB = mongoConnection.getDB(mongoURI.database.getOrElse("medici"))
-
-  /**
-   * Returns a collection in the database
-   */
-  def collection(collection: String): MongoCollection = getDB(collection)
-
-  /**
     * Based on the resourceRef return the mongo collection.
     */
   def collection(resourceRef: ResourceRef): Option[MongoCollection] = {
@@ -199,6 +187,16 @@ class MongoSalatPlugin(app: Application) extends Plugin {
       }
     }
   }
+
+  /**
+   * Returns a collection in the database
+   */
+  def collection(collection: String): MongoCollection = getDB(collection)
+
+  /**
+   * Returns the database for the connection
+   */
+  def getDB: MongoDB = mongoConnection.getDB(mongoURI.database.getOrElse("medici"))
   
   /**
    * Returns a GridFS for writing files, the files will be placed in
@@ -275,19 +273,6 @@ class MongoSalatPlugin(app: Application) extends Plugin {
     onStart()
 
     Logger.debug("**DANGER** Data deleted **DANGER**")
-  }
-
-  private def removeFiles(name: String): Unit = {
-    // delete blobs
-    collection(name + ".files").find(new BasicDBObject("loader", new BasicDBObject("$ne", classOf[MongoDBByteStorage].getName))).foreach { x =>
-      (x.getAs[String]("path"), x.getAs[String]("loader")) match {
-        case (Some(p), Some(l)) => ByteStorageService.delete(l, p, name)
-        case _ =>
-      }
-    }
-    collection(name + ".chunks").drop()
-    collection(name + ".files").drop()
-    collection(name).drop()
   }
 
   // ----------------------------------------------------------------------
@@ -370,6 +355,70 @@ class MongoSalatPlugin(app: Application) extends Plugin {
     updateMongo("update-counts-spaces", updateCountsInSpaces)
   }
 
+  def updateTagLength() {
+    val q = MongoDBObject("tags" -> MongoDBObject("$exists" -> true, "$not" -> MongoDBObject("$size" -> 0)))
+    val maxTagLength = play.api.Play.configuration.getInt("clowder.tagLength").getOrElse(100)
+    Logger.info("[MongoDBUpdate] : fixing " + collection("datasets").count(q) + " datasets")
+    collection("datasets").find(q).foreach { x =>
+      x.getAsOrElse[MongoDBList]("tags", MongoDBList.empty).foreach { case tag:DBObject =>
+        if (tag.getAsOrElse[String]("name", "").length > maxTagLength) {
+          Logger.info(x.get("_id").toString + " : truncating " + tag.getAsOrElse[String]("name", ""))
+          tag.put("name", tag.getAsOrElse[String]("name", "").substring(0, maxTagLength))
+        }
+      }
+      try {
+        collection("datasets").save(x)
+      } catch {
+        case e: BSONException => {
+          Logger.error(x.get("_id").toString + " : bad string\n" + x.toString, e)
+        }
+      }
+    }
+    collection("uploads.files").find(q).foreach { x =>
+      x.getAsOrElse[MongoDBList]("tags", MongoDBList.empty).foreach { case tag:DBObject =>
+        if (tag.getAsOrElse[String]("name", "").length > maxTagLength) {
+          Logger.info(x.get("_id").toString + " : truncating " + tag.getAsOrElse[String]("name", ""))
+          tag.put("name", tag.getAsOrElse[String]("name", "").substring(0, maxTagLength))
+        }
+      }
+      try {
+        collection("uploads.files").save(x)
+      } catch {
+        case e: BSONException => {
+          Logger.error(x.get("_id").toString + " : bad string\n" + x.toString, e)
+        }
+      }
+    }
+    collection("sections").find(q).foreach { x =>
+      x.getAsOrElse[MongoDBList]("tags", MongoDBList.empty).foreach { case tag:DBObject =>
+        if (tag.getAsOrElse[String]("name", "").length > maxTagLength) {
+          Logger.info(x.get("_id").toString + " : truncating " + tag.getAsOrElse[String]("name", ""))
+          tag.put("name", tag.getAsOrElse[String]("name", "").substring(0, maxTagLength))
+        }
+      }
+      try {
+        collection("sections").save(x)
+      } catch {
+        case e: BSONException => {
+          Logger.error(x.get("_id").toString + " : bad string\n" + x.toString, e)
+        }
+      }
+    }
+  }
+
+  private def removeFiles(name: String): Unit = {
+    // delete blobs
+    collection(name + ".files").find(new BasicDBObject("loader", new BasicDBObject("$ne", classOf[MongoDBByteStorage].getName))).foreach { x =>
+      (x.getAs[String]("path"), x.getAs[String]("loader")) match {
+        case (Some(p), Some(l)) => ByteStorageService.delete(l, p, name)
+        case _ =>
+      }
+    }
+    collection(name + ".chunks").drop()
+    collection(name + ".files").drop()
+    collection(name).drop()
+  }
+
   private def updateMongo(updateKey: String, block: () => Unit): Unit = {
     if (!appConfig.hasPropertyValue("mongodb.updates", updateKey)) {
       if (System.getProperty("MONGOUPDATE") != null) {
@@ -437,57 +486,6 @@ class MongoSalatPlugin(app: Application) extends Plugin {
       }
     } else {
       Logger.info("[MongoDBUpdate] : Found spaces, will not create default space")
-    }
-  }
-
-  def updateTagLength() {
-    val q = MongoDBObject("tags" -> MongoDBObject("$exists" -> true, "$not" -> MongoDBObject("$size" -> 0)))
-    val maxTagLength = play.api.Play.configuration.getInt("clowder.tagLength").getOrElse(100)
-    Logger.info("[MongoDBUpdate] : fixing " + collection("datasets").count(q) + " datasets")
-    collection("datasets").find(q).foreach { x =>
-      x.getAsOrElse[MongoDBList]("tags", MongoDBList.empty).foreach { case tag:DBObject =>
-        if (tag.getAsOrElse[String]("name", "").length > maxTagLength) {
-          Logger.info(x.get("_id").toString + " : truncating " + tag.getAsOrElse[String]("name", ""))
-          tag.put("name", tag.getAsOrElse[String]("name", "").substring(0, maxTagLength))
-        }
-      }
-      try {
-        collection("datasets").save(x)
-      } catch {
-        case e: BSONException => {
-          Logger.error(x.get("_id").toString + " : bad string\n" + x.toString, e)
-        }
-      }
-    }
-    collection("uploads.files").find(q).foreach { x =>
-      x.getAsOrElse[MongoDBList]("tags", MongoDBList.empty).foreach { case tag:DBObject =>
-        if (tag.getAsOrElse[String]("name", "").length > maxTagLength) {
-          Logger.info(x.get("_id").toString + " : truncating " + tag.getAsOrElse[String]("name", ""))
-          tag.put("name", tag.getAsOrElse[String]("name", "").substring(0, maxTagLength))
-        }
-      }
-      try {
-        collection("uploads.files").save(x)
-      } catch {
-        case e: BSONException => {
-          Logger.error(x.get("_id").toString + " : bad string\n" + x.toString, e)
-        }
-      }
-    }
-    collection("sections").find(q).foreach { x =>
-      x.getAsOrElse[MongoDBList]("tags", MongoDBList.empty).foreach { case tag:DBObject =>
-        if (tag.getAsOrElse[String]("name", "").length > maxTagLength) {
-          Logger.info(x.get("_id").toString + " : truncating " + tag.getAsOrElse[String]("name", ""))
-          tag.put("name", tag.getAsOrElse[String]("name", "").substring(0, maxTagLength))
-        }
-      }
-      try {
-        collection("sections").save(x)
-      } catch {
-        case e: BSONException => {
-          Logger.error(x.get("_id").toString + " : bad string\n" + x.toString, e)
-        }
-      }
     }
   }
 
@@ -1055,6 +1053,22 @@ class MongoSalatPlugin(app: Application) extends Plugin {
         collection("spaces.projects").save(space, WriteConcern.Safe)
       } catch {
         case e: BSONException => Logger.error("Unable to update the collection count for space with id: " + spaceId.toString)
+      }
+
+    }
+  }
+
+  //written by todd_n t2c2 branch
+  private def changeVocabularyDescriptionToString() {
+    collection("vocabularies").foreach{ vocabulary =>
+      val vocabId = vocabulary.getAsOrElse[ObjectId]("_id", new ObjectId())
+      val description_list = vocabulary.getAsOrElse[MongoDBList]("description", MongoDBList.empty)
+      val description_string = description_list.mkString(",")
+      vocabulary.put("description", description_string)
+      try{
+        collection("vocabularies").save(vocabulary, WriteConcern.Safe)
+      } catch {
+        case e: BSONException => Logger.error("Unable to update description of vocabulary with id : " + vocabId)
       }
 
     }
