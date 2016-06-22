@@ -915,3 +915,11 @@ table.borderless tbody tr td, table.borderless tbody tr th {
     display: inline-block;
     margin-left: 10px;
 }
+
+.profile-section {
+    margin-top: 20px;
+}
+
+.profile-disclaimer {
+    margin-top: 50px;
+}
