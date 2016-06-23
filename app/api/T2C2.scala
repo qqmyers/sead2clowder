@@ -54,13 +54,13 @@ class T2C2 @Inject() (datasets : DatasetService, collections: CollectionService)
   def moveKeysToTerms(vocabulary : Vocabulary) = {
       val keys : List[String] = vocabulary.keys
       val author = vocabulary.author
-      var termsToAdd = ListBuffer[UUID] = List.empty[UUID]
+      var termsToAdd : ListBuffer[UUID] = ListBuffer.empty[UUID]
       for (key <- keys) {
         val current_term = VocabularyTerm(author = author,key = key, units = "",default_value = "", description = "")
         vocabularyterms.insert(current_term) match {
           case Some(id) => {
             Logger.info("Vocabulary Term inserted")
-            termsToAdd += id
+            termsToAdd += UUID(id)
           }
           case None => Logger.error("Could not insert vocabulary term")
         }
