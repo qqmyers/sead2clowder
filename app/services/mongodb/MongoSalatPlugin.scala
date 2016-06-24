@@ -1062,6 +1062,22 @@ class MongoSalatPlugin(app: Application) extends Plugin {
     }
   }
 
+  //written by todd_n t2c2 branch
+  private def addTagsToVocabulary() {
+    collection("vocabularies").foreach{ vocabulary =>
+      val vocabId = vocabulary.getAsOrElse[ObjectId]("_id", new ObjectId())
+      val vocab_tags = vocabulary.getAsOrElse[MongoDBList]("tags", MongoDBList.empty)
+      if (vocab_tags.isEmpty){
+        vocabulary.put("tags",List.empty[String])
+      }
+      try{
+        collection("vocabularies").save(vocabulary, WriteConcern.Safe)
+      } catch {
+        case e: BSONException => Logger.error("Unable to update tags of vocabulary with id : " + vocabId)
+      }
+    }
+  }
+
   /**
    * Returns a collection in the database
    */
