@@ -44,7 +44,7 @@ class Vocabularies @Inject() (vocabularyService: VocabularyService, vocabularyTe
     var vocab_terms: ListBuffer[VocabularyTerm] = ListBuffer.empty
     if (!vocabulary.terms.isEmpty) {
       for (term <- vocabulary.terms) {
-        var current_term = vocabularyTermService.get(term) match {
+        val current_term = vocabularyTermService.get(term) match {
           case Some(vocab_term) => {
             vocab_terms += vocab_term
           }

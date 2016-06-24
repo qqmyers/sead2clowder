@@ -5,7 +5,7 @@ import api.Permission._
 import com.wordnik.swagger.annotations.{ApiOperation, Api}
 import models._
 import play.api.Logger
-import play.api.libs.json.{JsValue, Json}
+import play.api.libs.json._
 import play.api.libs.json.Json.toJson
 import services.{CollectionService, DatasetService}
 
@@ -87,7 +87,7 @@ class T2C2 @Inject() (datasets : DatasetService, collections: CollectionService)
     Ok(asMap)
   }
 
-  private def getKeyValuePairsFromDataset(dataset : Dataset): Map[String,String] = {
+  private def getKeyValuePairsFromDataset1(dataset : Dataset): Map[String,String] = {
     var key_value_pairs : Map[String,String] = Map.empty[String,String]
     key_value_pairs = key_value_pairs + ("dataset_name" -> dataset.name)
     key_value_pairs = key_value_pairs + ("dataset_id" -> dataset.id.toString())
@@ -104,25 +104,28 @@ class T2C2 @Inject() (datasets : DatasetService, collections: CollectionService)
       terms = terms + (key -> value)
 
     }
-    key_value_pairs + ("terms"-> terms.toList)
+    //key_value_pairs = key_value_pairs + ("terms"-> terms.toList)
     return key_value_pairs
   }
 
-  private def getKeyValuePairsFromDataset1(dataset : Dataset): Map[String,String] = {
-    var key_value_pairs : Map[String,String] = Map.empty[String,String]
-    key_value_pairs = key_value_pairs + ("dataset_name" -> dataset.name)
-    key_value_pairs = key_value_pairs + ("dataset_id" -> dataset.id.toString())
+  private def getKeyValuePairsFromDataset(dataset : Dataset): JsValue = {
+
+    //key_value_pairs = key_value_pairs + ("dataset_name" -> dataset.name)
+    //key_value_pairs = key_value_pairs + ("dataset_id" -> dataset.id.toString())
     val description = dataset.description
     val keyValues = description.split("\n")
+    var terms_map : ListBuffer[JsValue] = ListBuffer.empty[JsValue]
     for (pair <- keyValues){
       var currentPair = pair.replace("{","")
       currentPair = currentPair.replace("}","")
       val listPair = currentPair.split(":")
       val first = listPair(0)
       val second = listPair(1)
-      key_value_pairs = key_value_pairs + (first -> second)
+      val current_term : JsValue = JsObject(Seq("key"->JsString(first),"default_value"->JsString(second)))
+      terms_map += current_term
 
     }
+    val key_value_pairs = Json.obj("dataset_name" -> dataset.name,"dataset_id" -> dataset.id.toString,"terms"->terms_map.toList)
     return key_value_pairs
   }
 
@@ -135,7 +138,7 @@ class T2C2 @Inject() (datasets : DatasetService, collections: CollectionService)
     val lastDatasets : List[Dataset] = datasets.listAccess(limit,Set[Permission](Permission.ViewDataset),user,true)
     for (each <- lastDatasets){
       try {
-        val currentKeyValues = getKeyValuePairsFromDataset(each)
+        val currentKeyValues = getKeyValuePairsFromDataset1(each)
         result += currentKeyValues
       } catch {
         case e : Exception => Logger.error("could not get key values for " + each.id)
@@ -150,12 +153,11 @@ class T2C2 @Inject() (datasets : DatasetService, collections: CollectionService)
     responseClass = "None", httpMethod = "GET")
   def getKeysValuesFromDatasetId( id : UUID) = PermissionAction(Permission.ViewDataset) { implicit request =>
     implicit val user = request.user
-    var result : ListBuffer[Map[String,String]] = ListBuffer.empty[Map[String,String]]
+    var result : JsValue = null
     datasets.get(id) match {
       case Some(dataset) => {
         try {
-          val currentKeyValues = getKeyValuePairsFromDataset(dataset)
-          result += currentKeyValues
+          result = getKeyValuePairsFromDataset(dataset)
         } catch {
           case e : Exception => Logger.error("could not get key values for " + id)
         }
