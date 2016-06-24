@@ -133,7 +133,7 @@ class T2C2 @Inject() (datasets : DatasetService, collections: CollectionService)
     datasets.get(id) match {
       case Some(dataset) => {
         try {
-          val currentKeyValues = getKeyValuePairsFromDatasetNoNameId(dataset)
+          val currentKeyValues = getKeyValuePairsFromDataset(dataset)
           result += currentKeyValues
         } catch {
           case e : Exception => Logger.error("could not get key values for " + id)
@@ -141,6 +141,8 @@ class T2C2 @Inject() (datasets : DatasetService, collections: CollectionService)
       }
       case None => Logger.error("No dataset found for id " + id)
     }
+
+
     val asMap  = Json.toJson(result)
     Ok(asMap)
   }
