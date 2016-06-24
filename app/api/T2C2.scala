@@ -194,7 +194,8 @@ class T2C2 @Inject() (datasets : DatasetService, collections: CollectionService)
   @ApiOperation(value = "get id name from template from tag",
     notes = "",
     responseClass = "None", httpMethod = "GET")
-  def getVocabIdNameFromTag(tag : String) = {
+  def getVocabIdNameFromTag(tag : String) = PermissionAction(Permission.ViewVocabulary){implicit request=>
+    val user = request.user
     val tags = List(tag)
     var result : List[JsValue] = List.empty[JsValue]
     val vocabs_with_tag = vocabularies.findByTag(tags,true)
