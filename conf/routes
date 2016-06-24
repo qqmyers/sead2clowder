@@ -772,3 +772,4 @@ GET         /api/t2c2/allCollectionsWithDatasetIds                              
 GET         /t2c2/getKeyValuesLastDataset                                                               @api.T2C2.getKeysValuesFromLastDataset()
 GET         /t2c2/getKeyValuesForLastDatasets                                                           @api.T2C2.getKeysValuesFromLastDatasets(limit : Int ?= 10)
 GET         /t2c2/getKeyValuesForDatasetId/:id                                                          @api.T2C2.getKeysValuesFromDatasetId(id : UUID)
+GET         /t2c2/getIdNameFromTag/:tag                                                                 @api.T2C2.getVocabIdNameFromTag(tag)

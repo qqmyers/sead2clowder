@@ -49,6 +49,9 @@ class T2C2 @Inject() (datasets : DatasetService, collections: CollectionService)
 
   def moveKeysToTermsTemplates() = {
     val allVocabularies : List[Vocabulary] = vocabularies.listAll()
+    for (eachVocab <- allVocabularies){
+      moveKeysToTerms(eachVocab)
+    }
   }
 
   def moveKeysToTerms(vocabulary : Vocabulary) = {
@@ -184,6 +187,18 @@ class T2C2 @Inject() (datasets : DatasetService, collections: CollectionService)
       }
       case None =>  BadRequest("No template found")
     }
+  }
+
+  @ApiOperation(value = "get id name from template from tag",
+    notes = "",
+    responseClass = "None", httpMethod = "GET")
+  def getVocabIdNameFromTag(tag : String) = {
+    val tags = List(tag)
+    var result : List[JsValue] = List.empty[JsValue]
+    val vocabs_with_tag = vocabularies.findByTag(tags,true)
+    result  = for (vocab <- vocabs_with_tag)
+      yield Json.obj("template_id"->vocab.id,"name"->vocab.name)
+    Ok(toJson(result))
   }
 
 
