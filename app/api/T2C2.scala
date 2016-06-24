@@ -91,6 +91,27 @@ class T2C2 @Inject() (datasets : DatasetService, collections: CollectionService)
     var key_value_pairs : Map[String,String] = Map.empty[String,String]
     key_value_pairs = key_value_pairs + ("dataset_name" -> dataset.name)
     key_value_pairs = key_value_pairs + ("dataset_id" -> dataset.id.toString())
+    var terms : Map[String,String] = Map.empty[String,String]
+    val description = dataset.description
+    val keyValues = description.split("\n")
+    for (pair <- keyValues){
+      var currentPair = pair.replace("{","")
+      currentPair = currentPair.replace("}","")
+      val listPair = currentPair.split(":")
+      val key = listPair(0)
+      val value = listPair(1)
+      //key_value_pairs = key_value_pairs + (key -> value)
+      terms = terms + (key -> value)
+
+    }
+    key_value_pairs + ("terms"-> terms.toList)
+    return key_value_pairs
+  }
+
+  private def getKeyValuePairsFromDataset1(dataset : Dataset): Map[String,String] = {
+    var key_value_pairs : Map[String,String] = Map.empty[String,String]
+    key_value_pairs = key_value_pairs + ("dataset_name" -> dataset.name)
+    key_value_pairs = key_value_pairs + ("dataset_id" -> dataset.id.toString())
     val description = dataset.description
     val keyValues = description.split("\n")
     for (pair <- keyValues){
