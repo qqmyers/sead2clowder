@@ -7,6 +7,7 @@ import models._
 import play.api.Logger
 import play.api.libs.json._
 import play.api.libs.json.Json.toJson
+import play.api.mvc.Action
 import services.{CollectionService, DatasetService}
 
 import scala.collection.mutable.ListBuffer
@@ -47,11 +48,15 @@ class T2C2 @Inject() (datasets : DatasetService, collections: CollectionService)
       "childCollectionsCount" -> collection.childCollectionsCount.toString, "datasetCount"-> collection.datasetCount.toString, "spaces" -> collection.spaces.toString))
   }
 
-  def moveKeysToTermsTemplates() = {
+  @ApiOperation(value = "move 'keys' to terms",
+    notes = "",
+    responseClass = "None", httpMethod = "PUT")
+  def moveKeysToTermsTemplates() = Action {
     val allVocabularies : List[Vocabulary] = vocabularies.listAll()
     for (eachVocab <- allVocabularies){
       moveKeysToTerms(eachVocab)
     }
+    Ok("finished")
   }
 
   def moveKeysToTerms(vocabulary : Vocabulary) = {

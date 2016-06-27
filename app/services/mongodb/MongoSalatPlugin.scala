@@ -269,6 +269,14 @@ class MongoSalatPlugin(app: Application) extends Plugin {
   // CODE TO UPDATE THE DATABASE
   // ----------------------------------------------------------------------
   def updateDatabase() {
+
+    //vocabulary updates
+    updateMongo("vocab-description-to-string",changeVocabularyDescriptionToString )
+
+    updateMongo("vocab-tags", addTagsToVocabulary)
+
+    updateMongo("vocab-terms",addTermsToVocabulary)
+
     // migrate users to new model
     updateMongo("fixing-typehint-users", updateMongoChangeUserType)
 
@@ -1070,6 +1078,19 @@ class MongoSalatPlugin(app: Application) extends Plugin {
       if (vocab_tags.isEmpty){
         vocabulary.put("tags",List.empty[String])
       }
+      try{
+        collection("vocabularies").save(vocabulary, WriteConcern.Safe)
+      } catch {
+        case e: BSONException => Logger.error("Unable to update tags of vocabulary with id : " + vocabId)
+      }
+    }
+  }
+
+  private def addTermsToVocabulary() {
+    collection("vocabularies").foreach{ vocabulary =>
+      val vocabId = vocabulary.getAsOrElse[ObjectId]("_id", new ObjectId())
+      vocabulary.put("tersm",List.empty[UUID])
+
       try{
         collection("vocabularies").save(vocabulary, WriteConcern.Safe)
       } catch {

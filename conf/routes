@@ -764,6 +764,7 @@ GET        /t2c2/templates/new                                                  
 # T2C2 endpoints
 #----------------------------------------------------
 
+PUT         /t2c2/templates/moveKeysToTerms                                                             @api.T2C2.moveKeysToTermsTemplates()
 POST        /t2c2/uploadToDataset/:id                                                                   @api.Files.uploadToDatasetWithDescription(id: UUID, showPreviews: String ?= "DatasetLevel", originalZipFile: String ?= "", flags: String ?= "")
 PUT         /t2c2/files/:id/updateDescription                                                           @api.Files.updateDescription(id: UUID)
 GET         /t2c2/collections/:coll_id/datasets                                                         @api.Datasets.listInCollection(coll_id: UUID)
