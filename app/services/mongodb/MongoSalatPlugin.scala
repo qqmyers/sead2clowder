@@ -1060,7 +1060,13 @@ class MongoSalatPlugin(app: Application) extends Plugin {
     collection("vocabularies").foreach{ vocabulary =>
       val vocabId = vocabulary.getAsOrElse[ObjectId]("_id", new ObjectId())
       val description_list = vocabulary.getAsOrElse[MongoDBList]("description", MongoDBList.empty)
-      val description_string = description_list.mkString(",")
+      val description_string =
+        if (description_list.isEmpty){
+          ""
+        } else {
+          description_list.mkString(",")
+        }
+
       vocabulary.put("description", description_string)
       try{
         collection("vocabularies").save(vocabulary, WriteConcern.Safe)
@@ -1089,7 +1095,7 @@ class MongoSalatPlugin(app: Application) extends Plugin {
   private def addTermsToVocabulary() {
     collection("vocabularies").foreach{ vocabulary =>
       val vocabId = vocabulary.getAsOrElse[ObjectId]("_id", new ObjectId())
-      vocabulary.put("tersm",List.empty[UUID])
+      vocabulary.put("terms",List.empty[UUID])
 
       try{
         collection("vocabularies").save(vocabulary, WriteConcern.Safe)
