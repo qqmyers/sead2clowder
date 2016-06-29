@@ -604,7 +604,7 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
     responseClass = "None", httpMethod = "GET")
   def getAllCollections() = PermissionAction(Permission.ViewCollection) { implicit request =>
     implicit val user = request.user
-    val count : Long  = collections.countAccess(Set[Permission](Permission.AddResourceToCollection),user,true)
+    val count : Long  = collections.countAccess(Set[Permission](Permission.AddResourceToCollection),user,false)
     val limit = count.toInt
     //val limit = 10000
     val all_collections_list = for (collection <- collections.listAccess(0,Set[Permission](Permission.AddResourceToCollection),request.user,true))
