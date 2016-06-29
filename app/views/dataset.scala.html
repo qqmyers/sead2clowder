@@ -89,6 +89,7 @@
                     }
                     @datasets.deleteButton(dataset)
                     @datasets.follow(dataset)
+                    @*
                     @if(user.isDefined && play.api.Play.current.plugin[services.StagingAreaPlugin].isDefined) {
                         @if(toPublish && currentSpace.isDefined && Permission.checkPermission(Permission.EditStagingArea, ResourceRef(ResourceRef.space, UUID(currentSpace.getOrElse(""))))) {
                             <a href="@(routes.CurationObjects.newCO(dataset.id, currentSpace.get))" class="btn btn-link btn-sm btn-margin-bottom">
@@ -106,6 +107,8 @@
                             }
                         }
                     }
+                    *@
+                    @*
                     @if(Permission.checkPermission(Permission.AddResourceToDataset, ResourceRef(ResourceRef.dataset, dataset.id))) {
                         <a data-toggle="modal" data-target="#folder-modal" class="btn btn-link btn-sm btn-margin-bottom">
                             <span class="glyphicon glyphicon-ok"></span> Create Folder
@@ -135,12 +138,15 @@
                             </div>
                         </div>
                     }
+                    *@
                 </div>
             </div>
 	    	<div class="tabbable" id="bottomDatasetTabbable"> <!-- Only required for left/right tabs -->
                 <ul class="nav nav-tabs margin-bottom-20" >
                     <li role="presentation" class="active"><a href="#tab-files" role="tab" data-toggle="tab">Files </a></li>
+                    @*
                     <li role="presentation"><a href="#tab-metadata" role="tab" data-toggle="tab">Metadata </a></li>
+                    *@
                     <li role="presentation"><a href="#tab-visua" role="tab" data-toggle="tab">Visualizations</a></li>
                     <li role="presentation"><a href="#tab-comments" role="tab" data-toggle="tab">Comments (@comments.size)</a></li>
                 </ul>
