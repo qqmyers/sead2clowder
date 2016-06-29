@@ -74,8 +74,8 @@
             <div class="navbar-collapse collapse">
                 <ul class="nav navbar-nav">
                     <li><a href="@routes.Spaces.list()">Spaces</a></li>
-                    <li><a href="@routes.Datasets.list("")">Datasets</a></li>
                     <li><a href="@routes.Collections.list("")">Collections</a></li>
+                    <li><a href="@routes.Datasets.list("")">Datasets</a></li>
                     @if(user.isDefined){
                         <li><a href="@routes.Users.getUsers()">Users</a></li>
                     }
