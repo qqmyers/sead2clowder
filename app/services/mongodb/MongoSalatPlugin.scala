@@ -1081,9 +1081,8 @@ class MongoSalatPlugin(app: Application) extends Plugin {
     collection("vocabularies").foreach{ vocabulary =>
       val vocabId = vocabulary.getAsOrElse[ObjectId]("_id", new ObjectId())
       val vocab_tags = vocabulary.getAsOrElse[MongoDBList]("tags", MongoDBList.empty)
-      if (vocab_tags.isEmpty){
-        vocabulary.put("tags",List.empty[String])
-      }
+      vocabulary.put("tags",List.empty[String])
+
       try{
         collection("vocabularies").save(vocabulary, WriteConcern.Safe)
       } catch {
