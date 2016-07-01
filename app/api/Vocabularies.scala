@@ -146,7 +146,10 @@ class Vocabularies @Inject() (vocabularyService: VocabularyService, vocabularyTe
     notes = "This will check for Permission.ViewVocabulary",
     responseClass = "None", httpMethod = "GET")
   def list() = PrivateServerAction { implicit request =>
-    val vocabs = vocabularyService.listAll().map((v: Vocabulary) => jsonVocabulary(v))
+    val user = request.user
+    val all_vocabs = vocabularyService.listAll()
+    val vocabs = all_vocabs.filter(( v : Vocabulary) =>( v.author.get.identityId.userId == user.get.identityId.userId )).map((v: Vocabulary) => jsonVocabulary(v))
+
     Ok(toJson(vocabs))
   }
 
