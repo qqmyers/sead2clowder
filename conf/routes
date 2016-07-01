@@ -440,7 +440,7 @@ POST           /api/collections                                                 
 GET            /api/collections/rootCollections                                         @api.Collections.getRootCollections
 GET            /api/collections/topLevelCollections                                     @api.Collections.getTopLevelCollections
 GET            /api/collections/allCollections                                          @api.Collections.getAllCollections()
-
+GET            /api/collections/allCollectionsAllUsers                                  @api.Collections.getAllCollectionsAllUsers()
 # deprecrated
 GET            /api/collections/list                                                    @api.Collections.list(title: Option[String] ?= None, date: Option[String] ?= None, limit: Int ?= 12)
 POST           /api/collections/:id/follow                                              @api.Collections.follow(id: UUID)
