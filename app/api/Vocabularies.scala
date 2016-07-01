@@ -153,6 +153,16 @@ class Vocabularies @Inject() (vocabularyService: VocabularyService, vocabularyTe
     Ok(toJson(vocabs))
   }
 
+  @ApiOperation(value = "List all vocabularies the user can view",
+    notes = "This will check for Permission.ViewVocabulary",
+    responseClass = "None", httpMethod = "GET")
+  def listAll() = PrivateServerAction { implicit request =>
+    val user = request.user
+    val all_vocabs = vocabularyService.listAll().map((v: Vocabulary) => jsonVocabulary(v))
+
+    Ok(toJson(all_vocabs))
+  }
+
 
   @ApiOperation(value = "Create a vocabulary object",
     notes = "",

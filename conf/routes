@@ -741,6 +741,7 @@ POST        /t2c2/templates/createExperimentTemplateFromJson                    
 POST        /t2c2/templates/createExperimentTemplateDefaultValues                         @api.Vocabularies.createVocabularyFromJson(isPublic : Boolean ?= false)
 #GET         /t2c2/templates/findByName                                       @api.Vocabularies.getByName(tag : String)
 GET         /t2c2/templates/listExperimentTemplates                                       @api.Vocabularies.list()
+GET         /t2c2/templates/allExperimentTemplates                                      @api.Vocabularies.listAll()
 #POST        /t2c2/templates/getExperimentTemplateByDescription                                         @api.Vocabularies.getByTag(containsAll : Boolean ?= false)
 GET         /t2c2/templates/getPublic                                                   @api.Vocabularies.getPublicVocabularies()
 GET         /t2c2/templates/allTags                                                     @api.Vocabularies.getAllTagsOfAllVocabularies()
