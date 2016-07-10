@@ -89,6 +89,10 @@ class MongoDBVocabularyService @Inject() (userService: UserService) extends Voca
       false, false)
   }
 
+  def removeVocabularyTermId(vocabId : UUID, vocabTermId : UUID) = Try {
+    Vocabulary.update(MongoDBObject("_id" -> new ObjectId(vocabId.stringify)), $pull("terms" -> Some(new ObjectId(vocabTermId.stringify))), false, false, WriteConcern.Safe)
+  }
+
   def makePublic(vocabId : UUID) = Try {
     Vocabulary.dao.update(MongoDBObject("_id" -> new ObjectId(vocabId.stringify)),
       $set("isPublic" -> true), false, false, WriteConcern.Safe)
