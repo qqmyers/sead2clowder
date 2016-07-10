@@ -163,6 +163,46 @@ class Vocabularies @Inject() (vocabularyService: VocabularyService, vocabularyTe
     Ok(toJson(all_vocabs))
   }
 
+  @ApiOperation(value = "Edit a vocabulary object",
+    notes = "",
+    responseClass = "None", httpMethod = "PUT")
+  def editVocabulary(id : UUID) = AuthenticatedAction(parse.json) {implicit request =>
+    val user = request.user
+    user match {
+      case Some(identity) => {
+        val new_name = (request.body \ "name").asOpt[String].getOrElse("")
+        //val keys = (request.body \ "keys").asOpt[String].getOrElse("")
+        val new_description = (request.body \ "description").asOpt[String].getOrElse("")
+        val new_tags = (request.body \ "tags").asOpt[String].getOrElse("")
+        //parse a list of vocabterm from the json here
+        val new_request_terms = (request.body \ "terms").asOpt[List[JsValue]].getOrElse(List.empty)
+        var new_terms: ListBuffer[UUID] = ListBuffer.empty
+
+        for (each_term <- new_request_terms) {
+          val key = (each_term \ "key").asOpt[String].getOrElse("")
+          val units = (each_term \ "units").asOpt[String].getOrElse("")
+          val default_value = (each_term \ "default_value").asOpt[String].getOrElse("")
+          val description = (each_term \ "description").asOpt[String].getOrElse("")
+          val current_vocabterm: VocabularyTerm = VocabularyTerm(key = key, author = Option(identity), created = new Date(), units = units, default_value = default_value, description = description)
+
+          vocabularyTermService.insert(current_vocabterm) match {
+            case Some(id) => {
+              Logger.info("Vocabulary Term inserted")
+              new_terms += (UUID(id))
+            }
+            case None => Logger.error("Could not insert vocabulary term")
+          }
+        }
+        vocabularyService.get(id) match {
+          case Some(vocabulary) => {
+            Ok("not implemented yet")
+          }
+          case None => BadRequest("No vocabulary with id " + id + " exists")
+        }
+      }
+      case None => BadRequest("No user supplied")
+    }
+  }
 
   @ApiOperation(value = "Create a vocabulary object",
     notes = "",
@@ -212,6 +252,26 @@ class Vocabularies @Inject() (vocabularyService: VocabularyService, vocabularyTe
 
   }
 
+  private def deleteOldTerms(vocabId : UUID): Unit = {
+    vocabularyService.get(vocabId) match {
+      case Some(vocabulary) => {
+        val terms : List[UUID] = vocabulary.terms
+        for (term <- terms){
+          vocabularyTermService.get(term) match {
+            case Some(vocab_term) => {
+              vocabularyTermService.delete(vocab_term.id)
+              vocabularyService.removeVocabularyTermId(vocabId, vocab_term.id)
+            }
+            case None => {
+              vocabularyService.removeVocabularyTermId(vocabId, term)
+            }
+          }
+        }
+      }
+      case None => BadRequest("no vocabulary with id " + vocabId )
+    }
+  }
+
   def createVocabularyFromForm() = PermissionAction(Permission.CreateVocabulary)(parse.multipartFormData) { implicit request =>
     val user = request.user
     val formName = request.body.asFormUrlEncoded.getOrElse("name", null)
@@ -250,13 +310,6 @@ class Vocabularies @Inject() (vocabularyService: VocabularyService, vocabularyTe
     }
   }
 
-
-  @ApiOperation(value = "Delete vocabulary",
-    notes = "",
-    responseClass = "None", httpMethod = "PUT")
-  def editVocabulary(id : UUID, isPublic : Boolean) = {
-    Ok("nothing implemented yet")
-  }
 
   //this method will, for each key of each vocabulary, create a 'term' where we have key, '','',''
   def moveKeysToTerms(): Unit = {
