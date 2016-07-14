@@ -365,18 +365,25 @@ line-height: 1.5;
                 } else if (field_type === "listgeocode") {
                     // Find the field with the specific uri.
                     var field = $.grep(fields, function(e){ return e.json.uri == field_id; });
+                    console.log("Field typed: ", field);
                     $("#@id  #field-value").autocomplete({
                         minLength: 3,
+                        disabled: false,
+                        delay: 200,
                         source: function( request, response ) {
                             // Sets a variable query parameter in $.ajax.data below.
                             var query_param = field[0].json.query_parameter;
                             var url = encodeURIComponent(field[0].json.definitions_url + "?" + query_param + "=" + request.term);
+                            console.log("Request term: ",request.term, "Query parameter: ", query_param, "url ", url);
                             $.ajax({
-                                url: jsRoutes.api.Metadata.getUrl(url).url,
-                                //dataType: "jsonp",
-                                dataType: "json",
+                                url: "http://gd.geobytes.com/AutoCompleteCity",
+                                dataType: "jsonp",
+                                data: { q: request.term },
+                                //url: jsRoutes.api.Metadata.getUrl(url).url,
+                                //dataType: "json",
                                 //data: query_data,
                                 success: function( data ) {
+                                    console.log("Return response: ", data);
                                     // Assuming that the remote service returns filtered data, no need to filter again.
                                     response(data);
                                 }
