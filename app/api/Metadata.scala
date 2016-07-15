@@ -36,13 +36,16 @@ class Metadata @Inject()(
   }
 
   def searchByKeyValue(key: Option[String], value: Option[String], count: Int = 0) = PermissionAction(Permission.ViewDataset) {
-      implicit request =>
+    implicit request =>
         implicit val user = request.user
+        Logger.debug("SBKV")
+        Logger.debug(key.toString)
+        Logger.debug(value.toString)
         val response = for {
           k <- key
           v <- value
         } yield {
-          val results = metadataService.search(k, v, count, user)
+          val results = metadataService.searchES(k, v, count, user)
           val datasetsResults = results.flatMap { d =>
             if (d.resourceType == ResourceRef.dataset) datasets.get(d.id) else None
           }

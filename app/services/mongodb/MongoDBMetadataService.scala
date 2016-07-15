@@ -1,7 +1,7 @@
 package services.mongodb
 import com.mongodb.casbah.commons.MongoDBObject
 import com.mongodb.util.JSON
-import org.bson.types.ObjectId
+import org.elasticsearch.action.search.SearchResponse
 import play.api.Logger
 import play.api.Play._
 import models._
@@ -9,13 +9,15 @@ import com.novus.salat.dao.{ModelCompanion, SalatDAO}
 import MongoContext.context
 import play.api.Play.current
 import com.mongodb.casbah.Imports._
-import play.api.libs.json.{JsObject, JsString, Json, JsValue}
+import play.api.libs.json.{Json, JsValue, JsObject}
 import javax.inject.{Inject, Singleton}
 import com.mongodb.casbah.commons.TypeImports.ObjectId
 import com.mongodb.casbah.WriteConcern
-import services.MetadataService
-import services.{ContextLDService, DatasetService, FileService, FolderService, ExtractorMessage, RabbitmqPlugin}
+import services._
 import api.Permission
+
+import scala.collection.JavaConversions._
+import scala.collection.mutable
 
 /**
  * MongoDB Metadata Service Implementation
@@ -273,6 +275,40 @@ class MongoDBMetadataService @Inject() (contextService: ContextLDService, datase
     }
     val resources: List[ResourceRef] = MetadataDAO.find( filter).limit(count).map(_.attachedTo).toList
     resources
+  }
+
+  def searchES(key: String, value: String, count: Int, user: Option[User]): List[ResourceRef] = {
+    val field = "content." + key.trim
+    var results = mutable.MutableList[ResourceRef]()
+
+    current.plugin[ElasticsearchPlugin] match {
+      case Some(plugin) => {
+        val result: SearchResponse = plugin.search("data", value)
+        for (hit <- result.getHits().getHits()) {
+          // Does this resource have any metadata?
+          val md = hit.getSource().get("metadata")
+          if (md != null) {
+            // Is there an entry for the chosen key?
+            var jtest = Json.parse(md.toString)
+
+
+            val fieldKey: String = if (key contains ".") {
+              // key for extractor fields will be dot-notation; e.g. "ncsa.file.digest.sha512"
+              // first term is extractor name, last term is key
+              // TODO: NEEDS TESTING
+              val terms = key.split(".")
+              jtest = (jtest \ terms.head)
+              terms.last
+            } else key
+
+            val values: Seq[JsValue] = (jtest \\ fieldKey)
+            results += new ResourceRef(Symbol(hit.getType()), UUID(hit.getId()))
+          }
+        }
+      }
+      case None => Logger.error("ElasticSearch plugin could not be reached for metadata search")
+    }
+    results.toList
   }
 
   def searchbyKeyInDataset(key: String, datasetId: UUID): List[Metadata] = {
