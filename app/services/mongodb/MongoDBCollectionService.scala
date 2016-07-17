@@ -609,7 +609,7 @@ class MongoDBCollectionService @Inject() (
   }
 
   def hasRoot(collection: Collection): Boolean = {
-    collection.root_spaces.length > 0
+    (collection.root_spaces.length > 0 || collection.parent_collection_ids.isEmpty)
   }
 
   def addToRootSpaces(collectionId: UUID, spaceId: UUID): Unit = {
