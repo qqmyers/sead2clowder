@@ -8,7 +8,7 @@ import api.Permission
 import models._
 import play.api.Logger
 import play.api.Play.current
-import services.{CollectionService, DatasetService, }
+import services.{CollectionService, DatasetService, _}
 import util.RequiredFieldsConfig
 
 import scala.collection.immutable.List

@@ -2,23 +2,32 @@ package models
 
 import java.util.Date
 
-import com.novus.salat.annotations.raw.Ignore
+import play.api.libs.json.{Json, JsValue, Writes}
+import securesocial.core.Identity
 
 /**
- * Comment
- *
- * Based on http://docs.mongodb.org/manual/use-cases/storing-comments/
- *
- *
- */
-case class Vocabulary(
-  author: MiniUser,
-  text: String,
-  comment_id: Option[UUID] = None,
-  dataset_id: Option[UUID] = None,
-  file_id: Option[UUID] = None,
-  section_id: Option[UUID] = None,
-  posted: Date = new Date(),
-  id: UUID = UUID.generate,
-  @Ignore replies: List[Vocabulary] = List.empty)
+  * Created by todd_n on 2/8/16.
+  */
+case class Vocabulary (
+  id : UUID = UUID.generate(),
+  author : Option[Identity],
+  created : Date = new Date(),
+  name : String = "",
+  lastModified : Date = new Date(),
+  keys : List[String] = List.empty,
+  description : String = "",
+  spaces : List[UUID] = List.empty,
+  tags : List[String] = List.empty,
+  isPublic : Boolean = false,
+  terms : List[UUID] = List.empty)
 
+
+object Vocabulary{
+  implicit val vocabularyWrites = new Writes[Vocabulary] {
+    def writes(vocabulary : Vocabulary) : JsValue = {
+      val vocabularyAuthor = vocabulary.author.get.identityId.userId
+      Json.obj("id" -> vocabulary.id.toString,"author" -> vocabularyAuthor, "name" -> vocabulary.name,
+        "keys" -> vocabulary.keys.toList, "description" -> vocabulary.description,"spaces"->vocabulary.spaces.toList)
+    }
+  }
+}

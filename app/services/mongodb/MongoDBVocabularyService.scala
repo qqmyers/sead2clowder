@@ -1,138 +1,126 @@
 package services.mongodb
 
-import services.{ByteStorageService, ThreeDService}
-import models._
 import com.mongodb.casbah.Imports._
-import com.mongodb.WriteConcern
-import play.api.libs.json.JsValue
-import com.novus.salat.dao.{ModelCompanion, SalatDAO}
-import org.bson.types.ObjectId
-import MongoContext.context
-import play.api.Play.current
-import java.io.InputStream
+import securesocial.core.Identity
+import services.mongodb.MongoContext.context
 import com.mongodb.casbah.commons.MongoDBObject
-import models.ThreeDGeometry
-import models.ThreeDTexture
-import util.FileUtils
 
-/**
- * Use MongoDB to store 3-d's
- */
-class MongoDBThreeDService extends ThreeDService {
+import com.novus.salat.dao.{SalatMongoCursor, ModelCompanion, SalatDAO}
+import org.bson.types.ObjectId
+import models._
+import javax.inject.{Singleton, Inject}
 
-  def getTexture(textureId: UUID): Option[ThreeDTexture] ={
-    ThreeDTextureDAO.findOneById(new ObjectId(textureId.stringify))
+
+import com.mongodb.casbah.WriteConcern
+import services.{VocabularyService, UserService}
+import play.api.Play._
+import scala.util.{Success, Try}
+
+
+@Singleton
+class MongoDBVocabularyService @Inject() (userService: UserService) extends VocabularyService {
+
+  def count() : Long = {
+    Vocabulary.count( MongoDBObject())
   }
 
-  def findTexture(fileId: UUID, filename: String): Option[ThreeDTexture] = {
-    try {
-      val theTexture = ThreeDTextureDAO.find(MongoDBObject("file_id" -> new ObjectId(fileId.stringify), "filename" -> filename)).toList.head
-      return Option(theTexture)
-    } catch {
-      case e: NoSuchElementException => return None
-    }
+  def insert(vocabulary : Vocabulary) : Option[String] = {
+    Vocabulary.insert(vocabulary).map(_.toString)
   }
 
-  def findTexturesByFileId(fileId: UUID): List[ThreeDTexture] = {
-    ThreeDTextureDAO.find(MongoDBObject("file_id" -> new ObjectId(fileId.stringify))).toList
+  def listAll() : List[Vocabulary] = {
+    Vocabulary.findAll().toList
   }
 
-  def updateTexture(fileId: UUID, textureId: UUID, fields: Seq[(String, JsValue)]) {
-    val metadata = fields.toMap.flatMap(tuple => MongoDBObject(tuple._1 -> tuple._2.as[String]))
-    ThreeDTextureDAO.dao.collection.update(MongoDBObject("_id" -> new ObjectId(textureId.stringify)),
-      $set("metadata" -> metadata, "file_id" -> new ObjectId(fileId.stringify)), false, false, WriteConcern.SAFE)
+  def get(id: UUID) : Option[Vocabulary] = {
+    Vocabulary.findOneById(new ObjectId(id.stringify))
   }
 
-  def updateGeometry(fileId: UUID, geometryId: UUID, fields: Seq[(String, JsValue)]) {
-    val metadata = fields.toMap.flatMap(tuple => MongoDBObject(tuple._1 -> tuple._2.as[String]))
-    GeometryDAO.dao.collection.update(MongoDBObject("_id" -> new ObjectId(geometryId.stringify)),
-      $set("metadata" -> metadata, "file_id" -> new ObjectId(fileId.stringify)), false, false, WriteConcern.SAFE)
+  def updateName(vocabId: UUID, name : String){
+    val result = Vocabulary.update(MongoDBObject("_id" -> new ObjectId(vocabId.stringify)),
+      $set("name" -> name), false, false, WriteConcern.Safe)
   }
 
-  /**
-   * Save blob.
-   */
-  def save(inputStream: InputStream, filename: String, contentType: Option[String]): String = {
-    ByteStorageService.save(inputStream, ThreeDTextureDAO.COLLECTION) match {
-      case Some(x) => {
-        val text = ThreeDTexture(UUID.generate(), x._1, x._2, None, Some(filename), FileUtils.getContentType(filename, contentType), x._4)
-        ThreeDTextureDAO.save(text)
-        text.id.stringify
+  def updateDescription(vocabId: UUID, description: String) {
+    val result = Vocabulary.update(MongoDBObject("_id" -> new ObjectId(vocabId.stringify)),
+      $set("description" -> description), false, false, WriteConcern.Safe)
+  }
+
+  def updateTags(vocabId : UUID, tags : List[String]){
+    val result = Vocabulary.update(MongoDBObject("_id" -> new ObjectId(vocabId.stringify)),
+      $set("tags" -> tags), false, false, WriteConcern.Safe)
+  }
+
+  def getByName(name : String) : List[Vocabulary] = {
+    Vocabulary.dao.find(MongoDBObject("name"->name)).toList
+  }
+
+  def getByAuthor(author: Identity) : List[Vocabulary] = {
+    Vocabulary.findAll().toList.filter(p => p.author.get.identityId == author.identityId)
+  }
+
+  def getByAuthorAndName(author : Identity, name : String) : List[Vocabulary] = {
+    Vocabulary.findAll().toList.filter(p => (p.author.get.identityId == author.identityId ) && (p.name == name))
+  }
+
+  def delete(id : UUID) = Try {
+    Vocabulary.findOneById(new ObjectId(id.stringify)) match {
+      case Some(vocab) => {
+        Vocabulary.remove(MongoDBObject("_id" -> new ObjectId(vocab.id.stringify)))
+        Success
       }
-      case None => ""
+      case None => Success
     }
   }
 
-  /**
-   * Get blob.
-   */
-  def getBlob(id: UUID): Option[(InputStream, String, String, Long)] = {
-    getTexture(id).flatMap { x =>
-      ByteStorageService.load(x.loader, x.loader_id, ThreeDTextureDAO.COLLECTION).map((_, x.filename.getOrElse(""), x.contentType, x.length))
+  def addToSpace(vocabId: UUID, spaceId: UUID) = Try{
+    val result = Vocabulary.update(
+      MongoDBObject("_id" -> new ObjectId(vocabId.stringify)),
+      $addToSet("spaces" -> Some(new ObjectId(spaceId.stringify))),
+      false, false)
+  }
+
+  def removeFromSpace(vocabId: UUID, spaceId : UUID) = Try {
+    val result = Vocabulary.update(
+      MongoDBObject("_id" -> new ObjectId(vocabId.stringify)),
+      $pull("spaces" -> Some(new ObjectId(spaceId.stringify))),
+      false, false)
+  }
+
+  def findByTag(tag : List[String], containsAll : Boolean ) : List[Vocabulary] = {
+    if (containsAll == false){
+      Vocabulary.findAll.toList.filter((v: Vocabulary )=> (!v.tags.intersect(tag).isEmpty))
+    } else {
+      Vocabulary.findAll.toList.filter((v: Vocabulary )=> (tag.toSet[String].subsetOf(v.tags.toSet[String])))
     }
   }
 
-  def findGeometry(fileId: UUID, filename: String): Option[ThreeDGeometry] = {
-    try {
-      val theGeometry = GeometryDAO.find(MongoDBObject("file_id" -> new ObjectId(fileId.stringify), "filename" -> filename)).toList.head
-      return Option(theGeometry)
-    } catch {
-      case e: NoSuchElementException => return None
-    }
+  def addVocabularyTerm(vocabId: UUID, vocabTermId : UUID) = Try {
+    val result = Vocabulary.update(
+      MongoDBObject("_id" -> new ObjectId(vocabId.stringify)),
+      $addToSet("terms" -> Some(new ObjectId(vocabTermId.stringify))),
+      false, false)
   }
 
-  /**
-   * Save blob.
-   */
-  def saveGeometry(inputStream: InputStream, filename: String, contentType: Option[String]): String = {
-    ByteStorageService.save(inputStream, GeometryDAO.COLLECTION) match {
-      case Some(x) => {
-        val geom = ThreeDGeometry(UUID.generate(), x._1, x._2, None, Some(filename), FileUtils.getContentType(filename, contentType), None, x._4)
-        GeometryDAO.save(geom)
-        geom.id.stringify
-      }
-      case None => ""
-    }
+  def removeVocabularyTermId(vocabId : UUID, vocabTermId : UUID) = Try {
+    Vocabulary.update(MongoDBObject("_id" -> new ObjectId(vocabId.stringify)), $pull("terms" -> Some(new ObjectId(vocabTermId.stringify))), false, false, WriteConcern.Safe)
   }
 
-  def getGeometry(id: UUID): Option[ThreeDGeometry] = {
-    GeometryDAO.findOneById(new ObjectId(id.stringify))
+  def makePublic(vocabId : UUID) = Try {
+    Vocabulary.dao.update(MongoDBObject("_id" -> new ObjectId(vocabId.stringify)),
+      $set("isPublic" -> true), false, false, WriteConcern.Safe)
   }
 
-  /**
-   * Get blob.
-   */
-  def getGeometryBlob(id: UUID): Option[(InputStream, String, String, Long)] = {
-    getGeometry(id).flatMap { x =>
-      ByteStorageService.load(x.loader, x.loader_id, GeometryDAO.COLLECTION).map((_, x.filename.getOrElse(""), x.contentType, x.length))
-    }
-  }
 
-}
-
-object ThreeDTextureDAO extends ModelCompanion[ThreeDTexture, ObjectId] {
-  val COLLECTION = "textures"
-
-  val dao = current.plugin[MongoSalatPlugin] match {
-    case None => throw new RuntimeException("No MongoSalatPlugin");
-    case Some(x) => new SalatDAO[ThreeDTexture, ObjectId](collection = x.collection(COLLECTION)) {}
+  def makePrivate(vocabId : UUID) = Try {
+    Vocabulary.dao.update(MongoDBObject("_id" -> new ObjectId(vocabId.stringify)),
+      $set("isPublic" -> false), false, false, WriteConcern.Safe)
   }
 }
 
-object GeometryDAO extends ModelCompanion[ThreeDGeometry, ObjectId] {
-  val COLLECTION = "geometries"
-
+object Vocabulary extends ModelCompanion[Vocabulary, ObjectId] {
   val dao = current.plugin[MongoSalatPlugin] match {
     case None => throw new RuntimeException("No MongoSalatPlugin");
-    case Some(x) => new SalatDAO[ThreeDGeometry, ObjectId](collection = x.collection(COLLECTION)) {}
-  }
-}
-
-object ThreeDAnnotation extends ModelCompanion[ThreeDAnnotation, ObjectId] {
-  val COLLECTION = "previews.files.annotations"
-
-  val dao = current.plugin[MongoSalatPlugin] match {
-    case None => throw new RuntimeException("No MongoSalatPlugin");
-    case Some(x) => new SalatDAO[ThreeDAnnotation, ObjectId](collection = x.collection(COLLECTION)) {}
+    case Some(x) => new SalatDAO[Vocabulary, ObjectId](collection = x.collection("vocabularies")) {}
   }
 }
