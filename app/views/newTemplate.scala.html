@@ -1,0 +1,134 @@
+@(errorString: String, spaces: List[models.ProjectSpace], isNameRequired: Boolean, isDescriptionRequired: Boolean, spaceId: Option[String])(implicit flash: play.api.mvc.Flash, user: Option[models.User])
+
+@import helper._
+@implicitFieldConstructor = @{ FieldConstructor(twitterBootstrapInput.f) }
+
+@main("Create Template") {
+  <!-- Custom items for the create collection workflow -->
+  <script src="@routes.Assets.at("javascripts/vocabulary-create.js")" type="text/javascript"></script>
+  <script src="@routes.Assets.at("javascripts/template-create.js")" type="text/javascript"></script>
+  <script src="@routes.Assets.at("javascripts/htmlEncodeDecode.js")" language="javascript"></script>
+  <script type="text/javascript" language="javascript">
+      //Global so that the javascript for the collection creation can reference this.
+      var isNameRequired = @isNameRequired;
+      var isDescRequired = @isDescriptionRequired;
+      var isKeysRequired = true;
+  </script>
+    <script src="@routes.Assets.at("javascripts/chosen.jquery.js")" type="text/javascript"></script>
+    <link rel="stylesheet" href="@routes.Assets.at("stylesheets/chosen.css")">
+  <div class="page-header">
+    <h1>Create New Template</h1>
+  </div>
+  <div class="row">
+	<div class="col-md-12">
+
+	<div>
+        <span id="status" class="success hiddencomplete alert alert-success" role="alert">A Status Message</span>
+        @if(errorString != null){
+            <span class="error alert alert-danger" id="messageerror">@errorString</span>
+        }else{
+            <span class="error hiddencomplete alert alert-danger" id="messageerror">An Error Message</span>
+        }
+    </div>
+    <!-- Dataset -->
+    <form id="formGetDatasets" action="#">
+        <div class="form-group">
+            <div class="showTemplates">
+                <label>Load another template to start with (optional):</label><br />
+                <select class="form-control templates">
+                </select>
+                <br />
+            </div>
+            <label>Choose a name for your template:</label>
+            <input type="text" class="form-control datasetName" placeholder="<Example> Sample Name, PECVD Oxide, Diffusion" required><br />
+            <label>Create tags to describe your template: (optional)</label>                
+            <span><a style="font-height:12px;" href="#" data-toggle="popover" title="Template Tags" data-trigger="hover" data-content="Tags allow users to search personal and global templates through descriptive tags." title=" ">
+            <span class="glyphicon glyphicon-question-sign"></a></span> 
+            <br />
+            <input type="text" class="form-control tagName" placeholder="<Example> SEM, Diffusion" required><br />
+            <input type="button" value="Add New Field" class="btn btn-success btnAdd"/>     
+            <button class="btn btn-danger clearTemplate" type="button">Clear Template</button>
+            <br /><br />
+            <label>Share this template with others?</label> <input type="checkbox" id="checkShareTemplate"><br />
+                
+            <div class="metaDataSettings">
+            </div>  
+            <div class="templateData">
+                <!--Template boxes will be added here -->
+                <br />
+            </div>
+            <br />
+            <div class="form-group" id="btnTemplate">   
+                <input type="button" value="Create Template" class="btn btn-success btnTemplate form-control">
+            </div>
+            </div>
+        </div>
+    </form>
+    <form id="vocabularycreate" action='@routes.Vocabularies.submit' method="POST" enctype="multipart/form-data">
+                    <!-- Redirect browsers with JavaScript disabled to the origin page -->
+                    <noscript>Javascript is required in order to use the uploader to create a new collection.</noscript>
+
+                    <input type="hidden" name="name" id="hiddenname" value="not set">
+                    <input type="hidden" name="keys" id="hiddenkeys" value="not set">
+                    <input type="hidden" name="description" id="hiddendescription" value="not set">
+                    <input type="hidden" name="space" id="hiddenspace" value="not set">
+    </form>
+    </div>
+  </div>
+<script language="javascript">
+    $(".chosen-select").chosen({
+        width: "100%",
+        placeholder_text_multiple: "Select spaces for this template."
+    });
+</script>
+<script language = "javascript">
+    var idNameObj = {};
+
+    function isUndefined(value) {
+        return typeof value === 'undefined';
+    }
+
+    function getName(id) {
+        return idNameObj[id];
+    }
+
+    $(document).ready(function() {
+        @for(space <- spaces) {
+            idNameObj["@space.name"] = "@space.id";
+
+        }
+        $(".chosen-choices").addClass("form-control");
+    });
+
+    $(".chosen-select").chosen().change(function(event, params) {
+    var targetId = this.getAttribute("id");
+    if(!isUndefined(params.selected)) {
+        var addedId = params.selected;
+        @for(space <- spaces) {
+            var currentId = "@space";
+            if(currentId != targetId) {
+                $("#@space.id option [value="+addedId +']').remove();
+                $('#@space.id').trigger("chosen:updated");
+            }
+        }
+        $('ul.chosen-choices li.search-field').css("width", "0");
+
+    }
+    else if (!isUndefined(params.deselected)) {
+        var removedId = params.deselected;
+        @for(space <- spaces) {
+            var currentId = "@space";
+            if(currentId != targetId) {
+                $('#@space.id').prepend($("<option></option>").attr("value", removedId).text(getName(removedId)));
+                $('#@space.id').trigger("chosen:updated");
+            }
+        }
+    }
+    })
+
+    if(@spaceId.isDefined) {
+        $('#@spaceId').prop('selected','selected');
+        $('#spaceid').trigger("chosen:updated");
+    }
+  </script>
+}
