@@ -77,7 +77,7 @@ class MongoDBPreviewService @Inject()(files: FileService, tiles: TileService, st
   def save(inputStream: InputStream, filename: String, contentType: Option[String]): String = {
     ByteStorageService.save(inputStream, PreviewDAO.COLLECTION) match {
       case Some(x) => {
-        val preview = Preview(UUID.generate(), x._1, x._2, None, None, None, None, Some(filename), FileUtils.getContentType(filename, contentType), None, None, List.empty, x._4)
+        val preview = Preview(UUID.generate(), x._1, x._2, None, None, None, None,None,None, Some(filename), FileUtils.getContentType(filename, contentType), None, None, List.empty, x._4)
         PreviewDAO.save(preview)
         preview.id.stringify
       }
@@ -275,10 +275,10 @@ class MongoDBPreviewService @Inject()(files: FileService, tiles: TileService, st
           $set("title" -> title),
           upsert=false, multi=false, WriteConcern.Safe)
   }
-  
+
   /**
-   * Get metadata from the mongo db as a map. 
-   * 
+   * Get metadata from the mongo db as a map.
+   *
    */
    def getMetadata(id: UUID): scala.collection.immutable.Map[String,Any] = {
     PreviewDAO.dao.collection.findOneByID(new ObjectId(id.stringify)) match {
@@ -289,12 +289,12 @@ class MongoDBPreviewService @Inject()(files: FileService, tiles: TileService, st
       }
     }
   }
-  
-    def getExtractorId(id: UUID):String = {     
-      val extractor_id = getMetadata(id)("extractor_id").toString    
+
+    def getExtractorId(id: UUID):String = {
+      val extractor_id = getMetadata(id)("extractor_id").toString
       extractor_id
    }
-    
+
 }
 
 object PreviewDAO extends ModelCompanion[Preview, ObjectId] {

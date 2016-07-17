@@ -195,7 +195,7 @@ class Application @Inject() (files: FileService, collections: CollectionService,
   def bookmarklet() = AuthenticatedAction { implicit request =>
     Ok(views.html.bookmarklet(Utils.baseUrl(request))).as("application/javascript")
   }
-  
+
   /**
    *  Javascript routing.
    */
@@ -401,9 +401,10 @@ class Application @Inject() (files: FileService, collections: CollectionService,
         controllers.routes.javascript.CurationObjects.compareToRepository,
         controllers.routes.javascript.CurationObjects.deleteCuration,
         controllers.routes.javascript.CurationObjects.getStatusFromRepository,
-        controllers.routes.javascript.Events.getEvents
+        controllers.routes.javascript.Events.getEvents,
+        controllers.routes.javascript.Vocabularies.submit
       )
-    ).as(JSON) 
+    ).as(JSON)
   }
-  
+
 }

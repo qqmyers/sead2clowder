@@ -543,6 +543,15 @@ PUT            /api/datasets/:id/access                                         
 POST           /api/datasets/:id/addFileEvent                                           @api.Datasets.addFileEvent(id:UUID, inFolder:Boolean, fileCount: Int )
 
 
+
+# ----------------------------------------------------------------------
+# VOCABULARIES ENDPOINT
+# ----------------------------------------------------------------------
+
+GET             /vocabularies/new                                                       @controllers.Vocabularies.newVocabulary(space : Option[String])
+POST            /vocabularies/submit                                                    @controllers.Vocabularies.submit()
+GET             /vocabularies/:id                                                       @controllers.Vocabularies.vocabulary(id : UUID)
+
 # ----------------------------------------------------------------------
 # PREVIEWS ENDPOINT
 # ----------------------------------------------------------------------
