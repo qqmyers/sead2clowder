@@ -13,7 +13,8 @@ GET            /*path/                                                          
 # HOME PAGE
 # ----------------------------------------------------------------------
 
-GET            /                                                                        @controllers.Application.index
+GET            /                                                                       @controllers.Application.index
+GET            /dashboard                                                              @controllers.Dashboard.index
 GET            /about                                                                   @controllers.Application.about
 GET            /tos                                                                     @controllers.Application.tos(redirect: Option[String] ?= None)
 GET            /email                                                                   @controllers.Application.email(subject: String ?= "")
@@ -718,3 +719,76 @@ GET            /spaces/curations/:id/getMetadataDefinitionsByFile               
 GET            /spaces/curations/:id/metadataDefinitions                                @api.CurationObjects.getMetadataDefinitions(id: UUID)
 POST           /sendEmail                                                               @api.Events.sendExceptionEmail()
 GET            /getEvents                                                               @controllers.Events.getEvents(index: Int)
+
+# ----------------------------------------------------------------------
+# VOCABULARIES API
+# ----------------------------------------------------------------------
+
+GET         /api/vocabularies/list                                                      @api.Vocabularies.list()
+POST        /api/vocabularies/createVocabularyFromJson                                  @api.Vocabularies.createVocabularyFromJson(isPublic : Boolean ?= false)
+POST        /api/vocabularies/createVocabulary                                          @api.Vocabularies.createVocabularyFromForm()
+GET         /api/vocabularies/getByAuthor                                               @api.Vocabularies.getByAuthor()
+#POST        /api/vocabularies/findByDescription                                         @api.Vocabularies.findByTag(containsAll : Boolean ?= false)
+GET         /api/vocabularies/getPublic                                                 @api.Vocabularies.getPublicVocabularies()
+
+
+GET         /api/vocabularies/:vocab_id                                                 @api.Vocabularies.get(vocab_id : UUID)
+PUT         /api/editVocabulary/:vocab_id                                               @api.Vocabularies.editVocabulary(vocab_id : UUID)
+GET         /api/vocabularies/:name                                                     @api.Vocabularies.getByName(name : String)
+#GET         /api/vocabularies/:tag                                                      @api.Vocabularies.getByTag(tag : String)
+GET         /api/vocabularies/:name/getByNameAuthor                                     @api.Vocabularies.getByNameAndAuthor(name: String)
+
+POST        /api/vocabularies/:vocab_id/addToSpace/:space_id                            @api.Vocabularies.addToSpace(vocab_id: UUID, space_id : UUID)
+POST        /api/vocabuliaries/:vocab_id/removeFromSpace/:space_id                      @api.Vocabularies.removeFromSpace(vocab_id: UUID, space_id : UUID)
+
+# ----------------------------------------------------------------------
+# VOCABULARYTERMS API
+# ----------------------------------------------------------------------
+
+GET         /api/vocabterms/list                                                        @api.VocabularyTerms.list()
+GET         /api/vocabterms/:id                                                         @api.VocabularyTerms.get(id : UUID)
+
+# ----------------------------------------------------------------------
+# TEMPLATES ENDPOINT
+# ----------------------------------------------------------------------
+
+POST        /t2c2/templates/createExperimentTemplate                                      @api.Vocabularies.createVocabularyFromJson(isPublic : Boolean ?= false)
+POST        /t2c2/templates/createExperimentTemplateFromJson                              @api.Vocabularies.createVocabularyFromJson(isPublic : Boolean ?= false)
+POST        /t2c2/templates/createExperimentTemplateDefaultValues                         @api.Vocabularies.createVocabularyFromJson(isPublic : Boolean ?= false)
+#GET         /t2c2/templates/findByName                                       @api.Vocabularies.getByName(tag : String)
+GET         /t2c2/templates/listExperimentTemplates                                       @api.Vocabularies.list()
+GET         /t2c2/templates/allExperimentTemplates                                      @api.Vocabularies.listAll()
+#POST        /t2c2/templates/getExperimentTemplateByDescription                                         @api.Vocabularies.getByTag(containsAll : Boolean ?= false)
+GET         /t2c2/templates/getPublic                                                   @api.Vocabularies.getPublicVocabularies()
+GET         /t2c2/templates/allTags                                                     @api.Vocabularies.getAllTagsOfAllVocabularies()
+GET         /t2c2/templates/getExperimentTemplateById/:id                                              @api.Vocabularies.get(id: UUID)
+GET         /t2c2/templates/getExperimentTemplateByName/:name                                          @api.Vocabularies.getByName(name : String)
+POST         /t2c2/templates/findByTag                                                  @api.Vocabularies.getByTag(containsAll : Boolean ?= false)
+GET         /t2c2/templates/findByTag/:tag                                                       @api.Vocabularies.getBySingleTag(tag : String)
+
+DELETE      /t2c2/templates/deleteTemplate/:id                                                         @api.Vocabularies.removeVocabulary(id: UUID)
+PUT         /t2c2/templates/makePublic/:id                                                  @api.T2C2.makeTemplatePublic(id : UUID)
+PUT         /t2c2/templates/makePrivate/:id                                                 @api.T2C2.makeTemplatePrivate(id : UUID)
+
+
+# ----------------------------------------------------------------------
+# TEMPLATES ENDPOINT / with views
+# ----------------------------------------------------------------------
+
+GET        /t2c2/templates/new                                                                        @controllers.T2C2.newTemplate(space : Option[String])
+
+#----------------------------------------------------
+# T2C2 endpoints
+#----------------------------------------------------
+
+GET         /t2c2/collections/allCollection                                                             @api.T2C2.getAllCollectionsOfUser()
+PUT         /t2c2/templates/moveKeysToTerms                                                             @api.T2C2.moveKeysToTermsTemplates()
+POST        /t2c2/uploadToDataset/:id                                                                   @api.Files.uploadToDatasetWithDescription(id: UUID, showPreviews: String ?= "DatasetLevel", originalZipFile: String ?= "", flags: String ?= "")
+PUT         /t2c2/files/:id/updateDescription                                                           @api.Files.updateDescription(id: UUID)
+GET         /t2c2/collections/:coll_id/datasets                                                         @api.Datasets.listInCollection(coll_id: UUID)
+GET         /api/t2c2/collections/:coll_id/datasetsWithParentColId                                      @api.T2C2.getDatasetsInCollectionWithColId(coll_id: UUID)
+GET         /api/t2c2/allCollectionsWithDatasetIds                                                      @api.T2C2.getAllCollectionsWithDatasetIds()
+GET         /t2c2/getKeyValuesLastDataset                                                               @api.T2C2.getKeysValuesFromLastDataset()
+GET         /t2c2/getKeyValuesForLastDatasets                                                           @api.T2C2.getKeysValuesFromLastDatasets(limit : Int ?= 10)
+GET         /t2c2/getKeyValuesForDatasetId/:id                                                          @api.T2C2.getKeysValuesFromDatasetId(id : UUID)
+GET         /t2c2/getIdNameFromTag/:tag                                                                 @api.T2C2.getVocabIdNameFromTag(tag : String)
