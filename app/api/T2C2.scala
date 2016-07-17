@@ -31,9 +31,13 @@ class T2C2 @Inject() (datasets : DatasetService, collections: CollectionService)
     notes = "",
     responseClass = "None", httpMethod = "GET")
   def getAllCollectionsWithDatasetIds() = PermissionAction(Permission.ViewCollection) { implicit request =>
-    implicit val user = request.user
-    val all_collections_list = for (collection <- collections.listAccess(0,Set[Permission](Permission.AddResourceToCollection),request.user,false))
-      yield jsonCollection(collection)
+    val all_collections_list = request.user match {
+      case Some(usr) => {
+        for (collection <- collections.listAllCollections(usr, false, 0))
+          yield jsonCollection(collection)
+      }
+      case None => List.empty
+    }
     Ok(toJson(all_collections_list))
   }
 
@@ -41,12 +45,13 @@ class T2C2 @Inject() (datasets : DatasetService, collections: CollectionService)
     notes = "",
     responseClass = "None", httpMethod = "GET")
   def getAllCollectionsOfUser() = PermissionAction(Permission.ViewCollection) { implicit request =>
-    implicit val user = request.user
-    val count: Long = collections.countAccess(Set[Permission](Permission.AddResourceToCollection), user, true)
-    val limit = count.toInt
-    //val limit = 10000
-    val all_collections_list = for (collection <- collections.listAccess(0, Set[Permission](Permission.AddResourceToCollection), request.user, false))
-      yield jsonCollection(collection)
+    val all_collections_list = request.user match {
+      case Some(usr) => {
+        for (collection <- collections.listAllCollections(usr, false, 0))
+          yield jsonCollection(collection)
+      }
+      case None => List.empty
+    }
     Ok(toJson(all_collections_list))
   }
 
@@ -98,7 +103,7 @@ class T2C2 @Inject() (datasets : DatasetService, collections: CollectionService)
     responseClass = "None", httpMethod = "GET")
   def getKeysValuesFromLastDataset() = PermissionAction(Permission.ViewDataset) { implicit request =>
     implicit val user = request.user
-    val lastDataset : List[Dataset] = datasets.listAccess(1,Set[Permission](Permission.ViewDataset),user,false)
+    val lastDataset : List[Dataset] = datasets.listAccess(1,Set[Permission](Permission.ViewDataset),user,false, false)
     val keyValues = getKeyValuePairsFromDataset(lastDataset(0))
     val asMap  = Json.toJson(keyValues)
     //
@@ -153,7 +158,7 @@ class T2C2 @Inject() (datasets : DatasetService, collections: CollectionService)
   def getKeysValuesFromLastDatasets(limit : Int) = PermissionAction(Permission.ViewDataset) { implicit request =>
     implicit val user = request.user
     var result : ListBuffer[Map[String,String]] = ListBuffer.empty[Map[String,String]]
-    val lastDatasets : List[Dataset] = datasets.listAccess(limit,Set[Permission](Permission.ViewDataset),user,false)
+    val lastDatasets : List[Dataset] = datasets.listAccess(limit,Set[Permission](Permission.ViewDataset),user,false, false)
     for (each <- lastDatasets){
       try {
         val currentKeyValues = getKeyValuePairsFromDataset1(each)
