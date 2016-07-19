@@ -94,7 +94,7 @@
                 }
                     <li class="dropdown">
                         <a href="#" class="dropdown-toggle" data-toggle="dropdown">
-                            Explore <b class="caret"></b>
+                            Shared <b class="caret"></b>
                         </a>
                         <ul class="dropdown-menu">
                             <li><a href="@routes.Spaces.list()"><span class="glyphicon glyphicon-tent"> </span> @{spaces.spaceTitle()}s</a></li>
@@ -113,10 +113,10 @@
                             @if(user.isDefined){
                                 <li><a href="@routes.Users.getUsers()"><span class="glyphicon glyphicon-user"></span> Users</a></li>
                             }
-                            <li><a href="@routes.Tags.tagListOrdered"> <span class="glyphicon glyphicon-tags"> </span>  Ordered Tags</a></li>
+<!--                             <li><a href="@routes.Tags.tagListOrdered"> <span class="glyphicon glyphicon-tags"> </span>  Ordered Tags</a></li>
                             <li><a href="@routes.Tags.tagListWeighted"><span class="glyphicon glyphicon-tags"> </span>  Weighted Tags</a></li>
                             <li><a href="@routes.Metadata.search"> <span class="glyphicon glyphicon-search"> </span> Advanced Search</a></li>
-                        </ul>
+ -->                        </ul>
                     </li>
                 @if(user.isDefined) {
                     <li class="dropdown">
@@ -138,14 +138,14 @@
                     <li class="dropdown">
                         <a href="#" class="dropdown-toggle nav-icon" data-toggle="dropdown" title="Help">Help<b class="caret"></b></a>
                         <ul class="dropdown-menu" role="menu">
-                            <li><a href="https://clowder.ncsa.illinois.edu/" target="_blank">About Clowder</a></li>
-                            <li><a href="@routes.Application.about">About this instance</a></li>
+<!--                             <li><a href="https://clowder.ncsa.illinois.edu/" target="_blank">About Clowder</a></li>
+ -->                            <li><a href="@routes.Application.about">About this instance</a></li>
                             @if(user.isDefined) {
                                 <li><a href="@routes.Application.email("")">Contact server admins</a></li>
                             }
                             <li><a targe"tos" href="@routes.Application.tos(None)">Terms of Services</a></li>
-                            <li><a href="@routes.Assets.at("docs/api/index.html")" target="_blank">API</a></li>
-                            @play.Play.application.configuration.getConfigList("helpMenu").map { helpItem =>
+<!--                             <li><a href="@routes.Assets.at("docs/api/index.html")" target="_blank">API</a></li>
+ -->                            @play.Play.application.configuration.getConfigList("helpMenu").map { helpItem =>
                               <li><a href="@helpItem.getString("url")" target="_blank">@helpItem.getString("label")</a></li>
 
                             }
