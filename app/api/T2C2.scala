@@ -34,7 +34,7 @@ class T2C2 @Inject() (datasets : DatasetService, collections: CollectionService)
     val all_collections_list = request.user match {
       case Some(usr) => {
         for (collection <- collections.listAllCollections(usr, false, 0))
-          yield jsonCollection(collection)
+          yield jsonCollection(collection, usr)
       }
       case None => List.empty
     }
@@ -48,15 +48,15 @@ class T2C2 @Inject() (datasets : DatasetService, collections: CollectionService)
     val all_collections_list = request.user match {
       case Some(usr) => {
         for (collection <- collections.listAllCollections(usr, false, 0))
-          yield jsonCollection(collection)
+          yield jsonCollection(collection,request.user)
       }
       case None => List.empty
     }
     Ok(toJson(all_collections_list))
   }
 
-  def jsonCollection(collection: Collection): JsValue = {
-    val datasetsInCollection = datasets.listCollection(collection.id.stringify)
+  def jsonCollection(collection: Collection, user : Option[User]): JsValue = {
+    val datasetsInCollection = datasets.listCollection(collection.id.stringify, user)
     val datasetIds = for (dataset<-datasetsInCollection)
       yield (dataset.name +":"+ dataset.id)
     toJson(Map("id" -> collection.id.toString, "name" -> collection.name, "description" -> collection.description,
