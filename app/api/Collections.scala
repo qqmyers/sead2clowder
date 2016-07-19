@@ -649,7 +649,7 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
   @ApiOperation(value = "Get all collections",
     notes = "",
     responseClass = "None", httpMethod = "GET")
-  def getAllCollections(limit : Int, showAll: Boolean) = PermissionAction(Permission.ViewCollection) { implicit request =>
+  def getAllCollections(limit : Int, showAll: Boolean) = PermissionAction(Permission.AddResourceToCollection) { implicit request =>
     val all_collections_list = request.user match {
       case Some(usr) => {
         for (collection <- collections.listAllCollections(usr, showAll, limit))
