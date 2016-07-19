@@ -55,7 +55,15 @@
             </div>
             <div role="tabpanel" class="tab-pane active" id="treeView">
                 <div class="top-padding">
-                Tree View Coming Soon
+                    <h2> My Collections and Datasets</h2>
+                    <!-jstree goes here-->
+                    <div class="showSearch">
+                        <input class="search-collection form-control" placeholder="Search your collections"></input><br />
+                    </div>         
+                    <div class="panel panel-default">
+                        <div id="collections">
+                        </div>  
+                    </div>               
                 </div>
             </div>            
             <div role="tabpanel" class="tab-pane" id="spaces">
@@ -494,6 +502,167 @@
 
     <script src="@routes.Assets.at("javascripts/lib/masonry.pkgd.min.js")" type="text/javascript"></script>
     <script src="@routes.Assets.at("javascripts/lib/imagesloaded.pkgd.min.js")" type="text/javascript"></script>
+
+    <script>
+    //Get collections
+    function getCollections() {
+        $.ajax({
+            url: "api/t2c2/allCollectionsWithDatasetIds",
+            dataType: "json",
+            beforeSend: function(xhr){
+                xhr.setRequestHeader("Content-Type", "application/json"); 
+                xhr.setRequestHeader("Accept", "application/json");
+            }, 
+            success: function(data) {
+                    var col = "#collections";
+                    createJSTrees(data, col);   
+            }, 
+            error: function(xhr, status, error) {
+
+            }   
+        });
+    }
+
+    getCollections();
+
+    function createJSTrees(jsonData, type) {
+
+        //build key/value pairs for datasets that exist
+        for (var i = 0; i < jsonData.length; i++){
+
+            //if there are multiple datasets then split the string
+            if (jsonData[i]['dataset_ids']){
+                
+                var arr = jsonData[i]['dataset_ids'].split(",");
+            
+                var parent_collection_ids = jsonData[i]['id'];
+                var root_flag = "false"
+                $.each(arr, function(key, val){
+
+                    var dataset_name = val.split(':')[0].replace(/[^a-zA-Z 0-9]+/g,'');
+                    var dataset_id = val.substring(val.indexOf(":") + 1);
+                    //differentiate between collections and datasets
+                    var ds = "#dataset_id" + dataset_id;
+                    jsonData.push({parent_collection_ids : parent_collection_ids, name : dataset_name, root_flag : root_flag, id : ds });    
+                });            
+                
+            }
+
+            //create library supported key names (text,parent)
+            jsonData[i].text = jsonData[i]['name'];
+            jsonData[i].parent = jsonData[i]['parent_collection_ids'];
+           
+            //remove old keys
+            delete jsonData[i].name;
+            delete jsonData[i].parent_collection_ids;
+
+            // Is this a root collection?
+            if (jsonData[i].root_flag == "true"){
+                jsonData[i].parent = "#";
+
+            }else{
+                var str = "";
+                // Remove special characters from the values
+                str = jsonData[i].parent.replace(/[List()]+/gi, '');
+                jsonData[i].parent = str; 
+            }
+
+            //For new root collections where the json requires a root parent to have a value of #
+            if (jsonData[i].parent == ""){
+                jsonData[i].parent = "#";
+            }
+
+        }
+
+        //Create tree from js object
+        //jstree initialization and settings
+        $(type).jstree({ 
+
+            "core" : {
+                "check_callback" : true,
+                "data" : jsonData,
+                "multiple" : false,
+                "themes" : {
+                  "variant" : "large", 
+                  "stripes" : true
+                },
+                "search": {
+                  "case_insensitive": true,
+                  "show_only_matches" : true
+                },
+            },      
+            "checkbox" : {
+                "keep_selected_style" : false,
+                "three_state" : false
+             },
+            "contextmenu":{         
+                "items": function($node) {
+                    var tree = $(type).jstree(true);
+                    return {
+                        "Create": {
+                            "separator_before": false,
+                            "separator_after": false,
+                            "label": "Create New ",
+                            "icon" : "glyphicon glyphicon-plus",                    
+                            "action": function (obj) { 
+                                $node = tree.create_node($node);
+                                tree.edit($node);
+                            }
+                        }
+                    };
+                }
+            },
+            "plugins" : [
+                "checkbox", 
+                // "contextmenu", 
+                "massload", 
+                "search", 
+                "sort", 
+                // "state", 
+                "types", 
+                "unique", 
+                "wholerow", 
+                "changed", 
+                "conditionalselect"
+            ],
+
+        });
+
+    }    
+
+    //Search Plugin
+    $(".search-collection").keyup(function() {
+        var searchString = $(this).val();
+        $("#collections").jstree('search', searchString);
+    });
+
+    //Prevent collection search from submitting the form
+    $('.search-collection').keydown(function (e) {
+        if (e.keyCode == 13) {
+            e.preventDefault();
+        }
+    });
+
+    $("#collections").on("select_node.jstree", function(e, data){
+            var str = data.node.id;  
+            var res = str.match(/J/gi);
+
+            //how to determine if dataset
+            if (res != "j"){
+                if (str.match("^#dataset_id")){
+                    var newStr = str.replace("#dataset_id", "");
+                    window.location.href = "/datasets/" + newStr;
+
+                }else{
+                    window.location.href = "/collection/" + str;
+                }
+            }
+            
+    });
+
+    </script>
+
+
 
     <script>
         var removeIndicator=true;
