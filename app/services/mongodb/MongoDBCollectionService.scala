@@ -305,7 +305,7 @@ class MongoDBCollectionService @Inject() (
       val orlist = collection.mutable.ListBuffer.empty[MongoDBObject]
       orlist += ("spaces" $in publicSpaces)
       orlist += MongoDBObject("author._id" -> new ObjectId(user.id.stringify))
-      val permissionsString = Set[Permission](Permission.ViewCollection).map(_.toString)
+      val permissionsString = Set[Permission](Permission.AddResourceToCollection).map(_.toString)
       val okspaces = user.spaceandrole.filter(_.role.permissions.intersect(permissionsString).nonEmpty)
       if (okspaces.nonEmpty) {
         orlist += ("spaces" $in okspaces.map(x => new ObjectId(x.spaceId.stringify)))
