@@ -277,32 +277,42 @@ class MongoDBMetadataService @Inject() (contextService: ContextLDService, datase
     resources
   }
 
-  def searchES(key: String, value: String, count: Int, user: Option[User]): List[ResourceRef] = {
+  def searchElastic(key: String, value: String, count: Int, user: Option[User]): List[ResourceRef] = {
     val field = "content." + key.trim
     var results = mutable.MutableList[ResourceRef]()
 
     current.plugin[ElasticsearchPlugin] match {
       case Some(plugin) => {
-        val result: SearchResponse = plugin.search("data", value)
+        // Parse out key if it contains dot notation - of the format extractorName.{...nested fields...}.fieldName
+        var extractor = ""
+        var fieldKey  = key
+        if (key contains '.') {
+          val keyTerms = key.split('.')
+          extractor = keyTerms.head + " AND " // "extractorName AND "
+          fieldKey = keyTerms.last // "fieldName"
+        }
+
+        val result: SearchResponse = plugin.search("data", Array[String]("metadata"), extractor+fieldKey+" AND "+value)
         for (hit <- result.getHits().getHits()) {
-          // Does this resource have any metadata?
+          // Check if search result has any metadata
           val md = hit.getSource().get("metadata")
           if (md != null) {
-            // Is there an entry for the chosen key?
+            // Check if metadata has chosen key, filtering to specified extractor sub-metadata if necessary
             var jtest = Json.parse(md.toString)
-
-
-            val fieldKey: String = if (key contains ".") {
-              // key for extractor fields will be dot-notation; e.g. "ncsa.file.digest.sha512"
-              // first term is extractor name, last term is key
-              // TODO: NEEDS TESTING
-              val terms = key.split(".")
-              jtest = (jtest \ terms.head)
-              terms.last
-            } else key
-
+            if (extractor != "")
+              jtest = (jtest \ extractor)
             val values: Seq[JsValue] = (jtest \\ fieldKey)
-            results += new ResourceRef(Symbol(hit.getType()), UUID(hit.getId()))
+
+            // Check if any keys found contain the value and add to results if so
+            if (values.length > 0) {
+              var foundValMatch = false
+              values.map(v => {
+                if (v.toString contains value)
+                  foundValMatch = true
+              })
+              if (foundValMatch)
+                results += new ResourceRef(Symbol(hit.getType()), UUID(hit.getId()))
+            }
           }
         }
       }
