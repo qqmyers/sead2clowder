@@ -34,7 +34,7 @@ class T2C2 @Inject() (datasets : DatasetService, collections: CollectionService)
     val all_collections_list = request.user match {
       case Some(usr) => {
         for (collection <- collections.listAllCollections(usr, false, 0))
-          yield jsonCollection(collection, usr)
+          yield jsonCollection(collection, request.user)
       }
       case None => List.empty
     }
