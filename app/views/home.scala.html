@@ -17,10 +17,11 @@
                 <span class="glyphicon glyphicon-user"></span> Profile</a>
             <a href="@routes.Spaces.newSpace()" class="btn btn-link" title="Create a new @{spaces.spaceTitle()}">
                 <span class="glyphicon glyphicon-ok"></span> Create @{spaces.spaceTitle()}</a>
-            <a href="@routes.Datasets.newDataset(None, None)" class="btn btn-link" title="Create a new dataset">
-                <span class="glyphicon glyphicon-ok"></span> Create Dataset</a>
             <a href="@routes.Collections.newCollection(None)" class="btn btn-link" title="Create a new collection">
                 <span class="glyphicon glyphicon-ok"></span> Create Collection</a>
+
+            <a href="@routes.Datasets.newDataset(None, None)" class="btn btn-link" title="Create a new dataset">
+                <span class="glyphicon glyphicon-ok"></span> Create Dataset</a>
             <a href="@routes.T2C2.newTemplate(None)" class="btn btn-link" title="Create a new template">
                 <span class="glyphicon glyphicon-ok"></span> Create Template</a>
         </div>
@@ -29,15 +30,18 @@
     <div class="row">
         <!-- Nav tabs -->
         <ul class="nav nav-tabs" role="tablist">
-            <li role="presentation" class="active"><a href="#events" aria-controls="events" role="tab" data-toggle="tab"><b>Activity</b></a></li>
-            <li role="presentation"><a href="#spaces" aria-controls="spaces" role="tab" data-toggle="tab"><b>My @{spaces.spaceTitle()}s</b></a></li>
-            <li role="presentation"><a href="#datasets" aria-controls="datasets" role="tab" data-toggle="tab"><b>My Datasets</b></a></li>
+            <li role="presentation"><a href="#events" aria-controls="events" role="tab" data-toggle="tab"><b>Activity</b></a></li>
+            <li role="presentation" class="active"><a href="#treeView" aria-controls="events" role="tab" data-toggle="tab"><b>Tree View</b></a></li>
+
+            <li role="presentation"><a href="#spaces" aria-controls="spaces" role="tab" data-toggle="tab"><b>My @{spaces.spaceTitle()}s</b></a></li>                       
             <li role="presentation"><a href="#collections" aria-controls="collections" role="tab" data-toggle="tab"><b>My Collections</b></a></li>
+
+            <li role="presentation"><a href="#datasets" aria-controls="datasets" role="tab" data-toggle="tab"><b>My Datasets</b></a></li>
             <li role="presentation"><a href="#followers" aria-controls="followers" role="tab" data-toggle="tab"><b>Followers</b></a></li>
         </ul>
         <!-- Tab panes -->
         <div class="tab-content">
-            <div role="tabpanel" class="tab-pane active" id="events">
+            <div role="tabpanel" class="tab-pane" id="events">
                 <div class="top-padding">
                     @eventsList(newsfeed)
                     <div id="moreevent"></div>
@@ -49,6 +53,11 @@
                     </div>
                 </div>
             </div>
+            <div role="tabpanel" class="tab-pane active" id="treeView">
+                <div class="top-padding">
+                Tree View Coming Soon
+                </div>
+            </div>            
             <div role="tabpanel" class="tab-pane" id="spaces">
                 @* spaces *@
                 <div class="row top-padding">

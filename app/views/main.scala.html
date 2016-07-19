@@ -80,12 +80,14 @@
                             <li><a href="@routes.Application.index"><span class="glyphicon glyphicon-user"></span> Dashboard</a></li>
                             @if(play.Play.application().configuration().getBoolean("enablePublic")) {
                                 <li><a href="@routes.Spaces.list(showPublic=false)"><span class="glyphicon glyphicon-tent"></span> @{spaces.spaceTitle()}s</a></li>
-                                <li><a href="@routes.Datasets.list(showPublic=false)"><span class="glyphicon glyphicon-briefcase"></span> Datasets</a></li>
                                 <li><a href="@routes.Collections.list(showPublic=false)"><span class="glyphicon glyphicon-th-list"></span> Collections</a></li>
+                                <li><a href="@routes.Datasets.list(showPublic=false)"><span class="glyphicon glyphicon-briefcase"></span> Datasets</a></li>
+
                             } else {
                                 <li><a href="@routes.Spaces.list(owner=Some(user.get.id.stringify))"><span class="glyphicon glyphicon-tent"></span> @{spaces.spaceTitle()}s</a></li>
-                                <li><a href="@routes.Datasets.list(owner=Some(user.get.id.stringify))"><span class="glyphicon glyphicon-briefcase"></span> Datasets</a></li>
                                 <li><a href="@routes.Collections.list(owner=Some(user.get.id.stringify))"><span class="glyphicon glyphicon-th-list"></span> Collections</a></li>
+                               
+                                <li><a href="@routes.Datasets.list(owner=Some(user.get.id.stringify))"><span class="glyphicon glyphicon-briefcase"></span> Datasets</a></li>
 
                             }
 
@@ -108,8 +110,9 @@
 
                                 }
                             }
-                            <li><a href="@routes.Datasets.list("")"><span class="glyphicon glyphicon-briefcase"> </span> Datasets</a></li>
                             <li><a href="@routes.Collections.list("")"><span class="glyphicon glyphicon-th-list"> </span> Collections</a></li>
+                            <li><a href="@routes.Datasets.list("")"><span class="glyphicon glyphicon-briefcase"> </span> Datasets</a></li>
+
                             @if(user.isDefined){
                                 <li><a href="@routes.Users.getUsers()"><span class="glyphicon glyphicon-user"></span> Users</a></li>
                             }
@@ -127,10 +130,11 @@
                             <li><a href="@routes.Spaces.newSpace()"><span class="glyphicon glyphicon-tent"> </span>@{
                                 spaces.spaceTitle()
                             }s</a></li>
-                            <li><a href="@routes.Datasets.newDataset(None, None)"><span class="glyphicon glyphicon-briefcase"> </span>
-                                Datasets</a></li>
                             <li><a href="@routes.Collections.newCollection(None)"><span class="glyphicon glyphicon-th-list"> </span>
                                 Collections</a></li>
+                            <li><a href="@routes.Datasets.newDataset(None, None)"><span class="glyphicon glyphicon-briefcase"> </span>
+                                Datasets</a></li>
+
                             <li><a href="@routes.T2C2.newTemplate(None)"><span class="glyphicon glyphicon-th-list"> </span>
                                 Templates</a></li>
 
@@ -143,7 +147,7 @@
 <!--                             <li><a href="https://clowder.ncsa.illinois.edu/" target="_blank">About Clowder</a></li>
  -->                            <li><a href="@routes.Application.about">About this instance</a></li>
                             @if(user.isDefined) {
-                                <li><a href="@routes.Application.email("")">Contact server admins</a></li>
+                                <li><a href="@routes.Application.email("")">Contact support</a></li>
                             }
                             <li><a targe"tos" href="@routes.Application.tos(None)">Terms of Services</a></li>
 <!--                             <li><a href="@routes.Assets.at("docs/api/index.html")" target="_blank">API</a></li>
