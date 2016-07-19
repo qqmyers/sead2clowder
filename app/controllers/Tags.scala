@@ -144,7 +144,7 @@ class Tags @Inject()(collections: CollectionService, datasets: DatasetService, f
     //      weightedTags(tag.name) = weightedTags(tag.name) + current.configuration.getInt("tags.weight.collection").getOrElse(1)
     //    }
 
-    datasets.getTags(user).foreach { case (tag: String, count: Long) =>
+    datasets.getTagsElastic(user).foreach { case (tag: String, count: Long) =>
       if (tag.length == 0) {
         Logger.error("tag with length 0 : " + tag + " " + count)
       } else {

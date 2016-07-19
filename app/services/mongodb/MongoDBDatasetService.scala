@@ -6,6 +6,7 @@ import java.util.{ArrayList, Date}
 import javax.inject.{Inject, Singleton}
 
 import Transformation.LidoToCidocConvertion
+import org.elasticsearch.action.search.SearchResponse
 import util.{Parsers, Formatters}
 import api.Permission
 import api.Permission.Permission
@@ -22,7 +23,7 @@ import org.json.JSONObject
 import play.api.Logger
 import play.api.Play._
 import play.api.libs.json.Json._
-import play.api.libs.json.JsValue
+import play.api.libs.json.{Json, JsValue}
 import services._
 import services.mongodb.MongoContext.context
 
@@ -516,6 +517,31 @@ class MongoDBDatasetService @Inject() (
       x.results.map(x => (x.getAsOrElse[String]("_id", "??"), x.getAsOrElse[Long]("count", 0L))).toMap
 
     }
+  }
+
+  def getTagsElastic(user: Option[User]): Map[String, Long] = {
+    var results = scala.collection.mutable.Map[String, Long]()
+    current.plugin[ElasticsearchPlugin] match {
+      case Some(plugin) => {
+        // TODO: Is there a better way to get all documents with a tag?
+        val result: SearchResponse = plugin.search("data", Array[String]("tag"), "joker")
+        for (hit <- result.getHits().getHits()) {
+          val taglist: String = hit.getSource().get("tag").asInstanceOf[String]
+          if (taglist != null) {
+            // Parse string into list of items '["tag1", "tag two"]'
+            taglist.substring(1, taglist.length-1).split(',').map(t => {
+              val tag = t.replace("\"", "")
+              results.get(tag) match {
+                case Some(count) => results(tag) = count+1
+                case None => results(tag) = 1
+              }
+            })
+          }
+        }
+      }
+      case None => Logger.error("ElasticSearch plugin could not be reached for tag search")
+    }
+    results.toMap
   }
 
   private def buildTagFilter(user: Option[User]): MongoDBObject = {

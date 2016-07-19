@@ -295,6 +295,7 @@ class MongoDBMetadataService @Inject() (contextService: ContextLDService, datase
         val result: SearchResponse = plugin.search("data", Array[String]("metadata"), extractor+fieldKey+" AND "+value)
         for (hit <- result.getHits().getHits()) {
           // Check if search result has any metadata
+          // TODO: For 'Advanced Search' should this no longer be restricted to Metadata?
           val md = hit.getSource().get("metadata")
           if (md != null) {
             // Check if metadata has chosen key, filtering to specified extractor sub-metadata if necessary
@@ -311,6 +312,7 @@ class MongoDBMetadataService @Inject() (contextService: ContextLDService, datase
                   foundValMatch = true
               })
               if (foundValMatch)
+                // TODO: Check permissions of this resource before adding to list
                 results += new ResourceRef(Symbol(hit.getType()), UUID(hit.getId()))
             }
           }
