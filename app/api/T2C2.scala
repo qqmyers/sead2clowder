@@ -103,7 +103,7 @@ class T2C2 @Inject() (datasets : DatasetService, collections: CollectionService)
     responseClass = "None", httpMethod = "GET")
   def getKeysValuesFromLastDataset() = PermissionAction(Permission.ViewDataset) { implicit request =>
     implicit val user = request.user
-    val lastDataset : List[Dataset] = datasets.listAccess(1,Set[Permission](Permission.ViewDataset),user,false, false)
+    val lastDataset : List[Dataset] = datasets.listAccess(1,Set[Permission](Permission.AddResourceToDataset),user,false, false)
     val keyValues = getKeyValuePairsFromDataset(lastDataset(0))
     val asMap  = Json.toJson(keyValues)
     //
