@@ -256,7 +256,6 @@ class MongoDBMetadataService @Inject() (contextService: ContextLDService, datase
       MongoDBObject(field -> regexp)
 
     var filter = doc
-    Logger.debug(filter.toString)
     if (!(configuration(play.api.Play.current).getString("permissions").getOrElse("public") == "public")) {
       user match {
         case Some(u) => {

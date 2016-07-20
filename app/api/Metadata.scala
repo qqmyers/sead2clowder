@@ -163,9 +163,9 @@ class Metadata @Inject()(
                     })
                   }
                   case _ => {
-                    Logger.debug("encountered unexpected ES hit type")
+                    Logger.debug("Encountered unexpected ElasticSearch hit type")
                   }
-                  case None => Logger.debug("no md hits found from ES")
+                  case None => Logger.debug("No metadata hits found from ElasticSearch")
                 }
               }
             }
