@@ -179,7 +179,7 @@ class Metadata @Inject()(
       }
       case None => {
         Logger.debug("Search plugin not enabled")
-        Ok
+        Ok(toJson(listOfTerms))
       }
     }
   }
