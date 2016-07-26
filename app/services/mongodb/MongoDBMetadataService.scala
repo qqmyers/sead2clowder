@@ -9,14 +9,12 @@ import com.novus.salat.dao.{ModelCompanion, SalatDAO}
 import MongoContext.context
 import play.api.Play.current
 import com.mongodb.casbah.Imports._
-import play.api.libs.json.{Json, JsValue, JsObject}
+import play.api.libs.json.{Json, JsValue}
 import javax.inject.{Inject, Singleton}
 import com.mongodb.casbah.commons.TypeImports.ObjectId
 import com.mongodb.casbah.WriteConcern
-import services._
+import services.{ContextLDService, DatasetService, FileService, FolderService, ExtractorMessage, RabbitmqPlugin, MetadataService}
 import api.Permission
-
-import scala.collection.JavaConversions._
 import scala.collection.mutable
 
 /**

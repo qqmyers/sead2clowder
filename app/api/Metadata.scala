@@ -36,7 +36,7 @@ class Metadata @Inject()(
   }
 
   def searchByKeyValue(key: Option[String], value: Option[String], count: Int = 0) = PermissionAction(Permission.ViewDataset) {
-    implicit request =>
+      implicit request =>
         implicit val user = request.user
         val response = for {
           k <- key

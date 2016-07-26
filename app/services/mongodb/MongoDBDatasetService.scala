@@ -6,7 +6,6 @@ import java.util.{ArrayList, Date}
 import javax.inject.{Inject, Singleton}
 
 import Transformation.LidoToCidocConvertion
-import org.elasticsearch.action.search.SearchResponse
 import util.{Parsers, Formatters}
 import api.Permission
 import api.Permission.Permission
@@ -23,7 +22,7 @@ import org.json.JSONObject
 import play.api.Logger
 import play.api.Play._
 import play.api.libs.json.Json._
-import play.api.libs.json.{Json, JsValue}
+import play.api.libs.json.JsValue
 import services._
 import services.mongodb.MongoContext.context
 
