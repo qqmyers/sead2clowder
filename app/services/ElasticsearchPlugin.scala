@@ -9,13 +9,13 @@ import org.elasticsearch.action.search.SearchType
 import org.elasticsearch.client.transport.NoNodeAvailableException
 import org.elasticsearch.action.search.SearchResponse
 import org.elasticsearch.index.query.QueryBuilders
+import org.elasticsearch.search.aggregations.AggregationBuilders
+import org.elasticsearch.search.aggregations.bucket.terms.StringTerms.Bucket
 import models.{UUID, Collection, Dataset, File}
 import scala.collection.mutable.ListBuffer
 import scala.util.parsing.json.JSONArray
 import java.text.SimpleDateFormat
 import play.api.Play.current
-import org.elasticsearch.index.query.QueryStringQueryBuilder
-import org.elasticsearch.action.admin.indices.create.CreateIndexRequest
 
 
 /**
@@ -89,8 +89,6 @@ class ElasticsearchPlugin(application: Application) extends Plugin {
 
   def search(index: String, query: String): SearchResponse = {
     connect
-    Logger.info("Searching ElasticSearch for " + query)
-
     client match {
       case Some(x) => {
         Logger.info("Searching ElasticSearch for " + query)
@@ -113,7 +111,6 @@ class ElasticsearchPlugin(application: Application) extends Plugin {
 
   def search(index: String, fields: Array[String], query: String): SearchResponse = {
     connect
-    Logger.info("Searching ElasticSearch for " + query)
     client match {
       case Some(x) => {
         Logger.info("Searching ElasticSearch for " + query)
@@ -134,6 +131,40 @@ class ElasticsearchPlugin(application: Application) extends Plugin {
       case None => {
         Logger.error("Could not call search because we are not connected.")
         new SearchResponse()
+      }
+    }
+  }
+
+  /** Return map of distinct value/count for tags **/
+  def listTags(index: String, fields: Array[String], dataType: Option[String]): Map[String, Long] = {
+    val results = scala.collection.mutable.Map[String, Long]()
+
+    connect
+    client match {
+      case Some(x) => {
+        val searcher = x.prepareSearch(index)
+          .setSearchType(SearchType.DFS_QUERY_THEN_FETCH)
+          .addAggregation(AggregationBuilders.terms("by_tag").field("tag"))
+          // Don't return actual documents; we only care about aggregation here
+          .setSize(0)
+        dataType match {
+          case Some(d) => searcher.setTypes(d)
+          case None => searcher.setTypes("dataset", "file", "collection")
+        }
+        val response = searcher.execute().actionGet()
+
+        // Extract value/counts from Aggregation object
+        val aggr = response.getAggregations.get[org.elasticsearch.search.aggregations.bucket.terms.StringTerms]("by_tag")
+        aggr.getBuckets().toArray().foreach(bucket => {
+          val term = bucket.asInstanceOf[Bucket].getKey
+          val count = bucket.asInstanceOf[Bucket].getDocCount
+          results.update(term, count)
+        })
+        results.toMap
+      }
+      case None => {
+        Logger.error("Could not call search because we are not connected.")
+        Map[String, Long]()
       }
     }
   }

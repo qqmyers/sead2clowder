@@ -149,8 +149,6 @@ trait DatasetService {
    */
   def getTags(user: Option[User]): Map[String, Long]
 
-  def getTagsElastic(user: Option[User]): Map[String, Long]
-
   def modifyRDFOfMetadataChangedDatasets()
 
   def dumpAllDatasetGroupings(): List[String]

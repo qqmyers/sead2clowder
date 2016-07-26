@@ -519,31 +519,6 @@ class MongoDBDatasetService @Inject() (
     }
   }
 
-  def getTagsElastic(user: Option[User]): Map[String, Long] = {
-    var results = scala.collection.mutable.Map[String, Long]()
-    current.plugin[ElasticsearchPlugin] match {
-      case Some(plugin) => {
-        // TODO: Is there a better way to get all documents with a tag?
-        val result: SearchResponse = plugin.search("data", Array[String]("tag"), "joker")
-        for (hit <- result.getHits().getHits()) {
-          val taglist: String = hit.getSource().get("tag").asInstanceOf[String]
-          if (taglist != null) {
-            // Parse string into list of items '["tag1", "tag two"]'
-            taglist.substring(1, taglist.length-1).split(',').map(t => {
-              val tag = t.replace("\"", "")
-              results.get(tag) match {
-                case Some(count) => results(tag) = count+1
-                case None => results(tag) = 1
-              }
-            })
-          }
-        }
-      }
-      case None => Logger.error("ElasticSearch plugin could not be reached for tag search")
-    }
-    results.toMap
-  }
-
   private def buildTagFilter(user: Option[User]): MongoDBObject = {
     val orlist = collection.mutable.ListBuffer.empty[MongoDBObject]
     if(!(configuration(play.api.Play.current).getString("permissions").getOrElse("public") == "public")){
