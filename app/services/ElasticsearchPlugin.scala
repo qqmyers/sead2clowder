@@ -180,6 +180,16 @@ class ElasticsearchPlugin(application: Application) extends Plugin {
           .startObject()
         fields.map(fv => builder.field(fv._1, fv._2))
         builder.endObject()
+
+        // TODO: force not_analyzed on strings; should this be done on connect?
+        val analyzeConfig = jsonBuilder().startObject()
+              .startObject("properties")
+                .startObject("tag")
+                  .field("type", "string")
+                  .field("index", "not_analyzed")
+          .endObject().endObject().endObject()
+        //x.admin().indices().preparePutMapping("data").setType("dataset").setSource(analyzeConfig).execute().actionGet()
+
         val response = x.prepareIndex(index, docType, id.toString())
           .setSource(builder)
           .execute()
