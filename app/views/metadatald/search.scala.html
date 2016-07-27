@@ -57,6 +57,7 @@
 
                 // Select box will populate as user types, with metadata field autocomplete suggestions
                 $("#add-metadata-select").select2({
+                    add_search_option: true,
                     theme: "bootstrap",
                     placeholder: "Select a type or field key",
                     allowClear: true,
@@ -80,7 +81,6 @@
                                             text: x.json.label,
                                             id: x.id
                                         }
-
                                     } else {
                                         // autocomplete fields
                                         return {
@@ -88,7 +88,8 @@
                                             id: x
                                         }
                                     }
-                                })};
+                                })
+                            };
                         }
                     }
                 })
