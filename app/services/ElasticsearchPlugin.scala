@@ -89,9 +89,10 @@ class ElasticsearchPlugin(application: Application) extends Plugin {
 
   def search(index: String, query: String): SearchResponse = {
     connect
+
     client match {
       case Some(x) => {
-        Logger.info("Searching ElasticSearch for " + query)
+        Logger.debug("Searching ElasticSearch for " + query)
         val response = x.prepareSearch(index)
           .setTypes("file", "dataset","collection")
           .setSearchType(SearchType.DFS_QUERY_THEN_FETCH)
@@ -99,7 +100,7 @@ class ElasticsearchPlugin(application: Application) extends Plugin {
           .setFrom(0).setSize(60).setExplain(true)
           .execute()
           .actionGet()
-        Logger.info("Search hits: " + response.getHits().getTotalHits())
+        Logger.debug("Search hits: " + response.getHits().getTotalHits())
         response
       }
       case None => {
@@ -113,7 +114,7 @@ class ElasticsearchPlugin(application: Application) extends Plugin {
     connect
     client match {
       case Some(x) => {
-        Logger.info("Searching ElasticSearch for " + query)
+        Logger.debug("Searching ElasticSearch for " + query)
         var qbqs = QueryBuilders.queryString(query)
         for (f <- fields) {
           qbqs.field(f.trim())
@@ -125,7 +126,7 @@ class ElasticsearchPlugin(application: Application) extends Plugin {
           .setFrom(0).setSize(60).setExplain(true)
           .execute()
           .actionGet()
-        Logger.info("Search hits: " + response.getHits().getTotalHits())
+        Logger.debug("Search hits: " + response.getHits().getTotalHits())
         response
       }
       case None => {
@@ -194,7 +195,7 @@ class ElasticsearchPlugin(application: Application) extends Plugin {
           .setSource(builder)
           .execute()
           .actionGet()
-        Logger.info("Indexing document: " + response.getId)
+        Logger.debug("Indexing document: " + response.getId)
       }
       case None => Logger.error("Could not call index because we are not connected.")
     }
@@ -218,7 +219,7 @@ class ElasticsearchPlugin(application: Application) extends Plugin {
     client match {
       case Some(x) => {
         val response = x.prepareDelete(index, docType, id).execute().actionGet()
-        Logger.info("Deleting document: " + response.getId)
+        Logger.debug("Deleting document: " + response.getId)
 
       }
       case None => Logger.error("Could not call index because we are not connected.")
