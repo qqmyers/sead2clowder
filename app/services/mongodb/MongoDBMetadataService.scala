@@ -271,16 +271,16 @@ class MongoDBMetadataService @Inject() (contextService: ContextLDService, datase
     resources
   }
 
-  def search(key: String, value: String, extractorName: String, count: Int, user: Option[User]): List[ResourceRef] = {
+  def search(key: String, value: String, extractorName: Option[String], count: Int, user: Option[User]): List[ResourceRef] = {
     val field = "content." + key.trim
     val trimOr = value.trim().replaceAll(" ", "|")
     // for some reason "/"+value+"/i" doesn't work because it gets translate to
     // { "content.Abstract" : { "$regex" : "/test/i"}}
     val regexp = (s"""(?i)$trimOr""").r
-    val doc = if (extractorName != "")
-      MongoDBObject(field -> regexp, "creator.extractorId" -> (extractorName+"$").r)
-    else
-      MongoDBObject(field -> regexp)
+    val doc = extractorName match {
+      case Some(e) => MongoDBObject(field -> regexp, "creator.extractorId" -> (e + "$").r)
+      case None => MongoDBObject(field -> regexp)
+    }
 
     var filter = doc
     if (!(configuration(play.api.Play.current).getString("permissions").getOrElse("public") == "public")) {

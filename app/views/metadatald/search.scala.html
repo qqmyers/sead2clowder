@@ -111,7 +111,7 @@
                     var extractorName = key.split(".")[0]
                     var key = key.replace(extractorName+".", "")
                 } else {
-                    var extractorName = ""
+                    var extractorName = null
                 }
 
                 var request = jsRoutes.api.Metadata.searchByKeyValue(key, value, extractorName, count).ajax({

@@ -45,24 +45,23 @@ class Metadata @Inject()(
       implicit request =>
         implicit val user = request.user
 
-        val response = for {
-          k <- key
-          v <- value
-          e <- extractorName
-        } yield {
-          val results = metadataService.search(k, v, e, count, user)
-          val datasetsResults = results.flatMap { d =>
-            if (d.resourceType == ResourceRef.dataset) datasets.get(d.id) else None
+        (key, value) match {
+          case (Some(k), Some(v)) => {
+            val results = metadataService.search(k, v, extractorName, count, user)
+            val datasetsResults = results.flatMap { d =>
+              if (d.resourceType == ResourceRef.dataset) datasets.get(d.id) else None
+            }
+            val filesResults = results.flatMap { f =>
+              if (f.resourceType == ResourceRef.file) files.get(f.id) else None
+            }
+            import Dataset.datasetWrites
+            import File.FileWrites
+            // Use "distinct" to remove duplicate results.
+            Ok(JsObject(Seq("datasets" -> toJson(datasetsResults.distinct), "files" -> toJson(filesResults.distinct))))
           }
-          val filesResults = results.flatMap { f =>
-            if (f.resourceType == ResourceRef.file) files.get(f.id) else None
-          }
-          import Dataset.datasetWrites
-          import File.FileWrites
-          // Use "distinct" to remove duplicate results.
-          Ok(JsObject(Seq("datasets" -> toJson(datasetsResults.distinct), "files" -> toJson(filesResults.distinct))))
+          case (_, _) => BadRequest(toJson("You must specify key and value"))
         }
-        response getOrElse BadRequest(toJson("You must specify key and value"))
+
   }
 
   def getDefinitions() = PermissionAction(Permission.ViewDataset) {
