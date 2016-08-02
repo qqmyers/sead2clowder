@@ -176,6 +176,34 @@ class MongoDBDatasetService @Inject() (
   }
 
   /**
+    * Return a list of datasets in a space the user has access to.
+    */
+  def listSpaceAccess(limit: Integer, permissions: Set[Permission], space: String, user: Option[User], showAll: Boolean, showPublic: Boolean): List[Dataset] = {
+    list(None, false, limit, None, None, Some(space), permissions, user, showAll, None, showPublic)
+  }
+
+  /**
+    * Return a list of datasets in a space the user has access to.
+    */
+  def listSpaceAccess(limit: Integer, title: String, permissions: Set[Permission], space: String, user: Option[User], showAll: Boolean, showPublic: Boolean): List[Dataset] = {
+    list(None, false, limit, Some(title), None, Some(space), permissions, user, showAll, None, showPublic)
+  }
+
+  /**
+    * Return a list of datasets in a space the user has access to starting at a specific date.
+    */
+  def listSpaceAccess(date: String, nextPage: Boolean, limit: Integer, permissions: Set[Permission], space: String, user: Option[User], showAll: Boolean, showPublic: Boolean): List[Dataset] = {
+    list(Some(date), nextPage, limit, None, None, Some(space), permissions, user, showAll, None, showPublic)
+  }
+
+  /**
+    * Return a list of datasets in a space the user has access to starting at a specific date.
+    */
+  def listSpaceAccess(date: String, nextPage: Boolean, limit: Integer, title: String, permissions: Set[Permission], space: String, user: Option[User], showAll: Boolean, showPublic: Boolean): List[Dataset] = {
+    list(Some(date), nextPage, limit, Some(title), None, Some(space), permissions, user, showAll, None, showPublic)
+  }
+
+  /**
    * Count all datasets the user has created.
    */
   def countUser(user: Option[User], showAll: Boolean, owner: User): Long = {
@@ -259,8 +287,14 @@ class MongoDBDatasetService @Inject() (
 
           val orlist = scala.collection.mutable.ListBuffer.empty[MongoDBObject]
           if (permissions.contains(Permission.ViewDataset) && enablePublic && showPublic) {
-            orlist += MongoDBObject("status" -> DatasetStatus.PUBLIC.toString)
-            orlist += MongoDBObject("status" -> DatasetStatus.DEFAULT.toString) ++ ("spaces" $in publicSpaces)
+            // if enablePublic == true, only list the dataset user can access, in a space page or /datasets
+            if(!u.superAdminMode) {
+              orlist += MongoDBObject("status" -> DatasetStatus.PUBLIC.toString)
+              orlist += MongoDBObject("status" -> DatasetStatus.DEFAULT.toString) ++ ("spaces" $in publicSpaces)
+            } else {
+              // superAdmin can access all datasets, in a space page or /datasets
+              orlist += MongoDBObject()
+            }
           }
           //if you are viewing other user's datasets, return the ones you have permission. otherwise filterAccess should
           // including your own datasets. the if condition here is mainly for efficiency.
