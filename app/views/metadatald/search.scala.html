@@ -72,22 +72,43 @@
                             }
                         },
                         processResults: function(data, page) {
-                            return {
-                                results: data.map(function(x) {
-                                    if (typeof(x) == 'object') {
-                                        // MetadataDefinitions
-                                        return {
-                                            text: x.json.label,
-                                            id: x.id
-                                        }
+                            var outMap = {}
+                            for (var rez=0; rez<data.length; rez++) {
+                                var entry = data[rez];
+
+                                // MetadataDefinitions
+                                if (typeof(entry) == 'object') {
+                                    var entryGroup = "Metadata Definitions";
+                                    var entryData = {text: entry.json.label, id: entry.id}
+                                } else {
+                                    if (entry.indexOf('.') > -1) {
+                                        // Has extractor dot notation
+                                        var entryGroup = entry.substring(0, entry.indexOf('.')) + " extractor";
+                                        var entryData = {id: entry, text: entry.substring(entry.indexOf('.')+1, entry.length)}
                                     } else {
-                                        // autocomplete fields
-                                        return {
-                                            text: x,
-                                            id: x
-                                        }
+                                        // Simple entry
+                                        var entryGroup = ""
+                                        var entryData = {text: entry, id: entry}
                                     }
-                                })
+                                }
+                                if (!outMap.hasOwnProperty(entryGroup))
+                                    outMap[entryGroup] = [];
+                                outMap[entryGroup].push(entryData)
+                            }
+                            console.log(outMap)
+
+                            var outList = []
+                            for (var group in outMap) {
+                                if (group == "") {
+                                    for (var ungrouped=0; ungrouped<outMap[group].length; ungrouped++)
+                                        outList.push(outMap[group][ungrouped])
+                                } else
+                                    outList.push({"text":group, "children": outMap[group]})
+                            }
+
+                            console.log(outList)
+                            return {
+                                results: outList
                             };
                         }
                     }
