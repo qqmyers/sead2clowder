@@ -163,14 +163,29 @@ class MongoDBMetadataService @Inject() (contextService: ContextLDService, datase
 
   }
 
-  def getDefinitionsDistinctName(user: Option[User]): List[MetadataDefinition] = {
+  def getDefinitionsDistinctName(user: Option[User], filter: Option[String]): List[MetadataDefinition] = {
     val filterAccess = if(configuration(play.api.Play.current).getString("permissions").getOrElse("public") == "public") {
-      MongoDBObject()
+      // For public permissions, we only need to apply filter if given
+      filter match {
+        case Some(f) => {
+          // This is and must be case-sensitive, otherwise Mongo cannot search by index and it will be SLOW
+          MongoDBObject("json.label" -> (".*"+f+".*").r)
+        }
+        case None => MongoDBObject()
+      }
     } else {
+      // If not public permissions, we apply actual permissions + filter if given
+      val textfilter = filter match {
+        case Some(f) => {
+          MongoDBObject("label" -> (""+f+"").r)
+        }
+        case None => MongoDBObject()
+      }
+
       val orlist = scala.collection.mutable.ListBuffer.empty[MongoDBObject]
       orlist += MongoDBObject("spaceId" -> null)
       //TODO: Add public space check.
-      user match {
+      val spacefilter = user match {
         case Some(u) => {
           val okspaces = u.spaceandrole.filter(_.role.permissions.intersect(Set(Permission.ViewMetadata.toString())).nonEmpty)
           if(okspaces.nonEmpty) {
@@ -180,7 +195,10 @@ class MongoDBMetadataService @Inject() (contextService: ContextLDService, datase
         }
         case None => MongoDBObject()
       }
+
+      $and(textfilter, spacefilter)
     }
+    // Execute search with filters
     MetadataDefinitionDAO.find(filterAccess).toList.groupBy(_.json).map(_._2.head).toList.sortWith( _.json.\("label").asOpt[String].getOrElse("") < _.json.\("label").asOpt[String].getOrElse("") )
   }
 

@@ -36,7 +36,7 @@ trait MetadataService {
   def getDefinitions(spaceId: Option[UUID] = None): List[MetadataDefinition]
 
   /** Vocabulary definitions with distinct names **/
-  def getDefinitionsDistinctName(user: Option[User] = None): List[MetadataDefinition]
+  def getDefinitionsDistinctName(user: Option[User] = None, filter: Option[String]): List[MetadataDefinition]
 
   /** Vocabularies from metadata names besides definitions **/
   def getAutocompleteName(user: Option[User], filter: String): List[String]

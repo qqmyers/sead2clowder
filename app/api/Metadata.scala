@@ -73,8 +73,8 @@ class Metadata @Inject()(
   def getDefinitionsDistinctName() = PermissionAction(Permission.ViewDataset) {
     implicit request =>
       implicit val user = request.user
-      val vocabularies = metadataService.getDefinitionsDistinctName(user)
-      Ok(toJson(vocabularies))
+      val metadata_definitions = metadataService.getDefinitionsDistinctName(user, None)
+      Ok(toJson(metadata_definitions))
   }
 
   /**
@@ -116,13 +116,10 @@ class Metadata @Inject()(
 
     var listOfTerms = ListBuffer.empty[String]
 
-    // First, get regular vocabulary matches
-    val vocabularies = metadataService.getDefinitionsDistinctName(user)
-    for (md_def <- vocabularies) {
-      val currVal = (md_def.json \ "label").as[String]
-      if (currVal contains filter) {
-        listOfTerms.append(currVal)
-      }
+    // First, get regular Metadata Definition vocabulary matches
+    val metadata_definitions = metadataService.getDefinitionsDistinctName(user, Some(filter))
+    for (md_def <- metadata_definitions) {
+      listOfTerms.append((md_def.json \ "label").as[String])
     }
 
     // Next get ElasticSeach metadata fields if plugin available
