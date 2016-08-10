@@ -34,7 +34,9 @@
     <script src="@routes.Assets.at("javascripts/handlebars-v1.3.0.js")" type="text/javascript"></script>
     <script src="@routes.Assets.at("javascripts/handlebars-loader.js")" type="text/javascript"></script>
     <script>
-        getBasicDefinitions()
+        $(document).ready(function() {
+            getBasicDefinitions();
+        });
 
         function getBasicDefinitions() {
             // metadata definitions
@@ -98,7 +100,7 @@
                 console.error("The following error occured: " + textStatus, errorThrown);
                 var errMsg = "You must be logged in to retrieve metadata definitions";
                 if (!checkErrorAndRedirect(jqXHR, errMsg)) {
-                    notify("Metadata was not added due to : " + errorThrown, "error");
+                    notify("Metadata definitions could not be retrieved due to : " + errorThrown, "error");
                 }
             });
         }
@@ -107,11 +109,10 @@
             count = count || 10;
             if ( key != "" && value != "" ) {
                 // Must separate extractorName back out from key name for ElasticSearch query
+                var extractorName = null
                 if (key.indexOf(".") > -1) {
-                    var extractorName = key.split(".")[0]
-                    var key = key.replace(extractorName+".", "")
-                } else {
-                    var extractorName = null
+                    var extractorName = key.split(".")[0];
+                    var key = key.replace(extractorName+".", "");
                 }
 
                 var request = jsRoutes.api.Metadata.searchByKeyValue(key, value, extractorName, count).ajax({

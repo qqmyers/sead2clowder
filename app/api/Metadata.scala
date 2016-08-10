@@ -175,9 +175,9 @@ class Metadata @Inject()(
       }
       case None => {
         Logger.debug("Search plugin not enabled")
-        Ok(toJson(listOfTerms))
       }
     }
+    Ok(toJson(listOfTerms))
   }
 
   def getDefinitionsByDataset(id: UUID) = PermissionAction(Permission.AddMetadata, Some(ResourceRef(ResourceRef.dataset, id))) { implicit request =>

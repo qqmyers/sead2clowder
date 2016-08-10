@@ -209,7 +209,7 @@ class MongoDBMetadataService @Inject() (contextService: ContextLDService, datase
     case _ => Set()
   }
 
-  def getAutocompleteName(user: Option[User], filter: String): List[String] = {
+  def getAutocompleteName(filter: String): List[String] = {
     // Get list of metadata objects where this field name appears
     val mdlist = MetadataDAO.find("content."+filter $exists true).toList
 
