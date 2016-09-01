@@ -1,15 +1,21 @@
 package api
 
+import java.io.{ByteArrayInputStream, InputStream, ByteArrayOutputStream}
+import java.util.zip.{ZipEntry, ZipOutputStream, Deflater}
+
 import api.Permission.Permission
 import play.api.Logger
 import play.api.Play.current
 import models._
+import play.api.libs.iteratee.Enumerator
 import services._
 import play.api.libs.json._
 import play.api.libs.json.{JsObject, JsValue}
 import play.api.libs.json.Json.toJson
 import javax.inject.{ Singleton, Inject}
 import scala.collection.mutable.ListBuffer
+import scala.concurrent.{Future, ExecutionContext}
+import play.api.libs.concurrent.Execution.Implicits._
 import scala.util.parsing.json.JSONArray
 import scala.util.{Try, Success, Failure}
 import com.wordnik.swagger.annotations.Api
@@ -760,6 +766,65 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
       }
       case None => Ok(toJson(false))
     }
+  }
+
+  @ApiOperation(value = "Download dataset",
+    notes = "Downloads all files contained in a dataset.",
+    responseClass = "None", httpMethod = "GET")
+  def download(id: UUID, bagit: Boolean,compression: Int) = PermissionAction(Permission.DownloadFiles, Some(ResourceRef(ResourceRef.dataset, id))) { implicit request =>
+    implicit val user = request.user
+    collections.get(id) match {
+      case Some(collection) => {
+        // Use custom enumerator to create the zip file on the fly
+        // Use a 1MB in memory byte array
+        Ok.chunked(enumeratorFromCollection(collection,1024*1024, compression,bagit,user)).withHeaders(
+          "Content-Type" -> "application/zip",
+          "Content-Disposition" -> ("attachment; filename=\"" + collection.name+ ".zip\"")
+        )
+      }
+      // If the dataset wasn't found by ID
+      case None => {
+        NotFound
+      }
+    }
+  }
+
+  private def enumeratorFromCollection(collection: Collection, chunkSize: Int = 1024 * 8, compression: Int = Deflater.DEFAULT_COMPRESSION, bagit: Boolean, user : Option[User])
+    (implicit ec: ExecutionContext) : Enumerator[Array[Byte]] = {
+    implicit val pec = ec.prepare()
+
+    val byteArrayOutputStream = new ByteArrayOutputStream(chunkSize)
+    val zip = new ZipOutputStream(byteArrayOutputStream)
+
+    val child_collections : ListBuffer[Collection] = ListBuffer.empty[Collection]
+
+    collection.child_collection_ids.foreach{ child_id =>
+      collections.get(child_id) match {
+        case Some(child_col) => child_collections += child_col
+        case None => None
+      }
+    }
+
+    val datasets_in_collection : ListBuffer[Dataset] = ListBuffer.empty[Dataset]
+
+
+
+    Enumerator.generateM({
+      zip.close()
+      Some(byteArrayOutputStream.toByteArray)
+      Future.successful(None)
+    })(pec)
+  }
+
+  private def addCollectionInfoToZip(folderName: String, collection: models.Collection, zip: ZipOutputStream): Option[InputStream] = {
+    zip.putNextEntry(new ZipEntry(folderName + "/info.json"))
+    val infoListMap = Json.prettyPrint(jsonCollection(collection))
+    Some(new ByteArrayInputStream(infoListMap.getBytes("UTF-8")))
+  }
+
+  def getCollectionInfoAsJson(collection : models.Collection) : JsValue = {
+    val author = collection.author.fullName
+    Json.obj("description"->collection.description,"created"->collection.created.toString)
   }
 
 }
