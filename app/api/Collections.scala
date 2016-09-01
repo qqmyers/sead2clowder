@@ -795,6 +795,10 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
 
     val byteArrayOutputStream = new ByteArrayOutputStream(chunkSize)
     val zip = new ZipOutputStream(byteArrayOutputStream)
+    // zip compression level
+    zip.setLevel(compression)
+
+    val dataFolder = if (bagit) "data/" else ""
 
     val child_collections : ListBuffer[Collection] = ListBuffer.empty[Collection]
 
@@ -805,9 +809,9 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
       }
     }
 
-    val datasets_in_collection : ListBuffer[Dataset] = ListBuffer.empty[Dataset]
+    val datasets_in_collection : List[Dataset] = datasets.listCollection(collection.id.stringify,user)
 
-
+    var is: Option[InputStream] = addCollectionInfoToZip(dataFolder,collection,zip)
 
     Enumerator.generateM({
       zip.close()
