@@ -874,10 +874,20 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
   }
 
 
-  def getOutputStreamForCollection(dataFolder : String,zip : ZipOutputStream, md5Files : scala.collection.mutable.HashMap[String, MessageDigest], dataset : Dataset, level : Int, file_type : Int ) : Option[InputStream] = {
+  def getOutputStreamForCollection(dataFolder : String,zip : ZipOutputStream, md5Files : scala.collection.mutable.HashMap[String, MessageDigest], collection : Collection, level : Int, file_type : Int ) : Option[InputStream] = {
     (file_type) match {
-      case 0 =>
-      case 1 =>
+      case 0 => {
+        val md5 = MessageDigest.getInstance("MD5")
+        md5Files.put(dataFolder+"_info.json",md5)
+        val is = addCollectionInfoToZip(dataFolder, collection,zip)
+        Some(new DigestInputStream(is.get, md5))
+      }
+      case 1 => {
+        val md5 = MessageDigest.getInstance("MD5")
+        md5Files.put(dataFolder+"_metadata.json",md5)
+        val is = addCollectionMetadataToZip(dataFolder, collection,zip)
+        Some(new DigestInputStream(is.get, md5))
+      }
     }
   }
 
