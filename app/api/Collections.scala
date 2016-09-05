@@ -874,6 +874,13 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
   }
 
 
+  def getOutputStreamForCollection(dataFolder : String,zip : ZipOutputStream, md5Files : scala.collection.mutable.HashMap[String, MessageDigest], dataset : Dataset, level : Int, file_type : Int ) : Option[InputStream] = {
+    (file_type) match {
+      case 0 =>
+      case 1 =>
+    }
+  }
+
 
   def getOutputStreamForDataset(dataFolder: String, zip : ZipOutputStream, md5Files : scala.collection.mutable.HashMap[String, MessageDigest], dataset : Dataset, level : Int, file_type : Int) : Option[InputStream] = {
     (level, file_type) match {
@@ -919,6 +926,8 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
 
     }
   }
+
+
 
   private def addFileToZip(folderName: String, file: models.File, zip: ZipOutputStream): Option[InputStream] = {
     files.getBytes(file.id) match {
