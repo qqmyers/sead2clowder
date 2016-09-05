@@ -875,13 +875,48 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
 
 
 
-  def getOutputStreamForDataset(dataFolder: String, zip : ZipOutputStream, dataset : Dataset, level : Int, file_type : Int) : Option[InputStream] = {
+  def getOutputStreamForDataset(dataFolder: String, zip : ZipOutputStream, md5Files : scala.collection.mutable.HashMap[String, MessageDigest], dataset : Dataset, level : Int, file_type : Int) : Option[InputStream] = {
     (level, file_type) match {
       //dataset info
-      case (0,0) => addDatasetInfoToZip(dataFolder, dataset,zip)
+      case (0,0) => {
+        val md5 = MessageDigest.getInstance("MD5")
+        md5Files.put(dataFolder+"_info.json",md5)
+        val is = addDatasetInfoToZip(dataFolder, dataset,zip)
+        Some(new DigestInputStream(is.get, md5))
+      }
       //dataset metadata
-      case (0,1) => addDatasetMetadataToZip(dataFolder, dataset,zip)
+      case (0,1) => {
+        val md5 = MessageDigest.getInstance("MD5")
+        md5Files.put("_metadata.json",md5)
+        val is = addDatasetMetadataToZip(dataFolder, dataset,zip)
+        Some(new DigestInputStream(is.get, md5))
+      }
       //files
+    }
+  }
+
+  def getOutputStreamForFile(dataFolder: String, zip : ZipOutputStream, md5Files : scala.collection.mutable.HashMap[String, MessageDigest], dataset : Dataset, file : models.File, level : Int, file_type : Int) : Option[InputStream] = {
+    file_type match {
+      case 0 => {
+        val is = addFileInfoToZip(dataFolder,file,zip)
+        val md5 = MessageDigest.getInstance("MD5")
+        md5Files.put(file.id+"/_info.json",md5)
+        Some(new DigestInputStream(is.get, md5))
+      }
+      case 1 => {
+        val is = addFileMetadataToZip(dataFolder, file, zip)
+        val md5 = MessageDigest.getInstance("MD5")
+        md5Files.put(file.id+"/_metadata.json",md5)
+        Some(new DigestInputStream(is.get, md5))
+      }
+      case 2 => {
+        val is = addFileToZip(dataFolder, file, zip)
+        val md5 = MessageDigest.getInstance("MD5")
+        md5Files.put(file.filename,md5)
+        Some(new DigestInputStream(is.get, md5))
+      }
+      case _ => None
+
     }
   }
 
