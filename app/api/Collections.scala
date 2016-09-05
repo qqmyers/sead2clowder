@@ -850,6 +850,7 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
   }
 
 
+
   private def addCollectionInfoToZip(folderName: String, collection: models.Collection, zip: ZipOutputStream): Option[InputStream] = {
     zip.putNextEntry(new ZipEntry(folderName + "/"+collection.name+"_info.json"))
     val infoListMap = Json.prettyPrint(jsonCollection(collection))
@@ -936,7 +937,6 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
 
     }
   }
-
 
 
   private def addFileToZip(folderName: String, file: models.File, zip: ZipOutputStream): Option[InputStream] = {
