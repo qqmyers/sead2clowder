@@ -807,61 +807,8 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
     }
   }
 
-  private def enumeratorFromCollection(collection: Collection, chunkSize: Int = 1024 * 8, compression: Int = Deflater.DEFAULT_COMPRESSION, bagit: Boolean, user : Option[User])
-    (implicit ec: ExecutionContext) : Enumerator[Array[Byte]] = {
-    implicit val pec = ec.prepare()
 
-    val byteArrayOutputStream = new ByteArrayOutputStream(chunkSize)
-    val zip = new ZipOutputStream(byteArrayOutputStream)
-    // zip compression level
-    zip.setLevel(compression)
-
-    val dataFolder = if (bagit) "data/" else ""
-
-    val currentFolderPath = '/'+collection.name
-    var is: Option[InputStream] = addCollectionInfoToZip(currentFolderPath,collection,zip)
-
-
-    var enumerator1 : Enumerator[Array[Byte]] = Enumerator.empty[Array[Byte]]
-
-    var enumerator2 : Enumerator[Array[Byte]] = Enumerator.empty[Array[Byte]]
-
-    var enumerator3 = enumerator1 >>> enumerator2
-
-    return enumerator3
-
-    val datasetsInCollection : List[Dataset] = getDatasetsInCollection(collection)
-
-    //get enumerators from datasets
-
-    //check to see if this works and we got both of them?
-
-    Enumerator.generateM({
-      is match {
-        case Some(inputStream) => {
-          val buffer = new Array[Byte](chunkSize)
-          val bytesRead = scala.concurrent.blocking {
-            inputStream.read(buffer)
-            val chunk = bytesRead match {
-              case read => {
-                zip.write(buffer,0,chunk)
-              }
-              case -1 => {
-                //at the very end, reset values and get new input stream
-                zip.closeEntry()
-                inputStream.close()
-              }
-            }
-            byteArrayOutputStream.reset()
-            Future.successful(chunk)
-
-          }
-          Future.successful(None)
-        }
-        case None => Future.successful(None)
-      }
-    })(pec)
-  }
+  
 
   def getDatasetsInCollection(collection : models.Collection) : List[Dataset] = {
     var datasetsInCollection : ListBuffer[Dataset] = ListBuffer.empty[Dataset]
@@ -967,6 +914,234 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
       case _ => None
 
     }
+  }
+
+  /**
+    * Enumerator to loop over all files in a dataset and return chunks for the result zip file that will be
+    * streamed to the client. The zip files are streamed and not stored on disk.
+    *
+    * @param dataset dataset from which to get teh files
+    * @param chunkSize chunk size in memory in which to buffer the stream
+    * @param compression java built in compression value. Use 0 for no compression.
+    * @return Enumerator to produce array of bytes from a zipped stream containing the bytes of each file
+    *         in the dataset
+    */
+  def enumeratorFromDataset(dataset: Dataset, chunkSize: Int = 1024 * 8, compression: Int = Deflater.DEFAULT_COMPRESSION, bagit: Boolean, user : Option[User])
+                           (implicit ec: ExecutionContext): Enumerator[Array[Byte]] = {
+    implicit val pec = ec.prepare()
+    val dataFolder = if (bagit) "data/" else ""
+    val folderNameMap = scala.collection.mutable.Map.empty[UUID, String]
+    var inputFilesBuffer = new ListBuffer[File]()
+    dataset.files.foreach(f=>files.get(f) match {
+      case Some(file) => {
+        inputFilesBuffer += file
+        folderNameMap(file.id) = dataFolder + file.filename + "_" + file.id.stringify
+      }
+      case None => Logger.error(s"No file with id $f")
+    })
+
+    val md5Files = scala.collection.mutable.HashMap.empty[String, MessageDigest] //for the files
+    val md5Bag = scala.collection.mutable.HashMap.empty[String, MessageDigest] //for the bag files
+
+    folders.findByParentDatasetId(dataset.id).foreach{
+      folder => folder.files.foreach(f=> files.get(f) match {
+        case Some(file) => {
+          inputFilesBuffer += file
+          var name = folder.displayName
+          var f1: Folder = folder
+          while(f1.parentType == "folder") {
+            folders.get(f1.parentId) match {
+              case Some(fparent) => {
+                name = fparent.displayName + "/"+ name
+                f1 = fparent
+              }
+              case None =>
+            }
+          }
+          folderNameMap(file.id) = dataFolder + name + "/" + file.filename + "_" + file.id.stringify
+        }
+        case None => Logger.error(s"No file with id $f")
+      })
+    }
+    val inputFiles = inputFilesBuffer.toList
+    // which file we are currently processing
+
+    val byteArrayOutputStream = new ByteArrayOutputStream(chunkSize)
+    val zip = new ZipOutputStream(byteArrayOutputStream)
+    // zip compression level
+    zip.setLevel(compression)
+
+    var totalBytes = 0L
+    var level = 0 //dataset,file, bag
+    var file_type = 0 //
+    var count = 0 //count for files
+
+    /*
+     * Explanation for the cases
+     *
+     * the level can be 0 (file) 1 (dataset) and 2 (bag).
+     *
+     * when the level is file, the file_type can be 0 (info) 1 (metadata) or 2 (the actual files)
+     *
+     * when the level is dataset, the file_type can be 0 (info) or 1 (metadata)
+     *
+     * when the level is bag, the file_type can be
+     *
+     * 0 - bagit.txt
+     * 1 - bag-info.txt
+     * 2 - manifest-md5.txt
+     * 3 - tagmanifest-md5.txt
+     *
+     * when the dataset is finished (in either mode) the level = -1 and file_type = -1 and
+     * the enumerator is finished
+     */
+
+    var is: Option[InputStream] = addDatasetInfoToZip(dataFolder,dataset,zip)
+    //digest input stream
+    val md5 = MessageDigest.getInstance("MD5")
+    md5Files.put(dataFolder+"_info.json",md5)
+    is = Some(new DigestInputStream(is.get,md5))
+    file_type = 1 //next is metadata
+
+
+    Enumerator.generateM({
+      is match {
+        case Some(inputStream) => {
+          val buffer = new Array[Byte](chunkSize)
+          val bytesRead = scala.concurrent.blocking {
+            inputStream.read(buffer)
+
+          }
+          val chunk = bytesRead match {
+            case -1 => {
+              // finished individual file
+              zip.closeEntry()
+              inputStream.close()
+
+              (level,file_type) match {
+                //dataset, info
+                case (0,0) => {
+                  is = addDatasetInfoToZip(dataFolder,dataset,zip)
+                  val md5 = MessageDigest.getInstance("MD5")
+                  md5Files.put("_info.json",md5)
+                  is = Some(new DigestInputStream(is.get, md5))
+                  file_type = file_type + 1
+                }
+                //dataset, metadata
+                case (0,1) => {
+                  is = addDatasetMetadataToZip(dataFolder,dataset,zip)
+                  val md5 = MessageDigest.getInstance("MD5")
+                  md5Files.put("_metadata.json",md5)
+                  is = Some(new DigestInputStream(is.get, md5))
+                  level = 1
+                  file_type = 0
+                }
+                //file info
+                case (1,0) =>{
+                  is = addFileInfoToZip(folderNameMap(inputFiles(count).id), inputFiles(count), zip)
+                  val md5 = MessageDigest.getInstance("MD5")
+                  md5Files.put(folderNameMap(inputFiles(count).id)+"/_info.json",md5)
+                  is = Some(new DigestInputStream(is.get, md5))
+                  if (count+1 < inputFiles.size ){
+                    count +=1
+                  } else {
+                    count = 0
+                    file_type = 1
+                  }
+                }
+                //file metadata
+                case (1,1) =>{
+                  is = addFileMetadataToZip(folderNameMap(inputFiles(count).id), inputFiles(count), zip)
+                  val md5 = MessageDigest.getInstance("MD5")
+                  md5Files.put(folderNameMap(inputFiles(count).id)+"/_metadata.json",md5)
+                  is = Some(new DigestInputStream(is.get, md5))
+                  if (count+1 < inputFiles.size ){
+                    count +=1
+                  } else {
+                    count = 0
+                    file_type = 2
+                  }
+                }
+                //files
+                case (1,2) => {
+                  is = addFileToZip(folderNameMap(inputFiles(count).id), inputFiles(count), zip)
+                  val md5 = MessageDigest.getInstance("MD5")
+                  md5Files.put(folderNameMap(inputFiles(count).id)+"/"+inputFiles(count).filename,md5)
+                  is = Some(new DigestInputStream(is.get, md5))
+                  if (count+1 < inputFiles.size ){
+                    count +=1
+                  } else {
+                    if (bagit){
+                      count = 0
+                      level = 2
+                      file_type = 0
+                    } else {
+                      //done
+                      level = -1
+                      file_type = -1
+                    }
+
+                  }
+                }
+                //bagit.txt
+                case (2,0) => {
+                  is = addBagItTextToZip(totalBytes,folderNameMap.size,zip,dataset,user)
+                  val md5 = MessageDigest.getInstance("MD5")
+                  md5Bag.put("bagit.txt",md5)
+                  is = Some(new DigestInputStream(is.get, md5))
+                  file_type = 1
+                }
+                //bag-info.txt
+                case (2,1) => {
+                  is = addBagInfoToZip(zip)
+                  val md5 = MessageDigest.getInstance("MD5")
+                  md5Bag.put("bag-info.txt",md5)
+                  is = Some(new DigestInputStream(is.get, md5))
+                  file_type = 2
+                }
+                //manifest-md5.txt
+                case (2,2) => {
+                  is = addManifestMD5ToZip(md5Files.toMap[String,MessageDigest],zip)
+                  val md5 = MessageDigest.getInstance("MD5")
+                  md5Bag.put("manifest-md5.txt",md5)
+                  is = Some(new DigestInputStream(is.get, md5))
+                  file_type = 3
+                }
+                //tagmanifest-md5.txt
+                case (2,3) => {
+                  is = addTagManifestMD5ToZip(md5Bag.toMap[String,MessageDigest],zip)
+                  val md5 = MessageDigest.getInstance("MD5")
+                  md5Bag.put("tagmanifest-md5.txt",md5)
+                  is = Some(new DigestInputStream(is.get, md5))
+                  level = -1
+                  file_type = -1
+                }
+                //the end, or a bad case
+                case (_,_) => {
+                  zip.close()
+                  is = None
+                }
+              }
+              //this is generated after all the matches
+              Some(byteArrayOutputStream.toByteArray)
+            }
+            case read => {
+              zip.write(buffer, 0, read)
+              Some(byteArrayOutputStream.toByteArray)
+            }
+          }
+          if (level < 2){
+            totalBytes += bytesRead
+          }
+          // reset temporary byte array
+          byteArrayOutputStream.reset()
+          Future.successful(chunk)
+        }
+        case None => {
+          Future.successful(None)
+        }
+      }
+    })(pec)
   }
 
 
