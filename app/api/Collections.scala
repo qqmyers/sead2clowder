@@ -822,6 +822,20 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
     var is: Option[InputStream] = addCollectionInfoToZip(currentFolderPath,collection,zip)
 
 
+    var enumerator1 : Enumerator[Array[Byte]] = Enumerator.empty[Array[Byte]]
+
+    var enumerator2 : Enumerator[Array[Byte]] = Enumerator.empty[Array[Byte]]
+
+    var enumerator3 = enumerator1 >>> enumerator2
+
+    return enumerator3
+
+    val datasetsInCollection : List[Dataset] = getDatasetsInCollection(collection)
+
+    //get enumerators from datasets
+
+    //check to see if this works and we got both of them?
+
     Enumerator.generateM({
       is match {
         case Some(inputStream) => {
@@ -849,7 +863,24 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
     })(pec)
   }
 
+  def getDatasetsInCollection(collection : models.Collection) : List[Dataset] = {
+    var datasetsInCollection : ListBuffer[Dataset] = ListBuffer.empty[Dataset]
+    datasetsInCollection.toList
+  }
 
+  def getNextGenerationCollections(currentCollections : List[Collection]) : List[Collection] = {
+    var nextGenerationCollections : ListBuffer[Collection] = ListBuffer.empty[Collection]
+    for (currentCollection <- currentCollections){
+      val child_ids = currentCollection.child_collection_ids
+      for (child_id <- child_ids){
+        collections.get(child_id) match {
+          case Some(child_col) => nextGenerationCollections += child_col
+          case None => None
+        }
+      }
+    }
+    nextGenerationCollections.toList
+  }
 
   private def addCollectionInfoToZip(folderName: String, collection: models.Collection, zip: ZipOutputStream): Option[InputStream] = {
     zip.putNextEntry(new ZipEntry(folderName + "/"+collection.name+"_info.json"))
