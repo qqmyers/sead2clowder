@@ -812,7 +812,12 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
                               (implicit ec: ExecutionContext): Enumerator[Array[Byte]] = {
 
     var enumerator : Enumerator[Array[Byte]] = Enumerator.empty[Array[Byte]]
-    var datasetsInCollectin = getDatasetsInCollection(collection)
+    var datasetsInCollection = datasets.listCollection(collection.id.stringify, user)
+    val rootFolderName = collection.name
+    for (dataset <- datasetsInCollection){
+      val dataset_enumerator = enumeratorFromDataset(rootFolderName,dataset,1024*1024, compression,bagit,user)(ec)
+      enumerator >>> dataset_enumerator
+    }
     enumerator
   }
 
