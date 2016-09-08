@@ -808,7 +808,13 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
   }
 
 
-  
+  def enumeratorFromCollection(collection: Collection, chunkSize: Int = 1024 * 8, compression: Int = Deflater.DEFAULT_COMPRESSION, bagit: Boolean, user : Option[User])
+                              (implicit ec: ExecutionContext): Enumerator[Array[Byte]] = {
+
+    var enumerator : Enumerator[Array[Byte]] = Enumerator.empty[Array[Byte]]
+    var datasetsInCollectin = getDatasetsInCollection(collection)
+    enumerator
+  }
 
   def getDatasetsInCollection(collection : models.Collection) : List[Dataset] = {
     var datasetsInCollection : ListBuffer[Dataset] = ListBuffer.empty[Dataset]
@@ -926,10 +932,10 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
     * @return Enumerator to produce array of bytes from a zipped stream containing the bytes of each file
     *         in the dataset
     */
-  def enumeratorFromDataset(dataset: Dataset, chunkSize: Int = 1024 * 8, compression: Int = Deflater.DEFAULT_COMPRESSION, bagit: Boolean, user : Option[User])
+  def enumeratorFromDataset(pathToFolder : String , dataset: Dataset, chunkSize: Int = 1024 * 8, compression: Int = Deflater.DEFAULT_COMPRESSION, bagit: Boolean, user : Option[User])
                            (implicit ec: ExecutionContext): Enumerator[Array[Byte]] = {
     implicit val pec = ec.prepare()
-    val dataFolder = if (bagit) "data/" else ""
+    val dataFolder = if (bagit) pathToFolder+"/data/" else pathToFolder+"/"
     val folderNameMap = scala.collection.mutable.Map.empty[UUID, String]
     var inputFilesBuffer = new ListBuffer[File]()
     dataset.files.foreach(f=>files.get(f) match {
