@@ -849,8 +849,9 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
     val file_md5 = MessageDigest.getInstance("MD5")
     md5Files.put(file.filename,metadata_md5)
     val fileStream = Some(new DigestInputStream(file_is.get,file_md5))
-    Iterator(fileInfoStream,fileMetadataStream,fileStream)
+    Iterator(fileInfoStream,fileMetadataStream,fileStream,None)
   }
+
 
   def getDatasetsInCollection(collection : models.Collection) : List[Dataset] = {
     var datasetsInCollection : ListBuffer[Dataset] = ListBuffer.empty[Dataset]
