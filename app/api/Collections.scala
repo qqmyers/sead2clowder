@@ -849,9 +849,38 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
     val file_md5 = MessageDigest.getInstance("MD5")
     md5Files.put(file.filename,metadata_md5)
     val fileStream = Some(new DigestInputStream(file_is.get,file_md5))
-    Iterator(fileInfoStream,fileMetadataStream,fileStream,None)
+    Iterator(fileInfoStream,fileMetadataStream,fileStream)
   }
 
+  class FileIterator(pathToFile : String, file : models.File,zip : ZipOutputStream) extends Iterator[Option[InputStream]] {
+    var file_type : Int = 0
+
+    def hasNext() = {
+      if ( file_type > 3){
+        true
+      }
+      else
+        false
+    }
+
+    def next() = {
+      file_type match {
+        case 0 => {
+          file_type +=1
+          addFileToZip(pathToFile, file, zip)
+        }
+        case 1 => {
+          file_type+=1
+          addFileMetadataToZip(pathToFile,file,zip)
+        }
+        case 2 => {
+          file_type+=1
+          addFileToZip(pathToFile,file,zip)
+        }
+        case _ => None
+      }
+    }
+  }
 
   def getDatasetsInCollection(collection : models.Collection) : List[Dataset] = {
     var datasetsInCollection : ListBuffer[Dataset] = ListBuffer.empty[Dataset]
