@@ -811,14 +811,45 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
   def enumeratorFromCollection(collection: Collection, chunkSize: Int = 1024 * 8, compression: Int = Deflater.DEFAULT_COMPRESSION, bagit: Boolean, user : Option[User])
                               (implicit ec: ExecutionContext): Enumerator[Array[Byte]] = {
 
+    implicit val pec = ec.prepare()
     var enumerator : Enumerator[Array[Byte]] = Enumerator.empty[Array[Byte]]
     var datasetsInCollection = datasets.listCollection(collection.id.stringify, user)
     val rootFolderName = collection.name
-    for (dataset <- datasetsInCollection){
-      val dataset_enumerator = enumeratorFromDataset(rootFolderName,dataset,1024*1024, compression,bagit,user)(ec)
-      enumerator >>> dataset_enumerator
-    }
-    enumerator
+
+    val firstName = datasetsInCollection(0).name
+    val secondName = datasetsInCollection(1).name
+
+    var dataset_enumerator : Enumerator[Array[Byte]] = enumeratorFromDataset(rootFolderName+"/"+firstName+"/",datasetsInCollection(0),1024*1024, compression,bagit,user)(ec)
+    var other_dataset_enumerator  : Enumerator[Array[Byte]] = enumeratorFromDataset(rootFolderName+"/"+secondName+"/",datasetsInCollection(1),1024*1024, compression,bagit,user)(ec)
+
+    var foo : Option[Enumerator[Array[Byte]]] = None
+
+
+    val combined = dataset_enumerator.andThen(other_dataset_enumerator)
+    combined
+
+  }
+
+  /**
+    * Iterator for streams for a file
+    *
+    */
+  def streamIteratorForFile(pathToFile : String, file : models.File, md5Files : scala.collection.mutable.HashMap[String, MessageDigest], zip : ZipOutputStream ) : Iterator[Option[InputStream]] = {
+    val info_is = addFileToZip(pathToFile, file, zip)
+    val info_md5 = MessageDigest.getInstance("MD5")
+    md5Files.put(file.filename+"_info.json",info_md5)
+    val fileInfoStream = Some(new DigestInputStream(info_is.get, info_md5))
+
+    val metadata_is = addFileInfoToZip(pathToFile,file,zip)
+    val metadata_md5 = MessageDigest.getInstance("MD5")
+    md5Files.put(file.filename+"_metadata.json",metadata_md5)
+    val fileMetadataStream = Some(new DigestInputStream(metadata_is.get, metadata_md5))
+
+    val file_is = addFileToZip(pathToFile,file,zip)
+    val file_md5 = MessageDigest.getInstance("MD5")
+    md5Files.put(file.filename,metadata_md5)
+    val fileStream = Some(new DigestInputStream(file_is.get,file_md5))
+    Iterator(fileInfoStream,fileMetadataStream,fileStream)
   }
 
   def getDatasetsInCollection(collection : models.Collection) : List[Dataset] = {
@@ -953,6 +984,7 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
 
     val md5Files = scala.collection.mutable.HashMap.empty[String, MessageDigest] //for the files
     val md5Bag = scala.collection.mutable.HashMap.empty[String, MessageDigest] //for the bag files
+
 
     folders.findByParentDatasetId(dataset.id).foreach{
       folder => folder.files.foreach(f=> files.get(f) match {
