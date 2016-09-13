@@ -916,7 +916,7 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
     var file_type : Int = 0
 
     def hasNext() = {
-      if (file_type < 3){
+      if (file_type < 2){
         true
       }
       else
@@ -1367,7 +1367,7 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
   }
 
   private def addDatasetInfoToZip(folderName: String, dataset: models.Dataset, zip: ZipOutputStream): Option[InputStream] = {
-    zip.putNextEntry(new ZipEntry(folderName + "/_info.json"))
+    zip.putNextEntry(new ZipEntry(folderName + "/"+dataset.name+"_info.json"))
     val infoListMap = Json.prettyPrint(getDatasetInfoAsJson(dataset))
     Some(new ByteArrayInputStream(infoListMap.getBytes("UTF-8")))
   }
@@ -1398,7 +1398,7 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
   }
 
   private def addDatasetMetadataToZip(folderName: String, dataset : models.Dataset, zip: ZipOutputStream): Option[InputStream] = {
-    zip.putNextEntry(new ZipEntry(folderName + "_dataset_metadata.json"))
+    zip.putNextEntry(new ZipEntry(folderName + "/"+dataset.name+"_metadata.json"))
     val datasetMetadata = metadataService.getMetadataByAttachTo(ResourceRef(ResourceRef.dataset, dataset.id))
       .map(JSONLD.jsonMetadataWithContext(_))
     val s : String = Json.prettyPrint(Json.toJson(datasetMetadata))
