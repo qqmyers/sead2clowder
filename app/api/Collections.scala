@@ -824,35 +824,85 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
 
     var foo : Option[Enumerator[Array[Byte]]] = None
 
+    val byteArrayOutputStream = new ByteArrayOutputStream(chunkSize)
+    val zip = new ZipOutputStream(byteArrayOutputStream)
+    // zip compression level
+
+    var is : Option[InputStream] = addCollectionInfoToZip("",collection,zip)
+
+    Enumerator.generateM({
+      is match {
+        case Some(inputStream) => {
+          val buffer = new Array[Byte](chunkSize)
+          val bytesRead = scala.concurrent.blocking {
+            inputStream.read(buffer)
+
+          }
+          val chunk = bytesRead match {
+            case -1 => {
+              zip.closeEntry()
+              inputStream.close()
+              Some(byteArrayOutputStream.toByteArray)
+            }
+            case read => {
+              zip.write(buffer, 0, read)
+              Some(byteArrayOutputStream.toByteArray)
+            }
+          }
+          byteArrayOutputStream.reset()
+          Future.successful(chunk)
+        }
+        case None => {
+          Future.successful(None)
+        }
+      }
+
+    })(pec)
+
 
     val combined = dataset_enumerator.andThen(other_dataset_enumerator)
     combined
 
   }
 
-  /**
-    * Iterator for streams for a file
-    *
-    */
-  def streamIteratorForFile(pathToFile : String, file : models.File, md5Files : scala.collection.mutable.HashMap[String, MessageDigest], zip : ZipOutputStream ) : Iterator[Option[InputStream]] = {
-    val info_is = addFileToZip(pathToFile, file, zip)
-    val info_md5 = MessageDigest.getInstance("MD5")
-    md5Files.put(file.filename+"_info.json",info_md5)
-    val fileInfoStream = Some(new DigestInputStream(info_is.get, info_md5))
+  class DatasetIterator(pathToFolder : String, dataset : models.Dataset, zip: ZipOutputStream, md5Files :scala.collection.mutable.HashMap[String, MessageDigest] ) extends Iterator[Option[InputStream]] {
 
-    val metadata_is = addFileInfoToZip(pathToFile,file,zip)
-    val metadata_md5 = MessageDigest.getInstance("MD5")
-    md5Files.put(file.filename+"_metadata.json",metadata_md5)
-    val fileMetadataStream = Some(new DigestInputStream(metadata_is.get, metadata_md5))
+    var is : Option[InputStream] = None
 
-    val file_is = addFileToZip(pathToFile,file,zip)
-    val file_md5 = MessageDigest.getInstance("MD5")
-    md5Files.put(file.filename,file_md5)
-    val fileStream = Some(new DigestInputStream(file_is.get,file_md5))
-    Iterator(fileInfoStream,fileMetadataStream,fileStream)
+    var file_type : Int = 0
+
+    def hasNext() = {
+      if (file_type < 3){
+        true
+      }
+      else
+        false
+    }
+
+    def next() = {
+      file_type match {
+        case 0 => {
+          is = addDatasetInfoToZip(pathToFolder,dataset,zip)
+          val md5 = MessageDigest.getInstance("MD5")
+          md5Files.put("_info.json",md5)
+          Some(new DigestInputStream(is.get, md5))
+        }
+        case 1 => {
+          is = addDatasetMetadataToZip(pathToFolder,dataset,zip)
+          val md5 = MessageDigest.getInstance("MD5")
+          md5Files.put("_metadata.json",md5)
+          Some(new DigestInputStream(is.get, md5))
+        }
+        case _ => {
+          None
+        }
+      }
+    }
   }
 
-  class FileIterator(pathToFile : String, file : models.File,zip : ZipOutputStream,, md5Files :scala.collection.mutable.HashMap[String, MessageDigest] ) extends Iterator[Option[InputStream]] {
+
+
+  class FileIterator(pathToFile : String, file : models.File,zip : ZipOutputStream, md5Files :scala.collection.mutable.HashMap[String, MessageDigest] ) extends Iterator[Option[InputStream]] {
     var file_type : Int = 0
     var is : Option[InputStream] = None
     def hasNext() = {
