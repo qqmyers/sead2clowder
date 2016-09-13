@@ -820,20 +820,24 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
     val secondName = datasetsInCollection(1).name
     val md5Files = scala.collection.mutable.HashMap.empty[String, MessageDigest]
 
-    var dataset_enumerator : Enumerator[Array[Byte]] = enumeratorFromDataset(rootFolderName+"/"+firstName+"/",datasetsInCollection(0),1024*1024, compression,bagit,user)(ec)
-    var other_dataset_enumerator  : Enumerator[Array[Byte]] = enumeratorFromDataset(rootFolderName+"/"+secondName+"/",datasetsInCollection(1),1024*1024, compression,bagit,user)(ec)
+    //var dataset_enumerator : Enumerator[Array[Byte]] = enumeratorFromDataset(rootFolderName+"/"+firstName+"/",datasetsInCollection(0),1024*1024, compression,bagit,user)(ec)
+    //var other_dataset_enumerator  : Enumerator[Array[Byte]] = enumeratorFromDataset(rootFolderName+"/"+secondName+"/",datasetsInCollection(1),1024*1024, compression,bagit,user)(ec)
 
-    var foo : Option[Enumerator[Array[Byte]]] = None
+    //var foo : Option[Enumerator[Array[Byte]]] = None
 
     val byteArrayOutputStream = new ByteArrayOutputStream(chunkSize)
     val zip = new ZipOutputStream(byteArrayOutputStream)
     // zip compression level
 
-    var is : Option[InputStream] = addCollectionInfoToZip("",collection,zip)
+    //val first_dataset_iterator = new DatasetIterator("",datasetsInCollection(0),zip,md5Files)
 
-    var current_iterator = new DatasetsInCollectionIterator(collection.name,collection,zip,md5Files)
+    //while (first_dataset_iterator.hasNext()){
+      //val current = first_dataset_iterator.next()
+    //}
 
-    is = current_iterator.next()
+    var current_iterator = new DatasetsInCollectionIterator(collection.name,collection,zip,md5Files,user)
+
+    var is = current_iterator.next()
 
     Enumerator.generateM({
       is match {
@@ -848,10 +852,13 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
               zip.closeEntry()
               inputStream.close()
               Some(byteArrayOutputStream.toByteArray)
-              while (current_iterator.hasNext()){
+              if (current_iterator.hasNext()){
                 is = current_iterator.next()
+              } else{
+                zip.close()
+                is = None
               }
-              None
+              Some(byteArrayOutputStream.toByteArray)
             }
             case read => {
               zip.write(buffer, 0, read)
@@ -872,9 +879,9 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
 
 
 
-  class DatasetsInCollectionIterator(pathToFolder : String, collection : models.Collection, zip : ZipOutputStream, md5Files : scala.collection.mutable.HashMap[String, MessageDigest]) extends Iterator[Option[InputStream]] {
+  class DatasetsInCollectionIterator(pathToFolder : String, collection : models.Collection, zip : ZipOutputStream, md5Files : scala.collection.mutable.HashMap[String, MessageDigest], user : Option[User]) extends Iterator[Option[InputStream]] {
 
-    val datasetsInCollection = getDatasetsInCollection(collection)
+    val datasetsInCollection = getDatasetsInCollection(collection, user.get)
 
     var datasetCount = 0
     val numDatasets = datasetsInCollection.size
@@ -922,15 +929,18 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
           is = addDatasetInfoToZip(pathToFolder,dataset,zip)
           val md5 = MessageDigest.getInstance("MD5")
           md5Files.put("_info.json",md5)
+          file_type+=1
           Some(new DigestInputStream(is.get, md5))
         }
         case 1 => {
           is = addDatasetMetadataToZip(pathToFolder,dataset,zip)
           val md5 = MessageDigest.getInstance("MD5")
           md5Files.put("_metadata.json",md5)
+          file_type+=1
           Some(new DigestInputStream(is.get, md5))
         }
         case _ => {
+          file_type+=1
           None
         }
       }
@@ -977,9 +987,10 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
     }
   }
 
-  def getDatasetsInCollection(collection : models.Collection) : List[Dataset] = {
+  def getDatasetsInCollection(collection : models.Collection,user : User) : List[Dataset] = {
     var datasetsInCollection : ListBuffer[Dataset] = ListBuffer.empty[Dataset]
-    datasetsInCollection.toList
+    var datasetsInCollectionList = datasets.listCollection(collection.id.stringify,Some(user))
+    datasetsInCollectionList
   }
 
   def getNextGenerationCollections(currentCollections : List[Collection]) : List[Collection] = {
