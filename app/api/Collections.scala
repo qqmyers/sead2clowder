@@ -818,6 +818,7 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
 
     val firstName = datasetsInCollection(0).name
     val secondName = datasetsInCollection(1).name
+    val md5Files = scala.collection.mutable.HashMap.empty[String, MessageDigest]
 
     var dataset_enumerator : Enumerator[Array[Byte]] = enumeratorFromDataset(rootFolderName+"/"+firstName+"/",datasetsInCollection(0),1024*1024, compression,bagit,user)(ec)
     var other_dataset_enumerator  : Enumerator[Array[Byte]] = enumeratorFromDataset(rootFolderName+"/"+secondName+"/",datasetsInCollection(1),1024*1024, compression,bagit,user)(ec)
@@ -829,6 +830,10 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
     // zip compression level
 
     var is : Option[InputStream] = addCollectionInfoToZip("",collection,zip)
+
+    var current_iterator = new DatasetsInCollectionIterator(collection.name,collection,zip,md5Files)
+
+    is = current_iterator.next()
 
     Enumerator.generateM({
       is match {
@@ -843,6 +848,10 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
               zip.closeEntry()
               inputStream.close()
               Some(byteArrayOutputStream.toByteArray)
+              while (current_iterator.hasNext()){
+                is = current_iterator.next()
+              }
+              None
             }
             case read => {
               zip.write(buffer, 0, read)
@@ -859,10 +868,38 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
 
     })(pec)
 
+  }
 
-    val combined = dataset_enumerator.andThen(other_dataset_enumerator)
-    combined
 
+
+  class DatasetsInCollectionIterator(pathToFolder : String, collection : models.Collection, zip : ZipOutputStream, md5Files : scala.collection.mutable.HashMap[String, MessageDigest]) extends Iterator[Option[InputStream]] {
+
+    val datasetsInCollection = getDatasetsInCollection(collection)
+
+    var datasetCount = 0
+    val numDatasets = datasetsInCollection.size
+
+    var currentDataset = datasetsInCollection(datasetCount)
+    var currentDatasetIterator = new DatasetIterator(pathToFolder+"/"+currentDataset.name,currentDataset, zip, md5Files)
+
+
+    def hasNext() = {
+      if (currentDatasetIterator.hasNext()){
+        true
+      } else {
+        if (datasetCount < numDatasets -1){
+          datasetCount +=1
+          currentDataset = datasetsInCollection(datasetCount)
+          currentDatasetIterator = new DatasetIterator(pathToFolder+"/"+currentDataset.name,currentDataset, zip, md5Files)
+          true
+        } else
+          false
+      }
+    }
+
+    def next() = {
+      currentDatasetIterator.next()
+    }
   }
 
   class DatasetIterator(pathToFolder : String, dataset : models.Dataset, zip: ZipOutputStream, md5Files :scala.collection.mutable.HashMap[String, MessageDigest] ) extends Iterator[Option[InputStream]] {
