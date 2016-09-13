@@ -847,14 +847,14 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
 
     val file_is = addFileToZip(pathToFile,file,zip)
     val file_md5 = MessageDigest.getInstance("MD5")
-    md5Files.put(file.filename,metadata_md5)
+    md5Files.put(file.filename,file_md5)
     val fileStream = Some(new DigestInputStream(file_is.get,file_md5))
     Iterator(fileInfoStream,fileMetadataStream,fileStream)
   }
 
-  class FileIterator(pathToFile : String, file : models.File,zip : ZipOutputStream) extends Iterator[Option[InputStream]] {
+  class FileIterator(pathToFile : String, file : models.File,zip : ZipOutputStream,, md5Files :scala.collection.mutable.HashMap[String, MessageDigest] ) extends Iterator[Option[InputStream]] {
     var file_type : Int = 0
-
+    var is : Option[InputStream] = None
     def hasNext() = {
       if ( file_type > 3){
         true
@@ -862,20 +862,28 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
       else
         false
     }
-
     def next() = {
       file_type match {
         case 0 => {
           file_type +=1
-          addFileToZip(pathToFile, file, zip)
+          is  = addFileToZip(pathToFile, file, zip)
+          val md5 = MessageDigest.getInstance("MD5")
+          md5Files.put(file.filename+"_info.json",md5)
+          Some(new DigestInputStream(is.get,md5))
         }
         case 1 => {
           file_type+=1
-          addFileMetadataToZip(pathToFile,file,zip)
+          is = addFileInfoToZip(pathToFile,file,zip)
+          val md5 = MessageDigest.getInstance("MD5")
+          md5Files.put(file.filename+"_metadata.json",md5)
+          Some(new DigestInputStream(is.get,md5))
         }
         case 2 => {
           file_type+=1
-          addFileToZip(pathToFile,file,zip)
+          is = addFileToZip(pathToFile,file,zip)
+          val md5 = MessageDigest.getInstance("MD5")
+          md5Files.put(file.filename,md5)
+          Some(new DigestInputStream(is.get,md5))
         }
         case _ => None
       }
