@@ -812,28 +812,12 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
                               (implicit ec: ExecutionContext): Enumerator[Array[Byte]] = {
 
     implicit val pec = ec.prepare()
-    var enumerator : Enumerator[Array[Byte]] = Enumerator.empty[Array[Byte]]
-    var datasetsInCollection = datasets.listCollection(collection.id.stringify, user)
-    val rootFolderName = collection.name
-
-    val firstName = datasetsInCollection(0).name
-    val secondName = datasetsInCollection(1).name
     val md5Files = scala.collection.mutable.HashMap.empty[String, MessageDigest]
 
-    //var dataset_enumerator : Enumerator[Array[Byte]] = enumeratorFromDataset(rootFolderName+"/"+firstName+"/",datasetsInCollection(0),1024*1024, compression,bagit,user)(ec)
-    //var other_dataset_enumerator  : Enumerator[Array[Byte]] = enumeratorFromDataset(rootFolderName+"/"+secondName+"/",datasetsInCollection(1),1024*1024, compression,bagit,user)(ec)
-
-    //var foo : Option[Enumerator[Array[Byte]]] = None
 
     val byteArrayOutputStream = new ByteArrayOutputStream(chunkSize)
     val zip = new ZipOutputStream(byteArrayOutputStream)
-    // zip compression level
 
-    //val first_dataset_iterator = new DatasetIterator("",datasetsInCollection(0),zip,md5Files)
-
-    //while (first_dataset_iterator.hasNext()){
-      //val current = first_dataset_iterator.next()
-    //}
 
     var current_iterator = new DatasetsInCollectionIterator(collection.name,collection,zip,md5Files,user)
 
@@ -911,8 +895,46 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
 
   class DatasetIterator(pathToFolder : String, dataset : models.Dataset, zip: ZipOutputStream, md5Files :scala.collection.mutable.HashMap[String, MessageDigest] ) extends Iterator[Option[InputStream]] {
 
-    var is : Option[InputStream] = None
+    //get files in the dataset
+    val folderNameMap = scala.collection.mutable.Map.empty[UUID, String]
+    var inputFilesBuffer = new ListBuffer[File]()
+    dataset.files.foreach(f=>files.get(f) match {
+      case Some(file) => {
+        inputFilesBuffer += file
+        folderNameMap(file.id) = pathToFolder + "/"+file.filename + "_" + file.id.stringify
+      }
+      case None => Logger.error(s"No file with id $f")
+    })
 
+    folders.findByParentDatasetId(dataset.id).foreach{
+      folder => folder.files.foreach(f=> files.get(f) match {
+        case Some(file) => {
+          inputFilesBuffer += file
+          var name = folder.displayName
+          var f1: Folder = folder
+          while(f1.parentType == "folder") {
+            folders.get(f1.parentId) match {
+              case Some(fparent) => {
+                name = fparent.displayName + "/"+ name
+                f1 = fparent
+              }
+              case None =>
+            }
+          }
+          folderNameMap(file.id) = pathToFolder + name + "/" + file.filename + "_" + file.id.stringify
+        }
+        case None => Logger.error(s"No file with id $f")
+      })
+    }
+    val inputFiles = inputFilesBuffer.toList
+
+    val numFiles = inputFiles.size
+
+    var fileCounter = 0
+
+    var currentFileIterator = None
+
+    var is : Option[InputStream] = None
     var file_type : Int = 0
 
     def hasNext() = {
@@ -953,7 +975,7 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
     var file_type : Int = 0
     var is : Option[InputStream] = None
     def hasNext() = {
-      if ( file_type > 3){
+      if ( file_type < 3){
         true
       }
       else
