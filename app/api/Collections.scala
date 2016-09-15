@@ -821,7 +821,43 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
     val datasetsInCollection = getDatasetsInCollection(collection,user.get)
     //var current_iterator = new DatasetsInCollectionIterator(collection.name,collection,zip,md5Files,user)
 
-    var current_iterator = new DatasetIterator(datasetsInCollection(0).name,datasetsInCollection(0),zip,md5Files)
+
+    //var current_iterator = new DatasetIterator(datasetsInCollection(0).name,datasetsInCollection(0),zip,md5Files)
+
+    var pathToFolder = "test"
+    val folderNameMap = scala.collection.mutable.Map.empty[UUID, String]
+    var inputFilesBuffer = new ListBuffer[File]()
+    datasetsInCollection(0).files.foreach(f=>files.get(f) match {
+      case Some(file) => {
+        inputFilesBuffer += file
+        folderNameMap(file.id) = pathToFolder + "/"+file.filename + "_" + file.id.stringify
+      }
+      case None => Logger.error(s"No file with id $f")
+    })
+
+    folders.findByParentDatasetId(datasetsInCollection(0).id).foreach{
+      folder => folder.files.foreach(f=> files.get(f) match {
+        case Some(file) => {
+          inputFilesBuffer += file
+          var name = folder.displayName
+          var f1: Folder = folder
+          while(f1.parentType == "folder") {
+            folders.get(f1.parentId) match {
+              case Some(fparent) => {
+                name = fparent.displayName + "/"+ name
+                f1 = fparent
+              }
+              case None =>
+            }
+          }
+          folderNameMap(file.id) = pathToFolder + name + "/" + file.filename + "_" + file.id.stringify
+        }
+        case None => Logger.error(s"No file with id $f")
+      })
+    }
+    val inputFiles = inputFilesBuffer.toList
+
+    var current_iterator = new FileIterator(folderNameMap(inputFiles(0).id),inputFiles(0), zip,md5Files)
     var is = current_iterator.next()
 
     Enumerator.generateM({
@@ -939,7 +975,7 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
     var file_type : Int = 0
 
     def hasNext() = {
-      if (file_type < 3){
+      if (file_type < 2){
         true
       }
       else
@@ -969,8 +1005,17 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
           Some(new DigestInputStream(is.get, md5))
         }
         case 2 => {
-          file_type+=1
-          currentFileIterator.get.next()
+          currentFileIterator match {
+            case Some(fileIterator) => {
+              if (fileIterator.hasNext()){
+                fileIterator.next()
+              } else {
+                None
+              }
+            }
+            case None => None
+          }
+
           /*
           if (fileCounter < numFiles -1){
             currentFileIterator match {
@@ -1001,7 +1046,7 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
     var file_type : Int = 0
     var is : Option[InputStream] = None
     def hasNext() = {
-      if ( file_type < 1){
+      if ( file_type < 3){
         true
       }
       else
@@ -1010,7 +1055,7 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
     def next() = {
       file_type match {
         case 0 => {
-          file_type +=4
+          file_type +=1
           is  = addFileInfoToZip(pathToFile, file, zip)
           val md5 = MessageDigest.getInstance("MD5")
           md5Files.put(file.filename+"_info.json",md5)
@@ -1018,7 +1063,7 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
         }
         case 1 => {
           file_type+=1
-          is = addFileInfoToZip(pathToFile,file,zip)
+          is = addFileMetadataToZip(pathToFile,file,zip)
           val md5 = MessageDigest.getInstance("MD5")
           md5Files.put(file.filename+"_metadata.json",md5)
           Some(new DigestInputStream(is.get,md5))
@@ -1383,6 +1428,7 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
   }
 
   private def addFileMetadataToZip(folderName: String, file: models.File, zip: ZipOutputStream): Option[InputStream] = {
+    val path = folderName + "/"+file.filename+"_metadata.json"
     zip.putNextEntry(new ZipEntry(folderName + "/"+file.filename+"_metadata.json"))
     val fileMetadata = metadataService.getMetadataByAttachTo(ResourceRef(ResourceRef.file, file.id)).map(JSONLD.jsonMetadataWithContext(_))
     val s : String = Json.prettyPrint(Json.toJson(fileMetadata))
