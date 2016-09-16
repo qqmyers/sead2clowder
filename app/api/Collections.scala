@@ -972,7 +972,7 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
 
 
     var childCollectionCount = 0
-    var numChildCollections = child_collections.toList.size
+    var numChildCollections = child_collections.size
 
     var file_type = 0
 
@@ -993,7 +993,7 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
         case 0 => {
           val md5 = MessageDigest.getInstance("MD5")
           md5Files.put(pathToFolder+"_info.json",md5)
-          val is = addCollectionInfoToZip(pathToFolder, root_collection,zip)
+          val is = addCollectionInfoToZip(pathToFolder, parent_collection,zip)
           file_type+=1
           Some(new DigestInputStream(is.get, md5))
         }
@@ -1001,13 +1001,14 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
         case 1 => {
           val md5 = MessageDigest.getInstance("MD5")
           md5Files.put(pathToFolder+"_metadata.json",md5)
-          val is = addCollectionMetadataToZip(pathToFolder, root_collection,zip)
+          val is = addCollectionMetadataToZip(pathToFolder, parent_collection,zip)
           file_type+=1
           Some(new DigestInputStream(is.get, md5))
         }
         //datasets in this collection
         case 2 => {
           if (!datasetIterator.hasNext()){
+            //initialize the collection iterator !
             file_type+=2
           }
           datasetIterator.next()
