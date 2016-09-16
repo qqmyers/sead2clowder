@@ -1007,9 +1007,16 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
         }
         //datasets in this collection
         case 2 => {
+          //not here, in hasNext()
           if (!datasetIterator.hasNext()){
             //initialize the collection iterator !
-            file_type+=2
+            if (numChildCollections > 0){
+              currentCollectionIterator = Some(new CollectionIterator(pathToFolder,child_collections(childCollectionCount),zip,md5Files, user))
+              file_type+=1
+            } else {
+              file_type+=2
+            }
+
           }
           datasetIterator.next()
         }
