@@ -960,6 +960,7 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
     }
   }
 
+  //unlike RootCollectionIterator, this does not have a bagit case
   class CollectionIterator(pathToFolder : String, root_collection : models.Collection,zip : ZipOutputStream, md5Files : scala.collection.mutable.HashMap[String, MessageDigest], user : Option[User]) extends Iterator[Option[InputStream]] {
 
     val datasetIterator = new DatasetsInCollectionIterator(root_collection.name,root_collection,zip,md5Files,user)
@@ -1025,25 +1026,42 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
     val numDatasets = datasetsInCollection.size
 
     var currentDataset = datasetsInCollection(datasetCount)
-    var currentDatasetIterator = new DatasetIterator(pathToFolder+"/"+currentDataset.name,currentDataset, zip, md5Files)
+    var currentDatasetIterator : Option[DatasetIterator]  = if (numDatasets > 0){
+      Some(new DatasetIterator(pathToFolder+"/"+currentDataset.name,currentDataset, zip, md5Files))
+    } else {
+      None
+    }
 
 
     def hasNext() = {
-      if (currentDatasetIterator.hasNext()){
-        true
-      } else {
-        if (datasetCount < numDatasets -1){
-          datasetCount +=1
-          currentDataset = datasetsInCollection(datasetCount)
-          currentDatasetIterator = new DatasetIterator(pathToFolder+"/"+currentDataset.name,currentDataset, zip, md5Files)
-          true
-        } else
-          false
+
+      currentDatasetIterator match {
+        case Some(datasetIterator) => {
+          if (datasetIterator.hasNext()){
+            true
+          } else {
+            if (datasetCount < numDatasets -1){
+              datasetCount +=1
+              currentDataset = datasetsInCollection(datasetCount)
+              currentDatasetIterator = Some(new DatasetIterator(pathToFolder+"/"+currentDataset.name,currentDataset, zip, md5Files))
+              true
+            } else
+              false
+          }
+        }
+        case None => false
       }
+
+
+
+
     }
 
     def next() = {
-      currentDatasetIterator.next()
+      currentDatasetIterator match {
+        case Some(datasetIterator) => datasetIterator.next()
+        case None => None
+      }
     }
   }
 
