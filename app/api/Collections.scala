@@ -986,8 +986,24 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
           currentCollectionIterator = Some(new CollectionIterator(pathToFolder,child_collections(childCollectionCount),zip,md5Files, user))
           file_type+=1
           true
+      } else if (file_type == 4 ){
+          currentCollectionIterator match {
+            case Some(collectionIterator) => {
+              if (collectionIterator.hasNext()){
+                true
+              } else  if (childCollectionCount < numChildCollections -2){
+                childCollectionCount+=1
+                currentCollectionIterator = Some(new CollectionIterator(pathToFolder,child_collections(childCollectionCount),zip,md5Files, user))
+                true
+              } else {
+                false
+              }
+
+            }
+            case None => false
+          }
       } else {
-          false
+        false
       }
     }
 
@@ -1026,7 +1042,7 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
         }
         //sub collections
         case 3 => {
-          None
+          currentCollectionIterator.get.next()
         }
         case _ => {
           None
