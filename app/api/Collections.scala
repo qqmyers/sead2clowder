@@ -982,8 +982,12 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
       }
       else if (file_type == 3 && datasetIterator.hasNext()){
         true
+      } else if (file_type == 3 && numChildCollections > 0){
+          currentCollectionIterator = Some(new CollectionIterator(pathToFolder,child_collections(childCollectionCount),zip,md5Files, user))
+          file_type+=1
+          true
       } else {
-        false
+          false
       }
     }
 
