@@ -903,13 +903,17 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
 
     val datasetIterator = new DatasetsInCollectionIterator(root_collection.name,root_collection,zip,md5Files,user)
 
+    //var currentCollectionIterator : Option[]
+
     var file_type = 0
 
     def hasNext() = {
-      if (file_type < 3){
+      if (file_type < 2){
         true
       }
-      else {
+      else if (file_type == 3 && datasetIterator.hasNext()){
+        true
+      } else {
         false
       }
     }
@@ -948,6 +952,62 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
           None
         }
         //the end
+        case _ => {
+          None
+        }
+      }
+
+    }
+  }
+
+  class CollectionIterator(pathToFolder : String, root_collection : models.Collection,zip : ZipOutputStream, md5Files : scala.collection.mutable.HashMap[String, MessageDigest], user : Option[User]) extends Iterator[Option[InputStream]] {
+
+    val datasetIterator = new DatasetsInCollectionIterator(root_collection.name,root_collection,zip,md5Files,user)
+
+    //var currentCollectionIterator : Option[]
+
+    var file_type = 0
+
+    def hasNext() = {
+      if (file_type < 2){
+        true
+      }
+      else if (file_type == 3 && datasetIterator.hasNext()){
+        true
+      } else {
+        false
+      }
+    }
+
+    def next() = {
+      file_type match {
+        //collection info
+        case 0 => {
+          val md5 = MessageDigest.getInstance("MD5")
+          md5Files.put(pathToFolder+"_info.json",md5)
+          val is = addCollectionInfoToZip(pathToFolder, root_collection,zip)
+          file_type+=1
+          Some(new DigestInputStream(is.get, md5))
+        }
+        //collection metadata
+        case 1 => {
+          val md5 = MessageDigest.getInstance("MD5")
+          md5Files.put(pathToFolder+"_metadata.json",md5)
+          val is = addCollectionMetadataToZip(pathToFolder, root_collection,zip)
+          file_type+=1
+          Some(new DigestInputStream(is.get, md5))
+        }
+        //datasets in this collection
+        case 2 => {
+          if (!datasetIterator.hasNext()){
+            file_type+=2
+          }
+          datasetIterator.next()
+        }
+        //sub collections
+        case 3 => {
+          None
+        }
         case _ => {
           None
         }
