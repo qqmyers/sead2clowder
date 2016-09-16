@@ -822,7 +822,7 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
     //var current_iterator = new DatasetsInCollectionIterator(collection.name,collection,zip,md5Files,user)
 
 
-    //var current_iterator = new DatasetIterator(datasetsInCollection(0).name,datasetsInCollection(0),zip,md5Files)
+    var current_iterator = new DatasetIterator(datasetsInCollection(0).name,datasetsInCollection(0),zip,md5Files)
 
     var pathToFolder = "test"
     val folderNameMap = scala.collection.mutable.Map.empty[UUID, String]
@@ -857,7 +857,7 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
     }
     val inputFiles = inputFilesBuffer.toList
 
-    var current_iterator = new FileIterator(folderNameMap(inputFiles(0).id),inputFiles(0), zip,md5Files)
+    //var current_iterator = new FileIterator(folderNameMap(inputFiles(1).id),inputFiles(1), zip,md5Files)
     var is = current_iterator.next()
 
     Enumerator.generateM({
@@ -977,9 +977,21 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
     def hasNext() = {
       if (file_type < 2){
         true
-      }
-      else
+      } else if (file_type == 2){
+        currentFileIterator match {
+          case Some(fileIterator) => {
+            if (fileIterator.hasNext()){
+              true
+            } else {
+              false
+            }
+          }
+          case None => false
+        }
+      } else {
         false
+      }
+
     }
 
     def next() = {
@@ -1007,35 +1019,11 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
         case 2 => {
           currentFileIterator match {
             case Some(fileIterator) => {
-              if (fileIterator.hasNext()){
-                fileIterator.next()
-              } else {
-                None
-              }
+              fileIterator.next()
             }
             case None => None
           }
-
-          /*
-          if (fileCounter < numFiles -1){
-            currentFileIterator match {
-              case Some(fileIterator) => {
-                if (fileIterator.hasNext()){
-                  fileIterator.next()
-                } else {
-                  fileCounter +=1
-                  currentFileIterator = Some(new FileIterator(folderNameMap(inputFiles(fileCounter).id),inputFiles(fileCounter),zip,md5Files))
-                  currentFileIterator.get.next()
-                }
-              }
-              case None => None
-            }
-          } else {
-            None
-          }
-          */
         }
-
       }
     }
   }
@@ -1461,6 +1449,7 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
   }
 
   private def addDatasetInfoToZip(folderName: String, dataset: models.Dataset, zip: ZipOutputStream): Option[InputStream] = {
+    val path = folderName + "/"+dataset.name+"_info.json"
     zip.putNextEntry(new ZipEntry(folderName + "/"+dataset.name+"_info.json"))
     val infoListMap = Json.prettyPrint(getDatasetInfoAsJson(dataset))
     Some(new ByteArrayInputStream(infoListMap.getBytes("UTF-8")))
@@ -1493,6 +1482,7 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
   }
 
   private def addDatasetMetadataToZip(folderName: String, dataset : models.Dataset, zip: ZipOutputStream): Option[InputStream] = {
+    val path = folderName + "/"+dataset.name+"_metadata.json"
     zip.putNextEntry(new ZipEntry(folderName + "/"+dataset.name+"_metadata.json"))
     val datasetMetadata = metadataService.getMetadataByAttachTo(ResourceRef(ResourceRef.dataset, dataset.id))
       .map(JSONLD.jsonMetadataWithContext(_))
