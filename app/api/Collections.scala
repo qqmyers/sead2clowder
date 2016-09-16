@@ -961,11 +961,18 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
   }
 
   //unlike RootCollectionIterator, this does not have a bagit case
-  class CollectionIterator(pathToFolder : String, root_collection : models.Collection,zip : ZipOutputStream, md5Files : scala.collection.mutable.HashMap[String, MessageDigest], user : Option[User]) extends Iterator[Option[InputStream]] {
+  class CollectionIterator(pathToFolder : String, parent_collection : models.Collection,zip : ZipOutputStream, md5Files : scala.collection.mutable.HashMap[String, MessageDigest], user : Option[User]) extends Iterator[Option[InputStream]] {
 
-    val datasetIterator = new DatasetsInCollectionIterator(root_collection.name,root_collection,zip,md5Files,user)
+    val datasetIterator = new DatasetsInCollectionIterator(parent_collection.name,parent_collection,zip,md5Files,user)
 
-    //var currentCollectionIterator : Option[]
+    var currentCollectionIterator : Option[CollectionIterator] = None
+
+    //make list
+    var child_collections : List[Collection] = getNextGenerationCollections(List(parent_collection))
+
+
+    var childCollectionCount = 0
+    var numChildCollections = child_collections.toList.size
 
     var file_type = 0
 
