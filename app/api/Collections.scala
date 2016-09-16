@@ -819,10 +819,10 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
     val zip = new ZipOutputStream(byteArrayOutputStream)
 
     val datasetsInCollection = getDatasetsInCollection(collection,user.get)
-    //var current_iterator = new DatasetsInCollectionIterator(collection.name,collection,zip,md5Files,user)
+    var current_iterator = new DatasetsInCollectionIterator(collection.name,collection,zip,md5Files,user)
 
 
-    var current_iterator = new DatasetIterator(datasetsInCollection(0).name,datasetsInCollection(0),zip,md5Files)
+    //var current_iterator = new DatasetIterator(datasetsInCollection(0).name,datasetsInCollection(0),zip,md5Files)
 
     var pathToFolder = "test"
     val folderNameMap = scala.collection.mutable.Map.empty[UUID, String]
@@ -1051,10 +1051,6 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
         }
         case None => false
       }
-
-
-
-
     }
 
     def next() = {
@@ -1116,6 +1112,10 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
         currentFileIterator match {
           case Some(fileIterator) => {
             if (fileIterator.hasNext()){
+              true
+            } else if (fileCounter < numFiles -2){
+              fileCounter +=1
+              currentFileIterator = Some(new FileIterator(folderNameMap(inputFiles(fileCounter).id),inputFiles(fileCounter),zip,md5Files))
               true
             } else {
               false
