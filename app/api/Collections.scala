@@ -819,7 +819,7 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
     val zip = new ZipOutputStream(byteArrayOutputStream)
 
     val datasetsInCollection = getDatasetsInCollection(collection,user.get)
-    var current_iterator = new CollectionIterator(collection.name,collection,zip,md5Files,user)
+    var current_iterator = new RootCollectionIterator(collection.name,collection,zip,md5Files,user)
 
 
 
@@ -882,22 +882,28 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
       if (file_type < 2){
         true
       }
-      else if (file_type == 2 && datasetIterator.hasNext()){
-        true
-      } else if (file_type ==2 && !datasetIterator.hasNext()){
-        file_type+=1
-        currentCollectionIterator = Some(new CollectionIterator(pathToFolder,child_collections(collectionCount),zip,md5Files, user))
-        true
-      } else if (file_type ==3){
+      else if (file_type ==2){
+        if (datasetIterator.hasNext()){
+          true
+        } else if (numCollections > 0){
+
+          currentCollectionIterator = Some(new CollectionIterator(pathToFolder+"/"+child_collections(collectionCount).name, child_collections(collectionCount),zip,md5Files,user))
+          file_type +=1
+          true
+        } else {
+          false
+        }
+      } else if (file_type == 3) {
         currentCollectionIterator match {
           case Some(collectionIterator) => {
             if (collectionIterator.hasNext()){
               true
             } else if (collectionCount < numCollections -2){
               collectionCount+=1
-              currentCollectionIterator = Some(new CollectionIterator(pathToFolder,child_collections(collectionCount),zip,md5Files,user))
+              currentCollectionIterator = Some(new CollectionIterator(pathToFolder+"/"+child_collections(collectionCount).name, child_collections(collectionCount),zip,md5Files,user))
               true
             } else {
+              file_type+=1
               false
             }
           }
