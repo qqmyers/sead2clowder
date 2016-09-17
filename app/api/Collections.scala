@@ -903,7 +903,12 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
 
     val datasetIterator = new DatasetsInCollectionIterator(root_collection.name,root_collection,zip,md5Files,user)
 
-    //var currentCollectionIterator : Option[]
+    var currentCollectionIterator : Option[CollectionIterator] = None
+
+    val child_collections = getNextGenerationCollections(List(root_collection))
+
+    var collectionCount = 0
+    var numCollections = child_collections.size
 
     var file_type = 0
 
@@ -911,8 +916,27 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
       if (file_type < 2){
         true
       }
-      else if (file_type == 3 && datasetIterator.hasNext()){
+      else if (file_type == 2 && datasetIterator.hasNext()){
         true
+      } else if (file_type ==2 && !datasetIterator.hasNext()){
+        file_type+=1
+        currentCollectionIterator = Some(new CollectionIterator(pathToFolder,child_collections(collectionCount),zip,md5Files, user))
+        true
+      } else if (file_type ==3){
+        currentCollectionIterator match {
+          case Some(collectionIterator) => {
+            if (collectionIterator.hasNext()){
+              true
+            } else if (collectionCount < numCollections -2){
+              collectionCount+=1
+              currentCollectionIterator = Some(new CollectionIterator(pathToFolder,child_collections(collectionCount),zip,md5Files,user))
+              true
+            } else {
+              false
+            }
+          }
+          case None => false
+        }
       } else {
         false
       }
@@ -938,14 +962,14 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
         }
         //datasets in this collection
         case 2 => {
-          if (!datasetIterator.hasNext()){
-            file_type+=2
-          }
           datasetIterator.next()
         }
         //sub collections
         case 3 => {
-          None
+          currentCollectionIterator match {
+            case Some(collectionIterator) => collectionIterator.next()
+            case None => None
+          }
         }
         //bag it
         case 4 => {
@@ -980,28 +1004,31 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
       if (file_type < 2){
         true
       }
-      else if (file_type == 3 && datasetIterator.hasNext()){
-        true
-      } else if (file_type == 3 && numChildCollections > 0){
-          currentCollectionIterator = Some(new CollectionIterator(pathToFolder,child_collections(childCollectionCount),zip,md5Files, user))
-          file_type+=1
+      else if (file_type ==2){
+        if (datasetIterator.hasNext()){
           true
-      } else if (file_type == 4 ){
-          currentCollectionIterator match {
-            case Some(collectionIterator) => {
-              if (collectionIterator.hasNext()){
-                true
-              } else  if (childCollectionCount < numChildCollections -2){
-                childCollectionCount+=1
-                currentCollectionIterator = Some(new CollectionIterator(pathToFolder,child_collections(childCollectionCount),zip,md5Files, user))
-                true
-              } else {
-                false
-              }
-
+        } else if (numChildCollections > 0){
+          currentCollectionIterator = Some(new CollectionIterator(pathToFolder, child_collections(childCollectionCount),zip,md5Files,user))
+          file_type +=1
+          true
+        } else {
+          false
+        }
+      } else if (file_type == 3) {
+        currentCollectionIterator match {
+          case Some(collectionIterator) => {
+            if (collectionIterator.hasNext()){
+              true
+            } else if (childCollectionCount < numChildCollections -2){
+              childCollectionCount+=1
+              currentCollectionIterator = Some(new CollectionIterator(pathToFolder, child_collections(childCollectionCount),zip,md5Files,user))
+              true
+            } else {
+              false
             }
-            case None => false
           }
+          case None => false
+        }
       } else {
         false
       }
@@ -1027,20 +1054,8 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
         }
         //datasets in this collection
         case 2 => {
-          //not here, in hasNext()
-          if (!datasetIterator.hasNext()){
-            //initialize the collection iterator !
-            if (numChildCollections > 0){
-              currentCollectionIterator = Some(new CollectionIterator(pathToFolder,child_collections(childCollectionCount),zip,md5Files, user))
-              file_type+=1
-            } else {
-              file_type+=2
-            }
-
-          }
           datasetIterator.next()
         }
-        //sub collections
         case 3 => {
           currentCollectionIterator match {
             case Some(collectionIterator) => {
@@ -1053,7 +1068,6 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
           None
         }
       }
-
     }
   }
 
