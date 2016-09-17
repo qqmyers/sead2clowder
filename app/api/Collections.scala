@@ -819,43 +819,9 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
     val zip = new ZipOutputStream(byteArrayOutputStream)
 
     val datasetsInCollection = getDatasetsInCollection(collection,user.get)
-    var current_iterator = new DatasetsInCollectionIterator(collection.name,collection,zip,md5Files,user)
+    var current_iterator = new CollectionIterator(collection.name,collection,zip,md5Files,user)
 
 
-    //var current_iterator = new DatasetIterator(datasetsInCollection(0).name,datasetsInCollection(0),zip,md5Files)
-
-    var pathToFolder = "test"
-    val folderNameMap = scala.collection.mutable.Map.empty[UUID, String]
-    var inputFilesBuffer = new ListBuffer[File]()
-    datasetsInCollection(0).files.foreach(f=>files.get(f) match {
-      case Some(file) => {
-        inputFilesBuffer += file
-        folderNameMap(file.id) = pathToFolder + "/"+file.filename + "_" + file.id.stringify
-      }
-      case None => Logger.error(s"No file with id $f")
-    })
-
-    folders.findByParentDatasetId(datasetsInCollection(0).id).foreach{
-      folder => folder.files.foreach(f=> files.get(f) match {
-        case Some(file) => {
-          inputFilesBuffer += file
-          var name = folder.displayName
-          var f1: Folder = folder
-          while(f1.parentType == "folder") {
-            folders.get(f1.parentId) match {
-              case Some(fparent) => {
-                name = fparent.displayName + "/"+ name
-                f1 = fparent
-              }
-              case None =>
-            }
-          }
-          folderNameMap(file.id) = pathToFolder + name + "/" + file.filename + "_" + file.id.stringify
-        }
-        case None => Logger.error(s"No file with id $f")
-      })
-    }
-    val inputFiles = inputFilesBuffer.toList
 
     //var current_iterator = new FileIterator(folderNameMap(inputFiles(1).id),inputFiles(1), zip,md5Files)
     var is = current_iterator.next()
@@ -987,7 +953,7 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
   //unlike RootCollectionIterator, this does not have a bagit case
   class CollectionIterator(pathToFolder : String, parent_collection : models.Collection,zip : ZipOutputStream, md5Files : scala.collection.mutable.HashMap[String, MessageDigest], user : Option[User]) extends Iterator[Option[InputStream]] {
 
-    val datasetIterator = new DatasetsInCollectionIterator(parent_collection.name,parent_collection,zip,md5Files,user)
+    val datasetIterator = new DatasetsInCollectionIterator(pathToFolder,parent_collection,zip,md5Files,user)
 
     var currentCollectionIterator : Option[CollectionIterator] = None
 
@@ -1008,7 +974,8 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
         if (datasetIterator.hasNext()){
           true
         } else if (numChildCollections > 0){
-          currentCollectionIterator = Some(new CollectionIterator(pathToFolder, child_collections(childCollectionCount),zip,md5Files,user))
+
+          currentCollectionIterator = Some(new CollectionIterator(pathToFolder+"/"+child_collections(childCollectionCount).name, child_collections(childCollectionCount),zip,md5Files,user))
           file_type +=1
           true
         } else {
@@ -1021,9 +988,10 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
               true
             } else if (childCollectionCount < numChildCollections -2){
               childCollectionCount+=1
-              currentCollectionIterator = Some(new CollectionIterator(pathToFolder, child_collections(childCollectionCount),zip,md5Files,user))
+              currentCollectionIterator = Some(new CollectionIterator(pathToFolder+"/"+child_collections(childCollectionCount).name, child_collections(childCollectionCount),zip,md5Files,user))
               true
             } else {
+              file_type+=1
               false
             }
           }
@@ -1278,12 +1246,14 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
   }
 
   private def addCollectionInfoToZip(folderName: String, collection: models.Collection, zip: ZipOutputStream): Option[InputStream] = {
+    val path = folderName + "/"+collection.name+"_info.json"
     zip.putNextEntry(new ZipEntry(folderName + "/"+collection.name+"_info.json"))
     val infoListMap = Json.prettyPrint(jsonCollection(collection))
     Some(new ByteArrayInputStream(infoListMap.getBytes("UTF-8")))
   }
 
   private def addCollectionMetadataToZip(folderName : String , collection : models.Collection, zip : ZipOutputStream) : Option[InputStream] = {
+    val path = folderName+"/"+collection.name+"_metadata.json"
     zip.putNextEntry(new ZipEntry(folderName+"/"+collection.name+"_metadata.json"))
     val collectionMetadata = getCollectionInfoAsJson(collection)
     val metadataMap = Json.prettyPrint(collectionMetadata)
