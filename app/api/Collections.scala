@@ -789,7 +789,7 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
   @ApiOperation(value = "Download dataset",
     notes = "Downloads all files contained in a dataset.",
     responseClass = "None", httpMethod = "GET")
-  def download(id: UUID, bagit: Boolean,compression: Int) = PermissionAction(Permission.DownloadFiles, Some(ResourceRef(ResourceRef.dataset, id))) { implicit request =>
+  def download(id: UUID, bagit: Boolean,compression: Int) = PermissionAction(Permission.DownloadFiles, Some(ResourceRef(ResourceRef.collection, id))) { implicit request =>
     implicit val user = request.user
     collections.get(id) match {
       case Some(collection) => {
@@ -936,7 +936,7 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
               true
             } else {
               if (bagit){
-                bagItIterator = Some(new BagItIterator("",root_collection ,zip,md5Bag,md5Files,bytesSoFar ,user))
+                bagItIterator = Some(new BagItIterator(pathToFolder,root_collection ,zip,md5Bag,md5Files,bytesSoFar ,user))
                 file_type+=1
                 true
               } else {
@@ -1032,7 +1032,7 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
     def next = {
       file_type match {
         case 1 => {
-          is = addBagItTextToZip(bytes,0,zip,collection,user)
+          is = addBagItTextToZip(pathToFolder,bytes,0,zip,collection,user)
           val md5 = MessageDigest.getInstance("MD5")
           md5Bag.put("bagit.txt",md5)
           file_type = 2
@@ -1040,7 +1040,7 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
 
         }
         case 0 => {
-          is = addBagInfoToZip(zip)
+          is = addBagInfoToZip(pathToFolder,zip)
           val md5 = MessageDigest.getInstance("MD5")
           md5Bag.put("bag-info.txt",md5)
           file_type = 1
@@ -1048,14 +1048,14 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
 
         }
         case 2 => {
-          is = addManifestMD5ToZip(md5Files.toMap[String,MessageDigest],zip)
+          is = addManifestMD5ToZip(pathToFolder,md5Files.toMap[String,MessageDigest],zip)
           val md5 = MessageDigest.getInstance("MD5")
           md5Bag.put("manifest-md5.txt",md5)
           file_type = 3
           Some(new DigestInputStream(is.get, md5))
         }
         case 3 => {
-          is = addTagManifestMD5ToZip(md5Bag.toMap[String,MessageDigest],zip)
+          is = addTagManifestMD5ToZip(pathToFolder,md5Bag.toMap[String,MessageDigest],zip)
           val md5 = MessageDigest.getInstance("MD5")
           md5Bag.put("tagmanifest-md5.txt",md5)
           file_type = 4
@@ -1539,8 +1539,8 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
     Some(new ByteArrayInputStream(s.getBytes("UTF-8")))
   }
 
-  private def addBagItTextToZip(totalbytes: Long, totalFiles: Long, zip: ZipOutputStream, collection: models.Collection, user: Option[models.User]) = {
-    zip.putNextEntry(new ZipEntry("bagit.txt"))
+  private def addBagItTextToZip(pathToFolder : String, totalbytes: Long, totalFiles: Long, zip: ZipOutputStream, collection: models.Collection, user: Option[models.User]) = {
+    zip.putNextEntry(new ZipEntry(pathToFolder+"/bagit.txt"))
     val softwareLine = "Bag-Software-Agent: clowder.ncsa.illinois.edu\n"
     val baggingDate = "Bagging-Date: "+(new SimpleDateFormat("yyyy-MM-dd hh:mm:ss")).format(Calendar.getInstance.getTime)+"\n"
     val baggingSize = "Bag-Size: " + _root_.util.FileUtils.humanReadableByteCount(totalbytes) + "\n"
@@ -1559,14 +1559,14 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
     Some(new ByteArrayInputStream(s.getBytes("UTF-8")))
   }
 
-  private def addBagInfoToZip(zip : ZipOutputStream) : Option[InputStream] = {
-    zip.putNextEntry(new ZipEntry("bag-info.txt"))
+  private def addBagInfoToZip(pathToFolder : String ,zip : ZipOutputStream) : Option[InputStream] = {
+    zip.putNextEntry(new ZipEntry(pathToFolder+"/bag-info.txt"))
     val s : String = "BagIt-Version: 0.97\n"+"Tag-File-Character-Encoding: UTF-8\n"
     Some(new ByteArrayInputStream(s.getBytes("UTF-8")))
   }
 
-  private def addManifestMD5ToZip(md5map : Map[String,MessageDigest] ,zip : ZipOutputStream) : Option[InputStream] = {
-    zip.putNextEntry(new ZipEntry("manifest-md5.txt"))
+  private def addManifestMD5ToZip(pathToFolder : String, md5map : Map[String,MessageDigest] ,zip : ZipOutputStream) : Option[InputStream] = {
+    zip.putNextEntry(new ZipEntry(pathToFolder+"/manifest-md5.txt"))
     var s : String = ""
     md5map.foreach{
       case (filePath,md) => {
@@ -1577,8 +1577,8 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
     Some(new ByteArrayInputStream(s.getBytes("UTF-8")))
   }
 
-  private def addTagManifestMD5ToZip(md5map : Map[String,MessageDigest],zip : ZipOutputStream) : Option[InputStream] = {
-    zip.putNextEntry(new ZipEntry("tagmanifest-md5.txt"))
+  private def addTagManifestMD5ToZip(pathToFolder : String, md5map : Map[String,MessageDigest],zip : ZipOutputStream) : Option[InputStream] = {
+    zip.putNextEntry(new ZipEntry(pathToFolder+"/tagmanifest-md5.txt"))
     var s : String = ""
     md5map.foreach{
       case (filePath,md) => {
