@@ -1042,7 +1042,12 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
         }
         //sub collections
         case 3 => {
-          currentCollectionIterator.get.next()
+          currentCollectionIterator match {
+            case Some(collectionIterator) => {
+              collectionIterator.next()
+            }
+            case None => None
+          }
         }
         case _ => {
           None
