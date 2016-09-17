@@ -820,6 +820,8 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
     val byteArrayOutputStream = new ByteArrayOutputStream(chunkSize)
     val zip = new ZipOutputStream(byteArrayOutputStream)
 
+    var bytesSet = false
+
     val datasetsInCollection = getDatasetsInCollection(collection,user.get)
     var current_iterator = new RootCollectionIterator(collection.name,collection,zip,md5Files,md5Bag,user, totalBytes,true)
 
@@ -831,6 +833,10 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
     Enumerator.generateM({
       is match {
         case Some(inputStream) => {
+          if (current_iterator.isBagIt() && bytesSet == false){
+            current_iterator.setBytes(totalBytes)
+            bytesSet = true
+          }
           val buffer = new Array[Byte](chunkSize)
           val bytesRead = scala.concurrent.blocking {
             inputStream.read(buffer)
@@ -850,12 +856,12 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
               Some(byteArrayOutputStream.toByteArray)
             }
             case read => {
+              if (!current_iterator.isBagIt()){
+                totalBytes += bytesRead
+              }
               zip.write(buffer, 0, read)
               Some(byteArrayOutputStream.toByteArray)
             }
-          }
-          if (!current_iterator.isBagIt()){
-            totalBytes += bytesRead
           }
           byteArrayOutputStream.reset()
           Future.successful(chunk)
@@ -864,7 +870,6 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
           Future.successful(None)
         }
       }
-
     })(pec)
 
   }
@@ -886,10 +891,23 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
     var collectionCount = 0
     var numCollections = child_collections.size
 
+    var bytesSoFar : Long  = 0L
     var file_type = 0
 
+    def setBytes(totalBytes : Long) = {
+      bytesSoFar = totalBytes
+      bagItIterator match {
+        case Some(bagIterator) => bagIterator.setBytes(bytesSoFar)
+        case None =>
+      }
+    }
+
     def isBagIt() = {
-      false
+      if (file_type == 4){
+        true
+      } else {
+        false
+      }
     }
 
     def hasNext() = {
@@ -917,9 +935,8 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
               currentCollectionIterator = Some(new CollectionIterator(pathToFolder+"/"+child_collections(collectionCount).name, child_collections(collectionCount),zip,md5Files,user))
               true
             } else {
-
               if (bagit){
-                bagItIterator = Some(new BagItIterator("",root_collection ,zip,md5Bag,md5Files,totalBytes ,user))
+                bagItIterator = Some(new BagItIterator("",root_collection ,zip,md5Bag,md5Files,bytesSoFar ,user))
                 file_type+=1
                 true
               } else {
@@ -997,6 +1014,12 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
 
     var file_type = 0
 
+    var bytes : Long = 0L
+
+    def setBytes(totalBytes : Long) = {
+      bytes = totalBytes
+    }
+
     var is : Option[InputStream] = None
 
     def hasNext() = {
@@ -1008,19 +1031,19 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
 
     def next = {
       file_type match {
-        case 0 => {
-          is = addBagItTextToZip(totalBytes,0,zip,collection,user)
+        case 1 => {
+          is = addBagItTextToZip(bytes,0,zip,collection,user)
           val md5 = MessageDigest.getInstance("MD5")
           md5Bag.put("bagit.txt",md5)
-          file_type = 1
+          file_type = 2
           Some(new DigestInputStream(is.get, md5))
 
         }
-        case 1 => {
+        case 0 => {
           is = addBagInfoToZip(zip)
           val md5 = MessageDigest.getInstance("MD5")
           md5Bag.put("bag-info.txt",md5)
-          file_type = 2
+          file_type = 1
           Some(new DigestInputStream(is.get, md5))
 
         }
