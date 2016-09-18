@@ -823,7 +823,7 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
     var bytesSet = false
 
     val datasetsInCollection = getDatasetsInCollection(collection,user.get)
-    var current_iterator = new RootCollectionIterator(collection.name,collection,zip,md5Files,md5Bag,user, totalBytes,true)
+    var current_iterator = new RootCollectionIterator(collection.name,collection,zip,md5Files,md5Bag,user, totalBytes,bagit)
 
 
 
