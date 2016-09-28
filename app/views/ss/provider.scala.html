@@ -16,7 +16,7 @@
                 }
             }
 
-            @if( provider.authMethod == services.CrowdProvider.authMethod ) {
+            @if( provider.authMethod == services.ss.CrowdProvider.authMethod ) {
                 @defining( "securesocial/images/providers/%s.png".format(provider.id) ) { imageUrl =>
                     <a href="@provider.authenticationUrl"> <img src="@RoutesHelper.at(imageUrl)"/></a>
                 }

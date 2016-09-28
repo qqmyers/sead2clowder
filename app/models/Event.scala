@@ -86,7 +86,7 @@ object Events {
    for (job <- userList){
      job.parameters match {
        case Some(id) => {
-         users.findById(id) match {
+         users.get(id) match {
            case Some(user) => {
              job.lastJobTime match {
                case Some(date) => {

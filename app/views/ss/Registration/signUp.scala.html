@@ -22,7 +22,7 @@
         </div>
 
         @*<form action="@securesocial.core.providers.utils.RoutesHelper.handleSignUp(token).absoluteURL(IdentityProvider.sslEnabled)"*@
-      <form action = @routes.Registration.handleSignUp(token)
+      <form action = @securesocial.controllers.Registration.handleSignUp(token)
               class="form-horizontal"
               autocomplete= "off"
               method="POST"

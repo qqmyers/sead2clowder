@@ -1,4 +1,4 @@
-package services
+package services.ss
 
 import play.api.libs.ws.Response
 import play.api.{Application, Logger}

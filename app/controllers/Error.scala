@@ -2,8 +2,6 @@ package controllers
 
 import play.api.Logger
 import play.api.mvc.Results
-import securesocial.core.IdentityProvider
-import securesocial.core.providers.utils.RoutesHelper
 
 /**
  * Utility controller to be called, typically as a redirect, from the client side when an AJAX error is received,
@@ -19,12 +17,12 @@ class Error extends SecuredController {
      * 
      */
     def authenticationRequired() = UserAction(needActive = false) { implicit request =>
-        Results.Redirect(RoutesHelper.login.absoluteURL(IdentityProvider.sslEnabled)).flashing("error" -> "You must be logged in to perform that action.")
+        Results.Redirect(Utils.loginUrl(request)).flashing("error" -> "You must be logged in to perform that action.")
     }
     
     /**
      * Message specific method when the failure is due to not being logged in. Ideally, the original url 
-     * will be set as a cookie so that securesocial can redirect back to the user's original page.
+     * will be set as a cookie so that we can redirect back to the user's original page.
      * 
      * Client should pass in their own message to be displayed. If the message is null or empty, it will default to
      * the generic message "You must be logged in to perform that action.".
@@ -48,10 +46,10 @@ class Error extends SecuredController {
         }
         
         if (origUrlPresent) {
-            Results.Redirect(RoutesHelper.login.absoluteURL(IdentityProvider.sslEnabled)).flashing("error" -> errMsg).withSession("original-url" -> url)
+            Results.Redirect(Utils.loginUrl(request)).flashing("error" -> errMsg).withSession("original-url" -> url)
         }
         else {
-            Results.Redirect(RoutesHelper.login.absoluteURL(IdentityProvider.sslEnabled)).flashing("error" -> errMsg)
+            Results.Redirect(Utils.loginUrl(request)).flashing("error" -> errMsg)
         }
     }
     

@@ -1,27 +1,27 @@
 package services
 
 import models._
-import securesocial.core.Identity
 import util.Direction
 import util.Direction.Direction
 
-/**
- * Service definition to interact with the users.
- *
- * Right now this is a Wrapper around SecureSocial to get access to
- * the users. There is no save option since all saves should be done
- * through securesocial right now. Eventually this should become a
- * wrapper for securesocial and we use User everywhere.
- *
- */
+/** Service definition to interact with the users. */
 trait UserService  {
   def get(id: UUID): Option[User]
 
-  def insert(model: User): Option[User]
-
-  def update(model: User)
+  def save(user: User): Option[User]
 
   def delete(id: UUID)
+
+  /**
+    * Find a user by email address. This is a hack and should not be used. This will only search
+    * the local accounts!. See also CATS-666
+    */
+  def findLocalAccountByEmail(email: String): Option[User]
+
+  def findByProvider(provider: String, id: String): Option[User]
+
+  /** Record the fact that the user logged in */
+  def recordLogin(id: UUID): Unit
 
   /** Activate all users, and mark them as admin, who are listed in application.conf by email */
   def updateAdmins()
@@ -60,27 +60,6 @@ trait UserService  {
   def list: List[User] = list(limit=Integer.MAX_VALUE)
 
   /**
-   * Return a specific user based on the id provided.
-   */
-  def findById(id: UUID): Option[User]
-
-  /**
-   * Return a specific user based on an Identity
-   */
-  def findByIdentity(identity: Identity): Option[User]
-
-  /**
-   * Return a specific user based on an Identity
-   */
-  def findByIdentity(userId: String, providerId: String): Option[User]
-
-  /**
-   * Return a specific user based on the email provided.
-   * @deprecated please find
-   */
-  def findByEmail(email: String): Option[User]
-
-  /**
    * Update the give user profile
    */
   def updateProfile(id: UUID, profile: Profile)
@@ -99,11 +78,6 @@ trait UserService  {
    * Updates the user repository preferences.
    */
   def updateRepositoryPreferences(id: UUID, preferences: Map[String, String])
-  /**
-   * Adds a dataset view
-   * TODO: use UUID instead of email
-   */
-  def addUserDatasetView(email: String, dataset: UUID)
 
   /**
    * Creates a new list in User Model for friends, or viewed

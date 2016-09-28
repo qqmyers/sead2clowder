@@ -1,24 +1,22 @@
 package controllers
 
 import java.net.URL
-import java.util.{Calendar, Date}
+import java.util.Date
 import javax.inject.Inject
+
 import api.Permission
 import api.Permission._
 import models._
-import play.api.{Play, Logger}
+import play.api.Logger
 import play.api.data.Forms._
 import play.api.data.{Form, Forms}
-import play.api.libs.json.Json
-import play.api.i18n.Messages
 import services._
-import securesocial.core.providers.{Token, UsernamePasswordProvider}
-import org.joda.time.DateTime
 import play.api.i18n.Messages
 import services.AppConfiguration
-import util.{Mail, Formatters}
+import services.ss.SecureSocialUser
+import util.{Formatters, Mail}
+
 import scala.collection.mutable.{ArrayBuffer, ListBuffer}
-import org.apache.commons.lang.StringEscapeUtils.escapeJava
 
 /**
  * Spaces allow users to partition the data into realms only accessible to users with the right permissions.
@@ -147,7 +145,7 @@ class Spaces @Inject()(spaces: SpaceService, users: UserService, events: EventSe
     implicit val user = request.user
     spaces.get(id) match {
         case Some(s) => {
-	        val creator = users.findById(s.creator)
+	        val creator = users.get(s.creator)
 	        var creatorActual: User = null
 	        val collectionsInSpace = spaces.getCollectionsInSpace(Some(id.stringify), Some(size))
 	        val datasetsInSpace = datasets.listSpace(size, id.toString(), user)
@@ -210,7 +208,7 @@ class Spaces @Inject()(spaces: SpaceService, users: UserService, events: EventSe
     implicit val user = request.user
     spaces.get(id) match {
       case Some(s) => {
-        val creator = users.findById(s.creator)
+        val creator = users.get(s.creator)
         var creatorActual: User = null
         val usersInSpace = spaces.getUsersInSpace(id)
         var inSpaceBuffer = usersInSpace.to[ArrayBuffer]
@@ -282,27 +280,17 @@ class Spaces @Inject()(spaces: SpaceService, users: UserService, events: EventSe
           formData => {
             users.findRoleByName(formData.role) match {
               case Some(role) => {
-                formData.addresses.map {
-                  email =>
-                  securesocial.core.UserService.findByEmailAndProvider(email, UsernamePasswordProvider.UsernamePassword) match {
+                formData.addresses.foreach { email =>
+                  users.findLocalAccountByEmail(email) match {
                     case Some(member) => {
                       //Add Person to the space
-                      val usr = users.findByEmail(email)
-                      spaces.addUser(usr.get.id, role, id)
-                      val theHtml = views.html.spaces.inviteNotificationEmail(id.stringify, s.name, user.get.getMiniUser, usr.get.fullName, role.name)
+                      spaces.addUser(member.id, role, id)
+                      val theHtml = views.html.spaces.inviteNotificationEmail(id.stringify, s.name, user.get.getMiniUser, member.fullName, role.name)
                       Mail.sendEmail("Added to $spaceTitle", request.user, email, theHtml)
                     }
                     case None => {
                       val uuid = UUID.generate()
-                      val TokenDurationKey = securesocial.controllers.Registration.TokenDurationKey
-                      val DefaultDuration = securesocial.controllers.Registration.DefaultDuration
-                      val TokenDuration = Play.current.configuration.getInt(TokenDurationKey).getOrElse(DefaultDuration)
-                      val token = new Token(uuid.stringify, email, DateTime.now(), DateTime.now().plusMinutes(TokenDuration), true)
-                      securesocial.core.UserService.save(token)
-                      val ONE_MINUTE_IN_MILLIS=60000
-                      val date: Calendar = Calendar.getInstance()
-                      val t= date.getTimeInMillis()
-                      val afterAddingMins: Date=new Date(t + (TokenDuration * ONE_MINUTE_IN_MILLIS))
+                      val afterAddingMins = SecureSocialUser.saveToken(uuid, email)
                       val invite = SpaceInvite(uuid, uuid.toString(), email, s.id, role.id.stringify, new Date(), afterAddingMins)
                       val theHtml = views.html.inviteThroughEmail(uuid.stringify, s.name, user.get.getMiniUser.fullName, formData.message)
                       Mail.sendEmail(Messages("mails.sendSignUpEmail.subject"), request.user, email, theHtml)
@@ -396,8 +384,7 @@ class Spaces @Inject()(spaces: SpaceService, users: UserService, events: EventSe
 
                       // insert space
                       spaces.insert(newSpace)
-                      val option_user = users.findByIdentity(identity)
-                      events.addObjectEvent(option_user, newSpace.id, newSpace.name, "create_space")
+                      events.addObjectEvent(user, newSpace.id, newSpace.name, "create_space")
                       val role = Role.Admin
                       spaces.addUser(userId, role, newSpace.id)
                       //TODO - Put Spaces in Elastic Search?
@@ -438,8 +425,7 @@ class Spaces @Inject()(spaces: SpaceService, users: UserService, events: EventSe
                                   homePage = formData.homePage, resourceTimeToLive = formData.resourceTimeToLive * 60 * 60 * 1000L, isTimeToLiveEnabled = formData.isTimeToLiveEnabled)
                             }
                           spaces.update(updated_space)
-                          val option_user = users.findByIdentity(identity)
-                          events.addObjectEvent(option_user, updated_space.id, updated_space.name, "update_space_information")
+                          events.addObjectEvent(user, updated_space.id, updated_space.name, "update_space_information")
                           Redirect(routes.Spaces.getSpace(existing_space.id))
                         } else {
                           Redirect(routes.Spaces.getSpace(existing_space.id)).flashing("error" -> "You are not authorized to edit this $spaceTitle.")

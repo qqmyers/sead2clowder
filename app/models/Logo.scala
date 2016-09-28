@@ -10,7 +10,7 @@ case class Logo(id: UUID = UUID.generate,
                 path: String,
                 name: String,
                 contentType: String,
-                author: User,
+                author: MiniUser,
                 uploadDate: Date = new Date(),
                 showText: Boolean = true)
 

@@ -10,6 +10,20 @@ import org.apache.commons.lang.StringEscapeUtils
 import scala.collection.mutable.ListBuffer
 
 object Utils {
+  /** This should become routes.Application.login */
+  def loginUrl(request: Request[Any]) = {
+    baseUrl(request: Request[Any]) + "/login"
+  }
+
+  /** Return the absolute path to the path */
+  def absoluteUrl(path: String, request: Request[Any]) = {
+    if (path.startsWith("/")) {
+      baseUrl(request: Request[Any]) + path
+    } else {
+      baseUrl(request: Request[Any]) + "/" + path
+    }
+  }
+
   /**
    * Return base url given a request. This will add http or https to the front, for example
    * https://localhost:9443 will be returned if it is using https.

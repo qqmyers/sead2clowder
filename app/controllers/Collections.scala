@@ -348,8 +348,7 @@ class Collections @Inject()(datasets: DatasetService, collections: CollectionSer
             List(("name",collection.name), ("description", collection.description), ("created",dateFormat.format(new Date()))))}
 
           //Add to Events Table
-          val option_user = users.findByIdentity(identity)
-          events.addObjectEvent(option_user, collection.id, collection.name, "create_collection")
+          events.addObjectEvent(user, collection.id, collection.name, "create_collection")
 
           // redirect to collection page
           current.plugin[AdminsNotifierPlugin].foreach{_.sendAdminsNotification(Utils.baseUrl(request), "Collection","added",collection.id.toString,collection.name)}

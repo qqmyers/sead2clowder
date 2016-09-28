@@ -336,36 +336,6 @@ class Datasets @Inject()(
     }
   }
 
-  def addViewer(id: UUID, user: Option[User]) = {
-      user match{
-        case Some(viewer) => {
-          implicit val email = viewer.email
-          email match {
-            case Some(addr) => {
-              implicit val modeluser = users.findByEmail(addr.toString())
-              modeluser match {
-                case Some(muser) => {
-                   muser.viewed match {
-                    case Some(viewList) =>{
-                      users.addUserDatasetView(addr, id)
-                    }
-                    case None => {
-                      val newList: List[UUID] = List(id)
-                      users.createNewListInUser(addr, "viewed", newList)
-                    }
-                  }
-              }
-              case None => {
-                Ok("NOT WORKS")
-              }
-             }
-            }
-          }
-        }
-
-      }
-  }
-
   /**
    * Dataset.
    */

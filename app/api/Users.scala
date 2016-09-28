@@ -28,27 +28,10 @@ class Users @Inject()(users: UserService, events: EventService) extends ApiContr
   @ApiOperation(value = "Return the user associated with the request.",
     responseClass = "User", httpMethod = "GET")
   def getUser() = AuthenticatedAction { implicit request =>
-      request.user match {
-          case Some(identity) => {
-              Logger.debug("Have an identity. It is " + identity)
-              identity.email match {
-                  case Some(emailAddress) => {
-		              users.findByEmail(emailAddress) match {
-		                  case Some(user) => Ok(userToJSON(user))
-		                  //The None case should never happen, as this is a secured action, and requires a user?
-		                  case None => {
-		                      Logger.debug("--------- In the NONE case for findById in getUser")
-		                      Ok(Json.toJson("No user found"))
-		                  }
-		              }
-                  }
-                  case None => Unauthorized("Not authenticated")
-              }
-          }
-          case None => {
-              Unauthorized("Not authenticated")
-          }
-      }
+    request.user match {
+      case Some(x) => Ok(userToJSON(x))
+      case None => Unauthorized("Not authenticated")
+    }
   }
 
   /**
@@ -57,22 +40,9 @@ class Users @Inject()(users: UserService, events: EventService) extends ApiContr
   @ApiOperation(value = "Return a single user.",
     responseClass = "User", httpMethod = "GET")
   def findById(id: UUID) = PermissionAction(Permission.ViewUser, Some(ResourceRef(ResourceRef.user, id))) { implicit request =>
-    users.findById(id) match {
+    users.get(id) match {
       case Some(x) => Ok(userToJSON(x))
       case None => BadRequest("no user found with that id.")
-    }
-  }
-
-  /**
-   * Returns a single user based on the email specified.
-   * @deprecated use findById
-   */
-  @ApiOperation(value = "Return a single user.",
-    responseClass = "User", httpMethod = "GET")
-  def findByEmail(email: String) = PermissionAction(Permission.ViewUser) { implicit request =>
-    users.findByEmail(email) match {
-      case Some(x) => Ok(userToJSON(x))
-      case None => BadRequest("no user found with that email.")
     }
   }
 
@@ -86,14 +56,6 @@ class Users @Inject()(users: UserService, events: EventService) extends ApiContr
     users.updateUserField(id, "fullName", firstName + " " + lastName)
     users.updateUserFullName(id, firstName + " " + lastName)
 
-    Ok(Json.obj("status" -> "success"))
-  }
-
-  /** @deprecated use id instead of email */
-  @ApiOperation(value = "Add a dataset View.",
-    responseClass = "None", httpMethod = "POST")
-  def addUserDatasetView(email: String, dataset: UUID) = PermissionAction(Permission.ViewUser) { implicit request =>
-    users.addUserDatasetView(email, dataset)
     Ok(Json.obj("status" -> "success"))
   }
 
@@ -112,7 +74,7 @@ class Users @Inject()(users: UserService, events: EventService) extends ApiContr
     user match {
       case Some(loggedInUser) => {
         val followerUUID = loggedInUser.id
-        val fullName = users.findById(followeeUUID).map(u => u.fullName).getOrElse("")
+        val fullName = users.get(followeeUUID).map(u => u.fullName).getOrElse("")
         events.addObjectEvent(user, followeeUUID, fullName, "follow_user")
         users.followUser(followeeUUID, followerUUID)
 
@@ -135,7 +97,7 @@ class Users @Inject()(users: UserService, events: EventService) extends ApiContr
     user match {
       case Some(loggedInUser) => {
         val followerUUID = loggedInUser.id
-        val fullName = users.findById(followeeUUID).map(u => u.fullName).getOrElse("")
+        val fullName = users.get(followeeUUID).map(u => u.fullName).getOrElse("")
         events.addObjectEvent(user, followeeUUID, fullName, "unfollow_user")
         users.unfollowUser(followeeUUID, followerUUID)
         Ok(Json.obj("status" -> "success"))
@@ -147,7 +109,7 @@ class Users @Inject()(users: UserService, events: EventService) extends ApiContr
   }
 
   def getTopRecommendations(followeeUUID: UUID, follower: User): List[MiniEntity] = {
-    val followeeModel = users.findById(followeeUUID)
+    val followeeModel = users.get(followeeUUID)
     followeeModel match {
       case Some(followeeModel) => {
         val sourceFollowerIDs = followeeModel.followers

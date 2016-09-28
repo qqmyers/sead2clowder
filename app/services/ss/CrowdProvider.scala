@@ -1,4 +1,4 @@
-package services
+package services.ss
 
 import models.UUID
 import org.joda.time.DateTime

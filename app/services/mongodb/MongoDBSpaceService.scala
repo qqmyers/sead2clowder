@@ -197,7 +197,7 @@ class MongoDBSpaceService @Inject() (
         } else {
           user match {
             case Some(u) => {
-              val author = $and(MongoDBObject("author.identityId.userId" -> u.identityId.userId) ++ MongoDBObject("author.identityId.providerId" -> u.identityId.providerId))
+              val author = MongoDBObject("author._id" -> u.id)
               if (onlyTrial) {
                 statusFilter
               } else if (permissions.contains(Permission.ViewSpace) && play.Play.application().configuration().getBoolean("enablePublic") && showPublic) {

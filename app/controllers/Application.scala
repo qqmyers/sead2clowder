@@ -85,7 +85,7 @@ class Application @Inject() (files: FileService, collections: CollectionService,
         val spacesUser = spaces.listUser(12, Some(clowderUser),request.user.fold(false)(_.superAdminMode), clowderUser)
         var followers: List[(UUID, String, String, String)] = List.empty
         for (followerID <- clowderUser.followers.take(3)) {
-          val userFollower = users.findById(followerID)
+          val userFollower = users.get(followerID)
           userFollower match {
             case Some(uFollower) => {
               val ufEmail = uFollower.email.getOrElse("")

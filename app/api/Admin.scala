@@ -1,10 +1,9 @@
 package api
 
-import java.util.Date
 import javax.inject.Inject
 
 import com.wordnik.swagger.annotations.ApiOperation
-import models.{ClowderUser, Event, UUID}
+import models.{Event, UUID}
 import org.apache.commons.lang3.StringEscapeUtils
 import play.api.libs.concurrent.Akka
 import play.api.mvc.Controller
@@ -34,8 +33,8 @@ class Admin @Inject()(userService: UserService,
    * DANGER: deletes all data, keep users.
    */
   def deleteAllData(resetAll: Boolean) = ServerAdminAction { implicit request =>
-    current.plugin[MongoSalatPlugin].map(_.dropAllData(resetAll))
-    current.plugin[ElasticsearchPlugin].map(_.deleteAll)
+    current.plugin[MongoSalatPlugin].foreach(_.dropAllData(resetAll))
+    current.plugin[ElasticsearchPlugin].foreach(_.deleteAll)
 
     Ok(toJson("done"))
   }
@@ -72,15 +71,15 @@ class Admin @Inject()(userService: UserService,
     Ok(toJson(Map("status" -> "success")))
   }
 
-  def updateConfiguration = ServerAdminAction(parse.json) { implicit request =>
-    getValueString(request.body, "theme").foreach(AppConfiguration.setTheme(_))
-    getValueString(request.body, "displayName").foreach(AppConfiguration.setDisplayName(_))
-    getValueString(request.body, "welcomeMessage").foreach(AppConfiguration.setWelcomeMessage(_))
-    getValueString(request.body, "googleAnalytics").foreach(AppConfiguration.setGoogleAnalytics(_))
-    getValueString(request.body, "sensors").foreach(AppConfiguration.setSensorsTitle(_))
-    getValueString(request.body, "sensor").foreach(AppConfiguration.setSensorTitle(_))
-    getValueString(request.body, "parameters").foreach(AppConfiguration.setParametersTitle(_))
-    getValueString(request.body, "parameter").foreach(AppConfiguration.setParameterTitle(_))
+  def updateConfiguration() = ServerAdminAction(parse.json) { implicit request =>
+    getValueString(request.body, "theme").foreach(AppConfiguration.setTheme)
+    getValueString(request.body, "displayName").foreach(AppConfiguration.setDisplayName)
+    getValueString(request.body, "welcomeMessage").foreach(AppConfiguration.setWelcomeMessage)
+    getValueString(request.body, "googleAnalytics").foreach(AppConfiguration.setGoogleAnalytics)
+    getValueString(request.body, "sensors").foreach(AppConfiguration.setSensorsTitle)
+    getValueString(request.body, "sensor").foreach(AppConfiguration.setSensorTitle)
+    getValueString(request.body, "parameters").foreach(AppConfiguration.setParametersTitle)
+    getValueString(request.body, "parameter").foreach(AppConfiguration.setParameterTitle)
     getValueString(request.body, "tosText").foreach{ tos =>
       events.addEvent(Event(request.user.get, event_type="tos_update"))
       AppConfiguration.setTermsOfServicesText(tos)
@@ -114,10 +113,10 @@ class Admin @Inject()(userService: UserService,
   def users = ServerAdminAction(parse.json) { implicit request =>
     (request.body \ "active").asOpt[List[String]].foreach(list =>
       list.foreach(id =>
-        userService.findById(UUID(id)) match {
-          case Some(u:ClowderUser) => {
+        userService.get(UUID(id)) match {
+          case Some(u) => {
             if (!u.active) {
-              userService.update(u.copy(active=true))
+              userService.save(u.copy(active=true))
               val subject = s"[${AppConfiguration.getDisplayName}] account activated"
               val body = views.html.emails.userActivated(u, active=true)(request)
               util.Mail.sendEmail(subject, request.user, u, body)
@@ -129,10 +128,10 @@ class Admin @Inject()(userService: UserService,
     )
     (request.body \ "inactive").asOpt[List[String]].foreach(list =>
       list.foreach(id =>
-        userService.findById(UUID(id)) match {
-          case Some(u:ClowderUser) => {
+        userService.get(UUID(id)) match {
+          case Some(u) => {
             if (u.active) {
-              userService.update(u.copy(active=false, serverAdmin=false))
+              userService.save(u.copy(active=false, serverAdmin=false))
               val subject = s"[${AppConfiguration.getDisplayName}] account deactivated"
               val body = views.html.emails.userActivated(u, active=false)(request)
               util.Mail.sendEmail(subject, request.user, u, body)
@@ -144,10 +143,10 @@ class Admin @Inject()(userService: UserService,
     )
     (request.body \ "admin").asOpt[List[String]].foreach(list =>
       list.foreach(id =>
-        userService.findById(UUID(id)) match {
-          case Some(u:ClowderUser) if u.active => {
+        userService.get(UUID(id)) match {
+          case Some(u) if u.active => {
             if (!u.serverAdmin) {
-              userService.update(u.copy(serverAdmin=true))
+              userService.save(u.copy(serverAdmin=true))
               val subject = s"[${AppConfiguration.getDisplayName}] admin access granted"
               val body = views.html.emails.userAdmin(u, admin=true)(request)
               util.Mail.sendEmail(subject, request.user, u, body)
@@ -159,10 +158,10 @@ class Admin @Inject()(userService: UserService,
     )
     (request.body \ "unadmin").asOpt[List[String]].foreach(list =>
       list.foreach(id =>
-        userService.findById(UUID(id)) match {
-          case Some(u:ClowderUser) if u.active => {
+        userService.get(UUID(id)) match {
+          case Some(u) if u.active => {
             if (u.serverAdmin) {
-              userService.update(u.copy(serverAdmin=false))
+              userService.save(u.copy(serverAdmin=false))
               val subject = s"[${AppConfiguration.getDisplayName}] admin access revoked"
               val body = views.html.emails.userAdmin(u, admin=true)(request)
               util.Mail.sendEmail(subject, request.user, u, body)
@@ -181,7 +180,7 @@ class Admin @Inject()(userService: UserService,
     responseClass = "None", httpMethod = "POST")
   def reindex = ServerAdminAction { implicit request =>
     Akka.system.scheduler.scheduleOnce(1 seconds) {
-      current.plugin[ElasticsearchPlugin].map(_.deleteAll)
+      current.plugin[ElasticsearchPlugin].foreach(_.deleteAll)
       collections.index(None)
       datasets.index(None)
       files.index(None)

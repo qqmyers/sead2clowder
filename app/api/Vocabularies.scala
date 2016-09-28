@@ -33,8 +33,7 @@ class Vocabularies @Inject() (vocabularyService: VocabularyService, vocabularyTe
 
   def jsonVocabulary(vocabulary: Vocabulary): JsValue = {
     val terms = getVocabularyTerms(vocabulary)
-    val author = vocabulary.author.get.identityId.userId
-    Json.obj("id" -> vocabulary.id.stringify, "author" -> author, "name" -> vocabulary.name, "terms" -> terms, "keys" -> vocabulary.keys.mkString(","),"tags"->vocabulary.tags.mkString(","), "description" -> vocabulary.description, "isPublic" -> vocabulary.isPublic.toString, "spaces" -> vocabulary.spaces.mkString(","))
+    Json.obj("id" -> vocabulary.id.stringify, "author" -> vocabulary.author, "name" -> vocabulary.name, "terms" -> terms, "keys" -> vocabulary.keys.mkString(","),"tags"->vocabulary.tags.mkString(","), "description" -> vocabulary.description, "isPublic" -> vocabulary.isPublic.toString, "spaces" -> vocabulary.spaces.mkString(","))
   }
 
   def getVocabularyTerms(vocabulary: Vocabulary): List[VocabularyTerm] = {
@@ -145,7 +144,7 @@ class Vocabularies @Inject() (vocabularyService: VocabularyService, vocabularyTe
   def list() = PrivateServerAction { implicit request =>
     val user = request.user
     val all_vocabs = vocabularyService.listAll()
-    val vocabs = all_vocabs.filter(( v : Vocabulary) =>( v.author.get.identityId.userId == user.get.identityId.userId )).map((v: Vocabulary) => jsonVocabulary(v))
+    val vocabs = all_vocabs.filter(( v : Vocabulary) => v.author.get.id == user.get.id).map((v: Vocabulary) => jsonVocabulary(v))
 
     Ok(toJson(vocabs))
   }

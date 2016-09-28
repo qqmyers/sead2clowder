@@ -135,15 +135,15 @@ object Permission extends Enumeration {
   /** Returns true if the user is the owner of the resource, this function is used in the code for checkPermission as well. */
   def checkOwner(user: User, resourceRef: ResourceRef): Boolean = {
     resourceRef match {
-      case ResourceRef(ResourceRef.file, id) => files.get(id).exists(x => users.findById(x.author.id).exists(_.id == user.id))
-      case ResourceRef(ResourceRef.collection, id) => collections.get(id).exists(x => users.findById(x.author.id).exists(_.id == user.id))
-      case ResourceRef(ResourceRef.dataset, id) => datasets.get(id).exists(x => users.findById(x.author.id).exists(_.id == user.id))
+      case ResourceRef(ResourceRef.file, id) => files.get(id).exists(x => users.get(x.author.id).exists(_.id == user.id))
+      case ResourceRef(ResourceRef.collection, id) => collections.get(id).exists(x => users.get(x.author.id).exists(_.id == user.id))
+      case ResourceRef(ResourceRef.dataset, id) => datasets.get(id).exists(x => users.get(x.author.id).exists(_.id == user.id))
       case ResourceRef(ResourceRef.space, id) => spaces.get(id).exists(_.creator == user.id)
-      case ResourceRef(ResourceRef.comment, id) => comments.get(id).exists(x => users.findById(x.author.id).exists(_.id == user.id))
-      case ResourceRef(ResourceRef.curationObject, id) => curations.get(id).exists(x => users.findById(x.author.id).exists(_.id == user.id))
-      case ResourceRef(ResourceRef.curationFile, id) => curations.getCurationFiles(List(id)).exists(x => users.findById(x.author.id).exists(_.id == user.id))
+      case ResourceRef(ResourceRef.comment, id) => comments.get(id).exists(x => users.get(x.author.id).exists(_.id == user.id))
+      case ResourceRef(ResourceRef.curationObject, id) => curations.get(id).exists(x => users.get(x.author.id).exists(_.id == user.id))
+      case ResourceRef(ResourceRef.curationFile, id) => curations.getCurationFiles(List(id)).exists(x => users.get(x.author.id).exists(_.id == user.id))
       case ResourceRef(ResourceRef.metadata, id) => metadatas.getMetadataById(id).exists(_.creator.id == user.id)
-      case ResourceRef(ResourceRef.vocabulary, id) => vocabularies.get(id).exists(x => users.findByIdentity(x.author.get).exists(_.id == user.id))
+      case ResourceRef(ResourceRef.vocabulary, id) => vocabularies.get(id).exists(x => users.get(x.author.get.id).exists(_.id == user.id))
       case ResourceRef(_, _) => false
     }
   }
@@ -248,7 +248,7 @@ object Permission extends Enumeration {
 
   def checkPermission(user: User, permission: Permission, resourceRef: ResourceRef): Boolean = {
     // check if user is owner, in that case they can do what they want.
-    if (checkOwner(users.findByIdentity(user), resourceRef)) return true
+    if (checkOwner(Some(user), resourceRef)) return true
     if (user.superAdminMode) return true
 
     resourceRef match {
@@ -287,15 +287,13 @@ object Permission extends Enumeration {
         }
       }
       case ResourceRef(ResourceRef.file, id) => {
-        for (clowderUser <- getUserByIdentity(user)) {
-          datasets.findByFileId(id).foreach { dataset =>
-            if ((dataset.isPublic || (dataset.isDefault && dataset.spaces.find(sid => spaces.get(sid).exists(_.isPublic)).nonEmpty))
-              && READONLY.contains(permission)) return true
-            dataset.spaces.map{
-              spaceId => for(role <- users.getUserRoleInSpace(clowderUser.id, spaceId)) {
-                if(role.permissions.contains(permission.toString))
-                  return true
-              }
+        datasets.findByFileId(id).foreach { dataset =>
+          if ((dataset.isPublic || (dataset.isDefault && dataset.spaces.find(sid => spaces.get(sid).exists(_.isPublic)).nonEmpty))
+            && READONLY.contains(permission)) return true
+          dataset.spaces.foreach{
+            spaceId => for(role <- users.getUserRoleInSpace(user.id, spaceId)) {
+              if(role.permissions.contains(permission.toString))
+                return true
             }
           }
           folders.findByFileId(id).foreach { folder =>
@@ -303,7 +301,7 @@ object Permission extends Enumeration {
               if ((dataset.isPublic || (dataset.isDefault && dataset.spaces.find(sid => spaces.get(sid).exists(_.isPublic)).nonEmpty))
                 && READONLY.contains(permission)) return true
               dataset.spaces.map {
-                spaceId => for(role <- users.getUserRoleInSpace(clowderUser.id, spaceId)) {
+                spaceId => for(role <- users.getUserRoleInSpace(user.id, spaceId)) {
                   if(role.permissions.contains(permission.toString))
                     return true
                 }
@@ -319,12 +317,10 @@ object Permission extends Enumeration {
           case Some(dataset) => {
             if ((dataset.isPublic || (dataset.isDefault && dataset.spaces.find(sid => spaces.get(sid).exists(_.isPublic)).nonEmpty))
               && READONLY.contains(permission)) return true
-            for (clowderUser <- getUserByIdentity(user)) {
-              dataset.spaces.map {
-                spaceId => for (role <- users.getUserRoleInSpace(clowderUser.id, spaceId)) {
-                  if (role.permissions.contains(permission.toString))
-                    return true
-                }
+            dataset.spaces.foreach {
+              spaceId => for (role <- users.getUserRoleInSpace(user.id, spaceId)) {
+                if (role.permissions.contains(permission.toString))
+                  return true
               }
             }
             false
@@ -338,12 +334,10 @@ object Permission extends Enumeration {
             if ((collection.spaces.find(sid => spaces.get(sid).exists(_.isPublic)).nonEmpty)
               && READONLY.contains(permission)) return true
 
-              for (clowderUser <- getUserByIdentity(user)) {
-              collection.spaces.map {
-                spaceId => for (role <- users.getUserRoleInSpace(clowderUser.id, spaceId)) {
-                  if (role.permissions.contains(permission.toString))
-                    return true
-                }
+            collection.spaces.foreach {
+              spaceId => for (role <- users.getUserRoleInSpace(user.id, spaceId)) {
+                if (role.permissions.contains(permission.toString))
+                  return true
               }
             }
             false
@@ -355,8 +349,7 @@ object Permission extends Enumeration {
           case None => false
           case Some(space) => {
             if (space.isPublic && READONLY.contains(permission)) return true
-            val hasPermission: Option[Boolean] = for {clowderUser <- getUserByIdentity(user)
-                                                      role <- users.getUserRoleInSpace(clowderUser.id, space.id)
+            val hasPermission: Option[Boolean] = for {role <- users.getUserRoleInSpace(user.id, space.id)
                                                       if role.permissions.contains(permission.toString)
             } yield true
             hasPermission getOrElse(false)
@@ -367,12 +360,10 @@ object Permission extends Enumeration {
         vocabularies.get(id) match {
           case None => false
           case Some(vocab) => {
-            for (clowderUser <- getUserByIdentity(user)) {
-              vocab.spaces.map {
-                vocabId => for (role <- users.getUserRoleInSpace(clowderUser.id, vocabId)) {
-                  if (role.permissions.contains(permission.toString))
-                    return true
-                }
+            vocab.spaces.foreach {
+              vocabId => for (role <- users.getUserRoleInSpace(user.id, vocabId)) {
+                if (role.permissions.contains(permission.toString))
+                  return true
               }
             }
             false
@@ -383,12 +374,10 @@ object Permission extends Enumeration {
         vocabularyterms.get(id) match {
           case None => false
           case Some(vocabterm) => {
-            for (clowderUser <- getUserByIdentity(user)) {
-              vocabterm.spaces.map {
-                vocabTermId => for (role <- users.getUserRoleInSpace(clowderUser.id, vocabTermId)) {
-                  if (role.permissions.contains(permission.toString))
-                    return true
-                }
+            vocabterm.spaces.foreach {
+              vocabTermId => for (role <- users.getUserRoleInSpace(user.id, vocabTermId)) {
+                if (role.permissions.contains(permission.toString))
+                  return true
               }
             }
             false
@@ -437,7 +426,7 @@ object Permission extends Enumeration {
               true
             } else {
               var returnValue = false
-              u.spaceandrole.map { space_role =>
+              u.spaceandrole.foreach { space_role =>
                 if (space_role.role.permissions.contains(permission.toString)) {
                   returnValue =  true
                 }
@@ -459,8 +448,6 @@ object Permission extends Enumeration {
       }
     }
   }
-
-  def getUserByIdentity(identity: User): Option[User] = users.findByIdentity(identity)
 
   /** on a private server this will return true iff user logged in, on public server this will always be true */
   def checkPrivateServer(user: Option[User]): Boolean = {

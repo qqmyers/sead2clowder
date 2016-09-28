@@ -4,7 +4,7 @@ import javax.inject.Inject
 
 import api.UserRequest
 import com.novus.salat.dao.{ModelCompanion, SalatDAO}
-import models.{Tag, UUID}
+import models.{Tag, UUID, User}
 import org.bson.types.ObjectId
 import play.api.Logger
 import play.api.Play.current
@@ -51,10 +51,8 @@ class MongoDBTagService @Inject()(files: FileService, datasets: DatasetService, 
    */
   def checkErrorsForTag(obj_type: TagCheckObjType, id: UUID, request: UserRequest[JsValue]): TagCheck = {
     val userObj = request.user
-    Logger.debug("checkErrorsForTag: user id: " + userObj.get.identityId.userId + ", user.firstName: " + userObj.get.firstName
-      + ", user.LastName: " + userObj.get.lastName + ", user.fullName: " + userObj.get.fullName)
-    val userId = userObj.get.identityId.userId
-    if (USERID_ANONYMOUS == userId) {
+    val anonymous = userObj.fold(false)(_.id.equals(User.anonymous.id))
+    if (anonymous) {
       Logger.debug("checkErrorsForTag: The user id is \"anonymous\".")
     }
 
@@ -80,14 +78,14 @@ class MongoDBTagService @Inject()(files: FileService, datasets: DatasetService, 
       }
     }
     if ("" == error_str) {
-      if (USERID_ANONYMOUS == userId) {
+      if (anonymous) {
         val eid = request.body.\("extractor_id").asOpt[String]
         eid match {
           case Some(extractor_id) => extractorOpt = eid
           case None => error_str = "No \"extractor_id\" specified, request.body: " + request.body.toString
         }
       } else {
-        userOpt = Option(userId)
+        userOpt = userObj.map(_.id.stringify)
       }
     }
     val tagCheck = new TagCheck

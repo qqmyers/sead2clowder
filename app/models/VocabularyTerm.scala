@@ -2,11 +2,10 @@ package models
 
 import java.util.Date
 import play.api.libs.json.{Json, JsValue, Writes}
-import securesocial.core.Identity
 
 case class VocabularyTerm(
   id : UUID = UUID.generate(),
-  author : Option[Identity],
+  author : Option[MiniUser],
   created : Date = new Date(),
   key : String,
   units : String = "",

@@ -1,25 +1,17 @@
 package controllers
 
-import play.api.Logger
-import play.api.mvc.{Action}
-import securesocial.core.{UserService, SecureSocial}
+import play.api.mvc.Action
+import services.ss.SecureSocialUser
 
 /**
-  * Login class for checking if User is still logged through the securesocial.controllers.
+  * Login class for checking if User is still logged in.
   */
 class Login extends SecuredController {
-  def isLoggedIn() = Action { implicit request =>
-    val result = for (
-      authenticator <- SecureSocial.authenticatorFromRequest(request);
-      identity <- UserService.find(authenticator.identityId)
-    ) yield {
-      // we should be able to use the authenticator.timedOut directly but it never returns true
-      identity
-    }
-
-    result match {
-      case Some(a) => Ok("yes")
-      case None => Ok("no")
+  def isLoggedIn = Action { implicit request =>
+    if (SecureSocialUser.checkUser(request)) {
+      Ok("yes")
+    } else {
+      Ok("no")
     }
   }
 }

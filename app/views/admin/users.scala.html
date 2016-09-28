@@ -4,7 +4,7 @@
     <tr id="@u.id">
         <td><a href="@routes.Profile.viewProfileUUID(u.id)">@u.fullName</a></td>
         <td>@u.email.getOrElse("")</td>
-        <td>@u.identityId.providerId</td>
+        <td>@u.provider</td>
         @if(user.fold("")(_.id.stringify) == u.id.stringify) {
             @if(u.active) {
                 <td><input class="active" type="checkbox" id="active-@u.id" data-original=true disabled checked title="Can not change yourself"></td>

@@ -40,7 +40,7 @@ class ExtractionAPIControllerSpec extends PlaySpec with OneAppPerSuite {
     "services.mongodb.MongoDBAuthenticatorStore",
     "securesocial.core.DefaultIdGenerator",
     "securesocial.core.providers.utils.DefaultPasswordValidator",
-    "services.SecureSocialTemplatesPlugin",
+    "services.ss.SecureSocialTemplatesPlugin",
     "services.mongodb.MongoUserService",
     "securesocial.core.providers.utils.BCryptPasswordHasher",
     "securesocial.core.providers.UsernamePasswordProvider",

@@ -545,7 +545,7 @@ object FileUtils {
     // get the real user
     val realUser = if (!originalZipFile.equals("")) {
       files.get(new UUID(originalZipFile)) match {
-        case Some(originalFile) => userService.findById(originalFile.id).fold(file.author)(_.getMiniUser)
+        case Some(originalFile) => userService.get(originalFile.id).fold(file.author)(_.getMiniUser)
         case None => file.author
       }
     } else {

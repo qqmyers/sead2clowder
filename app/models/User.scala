@@ -5,121 +5,26 @@ import java.security.MessageDigest
 import java.util.Date
 
 import play.api.Play.configuration
-import play.api.libs.json.Json
-import securesocial.core._
-import services.AppConfiguration
+import play.api.libs.json._
+import play.api.libs.functional.syntax._
+
+import scala.language.implicitConversions
 
 /**
- * Simple class to capture basic User Information. This is similar to Identity in securesocial
- *
- */
-trait User extends Identity {
-  def id: UUID
-  def active: Boolean
-  def serverAdmin: Boolean
-  def profile: Option[Profile]
-  def friends: Option[List[String]]
-  def followedEntities: List[TypedID]
-  def followers: List[UUID]
-  def viewed: Option[List[UUID]]
-  def spaceandrole: List[UserSpaceAndRole]
-  def repositoryPreferences: Map[String,Any]
-  def termsOfServices: Option[UserTermsOfServices]
-
-  // One can only be superAdmin iff you are a serveradmin
-  def superAdminMode: Boolean
-
-  /**
-   * Get the avatar URL for this user's profile
-   * If user has no avatar URL, this will return a unique URL based on
-   * the hash of this user's email address. Gravatar provide an image
-   * as specified in application.conf
-   *
-   * @return Full gravatar URL for the user's profile picture
-   */
-  def getAvatarUrl(size: Integer = 256): String = {
-    val default_gravatar = configuration.getString("default_gravatar").getOrElse("")
-
-    if (profile.isDefined && profile.get.avatarUrl.isDefined) {
-      profile.get.avatarUrl.get
-    } else if (avatarUrl.isDefined) {
-      avatarUrl.get
-    } else {
-      s"http://www.gravatar.com/avatar/${getEmailHash}?s=${size}&d=${default_gravatar}"
-    }
-  }
-
-  /**
-   * @return lower case md5 hash of the user's email
-   */
-  def getEmailHash: String = {
-    MessageDigest.getInstance("MD5")
-      .digest(email.getOrElse("").getBytes("UTF-8"))
-      .map("%02X".format(_))
-      .mkString
-      .toLowerCase
-  }
-
-  def getFollowedObjectList(objectType : String) : List[TypedID] = {
-    followedEntities.filter { x => x.objectType == objectType }
-  }
-
-  /**
-  * return MiniUser constructed from the user model
+  * User definition
   */
-  def getMiniUser: MiniUser = {
-    new MiniUser(id = id, fullName = fullName, avatarURL = getAvatarUrl(), email = email)
-  }
-
-  override def toString: String = format(false)
-
-  def format(paren: Boolean): String = {
-    val e = email.fold(" ")(x => s""" <${x}> """)
-    val x = (identityId.providerId) match {
-      case ("userpass") => s"""${fullName}${e}[Local Account]"""
-      case (provider) => s"""${fullName}${e}[${provider.capitalize}]"""
-    }
-    if (paren) {
-      x.replaceAll("<", "(").replaceAll(">", ")")
-    } else {
-      x
-    }
-  }
-}
-
-object User {
-  def anonymous = new ClowderUser(UUID("000000000000000000000000"),
-    new IdentityId("anonymous", ""),
-    firstName="Anonymous",
-    lastName="User",
-    fullName="Anonymous User",
-    email=None,
-    authMethod=AuthenticationMethod("SystemUser"),
-    active=true,
-    termsOfServices=Some(UserTermsOfServices(accepted=true, acceptedDate=new Date(), "")))
-  implicit def userToMiniUser(x: User): MiniUser = x.getMiniUser
-}
-
-case class MiniUser(
-   id: UUID,
-   fullName: String,
-   avatarURL: String,
-   email: Option[String])
-
-case class ClowderUser(
+case class User(
   id: UUID = UUID.generate(),
 
-  // securesocial identity
-  identityId: IdentityId,
+  // information about user
   firstName: String,
   lastName: String,
   fullName: String,
-  email: Option[String],
-  authMethod: AuthenticationMethod,
+  email: Option[String] = None,
   avatarUrl: Option[String] = None,
-  oAuth1Info: Option[OAuth1Info] = None,
-  oAuth2Info: Option[OAuth2Info] = None,
-  passwordInfo: Option[PasswordInfo] = None,
+
+  // what provider did they use to login/create account
+  provider: Provider,
 
   // should user be active
   active: Boolean = false,
@@ -138,19 +43,129 @@ case class ClowderUser(
   followers: List[UUID] = List.empty,
   friends: Option[List[String]] = None,
 
-  // social
-  viewed: Option[List[UUID]] = None,
-
-  // spaces
+  // spaces and roles
   spaceandrole: List[UserSpaceAndRole] = List.empty,
 
   //staging area
   repositoryPreferences: Map[String,Any] = Map.empty,
 
   // terms of service
-  termsOfServices: Option[UserTermsOfServices] = None
+  termsOfServices: Option[UserTermsOfServices] = None,
 
-) extends User
+  // social information
+  socialInformation: SocialInformation = SocialInformation()) {
+
+  /**
+    * Get the avatar URL for this user's profile
+    * If user has no avatar URL, this will return a unique URL based on
+    * the hash of this user's email address. Gravatar provide an image
+    * as specified in application.conf
+    *
+    * @return Full gravatar URL for the user's profile picture
+    */
+  def getAvatarUrl(size: Integer = 256): String = {
+    val default_gravatar = configuration.getString("default_gravatar").getOrElse("")
+
+    if (profile.isDefined && profile.get.avatarUrl.isDefined) {
+      profile.get.avatarUrl.get
+    } else if (avatarUrl.isDefined) {
+      avatarUrl.get
+    } else {
+      s"http://www.gravatar.com/avatar/${getEmailHash}?s=${size}&d=${default_gravatar}"
+    }
+  }
+
+  /**
+    * @return lower case md5 hash of the user's email
+    */
+  def getEmailHash: String = {
+    MessageDigest.getInstance("MD5")
+      .digest(email.headOption.getOrElse("").getBytes("UTF-8"))
+      .map("%02X".format(_))
+      .mkString
+      .toLowerCase
+  }
+
+  def getFollowedObjectList(objectType : String) : List[TypedID] = {
+    followedEntities.filter { x => x.objectType == objectType }
+  }
+
+  /**
+    * return MiniUser constructed from the user model
+    */
+  def getMiniUser: MiniUser = {
+    MiniUser(id = id, fullName = fullName, avatarURL = getAvatarUrl(), email = email.headOption)
+  }
+
+  override def toString: String = format(false)
+
+  def format(paren: Boolean): String = {
+    val e = email.headOption.fold(" ")(x => s""" <${x}> """)
+    val x = s"""${fullName}${e}[${provider}]"""
+    if (paren) {
+      x.replaceAll("<", "(").replaceAll(">", ")")
+    } else {
+      x
+    }
+  }
+}
+
+object User {
+  def anonymous = new User(UUID("000000000000000000000000"),
+    firstName = "Anonymous",
+    lastName = "User",
+    fullName = "Anonymous User",
+    email = None,
+    active = true,
+    provider = Provider("", ""),
+    termsOfServices = Some(UserTermsOfServices(accepted=true, acceptedDate=new Date(), "")))
+
+  implicit def userToMiniUser(x: User): MiniUser = x.getMiniUser
+}
+
+case class Provider(
+  providerId: String,
+  userId: String) {
+
+  override def toString: String = {
+    providerId match {
+      case "google" => "Google+"
+      case p => p.capitalize
+    }
+  }
+
+  def link(): Option[String] = {
+    providerId match {
+      case "google" => Some(s"https://plus.google.com/${userId}")
+      case "twitter" => Some(s"https://twitter.com/intent/user?user_id=${userId}}")
+      case "facebook" => Some(s"https://www.facebook.com/app_scoped_user_id/${userId}")
+      case "orcid" => Some("https://orcid.org/${id}")
+      case _ => None
+    }
+  }
+
+  def icon(): Option[String] = {
+    providerId match {
+      case "userpass" => None
+      case _ => Some(controllers.routes.Assets.at("securesocial/images/providers/" + providerId + ".png").toString)
+    }
+  }
+}
+
+case class MiniUser(
+   id: UUID,
+   fullName: String,
+   avatarURL: String,
+   email: Option[String])
+
+object MiniUser {
+  implicit val miniUserFormat: Format[MiniUser] = (
+    (__ \ "id").format[UUID] and
+    (__ \ "fullName").format[String] and
+    (__ \ "avatarUrl").format[String] and
+    (__ \ "email").format[Option[String]]
+  ) (MiniUser.apply, unlift(MiniUser.unapply))
+}
 
 case class Profile(
   avatarUrl: Option[String] = None,
@@ -178,3 +193,7 @@ case class UserTermsOfServices(
   acceptedDate: Date = null,
   acceptedVersion: String = ""
 )
+
+case class SocialInformation(
+  lastLogin: Date = new Date(),
+  loginCount: Long = 0)

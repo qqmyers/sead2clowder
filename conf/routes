@@ -36,9 +36,6 @@ GET            /login/isLoggedIn                                                
 # ----------------------------------------------------------------------
 # PROFILE
 # ----------------------------------------------------------------------
-# deprecated use profile/:uuid
-GET            /profile/viewProfile                                                     @controllers.Profile.viewProfile(email: Option[String])
-# deprecated use profile/:uuid
 GET            /profile/viewProfile/:uuid                                               @controllers.Profile.viewProfileUUID(uuid: UUID)
 GET            /profile/editProfile                                                     @controllers.Profile.editProfile
 POST           /profile/submitChanges                                                   @controllers.Profile.submitChanges
@@ -209,7 +206,7 @@ GET            /logout                                                          
 GET            /signup                                                                  securesocial.controllers.Registration.startSignUp
 POST           /signup                                                                  securesocial.controllers.Registration.handleStartSignUp
 GET            /signup/:token                                                           securesocial.controllers.Registration.signUp(token)
-POST           /signup/:token                                                           @controllers.Registration.handleSignUp(token)
+POST           /signup/:token                                                           securesocial.controllers.Registration.handleSignUp(token)
 GET            /reset                                                                   securesocial.controllers.Registration.startResetPassword
 POST           /reset                                                                   securesocial.controllers.Registration.handleStartResetPassword
 GET            /reset/:token                                                            securesocial.controllers.Registration.resetPassword(token)
@@ -667,11 +664,9 @@ POST           /api/institutions/addinstitution                                 
 # USERS API
 # ----------------------------------------------------------------------
 GET            /api/users                                                               @api.Users.list
-GET            /api/users/email/:email                                                  @api.Users.findByEmail(email: String)
 GET            /api/users/:id                                                           @api.Users.findById(id: UUID)
 GET            /api/me                                                                  @api.Users.getUser()
 POST           /api/users/:id/updateName                                                @api.Users.updateName(id: UUID, firstName: String, lastName: String)
-POST           /api/users/addUserDatasetView                                            @api.Users.addUserDatasetView(email: String, dataset: UUID)
 POST           /api/users/createNewListInUser                                           @api.Users.createNewListInUser(email: String, field: String, fieldList: List[String])
 POST           /api/users/createNewListInUser                                           @api.Users.createNewListInUser(email: String, field: String, fieldList: List[String])
 POST           /api/users/follow                                                        @api.Users.follow(followeeUUID: UUID)

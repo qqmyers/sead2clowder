@@ -57,7 +57,7 @@ class CurationObjects @Inject()(datasets: DatasetService,
               "Creation Date" -> Json.toJson(format.format(file.uploadDate)),
               "Label" -> Json.toJson(file.filename),
               "Title" -> Json.toJson(file.filename),
-              "Uploaded By" -> Json.toJson(userService.findById(file.author.id).map ( usr => Json.toJson(file.author.fullName + ": " +  api.routes.Users.findById(usr.id).absoluteURL(https)))),
+              "Uploaded By" -> Json.toJson(userService.get(file.author.id).map ( usr => Json.toJson(file.author.fullName + ": " +  api.routes.Users.findById(usr.id).absoluteURL(https)))),
               "Size" -> Json.toJson(size),
               "Mimetype" -> Json.toJson(file.contentType),
               "Publication Date" -> Json.toJson(""),
@@ -109,7 +109,7 @@ class CurationObjects @Inject()(datasets: DatasetService,
               "comment_body" -> Json.toJson(comm.text),
               "comment_date" -> Json.toJson(format.format(comm.posted)),
               "Identifier" -> Json.toJson("urn:uuid:"+comm.id),
-              "comment_author" -> Json.toJson(userService.findById(comm.author.id).map ( usr => Json.toJson(usr.fullName + ": " +  api.routes.Users.findById(usr.id).absoluteURL(https))))
+              "comment_author" -> Json.toJson(userService.get(comm.author.id).map ( usr => Json.toJson(usr.fullName + ": " +  api.routes.Users.findById(usr.id).absoluteURL(https))))
             ))
           }
           var metadataList = scala.collection.mutable.ListBuffer.empty[MetadataPair]
@@ -217,7 +217,7 @@ class CurationObjects @Inject()(datasets: DatasetService,
                   "Label" -> Json.toJson(c.name),
                   "Title" -> Json.toJson(c.name),
                   "Dataset Description" -> Json.toJson(c.description),
-                  "Uploaded By" -> Json.toJson(userService.findById(c.author.id).map ( usr => Json.toJson(usr.fullName + ": " + api.routes.Users.findById(usr.id).absoluteURL(https)))),
+                  "Uploaded By" -> Json.toJson(userService.get(c.author.id).map ( usr => Json.toJson(usr.fullName + ": " + api.routes.Users.findById(usr.id).absoluteURL(https)))),
                   "Publication Date" -> Json.toJson(publicationDate),
                   "Published In" -> Json.toJson(""),
                   "External Identifier" -> Json.toJson(""),
@@ -231,7 +231,7 @@ class CurationObjects @Inject()(datasets: DatasetService,
                   "Publishing Project"-> Json.toJson(controllers.routes.Spaces.getSpace(c.space).absoluteURL(https))
                 )),
               "Creation Date" -> Json.toJson(format.format(c.created)),
-              "Uploaded By" -> Json.toJson(userService.findById(c.author.id).map ( usr => Json.toJson(usr.fullName + ": " +  api.routes.Users.findById(usr.id).absoluteURL(https)))),
+              "Uploaded By" -> Json.toJson(userService.get(c.author.id).map ( usr => Json.toJson(usr.fullName + ": " +  api.routes.Users.findById(usr.id).absoluteURL(https)))),
               "@type" -> Json.toJson("ResourceMap"),
               "@id" -> Json.toJson(api.routes.CurationObjects.getCurationObjectOre(curationId).absoluteURL(https))
             )

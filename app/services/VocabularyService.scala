@@ -1,9 +1,7 @@
 package services
 
 
-import com.novus.salat.dao.SalatMongoCursor
-import models.{VocabularyTerm, UUID, Vocabulary}
-import securesocial.core.Identity
+import models.{MiniUser, UUID, Vocabulary}
 
 import scala.util.Try
 
@@ -24,9 +22,9 @@ trait VocabularyService {
 
   def getByName(name : String ) : List[Vocabulary]
 
-  def getByAuthor(author: Identity) : List[Vocabulary]
+  def getByAuthor(author: MiniUser) : List[Vocabulary]
 
-  def getByAuthorAndName(author : Identity, name : String) : List[Vocabulary]
+  def getByAuthorAndName(author : MiniUser, name : String) : List[Vocabulary]
 
   def delete(id: UUID) : Try[Unit]
 

@@ -1,8 +1,8 @@
-package services
+package services.ss
 
+import play.api.libs.json.JsObject
 import play.api.libs.ws.WS
 import play.api.{Application, Logger}
-import play.api.libs.json.JsObject
 import securesocial.core._
 
 

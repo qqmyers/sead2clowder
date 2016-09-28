@@ -11,21 +11,16 @@ import com.novus.salat.dao.{SalatDAO, ModelCompanion}
 import com.mongodb.casbah.Imports._
 import play.api.Play._
 import securesocial.core.IdentityId
-import scala.Some
 import org.joda.time.DateTime
 import MongoContext.context
 
-/**
- * Track securesocial authenticated users in MongoDB.
- *
- *
- */
+/** Track securesocial authenticated users in MongoDB. */
 case class LocalAuthenticator(
-                               authenticatorId: String,
-                               identityId: IdentityId,
-                               creationDate: Date,
-                               lastUsed: Date,
-                               expirationDate: Date)
+  authenticatorId: String,
+  identityId: IdentityId,
+  creationDate: Date,
+  lastUsed: Date,
+  expirationDate: Date)
 
 object AuthenticatorDAO extends ModelCompanion[LocalAuthenticator, ObjectId] {
 
@@ -60,6 +55,7 @@ object AuthenticatorDAO extends ModelCompanion[LocalAuthenticator, ObjectId] {
   }
 
 }
+
 class MongoDBAuthenticatorStore(app: Application) extends AuthenticatorStore(app) {
   
   def save(authenticator: Authenticator): Either[Error, Unit] = {
@@ -78,5 +74,4 @@ class MongoDBAuthenticatorStore(app: Application) extends AuthenticatorStore(app
     AuthenticatorDAO.delete(id)
     Right(())
   }
-
 }

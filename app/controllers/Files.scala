@@ -499,8 +499,7 @@ def uploadExtract() =
 	        val uploadedFile = f
 	        file match {
 	          case Some(f) => {
-              val option_user = users.findByIdentity(identity)
-              events.addObjectEvent(option_user, f.id, f.filename, "upload_file")
+              events.addObjectEvent(user, f.id, f.filename, "upload_file")
 	            if(showPreviews.equals("FileLevel"))
 	                	flags = flags + "+filelevelshowpreviews"
 	            else if(showPreviews.equals("None"))

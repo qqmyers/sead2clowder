@@ -51,7 +51,7 @@ class Profile @Inject() (users: UserService, files: FileService, datasets: Datas
     implicit val user = request.user
     val viewerUser = request.user
     var ownProfile: Option[Boolean] = None
-    val muser = users.findById(uuid)
+    val muser = users.get(uuid)
 
     muser match {
       case Some(existingUser) => {
@@ -73,18 +73,6 @@ class Profile @Inject() (users: UserService, files: FileService, datasets: Datas
       case None => {
         Logger.error("no user model exists for " + uuid.stringify)
         BadRequest("no user model exists for " + uuid.stringify)
-      }
-    }
-  }
-  /** @deprecated use viewProfileUUID(uuid) */
-  def viewProfile(email: Option[String]) = AuthenticatedAction { implicit request =>
-    implicit val user = request.user
-
-    users.findByEmail(email.getOrElse("")) match {
-      case Some(user) => Redirect(routes.Profile.viewProfileUUID(user.id))
-      case None => {
-        Logger.error("no user model exists for " + email.getOrElse(""))
-        BadRequest("no user model exists for " + email.getOrElse(""))
       }
     }
   }

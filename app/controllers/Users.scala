@@ -1,26 +1,12 @@
 package controllers
 
-import java.util.UUID
-
-import com.typesafe.plugin._
-import models.User
-import org.joda.time.DateTime
-import play.api.Play.current
 import play.api.data.Form
 import play.api.data.Forms._
 import play.api.data.validation.{Constraint, Invalid, Valid, ValidationError}
-import play.api.i18n.Messages
-import play.api.Play
-import securesocial.controllers.TemplatesPlugin
-import securesocial.core.providers.utils.Mailer
-import securesocial.core.providers.{Token, UsernamePasswordProvider}
-import services.AppConfiguration
 import javax.inject.Inject
 
-import play.api.http.Status._
 import services.UserService
-import play.api.mvc.{Action, Results}
-import util.{Direction, Formatters, Mail}
+import play.api.mvc.Results
 
 /**
  * Manage users.
@@ -28,19 +14,6 @@ import util.{Direction, Formatters, Mail}
 class Users @Inject() (users: UserService) extends SecuredController {
   //Custom signup initiation code, to be used if config is set to send signup link emails to admins to forward to users
 
-  val TokenDurationKey = securesocial.controllers.Registration.TokenDurationKey
-  val DefaultDuration = securesocial.controllers.Registration.DefaultDuration
-  val TokenDuration = Play.current.configuration.getInt(TokenDurationKey).getOrElse(DefaultDuration)
-
-  val RegistrationEnabled = "securesocial.registrationEnabled"
-  lazy val registrationEnabled = current.configuration.getBoolean(RegistrationEnabled).getOrElse(true)
-
-  val onHandleStartSignUpGoTo = securesocial.controllers.Registration.onHandleStartSignUpGoTo
-  val Success = securesocial.controllers.Registration.Success
-  val ThankYouCheckEmail = securesocial.core.providers.utils.Mailer.SignUpEmailSubject
-  
-  val SignUpEmailSubject = "mails.sendSignUpEmail.subject"
-  
   val Email = "email"
   val startForm = Form (
     Email -> email.verifying(Constraint[String] {
@@ -52,22 +25,6 @@ class Users @Inject() (users: UserService) extends SecuredController {
       }
     })
   )
-
-  private def createToken(email: String, isSignUp: Boolean): (String, Token) = {
-    val uuid = UUID.randomUUID().toString
-    val now = DateTime.now
-
-    val token = Token(
-      uuid, email,
-      now,
-      now.plusMinutes(TokenDuration),
-      isSignUp = isSignUp
-    )
-    securesocial.core.UserService.save(token)
-    (uuid, token)
-  }
-
-
 
   def getFollowing(index: Int, limit: Int) = AuthenticatedAction { implicit request =>
     implicit val user = request.user
@@ -86,7 +43,7 @@ class Users @Inject() (users: UserService) extends SecuredController {
             val followedUser = users.get(tidObject.id)
             followedUser match {
               case Some(fuser) => {
-                followedUsers = followedUsers.++(List((fuser.id, fuser.fullName, fuser.email.getOrElse(""), fuser.getAvatarUrl())))
+                followedUsers = followedUsers.++(List((fuser.id, fuser.fullName, fuser.email.headOption.getOrElse(""), fuser.getAvatarUrl())))
               }
               case None =>
             }
@@ -106,14 +63,14 @@ class Users @Inject() (users: UserService) extends SecuredController {
     implicit val user = request.user
     user match {
       case Some(clowderUser) => {
-        val nextPage = (when == "a")
+        val nextPage = when == "a"
         val dbusers: List[models.User] = if(id != "") {
           users.list(Some(id), nextPage, limit)
         } else {
           users.list(None, nextPage, limit)
         }
 
-        val usersList = dbusers.map(usr => (usr.id, usr.fullName, usr.email.getOrElse(""), usr.getAvatarUrl()))
+        val usersList = dbusers.map(usr => (usr.id, usr.fullName, usr.email.headOption.getOrElse(""), usr.getAvatarUrl()))
 
         //Check if there is a prev page
         val prev = if(dbusers.nonEmpty && id != "") {
@@ -159,10 +116,10 @@ class Users @Inject() (users: UserService) extends SecuredController {
           -1
         }
         for (followerID <- followersToUse) {
-          val userFollower = users.findById(followerID)
+          val userFollower = users.get(followerID)
           userFollower match {
             case Some(uFollower) => {
-              val ufEmail = uFollower.email.getOrElse("")
+              val ufEmail = uFollower.email.headOption.getOrElse("")
               followers = followers.++(List((uFollower.id, uFollower.fullName, ufEmail, uFollower.getAvatarUrl())))
             }
             case None =>
@@ -177,7 +134,7 @@ class Users @Inject() (users: UserService) extends SecuredController {
 
   }
 
-  def acceptTermsOfServices(redirect: Option[String]) = AuthenticatedAction { implicit request =>
+  def acceptTermsOfServices(redirect: Option[String]) = UserAction(needActive=false) { implicit request =>
     request.user match {
       case Some(user) => {
         users.acceptTermsOfServices(user.id)

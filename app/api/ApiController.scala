@@ -1,13 +1,10 @@
 package api
 
 import api.Permission.Permission
-import models.{ClowderUser, ResourceRef, User}
-import org.apache.commons.codec.binary.Base64
-import org.mindrot.jbcrypt.BCrypt
+import models.{ResourceRef, User}
 import play.api.mvc._
-import securesocial.core.providers.UsernamePasswordProvider
-import securesocial.core.{Authenticator, SecureSocial, UserService}
-import services.{AppConfiguration, DI}
+import services.AppConfiguration
+import services.ss.SecureSocialUser
 
 import scala.concurrent.Future
 
@@ -123,35 +120,13 @@ trait ApiController extends Controller {
     }
 
     // 1) secure social, this allows the web app to make calls to the API and use the secure social user
-    for (
-      authenticator <- SecureSocial.authenticatorFromRequest(request);
-      identity <- UserService.find(authenticator.identityId)
-    ) yield {
-      Authenticator.save(authenticator.touch)
-      val user = DI.injector.getInstance(classOf[services.UserService]).findByIdentity(identity) match {
-        case Some(u: ClowderUser) if Permission.checkServerAdmin(Some(u)) => Some(u.copy(superAdminMode=superAdmin))
-        case Some(u) => Some(u)
-        case None => None
-      }
-      return UserRequest(user, request)
+    // 2) basic auth, this allows you to call the api with your username/password
+    SecureSocialUser.getUser(request, checkUserPassword=true) match {
+      case Some(ur) => return ur
+      case None =>
     }
 
     // 2) basic auth, this allows you to call the api with your username/password
-    request.headers.get("Authorization").foreach { authHeader =>
-      val header = new String(Base64.decodeBase64(authHeader.slice(6, authHeader.length).getBytes))
-      val credentials = header.split(":")
-      UserService.findByEmailAndProvider(credentials(0), UsernamePasswordProvider.UsernamePassword).foreach { identity =>
-        val user = DI.injector.getInstance(classOf[services.UserService]).findByIdentity(identity)
-        if (BCrypt.checkpw(credentials(1), identity.passwordInfo.get.password)) {
-          val user = DI.injector.getInstance(classOf[services.UserService]).findByIdentity(identity) match {
-            case Some(u: ClowderUser) if Permission.checkServerAdmin(Some(u)) => Some(u.copy(superAdminMode=superAdmin))
-            case Some(u) => Some(u)
-            case None => None
-          }
-          return UserRequest(user, request)
-        }
-      }
-    }
 
     // 3) key, this will need to become better, right now it will only accept the one key, when using the
     //    key it will assume you are anonymous!

@@ -1386,9 +1386,6 @@ class  Datasets @Inject()(
     }
   }
 
-  // TODO: move helper methods to standalone service
-  val USERID_ANONYMOUS = "anonymous"
-
   // Helper class and function to check for error conditions for tags.
   class TagCheck {
     var error_str: String = ""
@@ -1421,10 +1418,8 @@ class  Datasets @Inject()(
   */
   def checkErrorsForTag(obj_type: TagCheckObjType, id: UUID, request: UserRequest[JsValue]): TagCheck = {
     val userObj = request.user
-    Logger.debug("checkErrorsForTag: user id: " + userObj.get.identityId.userId + ", user.firstName: " + userObj.get.firstName
-      + ", user.LastName: " + userObj.get.lastName + ", user.fullName: " + userObj.get.fullName)
-    val userId = userObj.get.identityId.userId
-    if (USERID_ANONYMOUS == userId) {
+    val anonymous = userObj.fold(true)(_.id.equals(User.anonymous.id))
+    if (anonymous) {
       Logger.debug("checkErrorsForTag: The user id is \"anonymous\".")
     }
 
@@ -1450,14 +1445,14 @@ class  Datasets @Inject()(
       }
     }
     if ("" == error_str) {
-      if (USERID_ANONYMOUS == userId) {
+      if (anonymous) {
         val eid = request.body.\("extractor_id").asOpt[String]
         eid match {
           case Some(extractor_id) => extractorOpt = eid
           case None => error_str = "No \"extractor_id\" specified, request.body: " + request.body.toString
         }
       } else {
-        userOpt = Option(userId)
+        userOpt = userObj.map(_.id.stringify)
       }
     }
     val tagCheck = new TagCheck

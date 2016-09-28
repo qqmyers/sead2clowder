@@ -1,11 +1,10 @@
 package services.mongodb
 
 import com.mongodb.casbah.Imports._
-import securesocial.core.Identity
 import services.mongodb.MongoContext.context
 import com.mongodb.casbah.commons.MongoDBObject
 
-import com.novus.salat.dao.{SalatMongoCursor, ModelCompanion, SalatDAO}
+import com.novus.salat.dao.{ModelCompanion, SalatDAO}
 import org.bson.types.ObjectId
 import models._
 import javax.inject.{Singleton, Inject}
@@ -55,12 +54,12 @@ class MongoDBVocabularyService @Inject() (userService: UserService) extends Voca
     Vocabulary.dao.find(MongoDBObject("name"->name)).toList
   }
 
-  def getByAuthor(author: Identity) : List[Vocabulary] = {
-    Vocabulary.findAll().toList.filter(p => p.author.get.identityId == author.identityId)
+  def getByAuthor(author: MiniUser) : List[Vocabulary] = {
+    Vocabulary.findAll().toList.filter(p => p.author.get.id == author.id)
   }
 
-  def getByAuthorAndName(author : Identity, name : String) : List[Vocabulary] = {
-    Vocabulary.findAll().toList.filter(p => (p.author.get.identityId == author.identityId ) && (p.name == name))
+  def getByAuthorAndName(author : MiniUser, name : String) : List[Vocabulary] = {
+    Vocabulary.findAll().toList.filter(p => (p.author.get.id == author.id ) && (p.name == name))
   }
 
   def delete(id : UUID) = Try {

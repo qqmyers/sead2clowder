@@ -59,7 +59,7 @@
             </div>
         </div>
         <div class="col-md-9 col-lg-9 col-sm-7">
-            @if(profile.identityId.providerId != "userpass") {
+            @if(profile.provider.providerId != "userpass") {
                 <div>
                     <h1>@profile.fullName</h1>
                 </div>
@@ -87,29 +87,13 @@
                 }
             }
             <div class="profile-section">
-            @profile.identityId.providerId match {
+            @profile.provider.providerId match {
                 case "userpass" => {
                     Profile Source : Local Account
                 }
-                case "google" => {
-                    Profile Source : <img height="16px" src="@routes.Assets.at("securesocial/images/providers/" + profile.identityId.providerId + ".png")" alt="@profile.identityId.providerId" />
-                    <a href="https://plus.google.com/@profile.identityId.userId">Google+</a>
-                }
-                case "twitter" => {
-                    Profile Source : <img height="16px" src="@routes.Assets.at("securesocial/images/providers/" + profile.identityId.providerId + ".png")" alt="@profile.identityId.providerId" />
-                    <a href="https://twitter.com/intent/user?user_id=@profile.identityId.userId">Twitter</a>
-                }
-                case "facebook" => {
-                    Profile Source : <img height="16px" src="@routes.Assets.at("securesocial/images/providers/" + profile.identityId.providerId + ".png")" alt="@profile.identityId.providerId" />
-                    <a href="https://www.facebook.com/app_scoped_user_id/@profile.identityId.userId">Facebook</a>
-                }
-                case "orcid" => {
-                    Profile Source : <img height="16px" src="@routes.Assets.at("securesocial/images/providers/" + profile.identityId.providerId + ".png")" alt="@profile.identityId.providerId" />
-                    <a href="https://orcid.org/@profile.identityId.userId">ORCID</a>
-                }
-                case provider => {
-                    Profile Source : <img height="16px" src="@routes.Assets.at("securesocial/images/providers/" + profile.identityId.providerId + ".png")" alt="@profile.identityId.providerId" />
-                    @provider.capitalize
+                case _ => {
+                    Profile Source : <img height="16px" src="@profile.provider.icon" alt="@profile.provider" />
+                    <a href="@profile.provider.link">@profile.provider</a>
                 }
             }
             </div>

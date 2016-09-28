@@ -4,7 +4,6 @@ import play.api.{Application, GlobalSettings}
 import play.api.Logger
 import play.filters.gzip.GzipFilter
 import play.libs.Akka
-import securesocial.core.SecureSocial
 import services.{AppConfiguration, DI, UserService}
 
 import scala.concurrent.Future
@@ -16,6 +15,7 @@ import java.util.Calendar
 import play.api.mvc.{RequestHeader, WithFilters}
 import play.api.mvc.Results._
 import akka.actor.Cancellable
+import api.UserRequest
 import filters.CORSFilter
 import julienrf.play.jsonp.Jsonp
 
@@ -82,31 +82,35 @@ object Global extends WithFilters(new GzipFilter(), new Jsonp(), CORSFilter()) w
   }
 
   override def onError(request: RequestHeader, ex: Throwable) = {
+    implicit val user = request match {
+      case r: UserRequest[Any] => r.user
+      case _ => None
+    }
+
     val sw = new StringWriter()
     val pw = new PrintWriter(sw)
     ex.printStackTrace(pw)
-    implicit val user = SecureSocial.currentUser(request) match{
-      case Some(identity) =>  users.findByIdentity(identity)
-      case None => None
-    }
+
     Future(InternalServerError(
       views.html.errorPage(request, sw.toString.replace("\n", "   "))(user)))
   }
 
   override def onHandlerNotFound(request: RequestHeader) = {
-    implicit val user = SecureSocial.currentUser(request) match{
-      case Some(identity) =>  users.findByIdentity(identity)
-      case None => None
+    implicit val user = request match {
+      case r: UserRequest[Any] => r.user
+      case _ => None
     }
+
     Future(NotFound(
       views.html.errorPage(request, "Not found")(user)))
   }
 
   override def onBadRequest(request: RequestHeader, error: String) = {
-    implicit val user = SecureSocial.currentUser(request) match{
-      case Some(identity) =>  users.findByIdentity(identity)
-      case None => None
+    implicit val user = request match {
+      case r: UserRequest[Any] => r.user
+      case _ => None
     }
+
     Future(BadRequest(views.html.errorPage(request, error)(user)))
   }
 }
