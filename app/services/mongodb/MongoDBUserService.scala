@@ -205,9 +205,10 @@ class MongoDBUserService @Inject() (
    *
    */
   def addUserToSpace(userId: UUID, role: Role, spaceId: UUID): Unit = {
-      Logger.debug("add user to space")
-      val spaceData = UserSpaceAndRole(spaceId, role)
-      val result = UserDAO.dao.update(MongoDBObject("_id" -> new ObjectId(userId.stringify)), $push("spaceandrole" -> UserSpaceAndRoleData.toDBObject(spaceData)));
+    Logger.debug("add user to space")
+    val spaceData = UserSpaceAndRole(spaceId, role)
+    val spaceandrole = grater[UserSpaceAndRole].asDBObject(spaceData)
+    val result = UserDAO.dao.update(MongoDBObject("_id" -> new ObjectId(userId.stringify)), $push("spaceandrole" -> spaceandrole))
   }
 
   /**
@@ -334,7 +335,7 @@ class MongoDBUserService @Inject() (
                   case r: BasicDBObject => {
                     val roleid: String = r.get("_id") match {
                       case i: ObjectId => i.toString
-                      case i: UUID => i.toString
+                      case i: UUID => i.toString()
                       case None => ""
                     }
 
@@ -553,22 +554,6 @@ class MongoDBUserService @Inject() (
       case None => throw new RuntimeException("No MongoSalatPlugin");
       case Some(x) => new SalatDAO[User, ObjectId](collection = x.collection("users")) {}
     }
-  }
-
-  /**
-    * ModelCompanion object for the models.UserSpaceAndRole class. Specific to MongoDB implementation, so should either
-    * be in it's own utility class within services, or, as it is currently implemented, within one of the common
-    * services classes that utilize it.
-    */
-  object UserSpaceAndRoleData extends ModelCompanion[UserSpaceAndRole, ObjectId] {
-    val dao = throw new RuntimeException("Not saving SpaceAndRole in mongo")
-  }
-
-  /**
-    * Used to store Mini users in MongoDB.
-    */
-  object MiniUserDAO extends ModelCompanion[MiniUser, ObjectId] {
-    val dao = throw new RuntimeException("Not saving miniuser in mongo")
   }
 }
 
