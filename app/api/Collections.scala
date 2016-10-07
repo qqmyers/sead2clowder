@@ -786,8 +786,8 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
     }
   }
 
-  @ApiOperation(value = "Download dataset",
-    notes = "Downloads all files contained in a dataset.",
+  @ApiOperation(value = "Download collection",
+    notes = "Downloads all child collections, datasets and files in a collection.",
     responseClass = "None", httpMethod = "GET")
   def download(id: UUID, bagit: Boolean,compression: Int) = PermissionAction(Permission.DownloadFiles, Some(ResourceRef(ResourceRef.collection, id))) { implicit request =>
     implicit val user = request.user
@@ -1254,7 +1254,7 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
           case Some(fileIterator) => {
             if (fileIterator.hasNext()){
               true
-            } else if (fileCounter < numFiles -2){
+            } else if (fileCounter < numFiles -1){
               fileCounter +=1
               currentFileIterator = Some(new FileIterator(folderNameMap(inputFiles(fileCounter).id),inputFiles(fileCounter),zip,md5Files))
               true
