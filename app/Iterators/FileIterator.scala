@@ -6,10 +6,10 @@ import java.util.zip.{ZipEntry, ZipOutputStream}
 
 import models.ResourceRef
 import play.api.libs.json.{JsValue, Json}
-import services.{MetadataService, FileService}
+import services.{FolderService, MetadataService, FileService}
 import util.JSONLD
 
-class FileIterator (pathToFile : String, file : models.File,zip : ZipOutputStream, md5Files :scala.collection.mutable.HashMap[String, MessageDigest], files : FileService, metadataService : MetadataService) extends Iterator[Option[InputStream]] {
+class FileIterator (pathToFile : String, file : models.File,zip : ZipOutputStream, md5Files :scala.collection.mutable.HashMap[String, MessageDigest], files : FileService, folders : FolderService , metadataService : MetadataService) extends Iterator[Option[InputStream]] {
 
   def getFileInfoAsJson(file : models.File) : JsValue = {
     val rightsHolder = {
