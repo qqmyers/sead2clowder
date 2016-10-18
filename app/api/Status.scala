@@ -90,7 +90,7 @@ class Status @Inject()(spaces: SpaceService,
       }
 
       // geostream
-      case p: PostgresPlugin => {
+      case p: GeostreamsPlugin => {
         val status = if (p.conn != null) {
           "connected"
         } else {

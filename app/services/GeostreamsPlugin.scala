@@ -14,11 +14,9 @@ import play.api.libs.json._
 
 
 /**
- * Postgres connection and simple geoindex methods.
- *
- *
+ * Geostreams plugin. Store sensors / streams / datapoints in Postgres using Postgis.
  */
-class PostgresPlugin(application: Application) extends Plugin {
+class GeostreamsPlugin(application: Application) extends Plugin {
 
   var conn: java.sql.Connection = null
 

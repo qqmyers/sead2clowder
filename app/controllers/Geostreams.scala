@@ -8,7 +8,7 @@ import javax.inject.Inject
 import play.api.Play._
 import play.api.mvc.Controller
 import api.Permission
-import services.{MetadataService, PostgresPlugin}
+import services.{MetadataService, GeostreamsPlugin}
 import play.api.libs.json.{JsError, JsSuccess, JsValue, Json}
 import play.api.Logger
 
@@ -18,7 +18,7 @@ import play.api.Logger
 class Geostreams @Inject() (
   metadata: MetadataService) extends Controller with SecuredController {
 
-  var plugin = current.plugin[PostgresPlugin]
+  var plugin = current.plugin[GeostreamsPlugin]
 
   val pluginNotEnabled = InternalServerError("Geostreaming plugin not enabled")
 

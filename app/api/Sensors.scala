@@ -2,7 +2,7 @@ package api
 
 import play.api.mvc.Controller
 import play.api.Play.current
-import services.PostgresPlugin
+import services.GeostreamsPlugin
 
 /**
  * Metadata about sensors registered with the system. Datastreams can be associalted with sensors.
@@ -10,7 +10,7 @@ import services.PostgresPlugin
 object Sensors extends Controller with ApiController {
 
   def add() = PermissionAction(Permission.AddGeoStream)(parse.json) { implicit request =>
-      current.plugin[PostgresPlugin] match {
+      current.plugin[GeostreamsPlugin] match {
         case Some(plugin) => {
           Ok("")
         }
@@ -21,7 +21,7 @@ object Sensors extends Controller with ApiController {
   }
   
   def get(id: String) = PermissionAction(Permission.ViewGeoStream)(parse.json) { implicit request =>
-      current.plugin[PostgresPlugin] match {
+      current.plugin[GeostreamsPlugin] match {
         case Some(plugin) => {
           Ok("")
         }
@@ -32,7 +32,7 @@ object Sensors extends Controller with ApiController {
   }
   
   def list() = PermissionAction(Permission.ViewGeoStream)(parse.json) { implicit request =>
-      current.plugin[PostgresPlugin] match {
+      current.plugin[GeostreamsPlugin] match {
         case Some(plugin) => {
           val sensors = plugin.listSensors()
           Ok("")
@@ -44,7 +44,7 @@ object Sensors extends Controller with ApiController {
   }
   
   def search() = PermissionAction(Permission.ViewGeoStream)(parse.json) { implicit request =>
-      current.plugin[PostgresPlugin] match {
+      current.plugin[GeostreamsPlugin] match {
         case Some(plugin) => {
           Ok("")
         }
@@ -55,7 +55,7 @@ object Sensors extends Controller with ApiController {
   }
   
   def delete(id: String) = PermissionAction(Permission.DeleteGeoStream)(parse.json) { implicit request =>
-      current.plugin[PostgresPlugin] match {
+      current.plugin[GeostreamsPlugin] match {
         case Some(plugin) => {
           Ok("")
         }

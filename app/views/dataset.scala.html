@@ -243,7 +243,7 @@
             @if(play.api.Play.current.plugin[services.StagingAreaPlugin].isDefined) {
                 @datasets.listCurationObjects(curationObjects)
             }
-            @if(current.plugin[services.PostgresPlugin].isDefined) {
+            @if(current.plugin[services.GeostreamsPlugin].isDefined) {
                 @sensors.relatedSensors(relatedSensors, "Dataset", dataset.id.stringify)
             }
             <div id="toolListContainer"></div>

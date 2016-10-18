@@ -14,7 +14,7 @@
         <div class="col-md-4">
             <form class="form-horizontal" role="form" id="sensors-admin">
                 <div class="form-group">
-                    @play.api.Play.current.plugin[services.PostgresPlugin] match {
+                    @play.api.Play.current.plugin[services.GeostreamsPlugin] match {
                         case Some(db) => {
                             <label for="sensorsTitle">Sensors title (plural form)</label>
                             <input class="form-control" id="sensorsTitle" name="sensorsTitle" type="text" value="@(sensors)" required />

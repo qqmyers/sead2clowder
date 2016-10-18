@@ -420,7 +420,7 @@ class Datasets @Inject()(
           }
 
           // associated sensors
-          val sensors: List[(String, String, String)]= current.plugin[PostgresPlugin] match {
+          val sensors: List[(String, String, String)]= current.plugin[GeostreamsPlugin] match {
             case Some(db) => {
               // findRelationships will return a "Relation" model with all information about the relationship
               val relationships = relations.findRelationships(id.stringify, ResourceType.dataset, ResourceType.sensor)
