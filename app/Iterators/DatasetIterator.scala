@@ -108,7 +108,7 @@ class DatasetIterator(pathToFolder : String, dataset : models.Dataset, zip: ZipO
             true
           } else if (fileCounter < numFiles -1){
             fileCounter +=1
-            currentFileIterator = Some(new FileIterator(folderNameMap(inputFiles(fileCounter).id),inputFiles(fileCounter),zip,md5Files,files,metadataService))
+            currentFileIterator = Some(new FileIterator(folderNameMap(inputFiles(fileCounter).id),inputFiles(fileCounter),zip,md5Files,files,folders,metadataService))
             true
           } else {
             false
@@ -137,7 +137,7 @@ class DatasetIterator(pathToFolder : String, dataset : models.Dataset, zip: ZipO
         md5Files.put("_metadata.json",md5)
         if (numFiles > 0){
           file_type+=1
-          currentFileIterator = Some(new FileIterator(folderNameMap(inputFiles(fileCounter).id),inputFiles(fileCounter),zip,md5Files,files,metadataService))
+          currentFileIterator = Some(new FileIterator(folderNameMap(inputFiles(fileCounter).id),inputFiles(fileCounter),zip,md5Files,files,folders,metadataService))
         } else {
           file_type+=2
         }

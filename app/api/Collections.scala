@@ -5,6 +5,7 @@ import java.security.{DigestInputStream, MessageDigest}
 import java.text.SimpleDateFormat
 import java.util.zip.{ZipEntry, ZipOutputStream, Deflater}
 
+import Iterators.RootCollectionIterator
 import _root_.util.JSONLD
 import api.Permission.Permission
 import org.apache.commons.codec.binary.Hex
@@ -822,8 +823,9 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
 
     var bytesSet = false
 
-    val datasetsInCollection = getDatasetsInCollection(collection,user.get)
-    var current_iterator = new RootCollectionIterator(collection.name,collection,zip,md5Files,md5Bag,user, totalBytes,bagit)
+    //val datasetsInCollection = getDatasetsInCollection(collection,user.get)
+    var current_iterator = new RootCollectionIterator(collection.name,collection,zip,md5Files,md5Bag,user, totalBytes,bagit,collections,
+    datasets,files,folders,metadataService,spaces)
 
 
 
@@ -875,6 +877,7 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
   }
 
 
+  /**
   class RootCollectionIterator(pathToFolder : String, root_collection : models.Collection,zip : ZipOutputStream,
                                md5Files : scala.collection.mutable.HashMap[String, MessageDigest],
                                md5Bag : scala.collection.mutable.HashMap[String, MessageDigest],
@@ -1588,6 +1591,7 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
     }
     Some(new ByteArrayInputStream(s.getBytes("UTF-8")))
   }
+  */
 
 }
 
