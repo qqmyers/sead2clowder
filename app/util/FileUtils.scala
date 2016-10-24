@@ -35,26 +35,6 @@ object FileUtils {
   lazy val userService: UserService = DI.injector.getInstance(classOf[UserService])
   lazy val folders: FolderService = DI.injector.getInstance(classOf[FolderService])
 
-  /**
-   * Given a number return a human readable count, unlike apache.commons this will not round down. This
-   * can either return as multiples of 1000 (si=true) or 1024 (si=false).
-   */
-  def humanReadableByteCount(bytes:Long, precision:Integer=1, si:Boolean=true): String = {
-    val unit = if (si) 1000 else 1024
-    if (bytes < unit) {
-      s"${bytes} B"
-    } else {
-      val exp = (Math.log(bytes)/ Math.log(unit)).toInt
-      val pre = if (si) {
-        "kMGTPE".charAt(exp-1)
-      } else {
-        "KMGTPE".charAt(exp-1) + "i"
-      }
-      val format="%%.%df".format(precision)
-      "%.1f %sB".format(bytes / Math.pow(unit, exp), pre)
-    }
-  }
-
   def getContentType(filename: Option[String], contentType: Option[String]): String = {
     getContentType(filename.getOrElse(""), contentType)
   }
@@ -307,7 +287,7 @@ object FileUtils {
       isIntermediate = intermediateUpload, showPreviews = showPreviews,
       licenseData = License.fromAppConfig(), status = FileStatus.CREATED.toString)
     files.save(file)
-    Logger.info(s"created file ${file.id}")
+    Logger.debug(s"created file ${file.id}")
 
     associateMetaData(creator, file, metadata, clowderurl)
     associateDataset(file, dataset, folder, user, multipleFile)
@@ -559,17 +539,17 @@ object FileUtils {
           case Some(f) => {
             val fixedfile = f.copy(filename=nameOfFile, contentType=fileType, loader=loader, loader_id=loader_id, length=length, author=realUser)
             files.save(fixedfile)
-            Logger.info("Uploading Completed")
+            Logger.debug("Uploading Completed")
             Some(fixedfile)
           }
           case None => {
-            Logger.error("File was not found anymore")
+            Logger.error(s"File $loader_id was not found anymore")
             None
           }
         }
       }
       case None => {
-        Logger.error("Could not save bytes, deleting file")
+        Logger.error(s"Could not save bytes, deleting file ${file.id}")
         files.removeFile(file.id)
         None
       }
@@ -583,7 +563,7 @@ object FileUtils {
         return Some(f)
       }
       case None => {
-        Logger.error("File was not found anymore")
+        Logger.error(s"File ${file.id} was not found anymore")
         None
       }
     }
@@ -599,17 +579,17 @@ object FileUtils {
           case Some(f) => {
             val fixedfile = f.copy(contentType=conn.getContentType, loader=loader, loader_id=loader_id, length=length)
             files.save(fixedfile)
-            Logger.info("Uploading Completed")
+            Logger.debug("Uploading Completed")
             Some(fixedfile)
           }
           case None => {
-            Logger.error("File was not found anymore")
+            Logger.error(s"File $loader_id was not found anymore")
             None
           }
         }
       }
       case None => {
-        Logger.error("Could not save bytes, deleting file")
+        Logger.error(s"Could not save bytes, deleting file ${file.id}")
         files.removeFile(file.id)
         None
       }

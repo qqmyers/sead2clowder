@@ -125,6 +125,17 @@ class MongoSalatPlugin(app: Application) extends Plugin {
     collection("datasets").ensureIndex(MongoDBObject("name" -> 1))
     collection("datasets").ensureIndex(MongoDBObject("author._id" -> 1))
     collection("datasets").ensureIndex(MongoDBObject("public" -> 1, "spaces" -> 1, "author._id" -> 1))
+    collection("datasets").ensureIndex(MongoDBObject("created" -> -1, "name" -> 1))
+    collection("datasets").ensureIndex(MongoDBObject("created" -> -1, "name" -> 1))
+    collection("datasets").ensureIndex(MongoDBObject("files" -> 1))
+
+    collection("dtsrequests").ensureIndex(MongoDBObject("fileid" -> 1))
+
+    collection("events").ensureIndex(MongoDBObject("targetuser._id" -> 1))
+    collection("events").ensureIndex(MongoDBObject("object_id" -> 1))
+    collection("events").ensureIndex(MongoDBObject("user._id" -> 1))
+
+    collection("extractions").ensureIndex(MongoDBObject("file_id" -> 1))
 
     collection("folders").ensureIndex(MongoDBObject("parentDatasetId" -> 1))
 
@@ -432,7 +443,7 @@ class MongoSalatPlugin(app: Application) extends Plugin {
       val collections = Collection.count(new MongoDBObject())
       val users = SocialUserDAO.count(new MongoDBObject())
       if ((datasets != 0) || (collections != 0)) {
-        Logger.info("[MongoDBUpdate] : Found datasets/collections, will add all to default space")
+        Logger.debug("[MongoDBUpdate] : Found datasets/collections, will add all to default space")
 
         // create roles (this is called before Global)
         if (RoleDAO.count() == 0) {
@@ -461,21 +472,21 @@ class MongoSalatPlugin(app: Application) extends Plugin {
         collection("social.users").update(MongoDBObject(), $push("spaceandrole" -> spaceRole), multi=true)
 
       } else {
-        Logger.info("[MongoDBUpdate] : No datasets/collections found, will not create default space")
+        Logger.debug("[MongoDBUpdate] : No datasets/collections found, will not create default space")
       }
     } else {
-      Logger.info("[MongoDBUpdate] : Found spaces, will not create default space")
+      Logger.debug("[MongoDBUpdate] : Found spaces, will not create default space")
     }
   }
 
   def updateTagLength() {
     val q = MongoDBObject("tags" -> MongoDBObject("$exists" -> true, "$not" -> MongoDBObject("$size" -> 0)))
     val maxTagLength = play.api.Play.configuration.getInt("clowder.tagLength").getOrElse(100)
-    Logger.info("[MongoDBUpdate] : fixing " + collection("datasets").count(q) + " datasets")
+    Logger.debug("[MongoDBUpdate] : fixing " + collection("datasets").count(q) + " datasets")
     collection("datasets").find(q).foreach { x =>
       x.getAsOrElse[MongoDBList]("tags", MongoDBList.empty).foreach { case tag:DBObject =>
         if (tag.getAsOrElse[String]("name", "").length > maxTagLength) {
-          Logger.info(x.get("_id").toString + " : truncating " + tag.getAsOrElse[String]("name", ""))
+          Logger.debug(x.get("_id").toString + " : truncating " + tag.getAsOrElse[String]("name", ""))
           tag.put("name", tag.getAsOrElse[String]("name", "").substring(0, maxTagLength))
         }
       }
@@ -490,7 +501,7 @@ class MongoSalatPlugin(app: Application) extends Plugin {
     collection("uploads.files").find(q).foreach { x =>
       x.getAsOrElse[MongoDBList]("tags", MongoDBList.empty).foreach { case tag:DBObject =>
         if (tag.getAsOrElse[String]("name", "").length > maxTagLength) {
-          Logger.info(x.get("_id").toString + " : truncating " + tag.getAsOrElse[String]("name", ""))
+          Logger.debug(x.get("_id").toString + " : truncating " + tag.getAsOrElse[String]("name", ""))
           tag.put("name", tag.getAsOrElse[String]("name", "").substring(0, maxTagLength))
         }
       }
@@ -505,7 +516,7 @@ class MongoSalatPlugin(app: Application) extends Plugin {
     collection("sections").find(q).foreach { x =>
       x.getAsOrElse[MongoDBList]("tags", MongoDBList.empty).foreach { case tag:DBObject =>
         if (tag.getAsOrElse[String]("name", "").length > maxTagLength) {
-          Logger.info(x.get("_id").toString + " : truncating " + tag.getAsOrElse[String]("name", ""))
+          Logger.debug(x.get("_id").toString + " : truncating " + tag.getAsOrElse[String]("name", ""))
           tag.put("name", tag.getAsOrElse[String]("name", "").substring(0, maxTagLength))
         }
       }
@@ -963,7 +974,7 @@ class MongoSalatPlugin(app: Application) extends Plugin {
             case e: BSONException => Logger.error(s"Unable to write cleaned up ${prefix}.files : " + x.getAsOrElse[ObjectId]("_id", new ObjectId()).toString)
           }
         } else {
-          Logger.info("Removing " + x.getAsOrElse[ObjectId]("_id", new ObjectId()).toString)
+          Logger.debug("Removing " + x.getAsOrElse[ObjectId]("_id", new ObjectId()).toString)
           try {
             oldCollection.remove(MongoDBObject("_id" -> id))
           } catch {

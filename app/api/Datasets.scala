@@ -580,7 +580,7 @@ class  Datasets @Inject()(
               case Some (file) => {
                 attachExistingFileHelper (toDatasetId, fileId, toDataset, file, request.user)
                 detachFileHelper(datasetId, fileId, dataset, request.user)
-                Logger.info ("----- Successfully moved File between datasets.")
+                Logger.debug ("----- Successfully moved File between datasets.")
                 Ok (toJson (Map ("status" -> "success") ) )
               }
               case None => {
@@ -748,20 +748,52 @@ class  Datasets @Inject()(
     }
   }
 
-  @ApiOperation(value = "Retrieve metadata as JSON-LD",
-    notes = "Get metadata of the file object as JSON-LD.",
+ @ApiOperation(value = "Retrieve metadata as JSON-LD",
+    notes = "Get metadata of the dataset object as JSON-LD.",
     responseClass = "None", httpMethod = "GET")
-  def getMetadataJsonLD(id: UUID) = PermissionAction(Permission.ViewMetadata, Some(ResourceRef(ResourceRef.dataset, id))) { implicit request =>
+  def getMetadataJsonLD(id: UUID, extFilter: Option[String]) = PermissionAction(Permission.ViewMetadata, Some(ResourceRef(ResourceRef.dataset, id))) { implicit request =>
     datasets.get(id) match {
       case Some(dataset) => {
         //get metadata and also fetch context information
-        val listOfMetadata = metadataService.getMetadataByAttachTo(ResourceRef(ResourceRef.dataset, id))
-          .map(JSONLD.jsonMetadataWithContext(_))
+        val listOfMetadata = extFilter match {
+          case Some(f) => metadataService.getExtractedMetadataByAttachTo(ResourceRef(ResourceRef.dataset, id), f)
+                                    .map(JSONLD.jsonMetadataWithContext(_))
+          case None => metadataService.getMetadataByAttachTo(ResourceRef(ResourceRef.dataset, id))
+                                    .map(JSONLD.jsonMetadataWithContext(_))
+        }
         Ok(toJson(listOfMetadata))
       }
       case None => {
         Logger.error("Error getting dataset  " + id);
-        InternalServerError
+        BadRequest(toJson("Error getting dataset  " + id))
+      }
+    }
+  }
+
+  @ApiOperation(value = "Remove JSON-LD metadata, filtered by extractor if necessary",
+    notes = "Remove JSON-LD metadata from dataset object",
+    responseClass = "None", httpMethod = "GET")
+  def removeMetadataJsonLD(id: UUID, extFilter: Option[String]) = PermissionAction(Permission.DeleteMetadata, Some(ResourceRef(ResourceRef.dataset, id))) { implicit request =>
+    datasets.get(id) match {
+      case Some(dataset) => {
+        val num_removed = extFilter match {
+          case Some(f) => metadataService.removeMetadataByAttachToAndExtractor(ResourceRef(ResourceRef.dataset, id), f)
+          case None => metadataService.removeMetadataByAttachTo(ResourceRef(ResourceRef.dataset, id))
+        }
+
+        // send extractor message after attached to resource
+        current.plugin[RabbitmqPlugin].foreach { p =>
+          val dtkey = s"${p.exchange}.metadata.removed"
+          p.extract(ExtractorMessage(UUID(""), UUID(""), "", dtkey, Map[String, Any](
+            "resourceType"->ResourceRef.dataset,
+            "resourceId"->id.toString), "", id, ""))
+        }
+
+        Ok(toJson(Map("status" -> "success", "count" -> num_removed.toString)))
+      }
+      case None => {
+        Logger.error("Error getting dataset  " + id);
+        BadRequest(toJson("Error getting dataset  " + id))
       }
     }
   }
@@ -816,7 +848,13 @@ class  Datasets @Inject()(
     datasets.get(id) match {
       case Some(dataset) => {
         val list: List[JsValue]= dataset.files.map(fileId => files.get(fileId) match {
-          case Some(file) => jsonFile(file)
+          case Some(file) => {
+            val serveradmin = request.user match {
+              case Some(u) => u.serverAdmin
+              case None => false
+            }
+            jsonFile(file, serveradmin)
+          }
           case None => Logger.error(s"Error getting File $fileId")
         }).asInstanceOf[List[JsValue]]
         Ok(toJson(list))
@@ -832,10 +870,20 @@ class  Datasets @Inject()(
     datasets.get(id) match {
       case Some(dataset) => {
         val listFiles: List[JsValue]= dataset.files.map(fileId => files.get(fileId) match {
-          case Some(file) => jsonFile(file)
+          case Some(file) => {
+            val serveradmin = request.user match {
+              case Some(u) => u.serverAdmin
+              case None => false
+            }
+            jsonFile(file, serveradmin)
+          }
           case None => Logger.error(s"Error getting File $fileId")
         }).asInstanceOf[List[JsValue]]
-        val list = listFiles ++ getFilesWithinFolders(id)
+        val serveradmin = request.user match {
+          case Some(u) => u.serverAdmin
+          case None => false
+        }
+        val list = listFiles ++ getFilesWithinFolders(id, serveradmin)
         Ok(toJson(list))
       }
       case None => Logger.error("Error getting dataset" + id); InternalServerError
@@ -881,7 +929,7 @@ class  Datasets @Inject()(
   }
 
 
-  private def getFilesWithinFolders(id: UUID): List[JsValue] = {
+  private def getFilesWithinFolders(id: UUID, serveradmin: Boolean = false): List[JsValue] = {
     val output = new ListBuffer[JsValue]()
     datasets.get(id) match {
       case Some(dataset) => {
@@ -890,7 +938,7 @@ class  Datasets @Inject()(
           folder =>
             folder.files.map {
               fileId => files.get(fileId) match {
-                case Some(file) => output += jsonFile(file)
+                case Some(file) => output += jsonFile(file, serveradmin)
                 case None => Logger.error(s"Error getting file $fileId")
               }
             }
@@ -901,9 +949,31 @@ class  Datasets @Inject()(
     output.toList.asInstanceOf[List[JsValue]]
   }
 
-  def jsonFile(file: models.File): JsValue = {
-    toJson(Map("id" -> file.id.toString, "filename" -> file.filename, "contentType" -> file.contentType,
-      "date-created" -> file.uploadDate.toString(), "size" -> file.length.toString))
+  def jsonFile(file: models.File, serverAdmin: Boolean = false): JsValue = {
+    val defaultMap = Map(
+      "id" -> file.id.toString,
+      "filename" -> file.filename,
+      "contentType" -> file.contentType,
+      "date-created" -> file.uploadDate.toString(),
+      "size" -> file.length.toString)
+
+    // Only include filepath if using DiskByte storage and user is serverAdmin
+    val jsonMap = file.loader match {
+      case "services.filesystem.DiskByteStorageService" => {
+        if (serverAdmin)
+          Map(
+            "id" -> file.id.toString,
+            "filename" -> file.filename,
+            "filepath" -> file.loader_id,
+            "contentType" -> file.contentType,
+            "date-created" -> file.uploadDate.toString(),
+            "size" -> file.length.toString)
+        else
+          defaultMap
+      }
+      case _ => defaultMap
+    }
+    toJson(jsonMap)
   }
 
   //Update Dataset Information code starts
@@ -1203,7 +1273,7 @@ class  Datasets @Inject()(
     */
   @ApiOperation(value = "Get the tags associated with this dataset", notes = "Returns a JSON object of multiple fields", responseClass = "None", httpMethod = "GET")
   def getTags(id: UUID) = PermissionAction(Permission.ViewDataset, Some(ResourceRef(ResourceRef.dataset, id))) { implicit request =>
-    Logger.info(s"Getting tags for dataset with id  $id.")
+    Logger.debug(s"Getting tags for dataset with id  $id.")
     /* Found in testing: given an invalid ObjectId, a runtime exception
      * ("IllegalArgumentException: invalid ObjectId") occurs.  So check it first.
      */
@@ -1438,7 +1508,7 @@ class  Datasets @Inject()(
     notes = "Forcefully remove all tags for this dataset.  It is mainly intended for testing.",
     responseClass = "None", httpMethod = "POST")
   def removeAllTags(id: UUID) = PermissionAction(Permission.DeleteTag, Some(ResourceRef(ResourceRef.dataset, id))) { implicit request =>
-    Logger.info(s"Removing all tags for dataset with id: $id.")
+    Logger.debug(s"Removing all tags for dataset with id: $id.")
     if (UUID.isValid(id.stringify)) {
       datasets.get(id) match {
         case Some(dataset) => {
@@ -2168,8 +2238,10 @@ class  Datasets @Inject()(
       space.name
     }
 
+    val dataset_description = Utils.decodeString(dataset.description)
+
     val licenseInfo = Json.obj("licenseText"->dataset.licenseData.m_licenseText,"rightsHolder"->rightsHolder)
-    Json.obj("id"->dataset.id,"name"->dataset.name,"author"->dataset.author.email,"description"->dataset.description, "spaces"->spaceNames.mkString(","),"lastModified"->dataset.lastModifiedDate.toString,"license"->licenseInfo)
+    Json.obj("id"->dataset.id,"name"->dataset.name,"author"->dataset.author.email,"description"->dataset_description, "spaces"->spaceNames.mkString(","),"lastModified"->dataset.lastModifiedDate.toString,"license"->licenseInfo)
   }
 
   private def addDatasetInfoToZip(folderName: String, dataset: models.Dataset, zip: ZipOutputStream): Option[InputStream] = {
@@ -2215,7 +2287,7 @@ class  Datasets @Inject()(
     zip.putNextEntry(new ZipEntry("bagit.txt"))
     val softwareLine = "Bag-Software-Agent: clowder.ncsa.illinois.edu\n"
     val baggingDate = "Bagging-Date: "+(new SimpleDateFormat("yyyy-MM-dd hh:mm:ss")).format(Calendar.getInstance.getTime)+"\n"
-    val baggingSize = "Bag-Size: " + _root_.util.FileUtils.humanReadableByteCount(totalbytes) + "\n"
+    val baggingSize = "Bag-Size: " + _root_.util.Formatters.humanReadableByteCount(totalbytes) + "\n"
     val payLoadOxum = "Payload-Oxum: "+ totalbytes + "." + totalFiles +"\n"
     val senderIdentifier="Internal-Sender-Identifier: "+dataset.id+"\n"
     val senderDescription = "Internal-Sender-Description: "+dataset.description+"\n"

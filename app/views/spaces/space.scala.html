@@ -22,7 +22,7 @@
     <div class="row vertical-align">
 
             <div class="col-md-12 col-lg-12 col-sm-12">
-                <h1 id="spacenamedisplay" class="space-title"><span class="glyphicon glyphicon-tent"></span> @space.name</h1>
+                <h1 id="spacenamedisplay" class="space-title"><span class="glyphicon glyphicon-hdd"></span> @space.name</h1>
             <p><span id="spacedescdisplay">@space.description</span></p>
             <hr/>
 
@@ -35,11 +35,14 @@
                         <span class="glyphicon glyphicon-trash"></span> Delete</button>
                 }
 
-            @if(user.isDefined && Permission.checkPermission(Permission.EditSpace, ResourceRef(ResourceRef.space, space.id))){
+            @if(user.isDefined && Permission.checkPermission(Permission.CreateDataset, ResourceRef(ResourceRef.space, space.id))) {
                 <a id="create_dataset" href="@routes.Datasets.newDataset(Some(space.id.toString()), None)" class="btn btn-link" title="@Messages("create.title", Messages("dataset.title"))">
-                    <span class="glyphicon glyphicon-ok"></span> @Messages("create.title", Messages("dataset.title"))</a>
-                <a id="create_collection" href="@routes.Collections.newCollection(Some(space.id.toString()))" class="btn btn-link" title="@Messages("create.title", Messages("collections.title"))">
-                    <span class="glyphicon glyphicon-ok"></span> @Messages("create.title", Messages("collections.title"))</a>
+                    <span class="glyphicon glyphicon-ok"></span>  @Messages("create.title", Messages("dataset.title"))</a>
+            }
+            @if(user.isDefined && Permission.checkPermission(Permission.CreateCollection, ResourceRef(ResourceRef.space, space.id))){
+                <a id="create_collection" href="@routes.Collections.newCollection(Some(space.id.toString()))" class="btn btn-link" title="@Messages("create.title", Messages("collection.title"))
+                ">
+                    <span class="glyphicon glyphicon-ok"></span> @Messages("create.title", Messages("collection.title"))</a>
             }
         </div>
     </div>

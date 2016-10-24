@@ -19,6 +19,7 @@ object Permission extends Enumeration {
     EditSpace,
     PublicSpace,
     AddResourceToSpace,
+    RemoveResourceFromSpace,
     EditStagingArea,
 
     // datasets
@@ -28,6 +29,7 @@ object Permission extends Enumeration {
     EditDataset,
     PublicDataset,
     AddResourceToDataset,
+    RemoveResourceFromDataset,
     ExecuteOnDataset,
 
     // collections
@@ -36,6 +38,7 @@ object Permission extends Enumeration {
     DeleteCollection,
     EditCollection,
     AddResourceToCollection,
+    RemoveResourceFromCollection,
 
     // files
     AddFile,
@@ -169,15 +172,21 @@ object Permission extends Enumeration {
   def checkPermission(user: Option[User], permission: Permission, resourceRef: Option[ResourceRef] = None): Boolean = {
     (user, configuration(play.api.Play.current).getString("permissions").getOrElse("public"), resourceRef) match {
       case (Some(u), "public", Some(r)) => {
-        if (READONLY.contains(permission)) return true
-        else checkPermission(u, permission, r)
+        if (READONLY.contains(permission))
+          true
+        else
+          checkPermission(u, permission, r)
       }
       case (Some(u), "private", Some(r)) => checkPermission(u, permission, r)
       case (Some(_), _, None) => true
       case (None, "private", Some(res)) => checkAnonymousPrivatePermissions(permission, res)
       case (None, "public", _) => READONLY.contains(permission)
+      case (None, "private", None) => {
+        Logger.debug(s"Private, no user, no resourceRef, permission=${permission}", new Exception())
+        false
+      }
       case (_, p, _) => {
-        Logger.error("Invalid permission scheme " + p)
+        Logger.error(s"Invalid permission scheme ${p} [user=${user}, permission=${permission}, resourceRef=${resourceRef}]")
         false
       }
     }
@@ -188,9 +197,11 @@ object Permission extends Enumeration {
     if (!READONLY.contains(permission)) return false
     // check specific resource
     resourceRef match {
-      case ResourceRef(ResourceRef.file, id) => { val dataset =
-        (folders.findByFileId(id).map(folder => datasets.get(folder.parentDatasetId)).flatten ++ datasets.findByFileId(id)).head
-        dataset.isPublic || (dataset.isDefault && dataset.spaces.find(sId => spaces.get(sId).exists(_.isPublic)).nonEmpty)
+      case ResourceRef(ResourceRef.file, id) => {
+        (folders.findByFileId(id).map(folder => datasets.get(folder.parentDatasetId)).flatten ++ datasets.findByFileId(id)) match {
+          case dataset :: _ => dataset.isPublic || (dataset.isDefault && dataset.spaces.find(sId => spaces.get(sId).exists(_.isPublic)).nonEmpty)
+          case Nil => false
+        }
       }
       case ResourceRef(ResourceRef.dataset, id) => datasets.get(id).exists(dataset => dataset.isPublic || (dataset.isDefault && dataset.spaces.find(sId => spaces.get(sId).exists(_.isPublic)).nonEmpty)) // TODO check if dataset is public datasets.get(r.id).isPublic()
       case ResourceRef(ResourceRef.collection, id) =>  collections.get(id).exists(collection => collection.spaces.find(sId => spaces.get(sId).exists(_.isPublic)).nonEmpty)
