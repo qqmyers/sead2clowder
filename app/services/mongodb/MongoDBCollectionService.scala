@@ -183,6 +183,7 @@ class MongoDBCollectionService @Inject() (
 
     val publicSpaces= spaces.listByStatus(SpaceStatus.PUBLIC.toString).map(s => new ObjectId(s.id.stringify))
     val enablePublic = play.Play.application().configuration().getBoolean("enablePublic")
+    val onlyShowShared = play.Play.application().configuration().getBoolean("showOnlySharedInExplore")
 //    val rootQuery = $or(("root_spaces" $exists true), ("parent_collection_ids" $exists false))
     val filterAccess = if (showAll || (configuration(play.api.Play.current).getString("permissions").getOrElse("public") == "public" && permissions.contains(Permission.ViewCollection))) {
       MongoDBObject()
@@ -194,10 +195,29 @@ class MongoDBCollectionService @Inject() (
             orlist += ("spaces" $in publicSpaces)
           }
           if(user == owner || owner.isEmpty) {
-            orlist += MongoDBObject("author._id" -> new ObjectId(u.id.stringify))
+            if (owner.isEmpty && !onlyShowShared){
+              orlist += MongoDBObject("author._id" -> new ObjectId(u.id.stringify))
+            } else if (!owner.isEmpty){
+              orlist += MongoDBObject("author._id" -> new ObjectId(u.id.stringify))
+            }
           }
           val permissionsString = permissions.map(_.toString)
-          val okspaces = u.spaceandrole.filter(_.role.permissions.intersect(permissionsString).nonEmpty)
+          val okspaces = if (onlyShowShared){
+            u.spaceandrole.filter(_.role.permissions.intersect(permissionsString).nonEmpty).filter((p: UserSpaceAndRole)=>
+              (spaces.get(p.spaceId) match {
+                case Some(space) => {
+                  if (space.userCount > 1){
+                    true
+                  } else {
+                    false
+                  }
+                }
+                case None => false
+              })
+            )
+          } else {
+            u.spaceandrole.filter(_.role.permissions.intersect(permissionsString).nonEmpty)
+          }
           if (okspaces.nonEmpty) {
             orlist += ("spaces" $in okspaces.map(x => new ObjectId(x.spaceId.stringify)))
           }
@@ -288,13 +308,20 @@ class MongoDBCollectionService @Inject() (
       case None => MongoDBObject()
     }
 
+    val filterNotShared = if (onlyShowShared && owner.isEmpty){
+      MongoDBObject("spaces" -> MongoDBObject("$not" -> MongoDBObject("$size" -> 0)))
+    } else {
+      MongoDBObject()
+    }
+
     val sort = if (date.isDefined && !nextPage) {
       MongoDBObject("created"-> 1) ++ MongoDBObject("name" -> 1)
     } else {
       MongoDBObject("created" -> -1) ++ MongoDBObject("name" -> 1)
     }
 
-    (filterAccess ++ filterDate ++ filterTitle ++ filterSpace ++ filterOwner, sort)
+    (filterAccess ++ filterDate ++ filterTitle ++ filterSpace ++ filterOwner ++ filterNotShared
+      , sort)
   }
 
   def listAllCollections(user: User, showAll: Boolean, limit: Int): List[Collection] ={

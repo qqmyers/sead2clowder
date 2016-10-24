@@ -153,7 +153,7 @@ class MongoDBSpaceService @Inject() (
     // - access  == show all datasets the user can see
     // - default == public only
     val verifySpaces = play.Play.application().configuration().getBoolean("verifySpaces")
-
+    val onlyShowShared = play.Play.application().configuration().getBoolean("showOnlySharedInExplore")
     val statusFilter = if(onlyTrial) {
       MongoDBObject("status" -> SpaceStatus.TRIAL.toString)
     } else if(verifySpaces){
@@ -200,6 +200,20 @@ class MongoDBSpaceService @Inject() (
               val author = $and(MongoDBObject("author.identityId.userId" -> u.identityId.userId) ++ MongoDBObject("author.identityId.providerId" -> u.identityId.providerId))
               if (onlyTrial) {
                 statusFilter
+              }
+              else if (permissions.contains(Permission.ViewSpace) && play.Play.application().configuration().getBoolean("enablePublic") && showPublic && onlyShowShared) {
+                $or(author, statusFilter, ("_id" $in u.spaceandrole.filter(_.role.permissions.intersect(permissions.map(_.toString)).nonEmpty).filter((p: UserSpaceAndRole) =>
+                  get(p.spaceId) match {
+                    case Some(space) => {
+                      if (space.userCount > 1) {
+                        true
+                      } else {
+                        false
+                      }
+                    }
+                    case None => false
+                  }
+                ).map(x => new ObjectId(x.spaceId.stringify))))
               } else if (permissions.contains(Permission.ViewSpace) && play.Play.application().configuration().getBoolean("enablePublic") && showPublic) {
                 $or(author, statusFilter,  ("_id" $in u.spaceandrole.filter(_.role.permissions.intersect(permissions.map(_.toString)).nonEmpty).map(x => new ObjectId(x.spaceId.stringify))))
               } else {
@@ -233,13 +247,19 @@ class MongoDBSpaceService @Inject() (
       }
     }
 
+    val filterNotShared = if (onlyShowShared && owner.isEmpty){
+      MongoDBObject("userCount" -> MongoDBObject("$not" -> MongoDBObject("$size" -> 0)))
+    } else {
+      MongoDBObject()
+    }
+
     val sort = if (date.isDefined && !nextPage) {
       MongoDBObject("created"-> 1) ++ MongoDBObject("name" -> 1)
     } else {
       MongoDBObject("created" -> -1) ++ MongoDBObject("name" -> 1)
     }
 
-    (filter ++ filterTitle ++ filterDate, sort)
+    (filter ++ filterTitle ++ filterDate ++ filterNotShared, sort)
   }
 
   /**
@@ -617,22 +637,22 @@ class MongoDBSpaceService @Inject() (
   /**
    * Deletes entry with this space id.
    */
-  def deleteAllExtractors(spaceId: UUID): Boolean = {    
+  def deleteAllExtractors(spaceId: UUID): Boolean = {
     val query = MongoDBObject("spaceId" -> spaceId.stringify)
     val result = ExtractorsForSpaceDAO.remove( query )
     //if one or more deleted - return true
-    val wasDeleted = result.getN >0        
+    val wasDeleted = result.getN >0
     wasDeleted
-  }  
-  
+  }
+
  /**
    * If entry for this spaceId already exists, adds extractor to it.
    * Otherwise, creates a new entry with spaceId and extractor.
    */
   def addExtractor (spaceId: UUID, extractor: String) {
 	  //will add extractor to the list of extractors for this space, only if it's not there.
-	  val query = MongoDBObject("spaceId" -> spaceId.stringify)	  
-	  ExtractorsForSpaceDAO.update(query, $addToSet("extractors" -> extractor), true, false, WriteConcern.Safe)	   
+	  val query = MongoDBObject("spaceId" -> spaceId.stringify)
+	  ExtractorsForSpaceDAO.update(query, $addToSet("extractors" -> extractor), true, false, WriteConcern.Safe)
   }
 
   /**
@@ -648,9 +668,9 @@ class MongoDBSpaceService @Inject() (
     val extractorList: List[String] = list.flatMap(_.extractors)
     extractorList
   }
-  
-  
-  
+
+
+
 }
 /**
    * Salat ProjectSpace model companion.
@@ -670,8 +690,8 @@ class MongoDBSpaceService @Inject() (
       case None => throw new RuntimeException("No MongoSalatPlugin");
       case Some(x) => new SalatDAO[UserSpace, ObjectId](collection = x.collection("spaces.users")) {}
     }
-  } 
-    
+  }
+
 
   object SpaceInviteDAO extends ModelCompanion[SpaceInvite, ObjectId] {
     val dao = current.plugin[MongoSalatPlugin] match {
@@ -679,7 +699,7 @@ class MongoDBSpaceService @Inject() (
       case Some(x) => new SalatDAO[SpaceInvite, ObjectId](collection = x.collection("spaces.invites")) {}
     }
   }
-  
+
   object ExtractorsForSpaceDAO extends ModelCompanion[ExtractorsForSpace, ObjectId] {
   val dao = current.plugin[MongoSalatPlugin] match {
     case None => throw new RuntimeException("No MongoSalatPlugin");
