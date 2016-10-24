@@ -277,7 +277,7 @@ class MongoDBDatasetService @Inject() (
     //emptySpaces should not be used in most cases since your dataset maybe in a space, then you are changed to viewer or kicked off.
     val emptySpaces = MongoDBObject("spaces" -> List.empty)
     val publicSpaces= spaces.listByStatus(SpaceStatus.PUBLIC.toString).map(s => new ObjectId(s.id.stringify))
-
+    val onlyShowShared = play.Play.application().configuration().getBoolean("showOnlySharedInExplore")
     // create access filter
     val filterAccess = if (showAll || configuration(play.api.Play.current).getString("permissions").getOrElse("public") == "public" && permissions.contains(Permission.ViewDataset)) {
       MongoDBObject()
@@ -299,10 +299,29 @@ class MongoDBDatasetService @Inject() (
           //if you are viewing other user's datasets, return the ones you have permission. otherwise filterAccess should
           // including your own datasets. the if condition here is mainly for efficiency.
           if(user == owner || owner.isEmpty) {
-            orlist += MongoDBObject("author._id" -> new ObjectId(u.id.stringify))
+            if (owner.isEmpty && !onlyShowShared){
+              orlist += MongoDBObject("author._id" -> new ObjectId(u.id.stringify))
+            } else if (!owner.isEmpty){
+              orlist += MongoDBObject("author._id" -> new ObjectId(u.id.stringify))
+            }
           }
           val permissionsString = permissions.map(_.toString)
-          val okspaces = u.spaceandrole.filter(_.role.permissions.intersect(permissionsString).nonEmpty)
+          val okspaces = if (onlyShowShared){
+            u.spaceandrole.filter(_.role.permissions.intersect(permissionsString).nonEmpty).filter((p: UserSpaceAndRole)=>
+              (spaces.get(p.spaceId) match {
+                case Some(space) => {
+                  if (space.userCount > 1){
+                    true
+                  } else {
+                    false
+                  }
+                }
+                case None => false
+              })
+            )
+          } else {
+            u.spaceandrole.filter(_.role.permissions.intersect(permissionsString).nonEmpty)
+          }
           if (okspaces.nonEmpty) {
             orlist += ("spaces" $in okspaces.map(x => new ObjectId(x.spaceId.stringify)))
           }
@@ -321,7 +340,14 @@ class MongoDBDatasetService @Inject() (
       }
     }
     val filterOwner = owner match {
-      case Some(o) => MongoDBObject("author._id" -> new ObjectId(o.id.stringify))
+      case Some(o) => {
+        if (onlyShowShared){
+          MongoDBObject()
+        } else {
+          MongoDBObject("author._id" -> new ObjectId(o.id.stringify))
+        }
+
+      }
       case None => MongoDBObject()
     }
     val filterSpace = space match {
@@ -336,6 +362,13 @@ class MongoDBDatasetService @Inject() (
       case Some(title) =>  MongoDBObject("name" -> ("(?i)" + title).r)
       case None => MongoDBObject()
     }
+
+    val filterNotShared = if (onlyShowShared && owner.isEmpty){
+      MongoDBObject("root_spaces" -> MongoDBObject("$not" -> MongoDBObject("$size" -> 0)))
+    } else {
+      MongoDBObject()
+    }
+
     val filterDate = date match {
       case Some(d) => {
         if (nextPage) {
@@ -353,7 +386,7 @@ class MongoDBDatasetService @Inject() (
       MongoDBObject("created" -> -1) ++ MongoDBObject("name" -> 1)
     }
 
-    (filterAccess ++ filterDate ++ filterTitle ++ filterCollection ++ filterSpace ++ filterOwner, sort)
+    (filterAccess ++ filterDate ++ filterTitle ++ filterCollection ++ filterSpace ++ filterOwner ++ filterNotShared, sort)
   }
 
   def isInCollection(dataset: Dataset, collection: Collection): Boolean = {
