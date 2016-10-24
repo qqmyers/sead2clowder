@@ -19,7 +19,7 @@ class BagItIterator(pathToFolder : String, collection : models.Collection, zip :
     zip.putNextEntry(new ZipEntry(pathToFolder+"/bagit.txt"))
     val softwareLine = "Bag-Software-Agent: clowder.ncsa.illinois.edu\n"
     val baggingDate = "Bagging-Date: "+(new SimpleDateFormat("yyyy-MM-dd hh:mm:ss")).format(Calendar.getInstance.getTime)+"\n"
-    val baggingSize = "Bag-Size: " + _root_.util.FileUtils.humanReadableByteCount(totalbytes) + "\n"
+    val baggingSize = "Bag-Size: " + (totalbytes) + "\n"
     val payLoadOxum = "Payload-Oxum: "+ totalbytes + "." + totalFiles +"\n"
     val senderIdentifier="Internal-Sender-Identifier: "+collection.id+"\n"
     val senderDescription = "Internal-Sender-Description: "+collection.description+"\n"
