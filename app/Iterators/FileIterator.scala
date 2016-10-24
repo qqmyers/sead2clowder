@@ -9,6 +9,8 @@ import play.api.libs.json.{JsValue, Json}
 import services.{FolderService, MetadataService, FileService}
 import util.JSONLD
 
+//this is used for file downloads
+//called by the dataset interator
 class FileIterator (pathToFile : String, file : models.File,zip : ZipOutputStream, md5Files :scala.collection.mutable.HashMap[String, MessageDigest], files : FileService, folders : FolderService , metadataService : MetadataService) extends Iterator[Option[InputStream]] {
 
   def getFileInfoAsJson(file : models.File) : JsValue = {

@@ -11,6 +11,8 @@ import services._
 
 import scala.collection.mutable.ListBuffer
 
+//this is to download collections
+//that are not at the root level
 class CollectionIterator(pathToFolder : String, parent_collection : models.Collection,zip : ZipOutputStream, md5Files : scala.collection.mutable.HashMap[String, MessageDigest], user : Option[User],
                          collections: CollectionService, datasets : DatasetService, files : FileService, folders : FolderService, metadataService : MetadataService,
                          spaces : SpaceService) extends Iterator[Option[InputStream]] {

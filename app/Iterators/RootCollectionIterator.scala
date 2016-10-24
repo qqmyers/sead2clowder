@@ -12,6 +12,8 @@ import util.JSONLD
 
 import scala.collection.mutable.ListBuffer
 
+//this class is used to download collection. It is the root level iterator called on the
+//collection to download. unlike the other collection iterator, it has a bagit iterator
 class RootCollectionIterator(pathToFolder : String, root_collection : models.Collection,zip : ZipOutputStream,
                              md5Files : scala.collection.mutable.HashMap[String, MessageDigest],
                              md5Bag : scala.collection.mutable.HashMap[String, MessageDigest],

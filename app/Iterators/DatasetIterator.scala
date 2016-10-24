@@ -12,6 +12,8 @@ import util.JSONLD
 
 import scala.collection.mutable.ListBuffer
 
+//this iterator is used for downloading a dataset
+//it has a file iterator
 class DatasetIterator(pathToFolder : String, dataset : models.Dataset, zip: ZipOutputStream, md5Files :scala.collection.mutable.HashMap[String, MessageDigest],
                       folders : FolderService, files: FileService, metadataService : MetadataService, datasets: DatasetService, spaces : SpaceService) extends Iterator[Option[InputStream]] {
 

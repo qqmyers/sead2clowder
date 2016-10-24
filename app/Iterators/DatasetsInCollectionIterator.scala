@@ -9,9 +9,8 @@ import services._
 
 import scala.collection.mutable.ListBuffer
 
-/**
-  * Created by todd_n on 10/17/16.
-  */
+//this is used to download the datasets in a collection
+//it creates an iterator for each dataset in the collection
 class DatasetsInCollectionIterator(pathToFolder : String, collection : models.Collection, zip : ZipOutputStream, md5Files : scala.collection.mutable.HashMap[String, MessageDigest], user : Option[User],
                                   datasets : DatasetService, files : FileService, folders : FolderService, metadataService : MetadataService,
                                    spaces : SpaceService) extends Iterator[Option[InputStream]] {
