@@ -14,7 +14,7 @@ object ApplicationBuild extends Build {
 
   val appName = "clowder"
   val version = "0.9.x"
-  val jvm = "1.7"
+  val jvm = "1.8"
 
   def appVersion: String = {
     if (gitBranchName == "master") {
