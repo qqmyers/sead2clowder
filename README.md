@@ -9,13 +9,13 @@ version of sbt and scala or you can use your own. For development of extractors 
 installed. Following is a list of all software is used by Clowder. All of these services can be installed either
 locally or remotely.
 
-Once you have installed all the required software and optional software you need you can start clowder. If you want
+Once you have installed all the required software and optional software you need you can start Clowder. If you want
 to change the underlying source code you can clone the git repository and use either a IDE to run Clowder, or you can
 run it from the command line.
 
 - If you use Intellij IDEA you can import the project as an SBT project.
 - If you have eclipse  you can use the following command to create all the project files:
-  `./sbt 'eclipse with-source=true execution-environment=JavaSE-1.7'`.
+  `./sbt 'eclipse with-source=true execution-environment=JavaSE-1.8'`.
 - To run Clowder from the command line you can use the following line: `./sbt 'run'`.
  
 You can also download a precompiled version of Clowder from https://opensource.ncsa.illinois.edu/projects/CATS. Once
@@ -25,7 +25,7 @@ You can then connect to Clowder using the following URL: http://localhost:9000/.
   
 ### JAVA (required)
 
-To compile Clowder you will need to have at least version 1.7 of JAVA. Version 1.8 will work as well.
+To run Clowder you will need to have at least Java 8.
 
 ### Scala / SBT (required for development)
 
