@@ -35,7 +35,7 @@ echo $(mongo --version)
 echo ""
 echo "++++++++++++++++++++++++++++++++++++++"
 
-while [ $(netstat plnt | grep ':9000')]; do
+while [ $(netstat -plnt | grep ':9000')]; do
         sleep 1
 done
 
