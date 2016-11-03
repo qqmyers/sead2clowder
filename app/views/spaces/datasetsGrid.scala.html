@@ -1,4 +1,4 @@
-@(datasetsList: List[Dataset], space: String)(implicit user: Option[models.User])
+@(datasetsList: List[Dataset], space: ProjectSpace, isPublic: Option[Boolean])(implicit user: Option[models.User])
 
 @import api.Permission
 @import play.api.i18n.Messages
