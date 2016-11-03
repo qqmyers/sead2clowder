@@ -199,7 +199,15 @@ class Datasets @Inject() (
 
     val nextPage = (when == "a")
     val person = owner.flatMap(o => users.get(UUID(o)))
+    val ownerName = person match {
+      case Some(p) => Some(p.fullName)
+      case None => None
+    }
     val datasetSpace = space.flatMap(o => spaceService.get(UUID(o)))
+    val spaceName = datasetSpace match {
+      case Some(s) => Some(s.name)
+      case None => None
+    }    
     var title: Option[String] = Some(Messages("list.title", Messages("datasets.title")))
 
     val datasetList = person match {
@@ -339,7 +347,7 @@ class Datasets @Inject() (
       case Some(s) if !Permission.checkPermission(Permission.ViewSpace, ResourceRef(ResourceRef.space, UUID(s))) => {
         BadRequest(views.html.notAuthorized("You are not authorized to access the " + spaceTitle + ".", s, "space"))
       }
-      case _ => Ok(views.html.datasetList(decodedDatasetList.toList, commentMap, prev, next, limit, viewMode, space, status, title, owner, when, date))
+      case _ => Ok(views.html.datasetList(decodedDatasetList.toList, commentMap, prev, next, limit, viewMode, space, spaceName, status, title, owner, ownerName, when, date))
     }
   }
 
@@ -383,8 +391,12 @@ class Datasets @Inject() (
         case Some(cookie) => cookie.value
         case None => "dateN" //a default
       }
-
     val datasetSpace = spaceService.get(UUID(space))
+    val spaceName = datasetSpace match {
+      case Some(s) => Some(s.name)
+      case None => None
+    }  
+    
     var title: Option[String] = Some(Messages("resource.in.title", Messages("datasets.title"), spaceTitle, routes.Spaces.getSpace(datasetSpace.get.id), datasetSpace.get.name))
 
     if (!datasetSpace.isDefined) {
@@ -438,7 +450,7 @@ class Datasets @Inject() (
           ""
         }
         val date = ""
-        Ok(views.html.datasetList(decodedDatasetList.toList, commentMap, prev, next, limit, viewMode, Some(space), title, None, "a", date))
+        Ok(views.html.datasetList(decodedDatasetList.toList, commentMap, prev, next, limit, viewMode, Some(space), spaceName, None, title, None, None, "a", date))
       }
     }
   }
