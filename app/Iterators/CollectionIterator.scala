@@ -49,8 +49,8 @@ class CollectionIterator(pathToFolder : String, parent_collection : models.Colle
   def jsonCollection(collection: Collection): JsValue = {
     toJson(Map("id" -> collection.id.toString, "name" -> collection.name, "description" -> collection.description,
       "created" -> collection.created.toString,"author"-> collection.author.toString, "root_flag" -> collections.hasRoot(collection).toString,
-      "child_collection_ids"-> collection.child_collection_ids.toString, "parent_collection_ids" -> collection.parent_collection_ids.toString,
-      "childCollectionsCount" -> collection.childCollectionsCount.toString, "datasetCount"-> collection.datasetCount.toString, "spaces" -> collection.spaces.toString))
+      "child_collection_ids"-> collection.child_collection_ids.mkString(","), "parent_collection_ids" -> collection.parent_collection_ids.mkString(","),
+      "childCollectionsCount" -> collection.childCollectionsCount.toString, "datasetCount"-> collection.datasetCount.toString, "spaces" -> collection.spaces.mkString(",")))
   }
 
   def getCollectionInfoAsJson(collection : models.Collection) : JsValue = {
