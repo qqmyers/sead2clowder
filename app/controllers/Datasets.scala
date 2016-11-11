@@ -207,7 +207,7 @@ class Datasets @Inject() (
     val spaceName = datasetSpace match {
       case Some(s) => Some(s.name)
       case None => None
-    }    
+    }  
     var title: Option[String] = Some(Messages("list.title", Messages("datasets.title")))
 
     val datasetList = person match {

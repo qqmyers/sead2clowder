@@ -737,7 +737,7 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
 
     val nextPage = (when == "a")
     val person = owner.flatMap(o => users.get(UUID(o)))
-       val ownerName = person match {
+    val ownerName = person match {
       case Some(p) => Some(p.fullName)
       case None => None
     }
@@ -746,6 +746,7 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
       case Some(s) => Some(s.name)
       case None => None
     }
+
     val parentCollection = collections.get(UUID(parentCollectionId))
     var title: Option[String] = Some(Messages("collections.title"))
 

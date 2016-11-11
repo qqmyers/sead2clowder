@@ -28,9 +28,16 @@
         <li><span class="glyphicon glyphicon-briefcase"> </span> Datasets</li>
     </ol>
 </div>
+<<<<<<< HEAD
    <div class="col-md-12">
        <h1>@Html(title.getOrElse("Datasets"))</h1>
         @status match {
+=======
+    <div class="row">
+        <div class="col-md-12">
+            <h1>@Html(title.getOrElse("Datasets"))</h1>
+            @status match {
+>>>>>>> refs/remotes/origin/develop
                 case Some("publicAll") => {
                     <p>@Messages("space.title") owner has made the following @Messages("datasets.title").toLowerCase publicly available.</p>
                 }
@@ -38,7 +45,43 @@
                     <p>@Messages("dataset.list.message", Messages("datasets.title").toLowerCase, Messages("dataset.title").toLowerCase)</p>
                 }
             }
+<<<<<<< HEAD
    </div>
+=======
+        </div>
+    </div>
+
+<div class="row">
+    <div class="col-md-10">
+    </div>
+    <div class="col-md-1">
+    @status match {
+        case Some(st) => {}
+        case None => {
+
+        @user match {
+            case Some(u) => {
+                @(space, owner) match {
+                    case (Some(s), Some(o)) => {
+                        @if(Permission.checkPermission(Permission.CreateCollection, ResourceRef(ResourceRef.space, UUID(s)))) {
+                            @if(o.equalsIgnoreCase(u.id.stringify)) {
+                                <a id="create-dataset" href="@routes.Datasets.newDataset(Some(s), None)" class="btn btn-primary btn-sm pull-right" title="@Messages("create.title", Messages("dataset.title"))">
+                                    <span class="glyphicon glyphicon-ok"></span>  @Messages("create.title", "")</a>
+                            }
+                        }
+                    }
+                    case (Some(s), _) => {
+                        @if(Permission.checkPermission(Permission.CreateCollection, ResourceRef(ResourceRef.space, UUID(s)))) {
+                            <a id="create-dataset" href="@routes.Datasets.newDataset(Some(s), None)" class="btn btn-primary btn-sm pull-right" title="@Messages("create.title", Messages("dataset.title"))">
+                                <span class="glyphicon glyphicon-ok"></span>  @Messages("create.title", "")</a>
+                        }
+                    }
+                    case (_, Some(o)) => {
+                        @if(o.equalsIgnoreCase(u.id.stringify)) {
+                            <a id="create-dataset" class="btn btn-primary btn-sm pull-right" href="@routes.Datasets.newDataset(space, None)" title="@Messages("create.title", Messages("dataset.title"))"><span class="glyphicon glyphicon-ok"></span> @Messages("create.title", "")</a>
+                        }
+                    }
+>>>>>>> refs/remotes/origin/develop
 
 
 <div class="row">
