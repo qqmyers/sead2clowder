@@ -108,7 +108,14 @@ class Datasets @Inject() (
     implicit val user = request.user
     datasets.get(id) match {
       case Some(dataset) => {
-        Ok(views.html.datasets.createStep2(dataset))
+          var datasetSpaces: List[ProjectSpace]= List.empty[ProjectSpace]
+
+        	        dataset.spaces.map(sp =>
+        	          spaceService.get(sp) match {
+        	          case Some(s) => datasetSpaces =  s :: datasetSpaces
+        	          case None =>
+        	        })
+        	        Ok(views.html.datasets.createStep2(dataset, datasetSpaces))
       }
       case None => {
         InternalServerError(s"$Messages('dataset.title') $id not found")
@@ -120,7 +127,14 @@ class Datasets @Inject() (
     implicit val user = request.user
     datasets.get(id) match {
       case Some(dataset) => {
-        Ok(views.html.datasets.addFiles(dataset, None))
+          var datasetSpaces: List[ProjectSpace]= List.empty[ProjectSpace]
+
+          dataset.spaces.map(sp =>
+            spaceService.get(sp) match {
+              case Some(s) => datasetSpaces =  s :: datasetSpaces
+              case None =>
+            })
+          Ok(views.html.datasets.addFiles(dataset, None, datasetSpaces, List.empty))
       }
       case None => {
         InternalServerError(s"$Messages('dataset.title')  $id not found")
