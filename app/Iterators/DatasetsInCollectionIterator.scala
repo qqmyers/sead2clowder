@@ -56,7 +56,7 @@ class DatasetsInCollectionIterator(pathToFolder : String, collection : models.Co
             currentDataset = Some(datasetsInCollection(datasetCount))
             currentDataset match {
               case Some(cd) => {
-                currentDatasetIterator = Some(new DatasetIterator(pathToFolder+"/"+cd.name,currentDataset.get, zip, md5Files,
+                currentDatasetIterator = Some(new DatasetIterator(pathToFolder+"/"+cd.name,cd, zip, md5Files,
                   folders, files,metadataService,datasets,spaces))
                 true
               }
