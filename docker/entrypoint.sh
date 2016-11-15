@@ -89,10 +89,7 @@ function fix_conf() {
 # start server if asked
 if [ "$1" = 'server' ]; then
     # admins
-    if [ "$CLOWDER_ADMINS" == "" ]; then
-        fix_conf   "registerThroughAdmins" "false"
-        fix_conf   "initialAdmins" ""
-    else
+    if [ "$CLOWDER_ADMINS" != "" ]; then
         fix_conf   "registerThroughAdmins" "true"
         fix_conf   "initialAdmins" "$CLOWDER_ADMINS"
     fi
@@ -107,11 +104,8 @@ if [ "$1" = 'server' ]; then
     fix_conf   "mongodbURI" "$MONGO_URI"
 
     # smtp
-    fix_conf   "smtp.host" "$SMTP_HOST"
-    if [ "$SMTP_HOST" == "" ]; then
-        fix_conf   "smtp.mock" "true"
-    else
-        fix_conf   "smtp.mock" "false"
+    if [ "$SMTP_HOST" != "" ]; then
+      fix_conf   "smtp.host" "$SMTP_HOST"
     fi
 
     # elasticsearch
