@@ -1,11 +1,12 @@
 package api
 
 import java.net.URL
+import java.net.URLEncoder
 import java.util.Date
-import javax.inject.{Inject, Singleton}
+import javax.inject.{ Inject, Singleton }
 
 import com.wordnik.swagger.annotations.ApiOperation
-import models.{ResourceRef, UUID, UserAgent, _}
+import models.{ ResourceRef, UUID, UserAgent, _ }
 import org.apache.commons.lang.WordUtils
 import play.api.Play.current
 import play.api.Logger
@@ -16,22 +17,24 @@ import play.api.mvc.Result
 import services._
 import play.api.i18n.Messages
 
+import play.api.libs.json.JsValue
+
 import scala.concurrent.Future
 
 /**
  * Manipulate generic metadata.
  */
 @Singleton
-class Metadata @Inject()(
-  metadataService: MetadataService,
-  contextService: ContextLDService,
-  userService: UserService,
-  datasets: DatasetService,
-  files: FileService,
-  curations:CurationService,
-  events: EventService,
-  spaceService: SpaceService) extends ApiController {
-  
+class Metadata @Inject() (
+    metadataService: MetadataService,
+    contextService: ContextLDService,
+    userService: UserService,
+    datasets: DatasetService,
+    files: FileService,
+    curations: CurationService,
+    events: EventService,
+    spaceService: SpaceService) extends ApiController {
+
   def search() = PermissionAction(Permission.ViewDataset)(parse.json) { implicit request =>
     Logger.debug("Searching metadata")
     val results = metadataService.search(request.body)
@@ -39,25 +42,25 @@ class Metadata @Inject()(
   }
 
   def searchByKeyValue(key: Option[String], value: Option[String], count: Int = 0) = PermissionAction(Permission.ViewDataset) {
-      implicit request =>
-        implicit val user = request.user
-        val response = for {
-          k <- key
-          v <- value
-        } yield {
-          val results = metadataService.search(k, v, count, user)
-          val datasetsResults = results.flatMap { d =>
-            if (d.resourceType == ResourceRef.dataset) datasets.get(d.id) else None
-          }
-          val filesResults = results.flatMap { f =>
-            if (f.resourceType == ResourceRef.file) files.get(f.id) else None
-          }
-          import Dataset.datasetWrites
-          import File.FileWrites
-          // Use "distinct" to remove duplicate results.
-          Ok(JsObject(Seq("datasets" -> toJson(datasetsResults.distinct), "files" -> toJson(filesResults.distinct))))
+    implicit request =>
+      implicit val user = request.user
+      val response = for {
+        k <- key
+        v <- value
+      } yield {
+        val results = metadataService.search(k, v, count, user)
+        val datasetsResults = results.flatMap { d =>
+          if (d.resourceType == ResourceRef.dataset) datasets.get(d.id) else None
         }
-        response getOrElse BadRequest(toJson("You must specify key and value"))
+        val filesResults = results.flatMap { f =>
+          if (f.resourceType == ResourceRef.file) files.get(f.id) else None
+        }
+        import Dataset.datasetWrites
+        import File.FileWrites
+        // Use "distinct" to remove duplicate results.
+        Ok(JsObject(Seq("datasets" -> toJson(datasetsResults.distinct), "files" -> toJson(filesResults.distinct))))
+      }
+      response getOrElse BadRequest(toJson("You must specify key and value"))
   }
 
   def getDefinitions() = PermissionAction(Permission.ViewDataset) {
@@ -80,12 +83,12 @@ class Metadata @Inject()(
         val metadataDefinitions = collection.mutable.HashSet[models.MetadataDefinition]()
         dataset.spaces.foreach { spaceId =>
           spaceService.get(spaceId) match {
-            case Some(space) => metadataService.getDefinitions(Some(space.id)).foreach{definition => metadataDefinitions += definition}
+            case Some(space) => metadataService.getDefinitions(Some(space.id)).foreach { definition => metadataDefinitions += definition }
             case None =>
           }
         }
-        if(dataset.spaces.length == 0) {
-          metadataService.getDefinitions().foreach{definition => metadataDefinitions += definition}
+        if (dataset.spaces.length == 0) {
+          metadataService.getDefinitions().foreach { definition => metadataDefinitions += definition }
         }
         Ok(toJson(metadataDefinitions.toList))
       }
@@ -119,17 +122,17 @@ class Metadata @Inject()(
     }
   }
 
-  def addDefinitionToSpace(spaceId: UUID) = PermissionAction(Permission.EditSpace, Some(ResourceRef(ResourceRef.space, spaceId))) (parse.json){ implicit request =>
+  def addDefinitionToSpace(spaceId: UUID) = PermissionAction(Permission.EditSpace, Some(ResourceRef(ResourceRef.space, spaceId)))(parse.json) { implicit request =>
     implicit val user = request.user
     user match {
       case Some(u) => {
         var body = request.body
-        if ((body \ "label").asOpt[String].isDefined && (body \ "type").asOpt[String].isDefined ) {
+        if ((body \ "label").asOpt[String].isDefined && (body \ "type").asOpt[String].isDefined) {
           var uri = (body \ "uri").asOpt[String].getOrElse("")
           spaceService.get(spaceId) match {
             case Some(space) => {
               // assign a default uri if not specified
-              if(uri == "") {
+              if (uri == "") {
                 // http://clowder.ncsa.illinois.edu/metadata/{uuid}#CamelCase
                 uri = play.Play.application().configuration().getString("metadata.uri.prefix") + "/" + space.id.stringify + "#" + WordUtils.capitalize((body \ "label").as[String]).replaceAll("\\s", "")
                 body = body.as[JsObject] + ("uri" -> Json.toJson(uri))
@@ -151,10 +154,10 @@ class Metadata @Inject()(
       request.user match {
         case Some(user) => {
           var body = request.body
-          if ((body \ "label").asOpt[String].isDefined && (body \ "type").asOpt[String].isDefined ) {
+          if ((body \ "label").asOpt[String].isDefined && (body \ "type").asOpt[String].isDefined) {
             var uri = (body \ "uri").asOpt[String].getOrElse("")
             // assign a default uri if not specified
-            if(uri == "") {
+            if (uri == "") {
               // http://clowder.ncsa.illinois.edu/metadata#CamelCase
               uri = play.Play.application().configuration().getString("metadata.uri.prefix") + "#" + WordUtils.capitalize((body \ "label").as[String]).replaceAll("\\s", "")
               body = body.as[JsObject] + ("uri" -> Json.toJson(uri))
@@ -188,7 +191,7 @@ class Metadata @Inject()(
     }
   }
 
-  def editDefinition(id:UUID, spaceId: Option[String]) = ServerAdminAction (parse.json) {
+  def editDefinition(id: UUID, spaceId: Option[String]) = ServerAdminAction(parse.json) {
     implicit request =>
       request.user match {
         case Some(user) => {
@@ -196,7 +199,7 @@ class Metadata @Inject()(
           if ((body \ "label").asOpt[String].isDefined && (body \ "type").asOpt[String].isDefined && (body \ "uri").asOpt[String].isDefined) {
             val uri = (body \ "uri").as[String]
             metadataService.getDefinitionByUriAndSpace(uri, spaceId) match {
-              case Some(metadata)  => if( metadata.id != id) {
+              case Some(metadata) => if (metadata.id != id) {
                 BadRequest(toJson("Metadata definition with same uri exists."))
               } else {
                 metadataService.editDefinition(id, body)
@@ -249,7 +252,7 @@ class Metadata @Inject()(
             Ok(JsObject(Seq("status" -> JsString("ok"))))
           }
           case None => BadRequest(toJson("Invalid metadata definition"))
-          }
+        }
 
       }
       case None => BadRequest(toJson("Invalid user"))
@@ -268,18 +271,18 @@ class Metadata @Inject()(
               Logger.error("Errors: " + JsError.toFlatForm(e))
               BadRequest(JsError.toFlatJson(e))
             }
-            case s: JsSuccess[RDFModel] => { 
-              model = s.get 
+            case s: JsSuccess[RDFModel] => {
+              model = s.get
               // when the new metadata is added
               val createdAt = new Date()
-    
+
               // build creator uri
               // TODO switch to internal id and then build url when returning?
               val userURI = controllers.routes.Application.index().absoluteURL() + "api/users/" + user.id
               val creator = UserAgent(user.id, "cat:user", MiniUser(user.id, user.fullName, user.avatarUrl.getOrElse(""), user.email), Some(new URL(userURI)))
-    
+
               val context: JsValue = (json \ "@context")
-    
+
               // figure out what resource this is attached to
               val attachedTo =
                 if ((json \ "file_id").asOpt[String].isDefined)
@@ -291,10 +294,10 @@ class Metadata @Inject()(
                 else if ((json \ "curationFile_id").asOpt[String].isDefined)
                   Some(ResourceRef(ResourceRef.curationFile, UUID((json \ "curationFile_id").as[String])))
                 else None
-    
+
               // check if the context is a URL to external endpoint
               val contextURL: Option[URL] = context.asOpt[String].map(new URL(_))
-    
+
               // check if context is a JSON-LD document
               val contextID: Option[UUID] =
                 if (context.isInstanceOf[JsObject]) {
@@ -302,19 +305,19 @@ class Metadata @Inject()(
                 } else if (context.isInstanceOf[JsArray]) {
                   context.asOpt[JsArray].map(contextService.addContext(new JsString("context name"), _))
                 } else None
-    
+
               //parse the rest of the request to create a new models.Metadata object
               val content = (json \ "content")
               val version = None
-    
+
               if (attachedTo.isDefined) {
                 val metadata = models.Metadata(UUID.generate, attachedTo.get, contextID, contextURL, createdAt, creator,
                   content, version)
-    
+
                 //add metadata to mongo
                 metadataService.addMetadata(metadata)
                 val mdMap = metadata.getExtractionSummary
-    
+
                 attachedTo match {
                   case Some(resource) => {
                     resource.resourceType match {
@@ -355,7 +358,7 @@ class Metadata @Inject()(
 
   @ApiOperation(value = "Delete the metadata represented in Json-ld format",
     responseClass = "None", httpMethod = "DELETE")
-  def removeMetadata(id:UUID) = PermissionAction(Permission.DeleteMetadata, Some(ResourceRef(ResourceRef.metadata, id))) { implicit request =>
+  def removeMetadata(id: UUID) = PermissionAction(Permission.DeleteMetadata, Some(ResourceRef(ResourceRef.metadata, id))) { implicit request =>
     request.user match {
       case Some(user) => {
         metadataService.getMetadataById(id) match {
@@ -399,4 +402,82 @@ class Metadata @Inject()(
       case None => BadRequest("Not authorized.")
     }
   }
+
+  @ApiOperation(value = "Get information about a person from SEAD PDT given an person ID", httpMethod = "GET")
+  def getPerson(pid: String) = PermissionAction(Permission.ViewMetadata).async { implicit request =>
+
+    implicit val context = scala.concurrent.ExecutionContext.Implicits.global
+    val endpoint = (play.Play.application().configuration().getString("people.uri") + "/" + URLEncoder.encode(pid, "UTF-8"))
+    val futureResponse = WS.url(endpoint).get()
+    var jsonResponse: play.api.libs.json.JsValue = new JsArray()
+    var success = false
+    val result = futureResponse.map {
+      case response =>
+        if (response.status >= 200 && response.status < 300 || response.status == 304) {
+          Ok(response.json).as("application/json")
+        } else {
+          if (response.status == 404) {
+
+            NotFound(toJson(Map("failure" -> { "Person with identifier " + pid + " not found" }))).as("application/json")
+
+          } else {
+            InternalServerError(toJson(Map("failure" -> { "Status: " + response.status.toString() + " returned from SEAD /api/people/<id> service" }))).as("application/json")
+          }
+        }
+    }
+    result
+  }
+
+  @ApiOperation(value = "Get list of known people from SEAD PDT, eventually using term and limit to constrain the response ", httpMethod = "GET")
+  def listPeople(term: String, limit: Int) = PermissionAction(Permission.ViewMetadata).async { implicit request =>
+
+    implicit val context = scala.concurrent.ExecutionContext.Implicits.global
+    val endpoint = (play.Play.application().configuration().getString("people.uri"))
+    if (endpoint != null) {
+
+      val futureResponse = WS.url(endpoint).get()
+      var jsonResponse: play.api.libs.json.JsValue = new JsArray()
+      var success = false
+      val lcTerm = term.toLowerCase()
+      val result = futureResponse.map {
+        case response =>
+          if (response.status >= 200 && response.status < 300 || response.status == 304) {
+            val people = (response.json \ ("persons")).as[List[JsObject]]
+            Ok(Json.toJson(people.map { t =>
+              val fName = t \ ("givenName")
+              val lName = t \ ("familyName")
+              val name = JsString(fName.as[String] + " " + lName.as[String])
+              val email =   t \ ("email") match {
+                case JsString(_) => t \ ("email")
+                case _ => JsString("")
+              }
+              Map("name" -> name, "@id" -> t \ ("@id"), "email" -> email)
+
+            }.filter((x) => {
+              if(term.length == 0) {
+                true
+              } else {
+              Logger.debug(lcTerm)
+              
+              ((x.getOrElse("name", new JsString("")).as[String].toLowerCase().contains(lcTerm)) || 
+                  x.getOrElse("@id", new JsString("")).as[String].toLowerCase().contains(lcTerm) || 
+                  x.getOrElse("email", new JsString("")).as[String].toLowerCase().contains(lcTerm))
+            }
+            }).take(limit))).as("application/json")
+          } else {
+            if (response.status == 404) {
+
+              NotFound(toJson(Map("failure" -> { "People not found" }))).as("application/json")
+
+            } else {
+              InternalServerError(toJson(Map("failure" -> { "Status: " + response.status.toString() + " returned from SEAD /api/people service" }))).as("application/json")
+            }
+          }
+      }
+      result
+    } else { //TBD - just get list of Clowder users
+      Future(NotFound(toJson(Map("failure" -> { "People not found" }))).as("application/json"))
+    }
+  }
+
 }
