@@ -556,7 +556,12 @@ class Extractions @Inject()(
               idAndFlags
             }
 
-            p.extract(ExtractorMessage(new UUID(originalId), file.id, host, key, extra, file.length.toString, null, newFlags))
+            var datasetId: UUID = null
+            datasets.findByFileId(file_id).map(ds => {
+              datasetId = ds.id
+            })
+
+            p.extract(ExtractorMessage(new UUID(originalId), file.id, host, key, extra, file.length.toString, datasetId, newFlags))
             Ok(Json.obj("status" -> "OK"))
           }
           case None =>
