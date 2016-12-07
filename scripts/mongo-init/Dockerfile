@@ -20,11 +20,6 @@ RUN mkdir -p /data/db && \
     pip3 install passlib bcrypt
 
 #Copy files
-COPY files/entrypoint.sh files/passwd /
+COPY FILES.mongo-init /
 
-#Change owner and group
-RUN chown root /passwd && chown root /entrypoint.sh && chmod u+x /passwd && chmod u+x /entrypoint.sh
-#Set workdir
-WORKDIR "/"
-
-ENTRYPOINT ["/entrypoint.sh"]
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
