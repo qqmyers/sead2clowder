@@ -53,6 +53,7 @@ class ExtractionAPIControllerSpec extends PlaySpec with OneAppPerSuite {
 	}))
 
   val mockfiles = mock[FileService]
+  val mockdatasets = mock[DatasetService]
   val mockExtractions = mock[ExtractionService]
   val mockDTS = mock[ExtractionRequestsService]
   val mockExtractors = mock[ExtractorService]

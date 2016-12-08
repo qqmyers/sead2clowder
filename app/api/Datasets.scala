@@ -23,12 +23,9 @@ import play.api.libs.json._
 import play.api.libs.json.Json._
 import play.api.mvc.AnyContent
 import services._
-import _root_.util.{FileUtils, JSONLD, License}
-import _root_.util.{JSONLD, License}
-import views.html.dataset
+import _root_.util.{FileUtils, JSONLD, License, SearchUtils}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.collection.mutable.ListBuffer
-import org.apache.commons.io.input.CountingInputStream
 
 /**
  * Dataset API.
@@ -239,12 +236,11 @@ class  Datasets @Inject()(
                     val xmlToJSON = files.getXMLMetadataJSON(UUID(file_id))
                     datasets.addXMLMetadata(UUID(id), UUID(file_id), xmlToJSON)
                     current.plugin[ElasticsearchPlugin].foreach {
-                      _.index("data", "dataset", UUID(id),
-                        List(("name", d.name), ("description", d.description), ("xmlmetadata", xmlToJSON)))
+                      _.index(SearchUtils.getElasticsearchObject(d))
                     }
                   } else {
                     current.plugin[ElasticsearchPlugin].foreach {
-                      _.index("data", "dataset", UUID(id), List(("name", d.name), ("description", d.description)))
+                      _.index(SearchUtils.getElasticsearchObject(d))
                     }
                   }
 
@@ -670,53 +666,65 @@ class  Datasets @Inject()(
         datasets.get(id) match {
           case Some(x) => {
             val json = request.body
-            //parse request for agent/creator info
-            //creator can be UserAgent or ExtractorAgent
-            var creator: models.Agent = null
-            json.validate[Agent] match {
-              case s: JsSuccess[Agent] => {
-                creator = s.get
+            // parse request for JSON-LD model
+            var model: RDFModel = null
+            json.validate[RDFModel] match {
+              case e: JsError => {
+                Logger.error("Errors: " + JsError.toFlatForm(e))
+                BadRequest(JsError.toFlatJson(e))
+              }
+              case s: JsSuccess[RDFModel] => { 
+                model = s.get 
+                
+                //parse request for agent/creator info
+                //creator can be UserAgent or ExtractorAgent
+                var creator: models.Agent = null
+                json.validate[Agent] match {
+                  case s: JsSuccess[Agent] => {
+                    creator = s.get
+    
+                    // check if the context is a URL to external endpoint
+                    val contextURL: Option[URL] = (json \ "@context").asOpt[String].map(new URL(_))
+    
+                    // check if context is a JSON-LD document
+                    val contextID: Option[UUID] = (json \ "@context").asOpt[JsObject]
+                      .map(contextService.addContext(new JsString("context name"), _))
+    
+                    // when the new metadata is added
+                    val createdAt = new Date()
+    
+                    //parse the rest of the request to create a new models.Metadata object
+                    val attachedTo = ResourceRef(ResourceRef.dataset, id)
+                    val content = (json \ "content")
+                    val version = None
+                    val metadata = models.Metadata(UUID.generate, attachedTo, contextID, contextURL, createdAt, creator,
+                      content, version)
+    
+                    //add metadata to mongo
+                    metadataService.addMetadata(metadata)
+                    val mdMap = metadata.getExtractionSummary
+    
+                    //send RabbitMQ message
+                    current.plugin[RabbitmqPlugin].foreach { p =>
+                      val dtkey = s"${p.exchange}.metadata.added"
+                      p.extract(ExtractorMessage(UUID(""), UUID(""), controllers.Utils.baseUrl(request), dtkey, mdMap, "", metadata.attachedTo.id, ""))
+                    }
 
-                // check if the context is a URL to external endpoint
-                val contextURL: Option[URL] = (json \ "@context").asOpt[String].map(new URL(_))
-
-                // check if context is a JSON-LD document
-                val contextID: Option[UUID] = (json \ "@context").asOpt[JsObject]
-                  .map(contextService.addContext(new JsString("context name"), _))
-
-                // when the new metadata is added
-                val createdAt = new Date()
-
-                //parse the rest of the request to create a new models.Metadata object
-                val attachedTo = ResourceRef(ResourceRef.dataset, id)
-                val content = (json \ "content")
-                val version = None
-                val metadata = models.Metadata(UUID.generate, attachedTo, contextID, contextURL, createdAt, creator,
-                  content, version)
-
-                //add metadata to mongo
-                metadataService.addMetadata(metadata)
-                val mdMap = metadata.getExtractionSummary
-
-                //send RabbitMQ message
-                current.plugin[RabbitmqPlugin].foreach { p =>
-                  val dtkey = s"${p.exchange}.metadata.added"
-                  p.extract(ExtractorMessage(UUID(""), UUID(""), controllers.Utils.baseUrl(request), dtkey, mdMap, "", metadata.attachedTo.id, ""))
+                    datasets.index(id)
+                    Ok(toJson("Metadata successfully added to db"))
+    
+                  }
+                  case e: JsError => {
+                    Logger.error("Error getting creator");
+                    BadRequest(toJson(s"Creator data is missing or incorrect."))
+                  }
                 }
-
-                datasets.index(id)
-                Ok(toJson("Metadata successfully added to db"))
-            }
-            case e: JsError => {
-              Logger.error("Error getting creator");
-              BadRequest(toJson(s"Creator data is missing or incorrect."))
+              }
             }
           }
-
+          case None => Logger.error(s"Error getting dataset $id"); NotFound
         }
-        case None => Logger.error(s"Error getting dataset $id"); NotFound
       }
-    }
 
 
   @ApiOperation(value="Retrieve available metadata definitions for a dataset. It is an aggregation of the metadata that a space belongs to.",
@@ -753,20 +761,52 @@ class  Datasets @Inject()(
     }
   }
 
-  @ApiOperation(value = "Retrieve metadata as JSON-LD",
-    notes = "Get metadata of the file object as JSON-LD.",
+ @ApiOperation(value = "Retrieve metadata as JSON-LD",
+    notes = "Get metadata of the dataset object as JSON-LD.",
     responseClass = "None", httpMethod = "GET")
-  def getMetadataJsonLD(id: UUID) = PermissionAction(Permission.ViewMetadata, Some(ResourceRef(ResourceRef.dataset, id))) { implicit request =>
+  def getMetadataJsonLD(id: UUID, extFilter: Option[String]) = PermissionAction(Permission.ViewMetadata, Some(ResourceRef(ResourceRef.dataset, id))) { implicit request =>
     datasets.get(id) match {
       case Some(dataset) => {
         //get metadata and also fetch context information
-        val listOfMetadata = metadataService.getMetadataByAttachTo(ResourceRef(ResourceRef.dataset, id))
-          .map(JSONLD.jsonMetadataWithContext(_))
+        val listOfMetadata = extFilter match {
+          case Some(f) => metadataService.getExtractedMetadataByAttachTo(ResourceRef(ResourceRef.dataset, id), f)
+                                    .map(JSONLD.jsonMetadataWithContext(_))
+          case None => metadataService.getMetadataByAttachTo(ResourceRef(ResourceRef.dataset, id))
+                                    .map(JSONLD.jsonMetadataWithContext(_))
+        }
         Ok(toJson(listOfMetadata))
       }
       case None => {
         Logger.error("Error getting dataset  " + id);
-        InternalServerError
+        BadRequest(toJson("Error getting dataset  " + id))
+      }
+    }
+  }
+
+  @ApiOperation(value = "Remove JSON-LD metadata, filtered by extractor if necessary",
+    notes = "Remove JSON-LD metadata from dataset object",
+    responseClass = "None", httpMethod = "GET")
+  def removeMetadataJsonLD(id: UUID, extFilter: Option[String]) = PermissionAction(Permission.DeleteMetadata, Some(ResourceRef(ResourceRef.dataset, id))) { implicit request =>
+    datasets.get(id) match {
+      case Some(dataset) => {
+        val num_removed = extFilter match {
+          case Some(f) => metadataService.removeMetadataByAttachToAndExtractor(ResourceRef(ResourceRef.dataset, id), f)
+          case None => metadataService.removeMetadataByAttachTo(ResourceRef(ResourceRef.dataset, id))
+        }
+
+        // send extractor message after attached to resource
+        current.plugin[RabbitmqPlugin].foreach { p =>
+          val dtkey = s"${p.exchange}.metadata.removed"
+          p.extract(ExtractorMessage(UUID(""), UUID(""), "", dtkey, Map[String, Any](
+            "resourceType"->ResourceRef.dataset,
+            "resourceId"->id.toString), "", id, ""))
+        }
+
+        Ok(toJson(Map("status" -> "success", "count" -> num_removed.toString)))
+      }
+      case None => {
+        Logger.error("Error getting dataset  " + id);
+        BadRequest(toJson("Error getting dataset  " + id))
       }
     }
   }
@@ -1754,7 +1794,7 @@ class  Datasets @Inject()(
           case Some(resultFile) =>{
             Ok.chunked(Enumerator.fromStream(new FileInputStream(resultFile)))
               .withHeaders(CONTENT_TYPE -> "application/rdf+xml")
-              .withHeaders(CONTENT_DISPOSITION -> ("attachment; filename=" + resultFile.getName()))
+              .withHeaders(CONTENT_DISPOSITION -> (FileUtils.encodeAttachment(resultFile.getName(),request.headers.get("user-agent").getOrElse(""))))
           }
           case None => BadRequest(toJson("Dataset not found " + id))
         }
@@ -2217,8 +2257,10 @@ class  Datasets @Inject()(
       space.name
     }
 
+    val dataset_description = Utils.decodeString(dataset.description)
+
     val licenseInfo = Json.obj("licenseText"->dataset.licenseData.m_licenseText,"rightsHolder"->rightsHolder)
-    Json.obj("id"->dataset.id,"name"->dataset.name,"author"->dataset.author.email,"description"->dataset.description, "spaces"->spaceNames.mkString(","),"lastModified"->dataset.lastModifiedDate.toString,"license"->licenseInfo)
+    Json.obj("id"->dataset.id,"name"->dataset.name,"author"->dataset.author.email,"description"->dataset_description, "spaces"->spaceNames.mkString(","),"lastModified"->dataset.lastModifiedDate.toString,"license"->licenseInfo)
   }
 
   private def addDatasetInfoToZip(folderName: String, dataset: models.Dataset, zip: ZipOutputStream): Option[InputStream] = {
@@ -2320,8 +2362,8 @@ class  Datasets @Inject()(
             // Use custom enumerator to create the zip file on the fly
             // Use a 1MB in memory byte array
             Ok.chunked(enumeratorFromDataset(dataset,1024*1024, compression,bagit,user)).withHeaders(
-              "Content-Type" -> "application/zip",
-              "Content-Disposition" -> ("attachment; filename=\"" + dataset.name+ ".zip\"")
+              CONTENT_TYPE -> "application/zip",
+              CONTENT_DISPOSITION -> (FileUtils.encodeAttachment(dataset.name+ ".zip", request.headers.get("user-agent").getOrElse("")))
             )
           }
           // If the dataset wasn't found by ID

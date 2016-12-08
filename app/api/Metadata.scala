@@ -6,14 +6,21 @@ import javax.inject.{Inject, Singleton}
 
 import com.wordnik.swagger.annotations.ApiOperation
 import models.{ResourceRef, UUID, UserAgent, _}
+import org.elasticsearch.action.search.SearchResponse
+import org.apache.commons.lang.WordUtils
 import play.api.Play.current
 import play.api.Logger
+import play.api.Play._
 import play.api.libs.json.Json._
 import play.api.libs.json._
 import play.api.libs.ws.WS
 import play.api.mvc.Result
 import services._
+import play.api.i18n.Messages
 
+import scala.collection.JavaConversions._
+import scala.collection.JavaConverters._
+import scala.collection.mutable.ListBuffer
 import scala.concurrent.Future
 
 /**
@@ -29,34 +36,6 @@ class Metadata @Inject()(
   curations:CurationService,
   events: EventService,
   spaceService: SpaceService) extends ApiController {
-  
-  def search() = PermissionAction(Permission.ViewDataset)(parse.json) { implicit request =>
-    Logger.debug("Searching metadata")
-    val results = metadataService.search(request.body)
-    Ok(toJson(results))
-  }
-
-  def searchByKeyValue(key: Option[String], value: Option[String], count: Int = 0) = PermissionAction(Permission.ViewDataset) {
-      implicit request =>
-        implicit val user = request.user
-        val response = for {
-          k <- key
-          v <- value
-        } yield {
-          val results = metadataService.search(k, v, count, user)
-          val datasetsResults = results.flatMap { d =>
-            if (d.resourceType == ResourceRef.dataset) datasets.get(d.id) else None
-          }
-          val filesResults = results.flatMap { f =>
-            if (f.resourceType == ResourceRef.file) files.get(f.id) else None
-          }
-          import Dataset.datasetWrites
-          import File.FileWrites
-          // Use "distinct" to remove duplicate results.
-          Ok(JsObject(Seq("datasets" -> toJson(datasetsResults.distinct), "files" -> toJson(filesResults.distinct))))
-        }
-        response getOrElse BadRequest(toJson("You must specify key and value"))
-  }
 
   def getDefinitions() = PermissionAction(Permission.ViewDataset) {
     implicit request =>
@@ -69,6 +48,39 @@ class Metadata @Inject()(
       implicit val user = request.user
       val vocabularies = metadataService.getDefinitionsDistinctName(user)
       Ok(toJson(vocabularies))
+  }
+
+  /** Get set of metadata fields containing filter substring for autocomplete */
+  def getAutocompleteName(query: String) = PermissionAction(Permission.ViewDataset) { implicit request =>
+    implicit val user = request.user
+
+    var listOfTerms = ListBuffer.empty[String]
+
+    // First, get regular vocabulary matches
+    val definitions = metadataService.getDefinitionsDistinctName(user)
+    for (md_def <- definitions) {
+      val currVal = (md_def.json \ "label").as[String]
+      if (currVal.toLowerCase startsWith query.toLowerCase) {
+        listOfTerms.append("metadata."+currVal)
+      }
+    }
+
+    // Next get Elasticsearch metadata fields if plugin available
+    current.plugin[ElasticsearchPlugin] match {
+      case Some(plugin) => {
+        val mdTerms = plugin.getAutocompleteMetadataFields(query)
+        for (term <- mdTerms) {
+          // e.g. "metadata.http://localhost:9000/clowder/api/extractors/terra.plantcv.angle",
+          //      "metadata.Jane Doe.Alternative Title"
+          if (!(listOfTerms contains term))
+            listOfTerms.append(term)
+        }
+        Ok(toJson(listOfTerms.distinct))
+      }
+      case None => {
+        BadRequest("Elasticsearch plugin is not enabled")
+      }
+    }
   }
 
   def getDefinitionsByDataset(id: UUID) = PermissionAction(Permission.AddMetadata, Some(ResourceRef(ResourceRef.dataset, id))) { implicit request =>
@@ -121,11 +133,17 @@ class Metadata @Inject()(
     implicit val user = request.user
     user match {
       case Some(u) => {
-        val body = request.body
-        if ((body \ "label").asOpt[String].isDefined && (body \ "type").asOpt[String].isDefined && (body \ "uri").asOpt[String].isDefined) {
-          val uri = (body \ "uri").as[String]
+        var body = request.body
+        if ((body \ "label").asOpt[String].isDefined && (body \ "type").asOpt[String].isDefined ) {
+          var uri = (body \ "uri").asOpt[String].getOrElse("")
           spaceService.get(spaceId) match {
             case Some(space) => {
+              // assign a default uri if not specified
+              if(uri == "") {
+                // http://clowder.ncsa.illinois.edu/metadata/{uuid}#CamelCase
+                uri = play.Play.application().configuration().getString("metadata.uri.prefix") + "/" + space.id.stringify + "#" + WordUtils.capitalize((body \ "label").as[String]).replaceAll("\\s", "")
+                body = body.as[JsObject] + ("uri" -> Json.toJson(uri))
+              }
               addDefinitionHelper(uri, body, Some(space.id), u, Some(space))
             }
             case None => BadRequest("The space does not exist")
@@ -142,9 +160,15 @@ class Metadata @Inject()(
     implicit request =>
       request.user match {
         case Some(user) => {
-          val body = request.body
-          if ((body \ "label").asOpt[String].isDefined && (body \ "type").asOpt[String].isDefined && (body \ "uri").asOpt[String].isDefined) {
-            val uri = (body \ "uri").as[String]
+          var body = request.body
+          if ((body \ "label").asOpt[String].isDefined && (body \ "type").asOpt[String].isDefined ) {
+            var uri = (body \ "uri").asOpt[String].getOrElse("")
+            // assign a default uri if not specified
+            if(uri == "") {
+              // http://clowder.ncsa.illinois.edu/metadata#CamelCase
+              uri = play.Play.application().configuration().getString("metadata.uri.prefix") + "#" + WordUtils.capitalize((body \ "label").as[String]).replaceAll("\\s", "")
+              body = body.as[JsObject] + ("uri" -> Json.toJson(uri))
+            }
             addDefinitionHelper(uri, body, None, user, None)
           } else {
             BadRequest(toJson("Invalid Resource type"))
@@ -154,8 +178,9 @@ class Metadata @Inject()(
       }
   }
 
-  def addDefinitionHelper(uri: String, body: JsValue, spaceId: Option[UUID], user: User, space: Option[ProjectSpace]): Result = {
-    metadataService.getDefinitionByUri(uri) match {
+  //On GUI, URI is not required, however URI is required in DB. a default one will be generated when needed.
+  private def addDefinitionHelper(uri: String, body: JsValue, spaceId: Option[UUID], user: User, space: Option[ProjectSpace]): Result = {
+    metadataService.getDefinitionByUriAndSpace(uri, space map {_.id.toString()} ) match {
       case Some(metadata) => BadRequest(toJson("Metadata definition with same uri exists."))
       case None => {
         val definition = MetadataDefinition(json = body, spaceId = spaceId)
@@ -246,81 +271,92 @@ class Metadata @Inject()(
       request.user match {
         case Some(user) => {
           val json = request.body
-          // when the new metadata is added
-          val createdAt = new Date()
-
-          // build creator uri
-          // TODO switch to internal id and then build url when returning?
-          val userURI = controllers.routes.Application.index().absoluteURL() + "api/users/" + user.id
-          val creator = UserAgent(user.id, "cat:user", MiniUser(user.id, user.fullName, user.avatarUrl.getOrElse(""), user.email), Some(new URL(userURI)))
-
-          val context: JsValue = (json \ "@context")
-
-          // figure out what resource this is attached to
-          val attachedTo =
-            if ((json \ "file_id").asOpt[String].isDefined)
-              Some(ResourceRef(ResourceRef.file, UUID((json \ "file_id").as[String])))
-            else if ((json \ "dataset_id").asOpt[String].isDefined)
-              Some(ResourceRef(ResourceRef.dataset, UUID((json \ "dataset_id").as[String])))
-            else if ((json \ "curationObject_id").asOpt[String].isDefined)
-              Some(ResourceRef(ResourceRef.curationObject, UUID((json \ "curationObject_id").as[String])))
-            else if ((json \ "curationFile_id").asOpt[String].isDefined)
-              Some(ResourceRef(ResourceRef.curationFile, UUID((json \ "curationFile_id").as[String])))
-            else None
-
-          // check if the context is a URL to external endpoint
-          val contextURL: Option[URL] = context.asOpt[String].map(new URL(_))
-
-          // check if context is a JSON-LD document
-          val contextID: Option[UUID] =
-            if (context.isInstanceOf[JsObject]) {
-              context.asOpt[JsObject].map(contextService.addContext(new JsString("context name"), _))
-            } else if (context.isInstanceOf[JsArray]) {
-              context.asOpt[JsArray].map(contextService.addContext(new JsString("context name"), _))
-            } else None
-
-          //parse the rest of the request to create a new models.Metadata object
-          val content = (json \ "content")
-          val version = None
-
-          if (attachedTo.isDefined) {
-            val metadata = models.Metadata(UUID.generate, attachedTo.get, contextID, contextURL, createdAt, creator,
-              content, version)
-
-            //add metadata to mongo
-            metadataService.addMetadata(metadata)
-            val mdMap = metadata.getExtractionSummary
-
-            attachedTo match {
-              case Some(resource) => {
-                resource.resourceType match {
-                  case ResourceRef.dataset => {
-                    datasets.index(resource.id)
-                    //send RabbitMQ message
-                    current.plugin[RabbitmqPlugin].foreach { p =>
-                      val dtkey = s"${p.exchange}.metadata.added"
-                      p.extract(ExtractorMessage(UUID(""), UUID(""), controllers.Utils.baseUrl(request),
-                        dtkey, mdMap, "", metadata.attachedTo.id, ""))
-                    }
-                  }
-                  case ResourceRef.file => {
-                    files.index(resource.id)
-                    //send RabbitMQ message
-                    current.plugin[RabbitmqPlugin].foreach { p =>
-                      val dtkey = s"${p.exchange}.metadata.added"
-                      p.extract(ExtractorMessage(metadata.attachedTo.id, UUID(""), controllers.Utils.baseUrl(request),
-                        dtkey, mdMap, "", UUID(""), ""))
-                    }
-                  }
-                  case _ => {}
-                }
-              }
-              case None => {}
+          // parse request for JSON-LD model
+          var model: RDFModel = null
+          json.validate[RDFModel] match {
+            case e: JsError => {
+              Logger.error("Errors: " + JsError.toFlatForm(e))
+              BadRequest(JsError.toFlatJson(e))
             }
+            case s: JsSuccess[RDFModel] => { 
+              model = s.get 
+              // when the new metadata is added
+              val createdAt = new Date()
+    
+              // build creator uri
+              // TODO switch to internal id and then build url when returning?
+              val userURI = controllers.routes.Application.index().absoluteURL() + "api/users/" + user.id
+              val creator = UserAgent(user.id, "cat:user", MiniUser(user.id, user.fullName, user.avatarUrl.getOrElse(""), user.email), Some(new URL(userURI)))
+    
+              val context: JsValue = (json \ "@context")
+    
+              // figure out what resource this is attached to
+              val attachedTo =
+                if ((json \ "file_id").asOpt[String].isDefined)
+                  Some(ResourceRef(ResourceRef.file, UUID((json \ "file_id").as[String])))
+                else if ((json \ "dataset_id").asOpt[String].isDefined)
+                  Some(ResourceRef(ResourceRef.dataset, UUID((json \ "dataset_id").as[String])))
+                else if ((json \ "curationObject_id").asOpt[String].isDefined)
+                  Some(ResourceRef(ResourceRef.curationObject, UUID((json \ "curationObject_id").as[String])))
+                else if ((json \ "curationFile_id").asOpt[String].isDefined)
+                  Some(ResourceRef(ResourceRef.curationFile, UUID((json \ "curationFile_id").as[String])))
+                else None
+    
+              // check if the context is a URL to external endpoint
+              val contextURL: Option[URL] = context.asOpt[String].map(new URL(_))
+    
+              // check if context is a JSON-LD document
+              val contextID: Option[UUID] =
+                if (context.isInstanceOf[JsObject]) {
+                  context.asOpt[JsObject].map(contextService.addContext(new JsString("context name"), _))
+                } else if (context.isInstanceOf[JsArray]) {
+                  context.asOpt[JsArray].map(contextService.addContext(new JsString("context name"), _))
+                } else None
+    
+              //parse the rest of the request to create a new models.Metadata object
+              val content = (json \ "content")
+              val version = None
+    
+              if (attachedTo.isDefined) {
+                val metadata = models.Metadata(UUID.generate, attachedTo.get, contextID, contextURL, createdAt, creator,
+                  content, version)
+    
+                //add metadata to mongo
+                metadataService.addMetadata(metadata)
+                val mdMap = metadata.getExtractionSummary
+    
+                attachedTo match {
+                  case Some(resource) => {
+                    resource.resourceType match {
+                      case ResourceRef.dataset => {
+                        datasets.index(resource.id)
+                        //send RabbitMQ message
+                        current.plugin[RabbitmqPlugin].foreach { p =>
+                          val dtkey = s"${p.exchange}.metadata.added"
+                          p.extract(ExtractorMessage(UUID(""), UUID(""), controllers.Utils.baseUrl(request),
+                            dtkey, mdMap, "", metadata.attachedTo.id, ""))
+                        }
+                      }
+                      case ResourceRef.file => {
+                        files.index(resource.id)
+                        //send RabbitMQ message
+                        current.plugin[RabbitmqPlugin].foreach { p =>
+                          val dtkey = s"${p.exchange}.metadata.added"
+                          p.extract(ExtractorMessage(metadata.attachedTo.id, UUID(""), controllers.Utils.baseUrl(request),
+                            dtkey, mdMap, "", UUID(""), ""))
+                        }
+                      }
+                      case _ => {}
+                    }
+                  }
+                  case None => {}
+                }
 
-            Ok(views.html.metadatald.view(List(metadata), true)(request.user))
-          } else {
-            BadRequest(toJson("Invalid resource type"))
+                Ok(views.html.metadatald.view(List(metadata), true)(request.user))
+              } else {
+                BadRequest(toJson("Invalid resource type"))
+              }
+            }
           }
         }
         case None => BadRequest(toJson("Invalid user"))

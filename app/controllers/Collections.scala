@@ -3,7 +3,7 @@ package controllers
 import api.Permission._
 import models._
 import org.apache.commons.lang.StringEscapeUtils._
-import util.{Formatters, RequiredFieldsConfig}
+import util.{Formatters, RequiredFieldsConfig, SearchUtils}
 import java.text.SimpleDateFormat
 import java.util.Date
 import javax.inject.{Inject, Singleton}
@@ -42,11 +42,11 @@ class Collections @Inject()(datasets: DatasetService, collections: CollectionSer
     space match {
       case Some(spaceId) => {
         spaceService.get(UUID(spaceId)) match {
-          case Some(s) => Ok(views.html.newCollection(null, decodedSpaceList.toList, RequiredFieldsConfig.isNameRequired, RequiredFieldsConfig.isDescriptionRequired, Some(spaceId)))
-          case None => Ok(views.html.newCollection(null, decodedSpaceList.toList, RequiredFieldsConfig.isNameRequired, RequiredFieldsConfig.isDescriptionRequired, None))
+          case Some(s) => Ok(views.html.newCollection(null, decodedSpaceList.toList, RequiredFieldsConfig.isNameRequired, RequiredFieldsConfig.isDescriptionRequired, Some(spaceId), Some(s.name)))
+          case None => Ok(views.html.newCollection(null, decodedSpaceList.toList, RequiredFieldsConfig.isNameRequired, RequiredFieldsConfig.isDescriptionRequired, None, None))
         }
       }
-      case None =>  Ok(views.html.newCollection(null, decodedSpaceList.toList, RequiredFieldsConfig.isNameRequired, RequiredFieldsConfig.isDescriptionRequired, None))
+      case None =>  Ok(views.html.newCollection(null, decodedSpaceList.toList, RequiredFieldsConfig.isNameRequired, RequiredFieldsConfig.isDescriptionRequired, None, None))
     }
 
   }
@@ -149,7 +149,15 @@ class Collections @Inject()(datasets: DatasetService, collections: CollectionSer
     implicit val user = request.user
     val nextPage = (when == "a")
     val person = owner.flatMap(o => users.get(UUID(o)))
+    val ownerName = person match {
+      case Some(p) => Some(p.fullName)
+      case None => None
+    }
     val collectionSpace = space.flatMap(o => spaceService.get(UUID(o)))
+    val spaceName = collectionSpace match {
+      case Some(s) => Some(s.name)
+      case None => None
+    }
     var title: Option[String] = Some(play.api.i18n.Messages("list.title", play.api.i18n.Messages("collections.title")))
 
     val collectionList = person match {
@@ -274,7 +282,7 @@ class Collections @Inject()(datasets: DatasetService, collections: CollectionSer
       case Some(s) if !Permission.checkPermission(Permission.ViewSpace, ResourceRef(ResourceRef.space, UUID(s))) => {
         BadRequest(views.html.notAuthorized("You are not authorized to access the " + spaceTitle+ ".", s, "space"))
       }
-      case _ =>  Ok(views.html.collectionList(decodedCollections.toList, prev, next, limit, viewMode, space, title, owner, when, date))
+      case _ =>  Ok(views.html.collectionList(decodedCollections.toList, prev, next, limit, viewMode, space, spaceName, title, owner, ownerName, when, date))
     }
   }
 
@@ -305,7 +313,7 @@ class Collections @Inject()(datasets: DatasetService, collections: CollectionSer
               decodedSpaceList += Utils.decodeSpaceElements(aSpace)
             }
             //This case shouldn't happen as it is validated on the client.
-            BadRequest(views.html.newCollection("Name, Description, or " + spaceTitle + " was missing during collection creation.", decodedSpaceList.toList, RequiredFieldsConfig.isNameRequired, RequiredFieldsConfig.isDescriptionRequired, None))
+            BadRequest(views.html.newCollection("Name, Description, or " + spaceTitle + " was missing during collection creation.", decodedSpaceList.toList, RequiredFieldsConfig.isNameRequired, RequiredFieldsConfig.isDescriptionRequired, None, None))
           }
 
           var parentCollectionIds = List.empty[String]
@@ -343,9 +351,9 @@ class Collections @Inject()(datasets: DatasetService, collections: CollectionSer
           }
 
           //index collection
-            val dateFormat = new SimpleDateFormat("dd/MM/yyyy")
-            current.plugin[ElasticsearchPlugin].foreach{_.index("data", "collection", collection.id,
-            List(("name",collection.name), ("description", collection.description), ("created",dateFormat.format(new Date()))))}
+            current.plugin[ElasticsearchPlugin].foreach{
+              _.index(SearchUtils.getElasticsearchObject(collection))
+            }
 
           //Add to Events Table
           val option_user = users.findByIdentity(identity)
@@ -648,7 +656,15 @@ class Collections @Inject()(datasets: DatasetService, collections: CollectionSer
 
     val nextPage = (when == "a")
     val person = owner.flatMap(o => users.get(UUID(o)))
-    val datasetSpace = space.flatMap(o => spaceService.get(UUID(o)))
+    val ownerName = person match {
+      case Some(p) => Some(p.fullName)
+      case None => None
+    }
+    val collectionSpace = space.flatMap(o => spaceService.get(UUID(o)))
+    val spaceName = collectionSpace match {
+      case Some(s) => Some(s.name)
+      case None => None
+    }
 
     val parentCollection = collections.get(UUID(parentCollectionId))
     var title: Option[String] = Some(Messages("collections.title"))
@@ -772,7 +788,7 @@ class Collections @Inject()(datasets: DatasetService, collections: CollectionSer
       }
 
     //Pass the viewMode into the view
-    Ok(views.html.collectionList(decodedCollections.toList, prev, next, limit, viewMode, space, title, owner, when, date))
+    Ok(views.html.collectionList(decodedCollections.toList, prev, next, limit, viewMode, space, spaceName, title, owner, ownerName, when, date))
   }
 
   private def removeFromSpaceAllowed(collectionId : UUID, spaceId : UUID) : Boolean = {
