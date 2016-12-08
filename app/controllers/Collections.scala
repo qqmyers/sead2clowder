@@ -709,10 +709,10 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
         userListSpaceRoleTupleMap = userListSpaceRoleTupleMap filter (_._2.nonEmpty) // remove empty-list Values from Map (and corresponding Key)
         for (k <- userListSpaceRoleTupleMap.keys) userListSpaceRoleTupleMap += (k -> userListSpaceRoleTupleMap(k).distinct.sortBy(_._1.toLowerCase))
 
-        if (userList.nonEmpty) {
-          val currUserIsAuthor = user.get.id.equals(collection.author.id)
-          Ok(views.html.collections.users(collection, userListSpaceRoleTupleMap, currUserIsAuthor, userList))
-        } else Redirect(routes.Collections.collection(id)).flashing("error" -> s"Error: No users found for collection $id.")
+        if(userList.nonEmpty) {
+          Ok(views.html.collections.users(collection, userListSpaceRoleTupleMap, userList))
+        }
+        else Redirect(routes.Collections.collection(id)).flashing("error" -> s"Error: No users found for collection $id.")
       }
       case None => Redirect(routes.Collections.collection(id)).flashing("error" -> s"Error: Collection $id not found.")
     }

@@ -804,10 +804,9 @@ class Datasets @Inject() (
         userListSpaceRoleTupleMap = userListSpaceRoleTupleMap filter (_._2.nonEmpty) // remove empty-list Values from Map (and corresponding Key)
         for (k <- userListSpaceRoleTupleMap.keys) userListSpaceRoleTupleMap += (k -> userListSpaceRoleTupleMap(k).distinct.sortBy(_._1.toLowerCase))
 
-        if (userList.nonEmpty) {
-          val currUserIsAuthor = user.get.id.equals(dataset.author.id)
-          Ok(views.html.datasets.users(dataset, userListSpaceRoleTupleMap, currUserIsAuthor, userList))
-        } 
+        if(userList.nonEmpty) {
+          Ok(views.html.datasets.users(dataset, userListSpaceRoleTupleMap, userList))
+        }
         else Redirect(routes.Datasets.dataset(id)).flashing("error" -> s"Error: No users found for $Messages('dataset.title') $id.")
       }
       case None => Redirect(routes.Datasets.dataset(id)).flashing("error" -> s"Error: $Messages('dataset.title') $id not found.")
