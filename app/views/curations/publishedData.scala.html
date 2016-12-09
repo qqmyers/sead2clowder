@@ -17,7 +17,7 @@
                 @if(key == "Published Dataset"){
                     <p><b>@key.capitalize:</b> <a href="@value" target="_blank">@value</a></p>
                 } else {
-                    <p><b>@key.capitalize:</b> @value</p>
+                    <p><b>@key.capitalize:</b> @Html(value)</p>
                 }
             }
         </div>
