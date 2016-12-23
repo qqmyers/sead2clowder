@@ -409,6 +409,9 @@ class MongoSalatPlugin(app: Application) extends Plugin {
 
     // Change existing 'In Curation' curation objects/pub requests to 'In Prepaparation' 
     updateMongo("change-in-curation-status-to-in-preparation", updateInCurationStatus)
+
+    // Change repository in extractors.info collection into a list
+    updateMongo("update-repository-type-in-extractors-info", updateRepositoryType)
   }
 
   private def updateMongo(updateKey: String, block: () => Unit): Unit = {
@@ -1343,4 +1346,26 @@ class MongoSalatPlugin(app: Application) extends Plugin {
       $set("status" -> "In Preparation"), false, true, WriteConcern.Safe)
   }
 
+  /**
+    * In order to support adding multiple repositories for an extractor in extractors.info collection, changing the
+    * existing repository type from Repository to List[Repository] in those records that have not been updated yet.
+    */
+  private def updateRepositoryType(): Unit = {
+    val extractorsInfoCollection  = collection("extractors.info")
+
+    extractorsInfoCollection.foreach { extractor =>
+
+      val repository = extractor.get("repository")
+
+      if (!repository.isInstanceOf[BasicDBList]) {
+        extractor.put("repository", MongoDBList(repository))
+
+        try {
+          extractorsInfoCollection.save(extractor, WriteConcern.Safe)
+        } catch {
+          case e: BSONException => Logger.error("Failed to update collection extractors.info entry with id " + extractor.getAsOrElse[ObjectId]("_id", new ObjectId()).toString)
+        }
+      }
+    }
+  }
 }
