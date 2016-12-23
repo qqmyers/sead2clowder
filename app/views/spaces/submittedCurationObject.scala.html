@@ -43,7 +43,7 @@
         }
         case None => {Not Set}
       }<br/>
-          <b>Abstract</b>: @curationObject.description
+          <b>Abstract</b>: @Html(curationObject.description.replace("\n","<br/>"))
 
         <br/>
         <h4> @Messages("dataset.title") <a href ="@routes.Datasets.dataset(curationObject.datasets(0).id)">@curationObject.datasets(0).name</a></h4>

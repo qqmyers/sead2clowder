@@ -9,8 +9,9 @@
                 <li><div id="format">File Formats: </div></li>
                 <li>Author: @curationObject.author.fullName</li>
                 <li>Created: @curationObject.created.format("MMM dd, yyyy")</li>
-                <li>Abstract: @curationObject.description</li>
                 <li>Creators: @curationObject.creators.mkString(", ")</li>
+                <li class = "abstract">Abstract: @Html(curationObject.description.replace("\n","<br/>"))</li>
+                
             </ul>
             @if(Permission.checkPermission(Permission.EditStagingArea, ResourceRef(ResourceRef.space, curationObject.space))){
                 <a class="btn btn-sm btn-link" href="@routes.Spaces.stagingArea(curationObject.space)">
