@@ -95,7 +95,7 @@
 			</div>	                
  			<div class="form-group">
                 <label id="desclabel" for="description"> Abstract (Description)</label>
-                <textarea rows="4" type="text" id="description" class="form-control" >@Html(desc.replace("\n","<br/>"))</textarea>
+                <textarea rows="4" type="text" id="description" class="form-control" >@Html(desc)</textarea>
                 <span class="error hiddencomplete" id="descerror">The abstract is a required field.</span>
             </div>
             @if(!spaceList.isEmpty) {
