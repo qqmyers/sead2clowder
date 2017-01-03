@@ -393,8 +393,16 @@ textarea, input[type='text'], input[type='password']{
 }
 
 .elasticsearchResult{
+	word-break:break-word;
 	margin-bottom:10px;
 }
+
+.elasticsearchResult dd{
+	max-height: 150px;
+    overflow-y: auto;
+}
+
+
 
 .truncate {
   width: 150px;
