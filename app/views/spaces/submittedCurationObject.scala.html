@@ -19,12 +19,12 @@
       <div>
         <h2>@curationObject.name</h2>
         
-        <p class- "inline abstract
+        <p class= "inline abstract
         @if(curationObject.description.contains("\n")) {
         	  panel panel-default abstract-panel
         	}
-        >
-        @html(curationObject.description.replace("\n","<br/>"))</p>
+        ">
+        @Html(curationObject.description.replace("\n","<br/>"))</p>
         
         <span><b>Creator(s)</b>: 
           	@if(curationObject.creators.length !=0) {
