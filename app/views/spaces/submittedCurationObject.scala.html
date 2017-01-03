@@ -24,7 +24,7 @@
         	  panel panel-default abstract-panel
         	}
         >
-        @curationObject.description.replace("\n","<br/>")</p>
+        @html(curationObject.description.replace("\n","<br/>"))</p>
         
         <span><b>Creator(s)</b>: 
           	@if(curationObject.creators.length !=0) {
