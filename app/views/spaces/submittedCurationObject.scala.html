@@ -22,8 +22,8 @@
         @if(curationObject.description.contains("\n")) {
         	  panel panel-default abstract-panel
         	}
-        >
-        @html(curationObject.description.replace("\n","<br/>"))</p>
+        ">
+        @Html(curationObject.description.replace("\n","<br/>"))</p>
         <b>Creator</b>: @curationObject.author.fullName <br/>
         <b>Created</b>: @curationObject.created.date.format("MMM dd, yyyy") <br/>
         <b>Repository</b>: @curationObject.repository.getOrElse("Not select.") <br/>
