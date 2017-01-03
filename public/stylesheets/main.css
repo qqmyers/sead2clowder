@@ -1033,6 +1033,7 @@ table.borderless tbody tr td, table.borderless tbody tr th {
 }
 
 .abstract {
+	word-break: break-word;
 	max-height: 150px;
 	overflow-y: auto;
 	display: inline-flex;
