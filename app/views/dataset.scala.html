@@ -146,7 +146,11 @@
             }
 		</div>    
         <div class="col-md-12 box-white-space" id="aboutdesc">
-                    <p id ="ds_description" class="inline">
+                    <p id ="ds_description" class="inline abstract
+                    @if(dataset.description.contains("<br>")) {
+                    	panel panel-default abstract-panel
+                    }
+                    	">
                     @if(dataset.description.length > 0) {
                         @Html(dataset.description)
                     } else {
@@ -488,12 +492,13 @@
 		$('#edit-description').css("display", "none");
 		$('#edit-description').addClass("hiddencomplete");
 		$("#desc_input").select();
+		$('#ds_description').css("display", "none");
 	}
 
     function cancelDescription() {
         $('#ds_description').html(cur_description);
         $('.edit_desc').remove();
-        $('#ds_description').css("display", "inline");
+        $('#ds_description').css("display","");
         $('#edit-description').removeClass("inline");
         $('#edit-description').css("display", "");
         $('#ds-description').mouseleave();
@@ -514,7 +519,16 @@
 			$('#ds_description').html(urlify(htmlEncode(description).replace(/\n/g, "<br>")));
 			if($('#ds_description').html().length == 0) $('#ds_description').html("Add a description");
 			$('.edit_desc').remove();
-			$('#ds_description').css("display", "inline");
+			if ($('#ds_description').html().indexOf("<br>")>=0) {
+			$('#ds_description').addClass("abstract-panel panel panel-default");
+			} else {
+			$('#ds_description').removeClass("abstract-panel");
+			$('#ds_description').removeClass("panel");
+			$('#ds_description').removeClass("panel-default");
+			}
+			
+			//multiline add classes else remove them
+			$('#ds_description').css("display", "");
 			$('#edit-description').removeClass("inline");
             $('#edit-description').css("display", "");
             $('#ds-description').mouseleave();

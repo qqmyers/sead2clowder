@@ -39,7 +39,7 @@
 
                                     Owner: @curObject.author.fullName
                                     <p>Created: @curObject.created.format("MMM dd, yyyy")</p>
-                                    <p>@curObject.description</p>
+                                    <p class="abstract">@Html(curObject.description.replace("\n","<br/>"))</p>
                                 </div>
                             </div>
                             <ul class="list-group">
