@@ -987,7 +987,7 @@ table.borderless tbody tr td, table.borderless tbody tr th {
 }
 
 .published {
-	max-height: 150px;
+	max-height: 250px;
 	overflow-y: auto;
 	display: inline-flex;
 	width: 90%;
@@ -997,13 +997,13 @@ table.borderless tbody tr td, table.borderless tbody tr th {
 
 .abstract {
 	word-break: break-word;
-	max-height: 150px;
+	max-height: 250px;
 	overflow-y: auto;
 	display: inline-flex;
 }
 
 .abstract-panel {
-	padding: 6px 12px 6px 12px;
+	padding: 6px 12px 6px 0px;
 	min-width:100%;
 	margin-bottom: 0px!important;
 }
