@@ -351,8 +351,8 @@ class Files @Inject() (
     }.toMap
 
     //Code to read the cookie data. On default calls, without a specific value for the mode, the cookie value is used.
-    //Note that this cookie will, in the long run, pertain to all the major high-level views that have the similar 
-    //modal behavior for viewing data. Currently the options are tile and list views. MMF - 12/14   
+    //Note that this cookie will, in the long run, pertain to all the major high-level views that have the similar
+    //modal behavior for viewing data. Currently the options are tile and list views. MMF - 12/14
     val viewMode: Option[String] =
       if (mode == null || mode == "") {
         request.cookies.get("view-mode") match {
@@ -373,6 +373,14 @@ class Files @Inject() (
   def uploadFile = PermissionAction(Permission.AddFile) { implicit request =>
     implicit val user = request.user
     Ok(views.html.upload(uploadForm))
+  }
+
+  /**
+    * Upload zip file page.
+    */
+  def uploadZipFileForCollection = PermissionAction(Permission.AddFile) { implicit request =>
+    implicit val user = request.user
+    Ok(views.html.uploadZipCollection(uploadForm))
   }
 
   /**
@@ -496,7 +504,7 @@ class Files @Inject() (
     }
 
   /*def extraction(id: String) = SecuredAction(authorization = WithPermission(Permission.ShowFile)) { implicit request =>
- 
+
 
 }*/
 
@@ -528,7 +536,7 @@ class Files @Inject() (
 
           val showPreviews = request.body.asFormUrlEncoded.get("datasetLevel").get(0)
 
-          // store file       
+          // store file
           val file = files.save(new FileInputStream(f.ref.file), nameOfFile, f.contentType, identity, showPreviews)
           val uploadedFile = f
           file match {
@@ -623,7 +631,7 @@ class Files @Inject() (
               current.plugin[AdminsNotifierPlugin].foreach {
                 _.sendAdminsNotification(Utils.baseUrl(request), "File","added",f.id.stringify, nameOfFile)}
 
-              //Correctly set the updated URLs and data that is needed for the interface to correctly 
+              //Correctly set the updated URLs and data that is needed for the interface to correctly
               //update the display after a successful upload.
               val https = controllers.Utils.https(request)
               val retMap = Map("files" ->
@@ -686,7 +694,7 @@ class Files @Inject() (
    */
   def download(id: UUID) = PermissionAction(Permission.DownloadFiles, Some(ResourceRef(ResourceRef.file, id))) { implicit request =>
     if (UUID.isValid(id.stringify)) {
-      //Check the license type before doing anything. 
+      //Check the license type before doing anything.
       files.get(id) match {
         case Some(file) => {
           if (file.licenseData.isDownloadAllowed(request.user) || Permission.checkPermission(request.user, Permission.DownloadFiles, ResourceRef(ResourceRef.file, file.id))) {
@@ -784,7 +792,7 @@ class Files @Inject() (
                   //prepare encoded file name for converted file
                   val lastSeparatorIndex = file.filename.replace("_", ".").lastIndexOf(".")
                   val outputFileName = file.filename.substring(0, lastSeparatorIndex) + "." + outputFormat
-                  
+
                   //create local temp file to save polyglot output
                   val tempFileName = "temp_converted_file." + outputFormat
                   val tempFile: java.io.File = new java.io.File(tempFileName)
@@ -909,7 +917,7 @@ class Files @Inject() (
     if (typeToSearch.equals("sectionsSome") && dataParts.contains("sections")) {
       sections = dataParts("sections").toList
     }
-    //END OF: processing searching within files or sections of files or both    
+    //END OF: processing searching within files or sections of files or both
     request.body.file("File").map { f =>
       try {
         var nameOfFile = f.filename
@@ -927,7 +935,7 @@ class Files @Inject() (
         }
         Logger.debug("Controllers/Files Uploading file " + nameOfFile)
 
-        // store file       
+        // store file
         Logger.debug("uploadSelectQuery")
         val file = queries.save(new FileInputStream(f.ref.file), nameOfFile, f.contentType)
         val uploadedFile = f
@@ -1317,7 +1325,7 @@ class Files @Inject() (
   //			  case None    => throw new RuntimeException("No MongoSalatPlugin");
   //			  case Some(x) =>  x.gridFS("uploads")
   //			}
-  //            
+  //
   //            //Set up the PipedOutputStream here, give the input stream to a worker thread
   //            val pos:PipedOutputStream = new PipedOutputStream();
   //            val pis:PipedInputStream  = new PipedInputStream(pos);
@@ -1333,8 +1341,8 @@ class Files @Inject() (
   ////            mongoFile.save
   ////            val id = mongoFile.getAs[ObjectId]("_id").get.toString
   ////            Ok(views.html.file(mongoFile.asDBObject, id))
-  //            
-  //            
+  //
+  //
   //            //Read content to the POS
   //            Iteratee.fold[Array[Byte], PipedOutputStream](pos) { (os, data) =>
   //              os.write(data)
@@ -1345,26 +1353,26 @@ class Files @Inject() (
   //            }
   //        }
   //   }
-  //  
+  //
   //  /**
   //   * Ajax upload. How do we pass in the file name?(parse.temporaryFile)
   //   */
-  //  
-  //  
+  //
+  //
   //  def uploadAjax = Action(parse.temporaryFile) { implicit request =>
   //
   //    val f = request.body.file
   //    val filename=f.getName()
-  //    
+  //
   //    // store file
   //    // TODO is this still used? if so replace null with user.
   //        Logger.debug("uploadAjax")
   //    val file = files.save(new FileInputStream(f.getAbsoluteFile()), filename, None, null)
-  //    
+  //
   //    file match {
   //      case Some(f) => {
   //         var fileType = f.contentType
-  //        
+  //
   //        // TODO RK need to replace unknown with the server name
   //        val key = "unknown." + "file."+ f.contentType.replace(".", "_").replace("/", ".")
   //        // TODO RK : need figure out if we can use https
@@ -1375,7 +1383,7 @@ class Files @Inject() (
   //          _.index("files", "file", id, List(("filename",f.filename), ("contentType", f.contentType)))
   //        }
   //        // redirect to file page
-  //        Redirect(routes.Files.file(f.id.toString))  
+  //        Redirect(routes.Files.file(f.id.toString))
   //      }
   //      case None => {
   //        Logger.error("Could not retrieve file that was just saved.")
@@ -1396,7 +1404,7 @@ class Files @Inject() (
    *
    * TODO Finish implementing. Right now it doesn't write to anything.
    */
-  // case class SomeIteratee(state: Symbol = 'Cont, input: Input[Array[Byte]] = Empty, 
+  // case class SomeIteratee(state: Symbol = 'Cont, input: Input[Array[Byte]] = Empty,
   //     received: Int = 0) extends Iteratee[Array[Byte], Either[Result, Int]] {
   //   Logger.debug(state + " " + input + " " + received)
   //
@@ -1411,17 +1419,17 @@ class Files @Inject() (
   ////     fh.filename = "test-file.txt"
   ////     fh.contentType = "text/plain"
   ////   }
-  //			
-  //   
+  //
+  //
   //   def fold[B](
   //     done: (Either[Result, Int], Input[Array[Byte]]) => Promise[B],
   //     cont: (Input[Array[Byte]] => Iteratee[Array[Byte], Either[Result, Int]]) => Promise[B],
   //     error: (String, Input[Array[Byte]]) => Promise[B]
   //   ): Promise[B] = state match {
-  //     case 'Done => { 
+  //     case 'Done => {
   //       Logger.debug("Done with upload")
   ////       pos.close()
-  //       done(Right(received), Input.Empty) 
+  //       done(Right(received), Input.Empty)
   //     }
   //     case 'Cont => cont(in => in match {
   //       case in: El[Array[Byte]] => {

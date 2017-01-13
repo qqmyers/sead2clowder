@@ -1,6 +1,13 @@
 package api
 
+import java.io.{FileInputStream, IOException, FileOutputStream, InputStream}
+import java.nio.file.Files
+import java.text.SimpleDateFormat
+import java.util.zip.{ZipEntry, ZipInputStream}
+import javax.activation.MimetypesFileTypeMap
+
 import api.Permission.Permission
+import fileutils.FilesUtils
 import play.api.Logger
 import play.api.Play.current
 import models._
@@ -9,7 +16,7 @@ import play.api.libs.json._
 import play.api.libs.json.{JsObject, JsValue}
 import play.api.libs.json.Json.toJson
 import javax.inject.{ Singleton, Inject}
-import scala.collection.mutable.ListBuffer
+import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 import scala.util.parsing.json.JSONArray
 import scala.util.{Try, Success, Failure}
 import com.wordnik.swagger.annotations.Api
@@ -23,7 +30,7 @@ import controllers.Utils
  */
 @Api(value = "/collections", listingPath = "/api-docs.json/collections", description = "Collections are groupings of datasets")
 @Singleton
-class Collections @Inject() (datasets: DatasetService, collections: CollectionService, previews: PreviewService, userService: UserService, events: EventService, spaces:SpaceService) extends ApiController {
+class Collections @Inject() (datasets: DatasetService, collections: CollectionService, previews: PreviewService, userService: UserService, events: EventService, spaces:SpaceService, files : FileService,sparql: RdfSPARQLService,dtsrequests: ExtractionRequestsService) extends ApiController {
 
   @ApiOperation(value = "Create a collection",
       notes = "",
@@ -757,6 +764,582 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
         Ok(toJson(!(hasParentInSpace)))
       }
       case None => Ok(toJson(false))
+    }
+  }
+
+  //unzips a zip file. start with the inputstream of the file, and a location to unzip it to
+  //TODO need to NOT unzip MACOSX DS_Store and other system related files
+  def unZipIt(inputStream : InputStream, tempFile : java.io.File): Unit = {
+
+    val buffer = new Array[Byte](1024)
+
+
+    try {
+
+
+
+      val zis: ZipInputStream = new ZipInputStream(inputStream);
+      //get the zipped file list entry
+
+      var ze: ZipEntry = zis.getNextEntry();
+
+      while (ze != null) {
+
+        var currentIsDirectory : Boolean = false
+
+        val fileName = ze.getName();
+        //System.out.println(fileName);
+
+
+        //IF IT IS A FOLDER
+        if (fileName.endsWith("/")){
+          val newFile = new java.io.File(tempFile.getAbsolutePath() + java.io.File.separator + fileName);
+          currentIsDirectory = true
+        }
+
+
+        //IF IT IS NOT A DIRECTORY
+        if (currentIsDirectory == false){
+          val newFile = new java.io.File(tempFile.getAbsolutePath() + java.io.File.separator + fileName);
+          val parent: java.io.File = newFile.getParentFile()
+          if (parent != null) {
+            parent.mkdirs();
+          }
+          val fos = new FileOutputStream(newFile);
+
+          var len: Int = zis.read(buffer);
+
+          while (len > 0) {
+
+            fos.write(buffer, 0, len)
+            len = zis.read(buffer)
+          }
+
+          fos.close()
+          ze = zis.getNextEntry()
+        } else {
+          ze = zis.getNextEntry()
+        }
+
+      }
+
+      Logger.info("Done unzippping file " )
+      zis.closeEntry()
+      zis.close()
+      inputStream.close()
+
+    } catch {
+      case e: IOException => Logger.info("unzip exception caught: " + e.getMessage + " while unzipping file " )
+    }
+  }
+
+
+
+  def createFromZip(fileId: UUID, user : Option[User]) : Option[UUID] =  {
+    var collectionCreatedId : Option[UUID] = None
+    user match {
+      case Some(identity) => {
+        files.get(fileId) match {
+          case Some(f) => {
+            val currentFile : models.File = f
+
+            files.getBytes(currentFile.id) match {
+              case Some((inputStream, filename, contentType, contentLength)) => {
+                val tempDir : UUID = UUID.generate();
+                val outputFolder = tempDir.stringify;
+                //TODO - make temporary directory from outputFolder, and do that here, pass to unzipit
+                Logger.info("Created temporary folder : " + outputFolder)
+                val tempDirFile : java.io.File = new java.io.File(outputFolder)
+
+                //var tempDirFile : java.io.File = java.io.File.createTempFile(outputFolder,"")
+                //tempDirFile.mkdirs()
+                unZipIt(inputStream,tempDirFile)
+                val allContentsOfFolder : Array[java.io.File] = tempDirFile.listFiles()
+                val len = allContentsOfFolder.length
+                var contentsOfFolder : ArrayBuffer[java.io.File] = ArrayBuffer.empty[java.io.File]
+                if (len > 0){
+                  for (each : java.io.File <- allContentsOfFolder){
+                    val currentName = each.getName()
+                    if (!(currentName.toLowerCase().endsWith("ds_store") || currentName.toLowerCase().endsWith("_macosx"))){
+                      contentsOfFolder += each
+                    }
+                  }
+
+                }
+                var contents = contentsOfFolder.toArray
+
+                var rootFolder : Option[java.io.File] = None
+                var rootFolderId : Option[UUID] = None
+                if (contents.length == 1){
+                  val theFolder : java.io.File = contents(0)
+                  rootFolder = Some(theFolder)
+                  rootFolderId = processFolder(theFolder,None,identity)
+                  collectionCreatedId = rootFolderId
+
+                } else {
+                  //should this case ever happen?
+                }
+
+                //create dataset and add to the
+                var datasetId : Option[UUID] = createDatasetFromName("original zip",rootFolderId,identity)
+                //add zip file to that dataset
+                datasets.addFile(datasetId.get,currentFile)
+                try {
+                  Logger.info("Trying to delete " + tempDirFile.getAbsolutePath())
+                  var exists : Boolean = Files.exists(tempDirFile.toPath())
+                  Logger.info("Value of exists : " + exists)
+                  var deleted : Boolean = tempDirFile.delete()
+                  Logger.info("Value of deleted : " + deleted)
+                  //tempDirFile.delete()
+                } catch {
+                  case e : IOException => println("exception caught : " + e.getMessage)
+                }
+              }
+              case None =>
+            }
+
+            collectionCreatedId
+          }
+          case None => collectionCreatedId
+        }
+      }
+      case None => collectionCreatedId
+    }
+
+  }
+
+  @ApiOperation(value = "Create collection from a zip file",
+    notes = "Creates collection from zip.",
+    responseClass = "None", httpMethod = "POST")
+  def createFromZip(fileId: UUID) = PermissionAction(Permission.EditFile, Some(ResourceRef(ResourceRef.file, fileId))) { implicit request =>
+    implicit val user = request.user
+    var collectionCreatedId : Option[UUID] = None
+    user match {
+      case Some(identity) => {
+        files.get(fileId) match {
+          case Some(f) => {
+            val currentFile : models.File = f
+
+            files.getBytes(currentFile.id) match {
+              case Some((inputStream, filename, contentType, contentLength)) => {
+                val tempDir : UUID = UUID.generate();
+                val outputFolder = tempDir.stringify;
+                val tempDirFile : java.io.File = new java.io.File(outputFolder)
+                unZipIt(inputStream,tempDirFile)
+
+                val allContentsOfFolder : Array[java.io.File] = tempDirFile.listFiles()
+                val len = allContentsOfFolder.length
+                var contentsOfFolder : ArrayBuffer[java.io.File] = ArrayBuffer.empty[java.io.File]
+                if (len > 0){
+                  for (each : java.io.File <- allContentsOfFolder){
+                    val currentName = each.getName()
+                    if (!(currentName.toLowerCase().endsWith("ds_store") || currentName.toLowerCase().endsWith("_macosx"))){
+                      contentsOfFolder += each
+                    }
+                  }
+
+                }
+                var contents = contentsOfFolder.toArray
+
+                var rootFolder : Option[java.io.File] = None
+                var rootFolderId : Option[UUID] = None
+                if (contents.length == 1){
+                  val theFolder : java.io.File = contents(0)
+                  rootFolder = Some(theFolder)
+                  rootFolderId = processFolder(theFolder,None,identity)
+                  collectionCreatedId = rootFolderId
+
+                } else {
+                  //should this case ever happen?
+                }
+
+                //create dataset and add to the
+                var datasetId : Option[UUID] = createDatasetFromName("original zip",rootFolderId,identity)
+                //add zip file to that dataset
+                datasets.addFile(datasetId.get,currentFile)
+                try {
+                  tempDirFile.delete()
+                } catch {
+                  case e : IOException => println("exception caught : " + e.getMessage)
+                }
+              }
+              case None =>
+            }
+
+            Ok(toJson(Map("id"->collectionCreatedId.get.stringify)))
+          }
+          case None => BadRequest("No file id supplied.")
+        }
+      }
+      case None => BadRequest("No user supplied, must be logged in to create collection from zip file.")
+    }
+
+  }
+
+  private def createCollectionFromName(name : String, parentCollectionId : Option[UUID], user : User) :  Option[UUID] = {
+    Logger.info("creating collection with name : " + name)
+    var newCollectionId : Option[UUID] = None
+    parentCollectionId match {
+      case Some(parentId) => {
+        collections.get(parentId) match {
+          case Some(parent) => {
+            val c : Collection = Collection(name = name, description = "", created = new Date(), datasetCount = 0, author = user)
+            collections.insert(c) match {
+              case Some(id) => {
+                collections.addSubCollection(parentId,UUID(id),Some(user))
+                newCollectionId = Some(UUID(id))
+              }
+              case None =>
+            }
+          }
+          case None =>
+        }
+      }
+      case None => {
+        val c : Collection = Collection(name = name, description = "", created = new Date(), datasetCount = 0, author = user)
+        collections.insert(c) match {
+          case Some(id) => {
+            newCollectionId = Some(UUID(id))
+          }
+          case None =>
+        }
+      }
+    }
+    newCollectionId
+  }
+
+  private def createDatasetFromName(name: String, parentCollectionId: Option[UUID], user: User): Option[UUID] = {
+    var datasetId: Option[UUID] = None
+    parentCollectionId match {
+      case Some(parentId) => {
+        collections.get(parentId) match {
+          case Some(parent) => {
+            val d: Dataset = Dataset(name = name, description = "", created = new Date(), author = user)
+            datasets.insert(d) match {
+              case Some(id) => {
+                collections.addDataset(parentId, UUID(id))
+                datasetId = Some(UUID(id))
+              }
+              case None => Some(None)
+            }
+          }
+          case None => None
+        }
+      }
+      case None => None
+    }
+    datasetId
+  }
+
+  private def addFileToDataset(currentFile : java.io.File, datasetId : Option[UUID],user: User): Unit = {
+    val currentName = currentFile.getName()
+    val currentPath = currentFile.getAbsolutePath()
+    val is : InputStream = new FileInputStream(currentPath)
+
+    val currentType = new MimetypesFileTypeMap().getContentType(currentPath)
+
+    val file : Option[models.File] = files.save(new FileInputStream(currentPath), currentName, Some(currentType), user, "datasetLevel")
+    try {
+      is.close()
+    } catch {
+      case e: Exception => e.getMessage
+    }
+    file match {
+      case Some(f) => {
+        datasets.addFile(datasetId.get,f)
+      }
+      case None=>
+    }
+  }
+
+
+  private def processFolder(currentFolder : java.io.File, parentId : Option[UUID], user : User): Option[UUID] ={
+
+    var currentFolderId : Option[UUID] = None
+    //val currentFolder : java.io.File = new java.io.File(pathToFolder)
+
+    val allCurrentFiles: Array[java.io.File] = currentFolder.listFiles()
+
+    var currentFilesArrayBuffer : ArrayBuffer[java.io.File] = ArrayBuffer.empty[java.io.File]
+    if (allCurrentFiles.length > 0){
+      for (each : java.io.File <- allCurrentFiles){
+        val currentName = each.getName()
+        if (!(currentName.toLowerCase().endsWith("ds_store") || currentName.toLowerCase().endsWith("_macosx"))){
+          currentFilesArrayBuffer += each
+        }
+      }
+
+    }
+
+    val currentFiles = currentFilesArrayBuffer.toArray
+    val currentName: String = currentFolder.getName
+
+    var hasDirectory: Boolean = false
+    var hasFile: Boolean = false
+
+    for (currentFile <- currentFiles) {
+      if (currentFile.isDirectory) {
+        hasDirectory = true
+      }
+      else if (!currentFile.getName.toLowerCase().endsWith("ds_store")){
+        hasFile = true
+      }
+    }
+
+
+    parentId match {
+      case Some(id) => {
+        if (hasDirectory && !hasFile) {
+          val collectionId: Option[UUID] = createCollectionFromName(currentName, Some(id), user)
+          currentFolderId = collectionId
+          for (f <- currentFiles) {
+            if (f.isDirectory){
+              processFolder(f, collectionId,user)
+            }
+          }
+        }
+        else if (!hasDirectory && hasFile) {
+          val datasetId: Option[UUID] = createDatasetFromName(currentName, Some(id),user)
+          for (f <- currentFiles) {
+            addFileToDataset(f, datasetId,user)
+          }
+        }
+        else if (hasDirectory && hasFile) {
+          val collectionId: Option[UUID] = createCollectionFromName(currentName, Some(id),user)
+          val datasetId: Option[UUID] = createDatasetFromName(currentName, collectionId,user)
+          for (f <- currentFiles) {
+            if (f.isDirectory) {
+              processFolder(f, collectionId,user)
+            }
+            else {
+              addFileToDataset(f, datasetId,user)
+            }
+          }
+        }
+      }
+      case None => {
+        if (hasDirectory && !hasFile) {
+          val collectionId: Option[UUID] = createCollectionFromName(currentName, None, user)
+          currentFolderId = collectionId
+          for (f <- currentFiles) {
+            if (f.isDirectory){
+              processFolder(f, collectionId,user)
+            }
+          }
+        }
+        else if (!hasDirectory && hasFile) {
+          val datasetId: Option[UUID] = createDatasetFromName(currentName, None,user)
+          currentFolderId = datasetId
+          for (f <- currentFiles) {
+            addFileToDataset(f, datasetId,user)
+          }
+        }
+        else if (hasDirectory && hasFile) {
+          val collectionId: Option[UUID] = createCollectionFromName(currentName, None,user)
+          val datasetId: Option[UUID] = createDatasetFromName(currentName, collectionId,user)
+          currentFolderId = datasetId
+          for (f <- currentFiles) {
+            if (f.isDirectory) {
+              processFolder(f, collectionId,user)
+            }
+            else {
+              addFileToDataset(f, datasetId,user)
+            }
+          }
+        }
+      }
+    }
+
+    currentFolderId
+  }
+
+
+  /**
+    * Upload a file.
+    *
+    * Updated to return json data that is utilized by the user interface upload library. The json structure is an array of maps that
+    * contain data for each of the file that the upload interface can use to accurately update the display based on the success
+    * or failure of the upload process.
+    */
+  @ApiOperation(value = "Upload a zip file and create a collection",
+    notes = "",
+    responseClass = "None",httpMethod = "POST")
+  def uploadZip() = PermissionAction(Permission.AddFile)(parse.multipartFormData) { implicit request =>
+    implicit val user = request.user
+    Logger.debug("--------- in upload ------------ ")
+    user match {
+      case Some(identity) => {
+        request.body.file("files[]").map { f =>
+          var nameOfFile = f.filename
+          var flags = ""
+          if(nameOfFile.toLowerCase().endsWith(".ptm")){
+            val thirdSeparatorIndex = nameOfFile.indexOf("__")
+            if(thirdSeparatorIndex >= 0){
+              val firstSeparatorIndex = nameOfFile.indexOf("_")
+              val secondSeparatorIndex = nameOfFile.indexOf("_", firstSeparatorIndex+1)
+              flags = flags + "+numberofIterations_" +  nameOfFile.substring(0,firstSeparatorIndex) + "+heightFactor_" + nameOfFile.substring(firstSeparatorIndex+1,secondSeparatorIndex)+ "+ptm3dDetail_" + nameOfFile.substring(secondSeparatorIndex+1,thirdSeparatorIndex)
+              nameOfFile = nameOfFile.substring(thirdSeparatorIndex+2)
+            }
+          }
+          Logger.debug("Uploading file " + nameOfFile)
+
+          val showPreviews = request.body.asFormUrlEncoded.get("datasetLevel").get(0)
+
+          // store file
+          val file = files.save(new FileInputStream(f.ref.file), nameOfFile, f.contentType, identity, showPreviews)
+          val uploadedFile = f
+          file match {
+            case Some(f) => {
+              val option_user = userService.findByIdentity(identity)
+              events.addObjectEvent(option_user, f.id, f.filename, "upload_file")
+              if(showPreviews.equals("FileLevel"))
+                flags = flags + "+filelevelshowpreviews"
+              else if(showPreviews.equals("None"))
+                flags = flags + "+nopreviews"
+              var fileType = f.contentType
+              if(fileType.contains("/zip") || fileType.contains("/x-zip") || nameOfFile.toLowerCase().endsWith(".zip")){
+                fileType = FilesUtils.getMainFileTypeOfZipFile(uploadedFile.ref.file, nameOfFile, "file")
+                if(fileType.startsWith("ERROR: ")){
+                  Logger.error(fileType.substring(7))
+                  InternalServerError(fileType.substring(7))
+                }
+                if(fileType.equals("imageset/ptmimages-zipped") || fileType.equals("imageset/ptmimages+zipped")|| fileType.equals("multi/files-ptm-zipped") ){
+                  if(fileType.equals("multi/files-ptm-zipped")){
+                    fileType = "multi/files-zipped";
+                  }
+
+                  val thirdSeparatorIndex = nameOfFile.indexOf("__")
+                  if(thirdSeparatorIndex >= 0){
+                    val firstSeparatorIndex = nameOfFile.indexOf("_")
+                    val secondSeparatorIndex = nameOfFile.indexOf("_", firstSeparatorIndex+1)
+                    flags = flags + "+numberofIterations_" +  nameOfFile.substring(0,firstSeparatorIndex) + "+heightFactor_" + nameOfFile.substring(firstSeparatorIndex+1,secondSeparatorIndex)+ "+ptm3dDetail_" + nameOfFile.substring(secondSeparatorIndex+1,thirdSeparatorIndex)
+                    nameOfFile = nameOfFile.substring(thirdSeparatorIndex+2)
+                    files.renameFile(f.id, nameOfFile)
+                  }
+                  files.setContentType(f.id, fileType)
+                }
+              }
+
+              current.plugin[FileDumpService].foreach{_.dump(DumpOfFile(uploadedFile.ref.file, f.id.toString, nameOfFile))}
+
+              // TODO RK need to replace unknown with the server name
+              val key = "unknown." + "file."+ fileType.replace(".","_").replace("/", ".")
+
+              val host = Utils.baseUrl(request)
+              val id = f.id
+
+              /***** Inserting DTS Requests   **/
+
+              val clientIP=request.remoteAddress
+              //val clientIP=request.headers.get("Origin").get
+              val domain=request.domain
+              val keysHeader=request.headers.keys
+              //request.
+              Logger.debug("---\n \n")
+
+              Logger.debug("clientIP:"+clientIP+ "   domain:= "+domain+ "  keysHeader="+ keysHeader.toString +"\n")
+              Logger.debug("Origin: "+request.headers.get("Origin") + "  Referer="+ request.headers.get("Referer")+ " Connections="+request.headers.get("Connection")+"\n \n")
+
+              Logger.debug("----")
+              val serverIP= request.host
+              val extra = Map("filename" -> f.filename)
+              dtsrequests.insertRequest(serverIP,clientIP, f.filename, id, fileType, f.length,f.uploadDate)
+              /****************************/
+              // TODO replace null with None
+              current.plugin[RabbitmqPlugin].foreach{_.extract(ExtractorMessage(id, id, host, key, extra, f.length.toString, null, flags))}
+
+              val dateFormat = new SimpleDateFormat("dd/MM/yyyy")
+
+
+              //for metadata files
+              if(fileType.equals("application/xml") || fileType.equals("text/xml")){
+                val xmlToJSON = FilesUtils.readXMLgetJSON(uploadedFile.ref.file)
+                files.addXMLMetadata(id, xmlToJSON)
+
+                Logger.debug("xmlmd=" + xmlToJSON)
+
+                current.plugin[ElasticsearchPlugin].foreach{
+                  _.index("data", "file", id, List(("filename",f.filename), ("contentType", f.contentType), ("author", identity.fullName), ("uploadDate", dateFormat.format(new Date())),("datasetId",""),("datasetName",""), ("xmlmetadata", xmlToJSON)))
+                }
+              }
+              else{
+                current.plugin[ElasticsearchPlugin].foreach{
+                  _.index("data", "file", id, List(("filename",f.filename), ("contentType", f.contentType), ("author", identity.fullName), ("uploadDate", dateFormat.format(new Date())),("datasetId",""),("datasetName","")))
+                }
+              }
+
+              current.plugin[VersusPlugin].foreach{ _.indexFile(f.id, fileType) }
+
+              //add file to RDF triple store if triple store is used
+              if(fileType.equals("application/xml") || fileType.equals("text/xml")){
+                play.api.Play.configuration.getString("userdfSPARQLStore").getOrElse("no") match{
+                  case "yes" => sparql.addFileToGraph(f.id)
+                  case _ => {}
+                }
+              }
+
+              current.plugin[AdminsNotifierPlugin].foreach{
+                _.sendAdminsNotification(Utils.baseUrl(request), "File","added",f.id.stringify, nameOfFile)}
+
+
+              //CREATE COLLECTION HERE
+              val currentUUID : Option[UUID] = createFromZip(f.id,user)
+
+              //Correctly set the updated URLs and data that is needed for the interface to correctly
+              //update the display after a successful upload.
+              val https = controllers.Utils.https(request)
+              val retMap = Map("files" ->
+                Seq(
+                  toJson(
+                    Map(
+                      "name" -> toJson(nameOfFile),
+                      "size" -> toJson(uploadedFile.ref.file.length()),
+                      "url" -> toJson(controllers.routes.Collections.collection(currentUUID.get).absoluteURL(https)),
+                      "deleteUrl" -> toJson(api.routes.Collections.removeCollection(currentUUID.get).absoluteURL(https)),
+                      "deleteType" -> toJson("POST")
+                    )
+                  )
+                )
+              )
+              Ok(toJson(retMap))
+            }
+            case None => {
+              Logger.error("Could not retrieve file that was just saved.")
+              //Changed to return appropriate data and message to the upload interface
+              val retMap = Map("files" ->
+                Seq(
+                  toJson(
+                    Map(
+                      "name" -> toJson(nameOfFile),
+                      "size" -> toJson(uploadedFile.ref.file.length()),
+                      "error" -> toJson("Problem in storing the uploaded file.")
+                    )
+                  )
+                )
+              )
+              Ok(toJson(retMap))
+            }
+          }
+        }.getOrElse {
+          Logger.error("The file appears to not have been attached correctly during upload.")
+          //This should be a very rare case. Changed to return the simple error message for the interface to display.
+          val retMap = Map("files" ->
+            Seq(
+              toJson(
+                Map(
+                  "error" -> toJson("The file was not correctly attached during upload.")
+                )
+              )
+            )
+          )
+          Ok(toJson(retMap))
+
+        }
+      }
+      case None => {
+        //Change to be the authentication login? Or will this automatically intercept? TEST IT
+        Redirect(routes.Datasets.list()).flashing("error" -> "You are not authorized to create new files.")
+      }
     }
   }
 
