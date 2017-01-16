@@ -6,6 +6,7 @@ import java.text.SimpleDateFormat
 import java.util.zip.{ZipEntry, ZipInputStream}
 import javax.activation.MimetypesFileTypeMap
 
+import _root_.util.FileUtils
 import api.Permission.Permission
 import fileutils.FilesUtils
 import play.api.Logger
@@ -835,7 +836,7 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
 
 
 
-  def createFromZip(fileId: UUID, user : Option[User]) : Option[UUID] =  {
+  def createFromZip(fileId: UUID, user : Option[User], clowderurl : String, creator_url : String) : Option[UUID] =  {
     var collectionCreatedId : Option[UUID] = None
     user match {
       case Some(identity) => {
@@ -873,7 +874,7 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
                 if (contents.length == 1){
                   val theFolder : java.io.File = contents(0)
                   rootFolder = Some(theFolder)
-                  rootFolderId = processFolder(theFolder,None,identity)
+                  rootFolderId = processFolder(theFolder,None,identity,clowderurl,creator_url)
                   collectionCreatedId = rootFolderId
 
                 } else {
@@ -946,7 +947,9 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
                 if (contents.length == 1){
                   val theFolder : java.io.File = contents(0)
                   rootFolder = Some(theFolder)
-                  rootFolderId = processFolder(theFolder,None,identity)
+                  val clowderurl = Utils.baseUrl(request)
+                  val creator_url = api.routes.Users.findById(identity.id).absoluteURL(Utils.https(request))(request)
+                  rootFolderId = processFolder(theFolder,None,identity,clowderurl,creator_url)
                   collectionCreatedId = rootFolderId
 
                 } else {
@@ -1053,7 +1056,7 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
   }
 
 
-  private def processFolder(currentFolder : java.io.File, parentId : Option[UUID], user : User): Option[UUID] ={
+  private def processFolder(currentFolder : java.io.File, parentId : Option[UUID], user : User,clowderurl : String,creator_url : String): Option[UUID] ={
 
     var currentFolderId : Option[UUID] = None
     //val currentFolder : java.io.File = new java.io.File(pathToFolder)
@@ -1094,14 +1097,24 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
           currentFolderId = collectionId
           for (f <- currentFiles) {
             if (f.isDirectory){
-              processFolder(f, collectionId,user)
+              processFolder(f, collectionId,user,clowderurl,creator_url)
             }
           }
         }
         else if (!hasDirectory && hasFile) {
           val datasetId: Option[UUID] = createDatasetFromName(currentName, Some(id),user)
           for (f <- currentFiles) {
-            addFileToDataset(f, datasetId,user)
+            datasetId match {
+              case Some(id) =>{
+                datasets.get(id) match {
+                  case Some(dataset) =>{
+                    FileUtils.processFileFromZip(f,datasetId,dataset,user,clowderurl,creator_url)
+                  }
+                  case None =>
+                }
+              }
+              case None =>
+            }
           }
         }
         else if (hasDirectory && hasFile) {
@@ -1109,10 +1122,20 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
           val datasetId: Option[UUID] = createDatasetFromName(currentName, collectionId,user)
           for (f <- currentFiles) {
             if (f.isDirectory) {
-              processFolder(f, collectionId,user)
+              processFolder(f, collectionId,user,clowderurl,creator_url)
             }
             else {
-              addFileToDataset(f, datasetId,user)
+              datasetId match {
+                case Some(id) =>{
+                  datasets.get(id) match {
+                    case Some(dataset) =>{
+                      FileUtils.processFileFromZip(f,datasetId,dataset,user,clowderurl,creator_url)
+                    }
+                    case None =>
+                  }
+                }
+                case None =>
+              }
             }
           }
         }
@@ -1123,7 +1146,7 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
           currentFolderId = collectionId
           for (f <- currentFiles) {
             if (f.isDirectory){
-              processFolder(f, collectionId,user)
+              processFolder(f, collectionId,user,clowderurl,creator_url)
             }
           }
         }
@@ -1131,7 +1154,17 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
           val datasetId: Option[UUID] = createDatasetFromName(currentName, None,user)
           currentFolderId = datasetId
           for (f <- currentFiles) {
-            addFileToDataset(f, datasetId,user)
+            datasetId match {
+              case Some(id) =>{
+                datasets.get(id) match {
+                  case Some(dataset) =>{
+                    FileUtils.processFileFromZip(f,datasetId,dataset,user,clowderurl,creator_url)
+                  }
+                  case None =>
+                }
+              }
+              case None =>
+            }
           }
         }
         else if (hasDirectory && hasFile) {
@@ -1140,10 +1173,20 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
           currentFolderId = datasetId
           for (f <- currentFiles) {
             if (f.isDirectory) {
-              processFolder(f, collectionId,user)
+              processFolder(f, collectionId,user,clowderurl,creator_url)
             }
             else {
-              addFileToDataset(f, datasetId,user)
+              datasetId match {
+                case Some(id) =>{
+                  datasets.get(id) match {
+                    case Some(dataset) =>{
+                      FileUtils.processFileFromZip(f,datasetId,dataset,user,clowderurl,creator_url)
+                    }
+                    case None =>
+                  }
+                }
+                case None =>
+              }
             }
           }
         }
@@ -1282,8 +1325,10 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
                 _.sendAdminsNotification(Utils.baseUrl(request), "File","added",f.id.stringify, nameOfFile)}
 
 
+              val clowderurl = Utils.baseUrl(request)
+              val creator_url = api.routes.Users.findById(identity.id).absoluteURL(Utils.https(request))(request)
               //CREATE COLLECTION HERE
-              val currentUUID : Option[UUID] = createFromZip(f.id,user)
+              val currentUUID : Option[UUID] = createFromZip(f.id,user,clowderurl,creator_url)
 
               //Correctly set the updated URLs and data that is needed for the interface to correctly
               //update the display after a successful upload.

@@ -1,8 +1,9 @@
 package util
 
-import java.io.FileInputStream
+import java.io.{InputStream, FileInputStream}
 import java.net.URL
 import java.util.Date
+import javax.activation.MimetypesFileTypeMap
 
 import collection.JavaConversions._
 import api.UserRequest
@@ -275,6 +276,46 @@ object FileUtils {
     }
 
     uploadedFiles.toList
+  }
+
+  def processFileFromZip(currentFile : java.io.File, datasetId : Option[UUID],dataset : Dataset, user: User, clowderurl : String, creator_url : String): Option[models.File] ={
+    var file : Option[models.File] = None
+    val currentName = currentFile.getName()
+    val currentPath = currentFile.getAbsolutePath()
+    val is : InputStream = new FileInputStream(currentPath)
+
+
+    val currentType = new MimetypesFileTypeMap().getContentType(currentPath)
+
+    val correctMimeType = FileUtils.getContentType(currentName,Some(currentType))
+
+    val createdFile : models.File = models.File(UUID.generate(),"",currentName,user,new Date(),correctMimeType,currentFile.length(),"",
+      "DatasetLevel",List.empty,List.empty,List.empty,None,0,"",false,Map.empty,new LicenseData(),List.empty,FileStatus.CREATED.toString)
+
+    files.save(createdFile)
+    Logger.info(s"created file ${createdFile.id}")
+    val creator = UserAgent(id = UUID.generate(), user = user, userId = Some(new URL(creator_url)))
+
+    // Extract path information from requests for later
+
+
+    associateMetaData(creator,createdFile,Some(Seq.empty[String]),clowderurl)
+    associateDataset(createdFile, Some(dataset), None, user)
+    val fileExecutionContext: ExecutionContext = Akka.system().dispatchers.lookup("akka.actor.contexts.file-processing")
+    Future {
+      try {
+        saveFile(createdFile, currentFile, "").foreach { fixedfile =>
+          processFileBytes(fixedfile, currentFile, Some(dataset))
+          files.setStatus(fixedfile.id, FileStatus.UPLOADED)
+          processFile(fixedfile, clowderurl, true, "", "DatasetLevel", Some(dataset), true)
+          processDataset(createdFile, Some(dataset), None, clowderurl, user, true, true)
+          files.setStatus(fixedfile.id, FileStatus.PROCESSED)
+        }
+      } finally {
+        currentFile.delete()
+      }
+    }(fileExecutionContext)
+    Some(createdFile)
   }
 
   // process a single uploaded file
@@ -729,7 +770,7 @@ object FileUtils {
   // ----------------------------------------------------------------------
   // END File upload
   // ----------------------------------------------------------------------
-  
+
   //Download CONTENT-DISPOSITION encoding
   //
   def encodeAttachment(filename: String, userAgent: String) : String = {
@@ -761,9 +802,9 @@ object FileUtils {
                                   ,"utf-8","Q")
                             }
     Logger.debug(userAgent + ": " + filenameStar.substring(10, filenameStar.length()-2))
-    
+
     //Return the complete attachement header info
     "attachment; filename*=UTF-8''" + filenameStar
   }
-  
+
 }
