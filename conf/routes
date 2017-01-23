@@ -132,6 +132,7 @@ GET            /datasets/:id/extractions                                        
 GET            /collections                                                             @controllers.Collections.list(when: String ?= "", date: String ?= "", size: Int ?= 12, space: Option[String] ?= None, mode: String ?= "", owner: Option[String] ?= None, showPublic: Boolean ?= true)
 GET            /collections/listChildCollections                                        @controllers.Collections.listChildCollections(parentCollectionId : String, when: String ?= "", date: String ?= "", size: Int ?= 12,  space: Option[String] ?= None, mode: String ?= "", owner: Option[String] ?= None)
 GET            /collections/new                                                         @controllers.Collections.newCollection(space: Option[String])
+POST           /collections/uploadZip                                                   @controllers.Collections.uploadZip()
 GET            /collections/:id/newchildCollection                                      @controllers.Collections.newCollectionWithParent(id: UUID)
 GET            /collections/following                                                   @controllers.Collections.followingCollections(index: Int ?= 0, size: Int ?= 12, mode: String ?= "")
 POST           /collection/submit                                                       @controllers.Collections.submit

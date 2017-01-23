@@ -199,7 +199,7 @@ class Application @Inject() (files: FileService, collections: CollectionService,
   def bookmarklet() = AuthenticatedAction { implicit request =>
     Ok(views.html.bookmarklet(Utils.baseUrl(request))).as("application/javascript")
   }
-  
+
   /**
    *  Javascript routing.
    */
@@ -231,6 +231,7 @@ class Application @Inject() (files: FileService, collections: CollectionService,
         routes.javascript.Error.authenticationRequiredMessage,
         routes.javascript.Collections.getUpdatedDatasets,
         routes.javascript.Collections.getUpdatedChildCollections,
+        routes.javascript.Collections.uploadZip,
         routes.javascript.Profile.viewProfileUUID,
         routes.javascript.Assets.at,
         api.routes.javascript.Admin.reindex,
@@ -413,7 +414,7 @@ class Application @Inject() (files: FileService, collections: CollectionService,
         controllers.routes.javascript.Events.getEvents,
         controllers.routes.javascript.Collections.collection
       )
-    ).as(JSON) 
+    ).as(JSON)
   }
-  
+
 }
