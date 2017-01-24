@@ -18,14 +18,15 @@
       <div class="col-md-6">
       <div>
         <h2>@curationObject.name</h2>
-        
+        <p class= "inline"><b>@Messages("publicationrequest.description"):</b></p>
         <p class= "inline abstract
         @if(curationObject.description.contains("\n")) {
         	  panel abstract-panel
         	}
-        ">@Messages("publicationrequest.description"):<br/>
+        ">
         @Html(curationObject.description.replace("\n","<br/>"))</p>
         
+        <br/><br/>
         <span><b>Creator(s)</b>: 
           	@if(curationObject.creators.length !=0) {
        			@for(i <- 0 to (curationObject.creators.length  - 2) ) {
