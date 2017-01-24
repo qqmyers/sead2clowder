@@ -10,6 +10,15 @@
       //Global so that the javascript for the collection creation can reference this.
       var isNameRequired = @isNameRequired;
       var isDescRequired = @isDescriptionRequired;
+      var origName = "@name";
+      
+      var origCreators = [
+	  @if(creators.length !=0) {
+      	@for(i <- 0 to (creators.length  - 2) ) {
+      		"@creators(i).trim",
+  		}
+   		"@creators(creators.length-1).trim"
+   		} ];
     </script>
     @if(isNew) {
         <ol class="breadcrumb">
@@ -71,32 +80,29 @@
                         
             	<div id="ds_creators" class="inline">
 
-                	@if(creators.length !=0) {
-            			@for(i <- 0 to (creators.length  - 2) ) {
-                			<span class="creator" >
-                  				<span class="authname person" data-creator="@creators(i).trim">@creators(i).trim</span>
-                  				<span class="glyphicon-remove creator-delete hiddencomplete"></span>
-                				<span>, </span>
-                			</span>
-            			}
-                		<span class="creator" >
-	                  		<span class="authname person" data-creator="@creators(creators.length-1).trim">@creators(creators.length-1).trim</span>
-    	              		<span class="glyphicon-remove creator-delete hiddencomplete"></span>
-        	        	</span>
-                	}	
+                	
             	</div>
             				    
 			  <a id="add-creator" class="hiddencomplete" href="javascript:addCreator()" title="Click to add a Creator">
                             <span class="glyphicon glyphicon-edit" aria-hidden="true"></span>
                         </a>
-				<div><span class="error hiddencomplete" id="creatorerror">A creator is required </span></div>
-
+				<div><span class="error 
+				  @if(creators.length >0 ) {hiddencomplete}
+					" id="creatorerror">One or more creators are required </span></div>
 			  </div>  
 			</div>	                
  			<div class="form-group">
-                <label id="desclabel" for="description"> Abstract (Description)</label>
+                <label id="desclabel" for="description"> 
+                @if(Messages("dataset.description").toLowerCase == Messages("publicationrequest.description").toLowerCase) {
+                	@Messages("publicationrequest.description")
+                } else {
+                		@Messages("publicationrequest.description") (@Messages("dataset.description"))
+				}                		
+                </label>
                 <textarea rows="4" type="text" id="description" class="form-control" >@Html(desc)</textarea>
-                <span class="error hiddencomplete" id="descerror">The abstract is a required field.</span>
+                <span class="error 
+                @if(desc.length >0 ) {hiddencomplete}
+                " id="descerror">The abstract is a required field.</span>
             </div>
             @if(!spaceList.isEmpty) {
                 <div class="form-group">
@@ -152,7 +158,7 @@
                     <button class="btn btn-primary btn-margins" title="Create the Publication Request" onclick="return createCuration();">
                         <span class="glyphicon glyphicon-upload"></span> Create
                     </button>
-                    <button class="btn btn-default btn-margins" title="Clear the input fields" onclick="return clearFields();">
+                    <button class="btn btn-default btn-margins" title="Reset the input fields" onclick="return resetFields();">
                         <span class="glyphicon glyphicon-unchecked"></span> Reset
                     </button>
                 } else {
@@ -168,7 +174,7 @@
                     <button class="btn btn-primary btn-margins disabled" title="Create the Publication Request">
                         <span class="glyphicon glyphicon-upload"></span> Create
                     </button>
-                    <button class="btn btn-default btn-margins disabled" title="Clear the input fields">
+                    <button class="btn btn-default btn-margins disabled" title="Reset the input fields">
                         <span class="glyphicon glyphicon-unchecked"></span> Reset
                     </button>
                 } else {
@@ -190,6 +196,29 @@
     <script language="javascript">
         $(".chosen-select").chosen({
             width: "80%",
+        });
+        var origDesc = $('#description').val();
+        displayCreators(origCreators);
+        $("#name").change( function() {
+            if($("#name").val().length == 0) {
+              $("#nameerror").show();
+            } else {
+              $("#nameerror").hide();
+            }
+        });
+        $("#description").change( function() {
+            if($("#description").val().length == 0) {
+              $("#descerror").show();
+            } else {
+              $("#descerror").hide();
+            }
+        });
+        setCreatorChangeCallback( function() {
+            if($("#ds_creators .creator").length == 0) {
+              $("#creatorerror").show();
+            } else {
+              $("#creatorerror").hide();
+            }
         });
 	</script>
 

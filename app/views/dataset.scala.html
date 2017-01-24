@@ -21,6 +21,7 @@
 @main(dataset.name) {
     <script type="text/javascript">
         var spaceId = "@currentSpace";
+        var descLabel = "@Messages("dataset.description")";
     </script>
 	<div class="row">
 		<!-- left column -->
@@ -112,13 +113,13 @@
             <div class="col-md-12 box-white-space" id='aboutcreators' data-dataset='@dataset.id'>
                 
                     @if(Permission.checkPermission(Permission.EditDataset, ResourceRef(ResourceRef.dataset, dataset.id))) {
-                    	<p id="creatorlabel"
+                    	<p id="creatorlabel"   class="creator-label" title="Ordered list of those responsible for this dataset">
                     	@if(dataset.creators.length >0) { 
-                    	  class="hiddencomplete" 
+                    	  Creator(s):  
                     	} else { 
-                    	  class="creator-label" 
+                    	  Add creator(s)
                     	} 
-                    	title="Ordered list of those responsible for this dataset">Add creator(s)</p>
+                    	</p>
                     }
 
             <div id="ds_creators" class="inline">
@@ -145,7 +146,13 @@
                         </a>
             }
 		</div>    
-        <div class="col-md-12 box-white-space" id="aboutdesc">
+        <div class="col-md-12 box-white-space" id="aboutdesc"><span>
+                    @if((dataset.description.length == 0) && (Permission.checkPermission(Permission.EditDataset, ResourceRef(ResourceRef.dataset, dataset.id)))) {
+                    	 	Add a @Messages("dataset.description").toLowerCase
+                    	
+        			} else {
+        			@Messages("dataset.description"):
+        			}</span> 
                     <p id ="ds_description" class="inline abstract
                     @if(dataset.description.contains("<br>")) {
                     	panel abstract-panel
@@ -153,11 +160,10 @@
                     	">
                     @if(dataset.description.length > 0) {
                         @Html(dataset.description)
-                    } else {
-                        @if(Permission.checkPermission(Permission.EditDataset, ResourceRef(ResourceRef.dataset, dataset.id))){Add a description}
-                    }</p>
+                    }
+                    </p>
                     @if(Permission.checkPermission(Permission.EditDataset, ResourceRef(ResourceRef.dataset, dataset.id))) {
-                        <a id="edit-description" class="hiddencomplete" href="javascript:updateDescription()" title="Click to edit description">
+                        <a id="edit-description" class="hiddencomplete" href="javascript:updateDescription()" title="Click to edit @Messages("dataset.description").toLowerCase">
                             <span class="glyphicon glyphicon-edit" aria-hidden="true"></span>
                         </a>
                     }
@@ -517,7 +523,11 @@
 
 		request.done(function(response, textStatus,jqXHR) {
 			$('#ds_description').html(urlify(htmlEncode(description).replace(/\n/g, "<br>")));
-			if($('#ds_description').html().length == 0) $('#ds_description').html("Add a description");
+			if($('#ds_description').html().length == 0) {
+			   $('#aboutdesc > span').text("Add a " + descLabel.toLowerCase());
+			 } else {
+			   $('#aboutdesc > span').text(descLabel + ":");
+			 }
 			$('.edit_desc').remove();
 			if ($('#ds_description').html().indexOf("<br>")>=0) {
 			$('#ds_description').addClass("abstract-panel panel");

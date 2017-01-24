@@ -123,8 +123,8 @@ function saveCreator() {
 
 			request.done(function(response, textStatus, jqXHR) {
 				addCreatorToList(newAuthor);
-				$("#creatorlabel").removeClass("creator-label");
-				$("#creatorlabel").addClass("hiddencomplete");
+				$("#creatorlabel").text("Creator(s): ");
+
 				
 				notify("Creator added.", "success", false, 2000);
 			});
@@ -167,6 +167,10 @@ function addCreatorToList(newCreator) {
 	$('#add-creator').removeClass("inline");
 	$('#add-creator').css("display", "");
 	$('#aboutcreators').mouseleave();
+	if(changeCallback != null) {
+		changeCallback();
+	}
+
 }
 
 $(document).on(
@@ -186,8 +190,7 @@ $(document).on(
 					console.log("Successful remove user " + target);
 					deleteCreatorFromList(target);
 					if($("#ds_creators").children().length == 0) {
-						$("#creatorlabel").removeClass("hiddencomplete");
-						$("#creatorlabel").addClass("creator-label");
+						$("#creatorlabel").text("Add creator(s)");
 					}
 					notify("Creator: " + target + " removed.", "success",
 							false, 2000);
@@ -210,7 +213,17 @@ function deleteCreatorFromList(creator) {
 	if (lastAuth.children().length == 3) {
 		lastAuth.children().last().remove();
 	}
+	if(changeCallback != null) {
+		changeCallback();
+	}
 }
+
+var changeCallback =null;
+function setCreatorChangeCallback(callback) {
+	changeCallback = callback;
+}
+
+
 
 $(function() {
 
