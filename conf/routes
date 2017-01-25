@@ -454,7 +454,6 @@ GET            /api/spaces/:id/collections                                      
 # ----------------------------------------------------------------------
 GET            /api/collections                                                         @api.Collections.list(title: Option[String] ?= None, date: Option[String] ?= None, limit: Int ?= 12)
 GET            /api/collections/canEdit                                                 @api.Collections.listCanEdit(title: Option[String] ?= None, date: Option[String] ?= None, limit: Int ?= 12)
-POST           /api/collections/uploadZip                                               @api.Collections.uploadZip()
 GET            /api/collections/datasetPossibleParents/:ds_id                           @api.Collections.addDatasetToCollectionOptions(ds_id: UUID, title: Option[String]?= None, date: Option[String] ?= None, limit: Int ?= 12)
 GET            /api/collections/possibleParents                                         @api.Collections.listPossibleParents(currentCollectionId: String, title: Option[String] ?= None, date: Option[String] ?= None, limit: Int ?= 12)
 POST           /api/collections                                                         @api.Collections.createCollection()
