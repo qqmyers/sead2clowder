@@ -1,0 +1,35 @@
+#Fields requiring values
+
+#initialAdmins=""
+#stagingarea.uri = "http://seadva-test.d2i.indiana.edu/sead-c3pr/api/researchobjects"
+#matchmaker.uri =  "http://seadva-test.d2i.indiana.edu/sead-c3pr/api/researchobjects/matchingrepositories"
+#publishData.list.uri = "http://seadva-test.d2i.indiana.edu/sead-c3pr/api/search"
+#people.uri = "http://seadva-test.d2i.indiana.edu/sead-c3pr/api/people"
+#application.secret=""
+#commKey=
+
+#Standard options for the SEAD project
+
+permissions = public
+registerThroughAdmins=true
+allowAnonymousDownload = true
+addDatasetToCollectionSpace=true
+datasetFileWithinSpace = true
+service.byteStorage=services.filesystem.DiskByteStorageService
+# configuration for disk byte storage - standard value for docker deployment
+clowder {
+  diskStorage {
+    path="/home/clowder/clowder/data"
+    depth=3
+  }
+}
+#Additional help menu items
+helpMenu = [{label: "FAQs", url: "http://sead-data.net/faqs"},
+            {label: "Help Topics", url: "http://sead-data.net/help-topics"}]
+
+
+
+
+
+
+

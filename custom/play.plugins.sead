@@ -1,0 +1,4 @@
+#Play plugins used by default in SEAD
+10800:services.StagingAreaPlugin
+10901:services.SpaceCopyPlugin
+10700:services.ElasticsearchPlugin
