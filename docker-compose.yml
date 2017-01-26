@@ -11,6 +11,14 @@ clowder:
     - mongo
     - rabbitmq
     - elasticsearch
+  volumes:
+#exposes the custom conf directory  
+#    - sead-custom:/home/clowder/clowder/custom:Z
+#exposes the databytes directory for use wuth the DiskByteStore (path must match in custom.conf)
+#    - sead-data:/home/clowder/clowder/databytes:Z
+#exposes logs directory
+#    - sead-logs:/home/clowder/clowder/logs:Z
+    
 
 # extractors
 filedigest:
@@ -46,17 +54,19 @@ videopreview:
 # mongo database used to store metadata/data
 mongo:
   image: mongo:latest
-  ports:
-    - "27017:27017"
+# no need to expose ports unless you want direct access to the db and are OK with the security risk  
+#  ports:
+#    - "27017:27017"
   # volumes:
   #   - clowder/mongo:/data/db:Z
 
 # rabbitmq to connect to extractors
 rabbitmq:
   image: rabbitmq:management
-  ports:
-    - "5672:5672"
-    - "15672:15672"
+# no need to expose ports unless you want direct access to the bus and are OK with the security risk  
+#  ports:
+#    - "5672:5672"
+#    - "15672:15672"
   # volumes:
   #   - clowder/rabbitmq:/var/lib/rabbitmq:Z
 
@@ -64,8 +74,9 @@ rabbitmq:
 elasticsearch:
     image: elasticsearch:2
     command: elasticsearch -Des.cluster.name="clowder"
-    ports:
-        - "9200:9200"
-        - "9300:9300"
+# no need to expose ports unless you want direct access to the search engine and are OK with the security risk    
+#    ports:
+#        - "9200:9200"
+#        - "9300:9300"
     # volumes:
     #     - ${PWD}/esdata:/usr/share/elasticsearch/data:Z

@@ -24,8 +24,8 @@ RUN useradd -s /bin/bash clowder
 COPY files entrypoint.sh /home/clowder/
 
 # create some folders owned by clowder user
-RUN mkdir -p /home/clowder/clowder/custom /home/clowder/clowder/logs \
-    && chown clowder /home/clowder/clowder /home/clowder/clowder/custom /home/clowder/clowder/logs
+RUN mkdir -p /home/clowder/clowder/custom /home/clowder/clowder/logs /home/clowder/clowder/databytes \
+    && chown clowder /home/clowder/clowder /home/clowder/clowder/custom /home/clowder/clowder/logs /home/clowder/clowder/databytes
 
 # command to run when starting docker
 ENTRYPOINT ["/home/clowder/entrypoint.sh"]
