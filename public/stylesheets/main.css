@@ -996,10 +996,15 @@ table.borderless tbody tr td, table.borderless tbody tr th {
 }
 
 .abstract {
-	word-break: break-word;
+	display: inline-block;
 	max-height: 250px;
+	max-width:100%;
 	overflow-y: auto;
-	display: inline-flex;
+	overflow-wrap: break-word;
+	margin-bottom : -5px;
+	margin-block-end: -5px;
+	margin-block-start: 1px;
+	margin-bottom: -5px;
 }
 
 .abstract-panel {
