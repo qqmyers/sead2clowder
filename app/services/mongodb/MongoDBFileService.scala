@@ -255,6 +255,11 @@ class MongoDBFileService @Inject() (
           fileDsId = fileDsId + dataset.id.stringify + " %%% "
           fileDsName = fileDsName + dataset.name + " %%% "
         }
+
+        for (folder <- folders.findByFileId(file.id)) {
+          fileDsId = fileDsId + folder.parentDatasetId.stringify + " %%% "
+          fileDsName = fileDsName + datasets.get(folder.parentDatasetId).map(_.name + " %%% ").getOrElse("")
+        }
         
         val formatter = new SimpleDateFormat("dd/MM/yyyy")
 
@@ -324,7 +329,7 @@ class MongoDBFileService @Inject() (
         val theJSON = getUserMetadataJSON(id)
         val fileSep = System.getProperty("file.separator")
         val tmpDir = System.getProperty("java.io.tmpdir")
-        var resultDir = tmpDir + fileSep + "medici__rdfuploadtemporaryfiles" + fileSep + UUID.generate.stringify
+        var resultDir = tmpDir + fileSep + "clowder__rdfuploadtemporaryfiles" + fileSep + UUID.generate.stringify
         val resultDirFile = new java.io.File(resultDir)
         resultDirFile.mkdirs()
 
@@ -796,7 +801,7 @@ class MongoDBFileService @Inject() (
 
     val tmpDir = System.getProperty("java.io.tmpdir")
     val filesep = System.getProperty("file.separator")
-    val rdfTmpDir = new java.io.File(tmpDir + filesep + "medici__rdfdumptemporaryfiles")
+    val rdfTmpDir = new java.io.File(tmpDir + filesep + "clowder__rdfdumptemporaryfiles")
     if(!rdfTmpDir.exists()){
       rdfTmpDir.mkdir()
     }

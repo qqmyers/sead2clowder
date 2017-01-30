@@ -136,14 +136,9 @@ class Files @Inject()(
 		              }
 		              case None => {
                     val userAgent = request.headers.get("user-agent").getOrElse("")
-                    val filenameStar = if (userAgent.indexOf("MSIE") > -1) {
-                      URLEncoder.encode(filename, "UTF-8")
-                    } else {
-                      MimeUtility.encodeWord(filename).replaceAll(",", "%2C")
-                    }
                     Ok.chunked(Enumerator.fromStream(inputStream))
 		                  .withHeaders(CONTENT_TYPE -> contentType)
-                      .withHeaders(CONTENT_DISPOSITION -> ("attachment; filename*=UTF-8''" + filenameStar))
+                      .withHeaders(CONTENT_DISPOSITION -> (FileUtils.encodeAttachment(filename, userAgent)))
 		              }
 		            }
 		          }
@@ -202,7 +197,7 @@ class Files @Inject()(
               case None => {
                 Ok.chunked(Enumerator.fromStream(inputStream))
                   .withHeaders(CONTENT_TYPE -> contentType)
-                  .withHeaders(CONTENT_DISPOSITION -> ("attachment; filename=\"" + filename + "\""))
+                  .withHeaders(CONTENT_DISPOSITION -> (FileUtils.encodeAttachment(filename, request.headers.get("user-agent").getOrElse(""))))
               }
             }
           }
@@ -326,52 +321,65 @@ class Files @Inject()(
       files.get(id) match {
         case Some(x) => {
           val json = request.body
-          //parse request for agent/creator info
-          //creator can be UserAgent or ExtractorAgent
-          var creator: models.Agent = null
-          json.validate[Agent] match {
-            case s: JsSuccess[Agent] => {
-              creator = s.get
-              //if creator is found, continue processing
-              val context: JsValue = (json \ "@context")
 
-              // check if the context is a URL to external endpoint
-              val contextURL: Option[URL] = context.asOpt[String].map(new URL(_))
-
-              // check if context is a JSON-LD document
-              val contextID: Option[UUID] =
-                if (context.isInstanceOf[JsObject]) {
-                  context.asOpt[JsObject].map(contextService.addContext(new JsString("context name"), _))
-                } else if (context.isInstanceOf[JsArray]) {
-                  context.asOpt[JsArray].map(contextService.addContext(new JsString("context name"), _))
-                } else None
-
-              // when the new metadata is added
-              val createdAt = Parsers.parseDate((json \ "created_at")).fold(new Date())(_.toDate)
-
-              //parse the rest of the request to create a new models.Metadata object
-              val attachedTo = ResourceRef(ResourceRef.file, id)
-              val content = (json \ "content")
-              val version = None
-              val metadata = models.Metadata(UUID.generate, attachedTo, contextID, contextURL, createdAt, creator,
-                content, version)
-
-              //add metadata to mongo
-              metadataService.addMetadata(metadata)
-              val mdMap = metadata.getExtractionSummary
-
-              //send RabbitMQ message
-              current.plugin[RabbitmqPlugin].foreach { p =>
-                val dtkey = s"${p.exchange}.metadata.added"
-                p.extract(ExtractorMessage(metadata.attachedTo.id, UUID(""), controllers.Utils.baseUrl(request), dtkey, mdMap, "", UUID(""), ""))
-              }
-
-              files.index(id)
-              Ok(toJson("Metadata successfully added to db"))
-            }
+          // parse request for JSON-LD model
+          var model: RDFModel = null
+          json.validate[RDFModel] match {
             case e: JsError => {
-              Logger.error("Error getting creator")
-              BadRequest(toJson(s"Creator data is missing or incorrect."))
+              Logger.error("Errors: " + JsError.toFlatForm(e) + "\n\t" + json.toString())
+              BadRequest(JsError.toFlatJson(e))
+            }
+            case s: JsSuccess[RDFModel] => { 
+              model = s.get 
+          
+              //parse request for agent/creator info
+              //creator can be UserAgent or ExtractorAgent
+              var creator: models.Agent = null
+              json.validate[Agent] match {
+                case s: JsSuccess[Agent] => {
+                  creator = s.get
+                  //if creator is found, continue processing
+                  val context: JsValue = (json \ "@context")
+    
+                  // check if the context is a URL to external endpoint
+                  val contextURL: Option[URL] = context.asOpt[String].map(new URL(_))
+    
+                  // check if context is a JSON-LD document
+                  val contextID: Option[UUID] =
+                    if (context.isInstanceOf[JsObject]) {
+                      context.asOpt[JsObject].map(contextService.addContext(new JsString("context name"), _))
+                    } else if (context.isInstanceOf[JsArray]) {
+                      context.asOpt[JsArray].map(contextService.addContext(new JsString("context name"), _))
+                    } else None
+    
+                  // when the new metadata is added
+                  val createdAt = Parsers.parseDate((json \ "created_at")).fold(new Date())(_.toDate)
+    
+                  //parse the rest of the request to create a new models.Metadata object
+                  val attachedTo = ResourceRef(ResourceRef.file, id)
+                  val content = (json \ "content")
+                  val version = None
+                  val metadata = models.Metadata(UUID.generate, attachedTo, contextID, contextURL, createdAt, creator,
+                    content, version)
+    
+                  //add metadata to mongo
+                  metadataService.addMetadata(metadata)
+                  val mdMap = metadata.getExtractionSummary
+    
+                  //send RabbitMQ message
+                  current.plugin[RabbitmqPlugin].foreach { p =>
+                    val dtkey = s"${p.exchange}.metadata.added"
+                    p.extract(ExtractorMessage(metadata.attachedTo.id, UUID(""), controllers.Utils.baseUrl(request), dtkey, mdMap, "", UUID(""), ""))
+                  }
+                  
+                  files.index(id)
+                  Ok(toJson("Metadata successfully added to db"))
+                }
+                case e: JsError => {
+                  Logger.error("Error getting creator")
+                  BadRequest(toJson(s"Creator data is missing or incorrect."))
+                }
+              }
             }
           }
         }
@@ -524,7 +532,7 @@ class Files @Inject()(
    * Send job for file preview(s) generation at a later time.
    */
   @ApiOperation(value = "(Re)send preprocessing job for file",
-      notes = "Force Medici to (re)send preprocessing job for selected file, processing the file as a file of the selected MIME type. Returns file id on success. In the requested file type, replace / with __ (two underscores).",
+      notes = "Force Clowder to (re)send preprocessing job for selected file, processing the file as a file of the selected MIME type. Returns file id on success. In the requested file type, replace / with __ (two underscores).",
       responseClass = "None", httpMethod = "POST")
   def sendJob(file_id: UUID, fileType: String) = PermissionAction(Permission.AddFile, Some(ResourceRef(ResourceRef.file, file_id))) { implicit request =>
     files.get(file_id) match {
@@ -622,7 +630,7 @@ class Files @Inject()(
         case Some(resultFile) =>{
           Ok.chunked(Enumerator.fromStream(new FileInputStream(resultFile)))
 			            	.withHeaders(CONTENT_TYPE -> "application/rdf+xml")
-			            	.withHeaders(CONTENT_DISPOSITION -> ("attachment; filename=\"" + resultFile.getName() + "\""))
+			            	.withHeaders(CONTENT_DISPOSITION -> (FileUtils.encodeAttachment(resultFile.getName(), request.headers.get("user-agent").getOrElse(""))))
         }
         case None => BadRequest(toJson("File not found " + id))
       }
@@ -901,7 +909,7 @@ class Files @Inject()(
                     //IMPORTANT: Setting CONTENT_LENGTH header here introduces bug!                  
                     Ok.chunked(Enumerator.fromStream(inputStream))
                       .withHeaders(CONTENT_TYPE -> contentType)
-                      .withHeaders(CONTENT_DISPOSITION -> ("attachment; filename=\"" + filename + "\""))
+                      .withHeaders(CONTENT_DISPOSITION -> (FileUtils.encodeAttachment(filename, request.headers.get("user-agent").getOrElse(""))))
 
                   }
                 }
@@ -957,7 +965,7 @@ class Files @Inject()(
                     Ok.chunked(Enumerator.fromStream(inputStream))
                       .withHeaders(CONTENT_TYPE -> contentType)
                       //.withHeaders(CONTENT_LENGTH -> contentLength.toString)
-                      .withHeaders(CONTENT_DISPOSITION -> ("attachment; filename=\"" + filename + "\""))
+                      .withHeaders(CONTENT_DISPOSITION -> (FileUtils.encodeAttachment(filename, request.headers.get("user-agent").getOrElse(""))))
 
                   }
                 }
@@ -1003,6 +1011,7 @@ class Files @Inject()(
           }
 
         }
+        files.index(id)
         Ok(Json.obj("status" -> "success"))
       }
       else {
