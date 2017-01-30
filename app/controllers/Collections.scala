@@ -27,8 +27,7 @@ import play.api.i18n.Messages
 @Singleton
 class Collections @Inject()(datasets: DatasetService, collections: CollectionService, previewsService: PreviewService,
                             spaceService: SpaceService, users: UserService, events: EventService,
-                            appConfig: AppConfigurationService) extends SecuredController {
-                            spaceService: SpaceService, users: UserService, events: EventService,sparql: RdfSPARQLService,dtsrequests: ExtractionRequestsService) extends SecuredController {
+                            appConfig: AppConfigurationService,sparql: RdfSPARQLService,dtsrequests: ExtractionRequestsService) extends SecuredController {
 
   /**
     * String name of the Space such as 'Project space' etc. parsed from conf/messages

@@ -37,8 +37,10 @@ class Collections @Inject() (datasets: DatasetService,
                              userService: UserService,
                              events: EventService,
                              spaces:SpaceService,
-                             appConfig: AppConfigurationService) extends ApiController {
-class Collections @Inject() (datasets: DatasetService, collections: CollectionService, previews: PreviewService, userService: UserService, events: EventService, spaces:SpaceService, files : FileService,sparql: RdfSPARQLService,dtsrequests: ExtractionRequestsService) extends ApiController {
+                             appConfig: AppConfigurationService,
+                             files : FileService,
+                             sparql: RdfSPARQLService,
+                             dtsrequests: ExtractionRequestsService) extends ApiController {
 
   @ApiOperation(value = "Create a collection",
       notes = "",
