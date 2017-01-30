@@ -39,6 +39,7 @@ object FileUtils {
   lazy val userService: UserService = DI.injector.getInstance(classOf[UserService])
   lazy val folders: FolderService = DI.injector.getInstance(classOf[FolderService])
 
+
   def getContentType(filename: Option[String], contentType: Option[String]): String = {
     getContentType(filename.getOrElse(""), contentType)
   }
@@ -583,6 +584,9 @@ object FileUtils {
           case Some(f) => {
             val fixedfile = f.copy(filename=nameOfFile, contentType=fileType, loader=loader, loader_id=loader_id, length=length, author=realUser)
             files.save(fixedfile)
+            //Update counts
+            appConfig.incrementCount('files, 1)
+            appConfig.incrementCount('bytes, f.length)
             Logger.debug("Uploading Completed")
             Some(fixedfile)
           }
@@ -604,6 +608,9 @@ object FileUtils {
   private def savePath(file: File, path: String): Option[File] = {
     files.get(file.id) match {
       case Some(f) => {
+        //Update counts
+        appConfig.incrementCount('files, 1)
+        appConfig.incrementCount('bytes, f.length)
         return Some(f)
       }
       case None => {
@@ -623,6 +630,8 @@ object FileUtils {
           case Some(f) => {
             val fixedfile = f.copy(contentType=conn.getContentType, loader=loader, loader_id=loader_id, length=length)
             files.save(fixedfile)
+            appConfig.incrementCount('files, 1)
+            appConfig.incrementCount('bytes, f.length)
             Logger.debug("Uploading Completed")
             Some(fixedfile)
           }
@@ -770,7 +779,7 @@ object FileUtils {
   // ----------------------------------------------------------------------
   // END File upload
   // ----------------------------------------------------------------------
-
+  
   //Download CONTENT-DISPOSITION encoding
   //
   def encodeAttachment(filename: String, userAgent: String) : String = {
@@ -802,9 +811,9 @@ object FileUtils {
                                   ,"utf-8","Q")
                             }
     Logger.debug(userAgent + ": " + filenameStar.substring(10, filenameStar.length()-2))
-
+    
     //Return the complete attachement header info
     "attachment; filename*=UTF-8''" + filenameStar
   }
-
+  
 }
