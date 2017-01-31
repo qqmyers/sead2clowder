@@ -34,7 +34,16 @@ import controllers.Utils
  */
 @Api(value = "/collections", listingPath = "/api-docs.json/collections", description = "Collections are groupings of datasets")
 @Singleton
-class Collections @Inject() (folders : FolderService, files: FileService, metadataService : MetadataService, datasets: DatasetService, collections: CollectionService, previews: PreviewService, userService: UserService, events: EventService, spaces:SpaceService) extends ApiController {
+class Collections @Inject() (datasets: DatasetService,
+                             collections: CollectionService,
+                             previews: PreviewService,
+                             userService: UserService,
+                             events: EventService,
+                             spaces:SpaceService,
+                             appConfig: AppConfigurationService,
+                             folders : FolderService,
+                             files: FileService,
+                             metadataService : MetadataService) extends ApiController {
 
   @ApiOperation(value = "Create a collection",
       notes = "",
@@ -60,6 +69,7 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
 
           collections.insert(c) match {
             case Some(id) => {
+              appConfig.incrementCount('collections, 1)
               c.spaces.map(spaceId => spaces.get(spaceId)).flatten.map{ s =>
                 spaces.addCollection(c.id, s.id, user)
                 collections.addToRootSpaces(c.id, s.id)
@@ -163,6 +173,7 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
       case Some(collection) => {
         events.addObjectEvent(request.user , collection.id, collection.name, "delete_collection")
         collections.delete(collectionId)
+        appConfig.incrementCount('collections, -1)
         current.plugin[AdminsNotifierPlugin].foreach {
           _.sendAdminsNotification(Utils.baseUrl(request),"Collection","removed",collection.id.stringify, collection.name)
         }
@@ -538,6 +549,7 @@ class Collections @Inject() (folders : FolderService, files: FileService, metada
 
           collections.insert(c) match {
             case Some(id) => {
+              appConfig.incrementCount('collections, 1)
               c.spaces.map{ spaceId =>
                 spaces.get(spaceId)}.flatten.map{ s =>
                   spaces.addCollection(c.id, s.id, request.user)
