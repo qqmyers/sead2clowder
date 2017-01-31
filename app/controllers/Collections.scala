@@ -345,7 +345,6 @@ class Collections @Inject()(datasets: DatasetService, collections: CollectionSer
 
           Logger.debug("Saving collection " + collection.name)
           collections.insert(collection)
-          appConfig.incrementCount('collections, 1)
           collection.spaces.map{
             sp => spaceService.get(sp) match {
               case Some(s) => {
@@ -358,9 +357,9 @@ class Collections @Inject()(datasets: DatasetService, collections: CollectionSer
           }
 
           //index collection
-            current.plugin[ElasticsearchPlugin].foreach{
-              _.index(SearchUtils.getElasticsearchObject(collection))
-            }
+            val dateFormat = new SimpleDateFormat("dd/MM/yyyy")
+            current.plugin[ElasticsearchPlugin].foreach{_.index("data", "collection", collection.id,
+            List(("name",collection.name), ("description", collection.description), ("created",dateFormat.format(new Date()))))}
 
           //Add to Events Table
           val option_user = users.findByIdentity(identity)
