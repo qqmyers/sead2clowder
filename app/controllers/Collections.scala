@@ -3,7 +3,7 @@ package controllers
 import api.Permission._
 import models._
 import org.apache.commons.lang.StringEscapeUtils._
-import util.{ Formatters, RequiredFieldsConfig, SortingUtils }
+import util.{ Formatters, RequiredFieldsConfig, SortingUtils, SearchUtils }
 import java.text.SimpleDateFormat
 import java.util.Date
 import javax.inject.{ Inject, Singleton }
@@ -21,7 +21,8 @@ import play.api.i18n.Messages
 
 @Singleton
 class Collections @Inject() (datasets: DatasetService, collections: CollectionService, previewsService: PreviewService,
-    spaceService: SpaceService, users: UserService, events: EventService) extends SecuredController {
+                            spaceService: SpaceService, users: UserService, events: EventService,
+                            appConfig: AppConfigurationService) extends SecuredController {
 
   /**
    * String name of the Space such as 'Project space' etc. parsed from conf/messages
@@ -405,7 +406,8 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
         var collection: Collection = null
         if (colSpace.isEmpty || colSpace(0) == "default" || colSpace(0) == "") {
           collection = Collection(name = colName(0), description = colDesc(0), datasetCount = 0, created = new Date, author = identity, root_spaces = List.empty)
-        } else {
+          }
+          else {
           val stringSpaces = colSpace(0).split(",").toList
           val colSpaces: List[UUID] = stringSpaces.map(aSpace => if (aSpace != "") UUID(aSpace) else None).filter(_ != None).asInstanceOf[List[UUID]]
           var root_spaces = List.empty[UUID]
@@ -417,9 +419,9 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
 
         Logger.debug("Saving collection " + collection.name)
         collections.insert(collection)
+          appConfig.incrementCount('collections, 1)
         collection.spaces.map {
-          sp =>
-            spaceService.get(sp) match {
+            sp => spaceService.get(sp) match {
               case Some(s) => {
                 spaces.addCollection(collection.id, s.id, user)
                 collections.addToRootSpaces(collection.id, s.id)
@@ -430,11 +432,9 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
         }
 
         //index collection
-        val dateFormat = new SimpleDateFormat("dd/MM/yyyy")
-        current.plugin[ElasticsearchPlugin].foreach {
-          _.index("data", "collection", collection.id,
-            List(("name", collection.name), ("description", collection.description), ("created", dateFormat.format(new Date()))))
-        }
+            current.plugin[ElasticsearchPlugin].foreach{
+              _.index(SearchUtils.getElasticsearchObject(collection))
+            }
 
         //Add to Events Table
         val option_user = users.findByIdentity(identity)
@@ -547,8 +547,7 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
           var collectionSpaces: List[ProjectSpace] = List.empty[ProjectSpace]
           var collectionSpaces_canRemove: Map[ProjectSpace, Boolean] = Map.empty
           collection.spaces.map {
-            sp =>
-              spaceService.get(sp) match {
+            sp=> spaceService.get(sp) match {
                 case Some(s) => {
                   collectionSpaces = s :: collectionSpaces
                   var removeFromSpace = removeFromSpaceAllowed(dCollection.id, s.id)

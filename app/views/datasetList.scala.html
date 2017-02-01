@@ -133,7 +133,8 @@
                     }
 
                     case (_, _) => {
-                        <a id="create-dataset" class="btn btn-primary btn-sm pull-right" href="@routes.Datasets.newDataset(space, None)" title="@Messages("create.title", Messages("dataset.title"))"><span class="glyphicon glyphicon-ok"></span> @Messages("create.title", "")</a>
+                        <a id="create-dataset" class="btn btn-primary btn-sm pull-right" href="@routes.Datasets.newDataset(space, None)" title="@Messages("create.title", Messages("dataset.title"))">
+                          <span class="glyphicon glyphicon-ok"></span> @Messages("create.title", "")</a>
                     }
                 }
             }
