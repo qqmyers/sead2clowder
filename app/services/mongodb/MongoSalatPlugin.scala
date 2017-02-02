@@ -407,11 +407,11 @@ class MongoSalatPlugin(app: Application) extends Plugin {
     // Move SHA512 from File object into file.digest metadata
     updateMongo("copy-sha512-to-metadata-and-remove-all", copySha512ToMetadataAndRemove)
 
-    // Change existing 'In Curation' curation objects/pub requests to 'In Prepaparation' 
-    updateMongo("change-in-curation-status-to-in-preparation", updateInCurationStatus)
-
     // Change repository in extractors.info collection into a list
     updateMongo("update-repository-type-in-extractors-info", updateRepositoryType)
+    
+    // Change existing 'In Curation' curation objects/pub requests to 'In Prepaparation' 
+    updateMongo("change-in-curation-status-to-in-preparation", updateInCurationStatus)
   }
 
   private def updateMongo(updateKey: String, block: () => Unit): Unit = {
@@ -576,7 +576,8 @@ class MongoSalatPlugin(app: Application) extends Plugin {
       ds.put("files", fileIds)
       try {
         collection("datasets").save(ds, WriteConcern.Safe)
-      } catch {
+      }
+      catch {
         case e: BSONException => Logger.error("Unable to update files in dataset:" + ds.getAsOrElse[ObjectId]("_id", new ObjectId()).toString)
       }
     }
@@ -694,7 +695,8 @@ class MongoSalatPlugin(app: Application) extends Plugin {
       invite.put("expirationTime", afterAddingMins)
       try {
         collection("spaces.invites").save(invite, WriteConcern.Safe)
-      } catch {
+      }
+      catch {
         case e: BSONException => Logger.error("Unable to update invite:" + invite.getAsOrElse[ObjectId]("_id", new ObjectId()).toString)
       }
     }
@@ -758,7 +760,8 @@ class MongoSalatPlugin(app: Application) extends Plugin {
           collection(prefix + ".files").save(file, WriteConcern.Safe)
           if (deletepath)
             collection(prefix + ".files").update(MongoDBObject("_id" -> id), $unset("path"))
-        } catch {
+        }
+        catch {
           case e: Exception => Logger.error("Unable to update file :" + id.toString, e)
         }
       }
@@ -795,7 +798,8 @@ class MongoSalatPlugin(app: Application) extends Plugin {
         }
         try {
           collection(prefix + ".files").save(file, WriteConcern.Safe)
-        } catch {
+        }
+        catch {
           case e: Exception => Logger.error("Unable to update file :" + id.toString, e)
         }
       }
@@ -1068,8 +1072,7 @@ class MongoSalatPlugin(app: Application) extends Plugin {
       val parentCollections = collection("collections").find(MongoDBObject("_id" -> MongoDBObject("$in" -> parents)))
       var parentSpaces = MongoDBList.empty
       parentCollections.foreach { pc =>
-        pc.getAsOrElse[MongoDBList]("spaces", MongoDBList.empty).foreach { ps => parentSpaces += ps }
-      }
+       pc.getAsOrElse[MongoDBList]("spaces", MongoDBList.empty).foreach{ps => parentSpaces += ps} }
       val root_spaces = scala.collection.mutable.ListBuffer.empty[ObjectId]
       spaces.foreach { s =>
 
@@ -1251,13 +1254,15 @@ class MongoSalatPlugin(app: Application) extends Plugin {
               // Find if user exists with lowercase email already
               val conflicts = collection("social.users").count(MongoDBObject(
                 "_id" -> MongoDBObject("$ne" -> userId),
-                "identityId" -> MongoDBObject("userId" -> username.toLowerCase, "providerId" -> "userpass")))
+              "identityId" -> MongoDBObject("userId" -> username.toLowerCase, "providerId" -> "userpass")
+            ))
 
               if (conflicts == 0) {
                 collection("social.users").update(MongoDBObject("_id" -> userId),
                   MongoDBObject("$set" -> MongoDBObject(
                     "email" -> email.toLowerCase,
-                    "identityId" -> MongoDBObject("userId" -> username.toLowerCase, "providerId" -> "userpass"))), upsert = false, multi = true)
+                  "identityId" -> MongoDBObject("userId" -> username.toLowerCase, "providerId" -> "userpass")
+                )), upsert = false, multi = true)
               } else {
                 // If there's already an account with lowercase email, deactivate this account
                 collection("social.users").update(MongoDBObject("_id" -> userId),
@@ -1317,7 +1322,8 @@ class MongoSalatPlugin(app: Application) extends Plugin {
               try {
                 val mdCount = file.getOrElse("metadataCount", "0").toString.toLong
                 file.put("metadataCount", mdCount + 1)
-              } catch {
+              }
+              catch {
                 case e: Exception => {
                   // If we can't get metadataCount from file correctly, just set to 1 for newly added md
                   Logger.error("Unable to update metadataCount; setting to 1", e)
@@ -1334,16 +1340,12 @@ class MongoSalatPlugin(app: Application) extends Plugin {
 
         try {
           collection(colln).save(file, WriteConcern.Safe)
-        } catch {
+        }
+        catch {
           case e: Exception => Logger.error("Unable to update file :" + id.toString, e)
         }
       }
     }
-  }
-
-  private def updateInCurationStatus(): Unit = {
-    CurationDAO.update(MongoDBObject("status" -> "In Curation"),
-      $set("status" -> "In Preparation"), false, true, WriteConcern.Safe)
   }
 
   /**
@@ -1367,5 +1369,10 @@ class MongoSalatPlugin(app: Application) extends Plugin {
         }
       }
     }
+  }
+  
+  private def updateInCurationStatus(): Unit = {
+    CurationDAO.update(MongoDBObject("status" -> "In Curation"),
+      $set("status" -> "In Preparation"), false, true, WriteConcern.Safe)
   }
 }
