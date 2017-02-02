@@ -248,13 +248,11 @@ code {
 	left:20px;
 }
 
-#nameDescrFieldSet .control-group .controls .buttonset label
-{
+#nameDescrFieldSet .control-group .controls .buttonset label {
     margin-right: 10%;
 }
 
-#nameDescrFieldSet .homePages .external-link-delete
-{
+#nameDescrFieldSet .homePages .external-link-delete {
     display: inline-block;
     margin-left:10px;
 }
@@ -264,14 +262,12 @@ code {
     margin-left: 10px;
 }
 
-#nameDescrFieldSet .homePages .control-group
-{
+#nameDescrFieldSet .homePages .control-group {
     display:inline-block;
     width: 85%;
 }
 
-#nameDescrFieldSet .homePages .control-label
-{
+#nameDescrFieldSet .homePages .control-label {
     display: none;
 }
 
@@ -384,12 +380,13 @@ code {
 textarea:focus, input[type='text']:focus, input[type='password']:focus{
 	border-color: rgb(102, 175, 233);
 	outline: 0px none;
-	box-shadow: 0px 1px 1px rgba(0, 0, 0, 0.075) inset, 0px 0px 8px rgba(102, 175, 233, 0.6);
-	
+	box-shadow: 0px 1px 1px rgba(0, 0, 0, 0.075) inset, 0px 0px 8px
+		rgba(102, 175, 233, 0.6);
 }
 
 textarea, input[type='text'], input[type='password']{
-	transition: border-color 0.15s ease-in-out 0s, box-shadow 0.15s ease-in-out 0s;
+	transition: border-color 0.15s ease-in-out 0s, box-shadow 0.15s
+		ease-in-out 0s;
 }
 
 .elasticsearchResult{
@@ -403,6 +400,11 @@ textarea, input[type='text'], input[type='password']{
 }
 
 
+
+.elasticsearchResult dd {
+	max-height: 150px;
+	overflow-y: auto;
+}
 
 .truncate {
   width: 150px;
@@ -637,8 +639,8 @@ table#sensorsListTable > thead > tr > th.headerSortDown {
     display: block;
     visibility: hidden;
     clear: both;
-
 }
+
 #scrollTableGalleria tbody{
 	overflow-y: auto;
 }
@@ -665,15 +667,30 @@ table#sensorsListTable > thead > tr > th.headerSortDown {
 }
 
 /* any custom CSS will override the Galleria theme. Here we enlarge the thumbnails: */
-.galleria-thumbnails .galleria-image{width:90px;height:60px;}
-.galleria-thumbnails-list{height:60px;}
-.galleria-thumb-nav-left,
-.galleria-thumb-nav-right{height:55px;}
-.galleria-info,
-.galleria-counter{bottom:80px;}
-.galleria-thumbnails-container { height: 62px;}
+.galleria-thumbnails .galleria-image {
+	width: 90px;
+	height: 60px;
+}
 
-.galleriaHelp{margin-bottom: 1%;}
+.galleria-thumbnails-list {
+	height: 60px;
+}
+
+.galleria-thumb-nav-left, .galleria-thumb-nav-right {
+	height: 55px;
+}
+
+.galleria-info, .galleria-counter {
+	bottom: 80px;
+}
+
+.galleria-thumbnails-container {
+	height: 62px;
+}
+
+.galleriaHelp {
+	margin-bottom: 1%;
+}
 
 .galleria-fscr{
     position:absolute;
@@ -706,9 +723,11 @@ table#sensorsListTable > thead > tr > th.headerSortDown {
     word-wrap: break-word;
 }
 
-.collapse-icon:link, .collapse-icon:visited, .collapse-icon:hover, .collapse-icon:active  {
+.collapse-icon:link, .collapse-icon:visited, .collapse-icon:hover,
+	.collapse-icon:active {
     text-decoration:none;
-    cursor: pointer; cursor: hand;
+	cursor: pointer;
+	cursor: hand;
 }
 
 .tree li {
@@ -762,7 +781,8 @@ table#sensorsListTable > thead > tr > th.headerSortDown {
     -webkit-transform-origin: 0 0;
     height: 54em;
     border: none;
-    background-image: url("../javascripts/previewers/iframe/images/iframe_error.jpg");
+	background-image:
+		url("../javascripts/previewers/iframe/images/iframe_error.jpg");
     background-size: cover;
 }
 .iframeLink{
@@ -795,9 +815,21 @@ table#sensorsListTable > thead > tr > th.headerSortDown {
 }
 
 .iframeModalDivInternal{
-	position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%;
+	position: relative;
+	padding-bottom: 56.25%;
+	height: 0;
+	overflow: hidden;
+	max-width: 100%;
 }
-.iframeModalDivInternal iframe, .embed-container object, .embed-container embed { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+
+.iframeModalDivInternal iframe, .embed-container object,
+	.embed-container embed {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+}
 
 .iframeClose{
 	font-size: 30px !important;
@@ -1035,10 +1067,10 @@ table.borderless tbody tr td, table.borderless tbody tr th {
 .abstract {
 	display: inline-block;
 	max-height: 250px;
-	max-width:100%;
+	max-width: 100%;
 	overflow-y: auto;
 	overflow-wrap: break-word;
-	margin-bottom : -5px;
+	margin-bottom: -5px;
 	margin-block-end: -5px;
 	margin-block-start: 1px;
 	margin-bottom: -5px;
@@ -1046,6 +1078,11 @@ table.borderless tbody tr td, table.borderless tbody tr th {
 
 .abstract-panel {
 	padding: 6px 12px 6px 0px;
-	min-width:100%;
-	margin-bottom: 0px!important;
+	min-width: 100%;
+	margin-bottom: 0px !important;
+	border: 1px solid transparent;
+	border-radius: 4px;
+	-webkit-box-shadow: 0 1px 1px rgba(0, 0, 0, 0.05);
+	box-shadow: 0 1px 1px rgba(0, 0, 0, 0.05);
+}
 }

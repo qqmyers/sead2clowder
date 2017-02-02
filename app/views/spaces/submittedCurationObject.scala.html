@@ -21,7 +21,7 @@
         <p class= "inline"><b>@Messages("publicationrequest.description"):</b></p>
         <p class= "inline abstract
         @if(curationObject.description.contains("\n")) {
-        	  panel abstract-panel
+        	  abstract-panel
         	}
         ">
         @Html(curationObject.description.replace("\n","<br/>"))</p>

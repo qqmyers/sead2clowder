@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Docker container to add normal/admin users for Clowder. [BD-1167](https://opensource.ncsa.illinois.edu/jira/browse/BD-1167)
 ### Changed
 - Updated the POST endpoint `/api/extractors` to accept a list of extractor repositories (git, docker, svn, etc) instead of only one. [BD-1253](https://opensource.ncsa.illinois.edu/jira/browse/BD-1253)
+- Improved handling of special characters and long descriptions for datasets and Staging Area publication requests [SEAD-1143, CAT-692] (https://opensource.ncsa.illinois.edu/jira/projects/SEAD/issues/SEAD-1143)
 
 ## 1.1.0
 
