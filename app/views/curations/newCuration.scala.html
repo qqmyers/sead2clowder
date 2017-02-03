@@ -99,7 +99,7 @@
                 		@Messages("publicationrequest.description") (@Messages("dataset.description"))
 				}                		
                 </label>
-                <textarea rows="4" type="text" id="description" class="form-control" >@desc</textarea>
+                <textarea rows="4" type="text" id="description" class="form-control" >@Html(desc)</textarea>
                 <span class="error 
                 @if(desc.length >0 ) {hiddencomplete}
                 " id="descerror">The abstract is a required field.</span>
