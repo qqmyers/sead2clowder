@@ -16,7 +16,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Improved handling of special characters and long descriptions for datasets and Staging Area publication requests [SEAD-1143, CAT-692] (https://opensource.ncsa.illinois.edu/jira/projects/SEAD/issues/SEAD-1143)
 - Changed default labels in Staging Area plugin, e.g. "Curation Objects" to "Publication Requests" and make them configurable [SEAD-1131] (https://opensource.ncsa.illinois.edu/jira/browse/SEAD-1131)
 
-
 ## 1.1.0
 
 ### Added
