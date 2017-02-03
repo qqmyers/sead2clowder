@@ -34,25 +34,14 @@
     </div>
 </div>
 
-<<<<<<< HEAD
-<div class="row"> 
-  <div class="btn-toolbar">
-  <!-- pull-right class stacks things to the right - first item to the farthest right -->
-    	
-=======
 <div class="row">
     <div class="btn-toolbar">
     <!-- pull-right class stacks things to the right - first item to the farthest right -->
->>>>>>> refs/heads/feature/sortable
     
         <div class="btn-group btn-group-sm pull-right">
             <button type="button" class="btn btn-default active" href="#tile-view" id="tile-view-btn"><span class="glyphicon glyphicon-th-large"></span></button>
             <button type="button" class="btn btn-default" href="#list-view" id="list-view-btn"><span class="glyphicon glyphicon-th-list"></span></button>
-<<<<<<< HEAD
         </div>
-=======
-      </div>
->>>>>>> refs/heads/feature/sortable
 
   @space match {
     case Some(s) => {
@@ -109,12 +98,7 @@
     }
     case None => {}
     }
-<<<<<<< HEAD
-
         @user match {
-=======
-           @user match {
->>>>>>> refs/heads/feature/sortable
             case Some(u) => {
                 @(space, owner) match {
                     case (Some(s), Some(o)) => {
@@ -217,11 +201,7 @@
                   $('#prevlink').attr('href', "@(routes.Collections.sortedListInSpace(s, prev.toInt-limit, limit))");      	        	}
       	        }	
             }
-<<<<<<< HEAD
-         }
-=======
         }
->>>>>>> refs/heads/feature/sortable
             
         </script>
     </div>
