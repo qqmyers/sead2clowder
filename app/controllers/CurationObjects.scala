@@ -364,6 +364,7 @@ class CurationObjects @Inject()(
           }
           case None => BadRequest(views.html.notFound("Space does not exist."))
         }
+
       }
       case None => BadRequest(views.html.notFound("Publication Request does not exist."))
     }
