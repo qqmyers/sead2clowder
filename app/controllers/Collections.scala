@@ -9,6 +9,7 @@ import fileutils.FilesUtils
 import models._
 import org.apache.commons.lang.StringEscapeUtils._
 import util.{FileUtils, Formatters, RequiredFieldsConfig}
+import util.{Formatters, RequiredFieldsConfig, SearchUtils}
 import java.text.SimpleDateFormat
 import java.util.Date
 import javax.inject.{Inject, Singleton}
@@ -357,9 +358,9 @@ class Collections @Inject()(datasets: DatasetService, collections: CollectionSer
           }
 
           //index collection
-            val dateFormat = new SimpleDateFormat("dd/MM/yyyy")
-            current.plugin[ElasticsearchPlugin].foreach{_.index("data", "collection", collection.id,
-            List(("name",collection.name), ("description", collection.description), ("created",dateFormat.format(new Date()))))}
+            current.plugin[ElasticsearchPlugin].foreach{
+              _.index(SearchUtils.getElasticsearchObject(collection))
+            }
 
           //Add to Events Table
           val option_user = users.findByIdentity(identity)
@@ -891,12 +892,12 @@ class Collections @Inject()(datasets: DatasetService, collections: CollectionSer
                 Logger.debug("xmlmd=" + xmlToJSON)
 
                 current.plugin[ElasticsearchPlugin].foreach{
-                  _.index("data", "file", id, List(("filename",f.filename), ("contentType", f.contentType), ("author", identity.fullName), ("uploadDate", dateFormat.format(new Date())),("datasetId",""),("datasetName",""), ("xmlmetadata", xmlToJSON)))
+                  _.index(SearchUtils.getElasticsearchObject(f))
                 }
               }
               else{
                 current.plugin[ElasticsearchPlugin].foreach{
-                  _.index("data", "file", id, List(("filename",f.filename), ("contentType", f.contentType), ("author", identity.fullName), ("uploadDate", dateFormat.format(new Date())),("datasetId",""),("datasetName","")))
+                  _.index(SearchUtils.getElasticsearchObject(f))
                 }
               }
 
