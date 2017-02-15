@@ -1285,7 +1285,6 @@ class Collections @Inject()(datasets: DatasetService, collections: CollectionSer
               case Some((inputStream, filename, contentType, contentLength)) => {
                 val tempDir : UUID = UUID.generate();
                 val outputFolder = tempDir.stringify;
-                Logger.info("Created temporary folder : " + outputFolder)
 
                 var tempDirLocation : String = System.getProperty("java.io.tmpdir")
                 var tempDirFile : java.nio.file.Path = Files.createTempDirectory(tempDirLocation+java.io.File.separator+outputFolder)
@@ -1317,18 +1316,8 @@ class Collections @Inject()(datasets: DatasetService, collections: CollectionSer
                 } else {
                   //should this case ever happen?
                 }
-
-                //create dataset and add to the
-                //var datasetId : Option[UUID] = createDatasetFromName("original zip",rootFolderId,identity)
-                //add zip file to that dataset
-                //datasets.addFile(datasetId.get,currentFile)
                 try {
-                  //Logger.info("Trying to delete " + tempDirFile.getAbsolutePath())
-                  //var exists : Boolean = Files.exists(tempDirFile.toPath())
-                  //Logger.info("Value of exists : " + exists)
-                  //var deleted : Boolean = tempDirFile.delete()
-                  //Logger.info("Value of deleted : " + deleted)
-                  //tempDirFile.delete()
+                  Logger.info("Trying to delete " + tempDirFile.toFile().getAbsolutePath())
                   deleteTempDir(tempDirFile.toFile())
                 } catch {
                   case e : IOException => println("exception caught : " + e.getMessage)
