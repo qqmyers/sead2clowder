@@ -1,6 +1,7 @@
 package controllers
 
 import java.io.{FileInputStream, IOException, FileOutputStream, InputStream}
+import java.nio.file.Files
 import java.util.zip.{ZipEntry, ZipInputStream}
 import javax.activation.MimetypesFileTypeMap
 
@@ -1284,15 +1285,14 @@ class Collections @Inject()(datasets: DatasetService, collections: CollectionSer
               case Some((inputStream, filename, contentType, contentLength)) => {
                 val tempDir : UUID = UUID.generate();
                 val outputFolder = tempDir.stringify;
-                //TODO - make temporary directory from outputFolder, and do that here, pass to unzipit
                 Logger.info("Created temporary folder : " + outputFolder)
-                var tempDirFile : java.io.File = new java.io.File(outputFolder)
-                //var tempDirFile : java.nio.file.Path = Files.createTempDirectory(outputFolder)
-                //tempDirFile.toFile().deleteOnExit()
-                //var tempDirFile : java.io.File = java.io.File.createTempFile(outputFolder,"")
-                //tempDirFile.mkdirs()
-                unZipIt(inputStream,tempDirFile)
-                val allContentsOfFolder : Array[java.io.File] = tempDirFile.listFiles()
+
+                var tempDirLocation : String = System.getProperty("java.io.tmpdir")
+                var tempDirFile : java.nio.file.Path = Files.createTempDirectory(tempDirLocation+java.io.File.separator+outputFolder)
+                Logger.info("Created temporary folder : " + tempDirLocation+java.io.File.separator+outputFolder)
+
+                unZipIt(inputStream,tempDirFile.toFile())
+                val allContentsOfFolder : Array[java.io.File] = tempDirFile.toFile().listFiles()
                 val len = allContentsOfFolder.length
                 var contentsOfFolder : ArrayBuffer[java.io.File] = ArrayBuffer.empty[java.io.File]
                 if (len > 0){
@@ -1329,7 +1329,7 @@ class Collections @Inject()(datasets: DatasetService, collections: CollectionSer
                   //var deleted : Boolean = tempDirFile.delete()
                   //Logger.info("Value of deleted : " + deleted)
                   //tempDirFile.delete()
-                  deleteTempDir(tempDirFile)
+                  deleteTempDir(tempDirFile.toFile())
                 } catch {
                   case e : IOException => println("exception caught : " + e.getMessage)
                 }
