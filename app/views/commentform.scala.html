@@ -1,7 +1,7 @@
 @(id: String, resourceType: String)(implicit user: Option[models.User])
 
 <form class="form-inline">
-<textarea id="commentField_@id" class="comment-input-box"></textarea>
+<textarea id="commentField_@id" class="comment-input-box" onkeyup="checkUserTag('commentField_@id')"></textarea>
 <br />
 <button class="btn btn-primary" onclick="return postComment('@id', '@resourceType');" title="Post Comment"><span class="glyphicon glyphicon-comment"></span> Post</button>
 </form>
@@ -15,7 +15,7 @@
        commentText = htmlDecode(commentText.replace(/<br>/g, "\n"));
        if ($("#commentField_" + id).length == 0) {
                var form="<form class=\"form-inline\">";               
-               form += "<textarea id=\"editField_" + id + "\" class=\"comment-input-box\"></textarea>";
+               form += "<textarea id=\"editField_" + id + "\" class=\"comment-input-box\" onkeyup=\"checkUserTag('editField_"+id+"')\"></textarea>";
                form += "<br />";
                form += "<button class=\"btn btn-primary btn-sm\" title=\"Submit Edit\" onclick=\"return updateComment('" + id + "');\" style=\"margin-right:5px;\"><span class=\"glyphicon glyphicon-saved\"></span> Submit</button>";
                form += "<button class=\"btn btn-default btn-sm\" title=\"Cancel\" onclick=\"return cancelEditComment('" + id + "');\"><span class=\"glyphicon glyphicon-remove\"></span> Cancel</button>";
@@ -44,7 +44,7 @@
 function showReplyComment(id) {
   if ($("#commentField_" + id).length == 0) {
     var form="<form class=\"form-inline\">";
-    form += "<textarea id=\"commentField_" + id + "\" class=\"comment-input-box\"></textarea>";
+    form += "<textarea id=\"commentField_" + id + "\" class=\"comment-input-box\" onkeyup=\"checkUserTag('commentField_"+id+"')\"></textarea>";
     form += "<br />";
     form += "<button class=\"btn btn-primary btn-sm\" onclick=\"return replyComment('" + id + "')\" title=\"Confirm\" style=\"margin-right:5px;\">";
     form += "<span class=\"glyphicon glyphicon-ok\"></span> Submit</button>";
@@ -146,5 +146,17 @@ function postComment(id, resourceType) {
   }
   return false;
 }
+
+       // If user has entered "[at]abc..." (without space) then check for user starting with "abc"
+       function checkUserTag(sourceform) {
+           var currVal = document.getElementById(sourceform).value;
+           var wordList = currVal.split(" ");
+           var lastWord = wordList[wordList.length -1];
+
+           if (lastWord.indexOf("@@") == 0) {
+               var targ = lastWord.replace("@@", "")
+               console.log("trying to tag user: '"+targ+"'")
+           }
+       }
 </script>
 
