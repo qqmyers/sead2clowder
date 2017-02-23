@@ -1,13 +1,20 @@
 @(id: String, resourceType: String)(implicit user: Option[models.User])
+<head>
+<link href="@routes.Assets.at("javascripts/mention/jquery.mentionsInput.css")" rel='stylesheet' type='text/css'>
+</head>
 
 <form class="form-inline">
-<textarea id="commentField_@id" class="comment-input-box" onkeyup="checkUserTag('commentField_@id')"></textarea>
+<textarea id="commentField_@id" class="comment-input-box mention"></textarea>
 <br />
 <button class="btn btn-primary" onclick="return postComment('@id', '@resourceType');" title="Post Comment"><span class="glyphicon glyphicon-comment"></span> Post</button>
 </form>
   <script src="@routes.Assets.at("javascripts/htmlEncodeDecode.js")" language="javascript"></script>
+  <script src='//cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js' type='text/javascript'></script>
+  <script src="@routes.Assets.at("javascripts/mention/jquery.elastic.js")" language="javascript"></script>
+  <script src="@routes.Assets.at("javascripts/mention/jquery.mentionsInput.js")" language="javascript"></script>
   <script language="javascript">
        var origText = "";
+       $("#commentField_@id").mentionsInput(getMentionsInputParams())
   
      function showEditComment(id) {
        var commentText = $("#comment-body_" + id).html().replace(/<br>/g, "\n");
@@ -15,13 +22,14 @@
        commentText = htmlDecode(commentText.replace(/<br>/g, "\n"));
        if ($("#commentField_" + id).length == 0) {
                var form="<form class=\"form-inline\">";               
-               form += "<textarea id=\"editField_" + id + "\" class=\"comment-input-box\" onkeyup=\"checkUserTag('editField_"+id+"')\"></textarea>";
+               form += "<textarea id=\"editField_" + id + "\" class=\"comment-input-box mention\"></textarea>";
                form += "<br />";
                form += "<button class=\"btn btn-primary btn-sm\" title=\"Submit Edit\" onclick=\"return updateComment('" + id + "');\" style=\"margin-right:5px;\"><span class=\"glyphicon glyphicon-saved\"></span> Submit</button>";
                form += "<button class=\"btn btn-default btn-sm\" title=\"Cancel\" onclick=\"return cancelEditComment('" + id + "');\"><span class=\"glyphicon glyphicon-remove\"></span> Cancel</button>";
                form += "</form>";
                $("#comment-body_" + id).html("<div class=\"comment-edit\" id=\"edit-form_" + id + "\">" + form + "</div>");
-               $("#editField_" + id).val(commentText);               
+               $("#editField_" + id).mentionsInput(getMentionsInputParams());
+               $("#editField_" + id).val(commentText);
            }
        else {
          notify("Error editing comment", "error");
@@ -44,7 +52,7 @@
 function showReplyComment(id) {
   if ($("#commentField_" + id).length == 0) {
     var form="<form class=\"form-inline\">";
-    form += "<textarea id=\"commentField_" + id + "\" class=\"comment-input-box\" onkeyup=\"checkUserTag('commentField_"+id+"')\"></textarea>";
+    form += "<textarea id=\"commentField_" + id + "\" class=\"comment-input-box mention\"></textarea>";
     form += "<br />";
     form += "<button class=\"btn btn-primary btn-sm\" onclick=\"return replyComment('" + id + "')\" title=\"Confirm\" style=\"margin-right:5px;\">";
     form += "<span class=\"glyphicon glyphicon-ok\"></span> Submit</button>";
@@ -52,6 +60,9 @@ function showReplyComment(id) {
     form += "<span class=\"glyphicon glyphicon-remove\"></span> Cancel</button>";
     form += "</form>";
     $("#reply_" + id).prepend("<div class=\"comment-thread\" id=\"form_" + id + "\">" + form + "</div>");
+
+    $("#commentField_" + id).mentionsInput(getMentionsInputParams());
+
   }
   return false;
 }
@@ -147,15 +158,30 @@ function postComment(id, resourceType) {
   return false;
 }
 
-       // If user has entered "[at]abc..." (without space) then check for user starting with "abc"
-       function checkUserTag(sourceform) {
-           var currVal = document.getElementById(sourceform).value;
-           var wordList = currVal.split(" ");
-           var lastWord = wordList[wordList.length -1];
-
-           if (lastWord.indexOf("@@") == 0) {
-               var targ = lastWord.replace("@@", "")
-               console.log("trying to tag user: '"+targ+"'")
+       function getMentionsInputParams() {
+           return {
+               onDataRequest:function (mode, query, callback) {
+                   var supercall = this;
+                   $.ajax({
+                       type : 'GET',
+                       url: jsRoutes.api.Users.list().url,
+                       success : function(apidata) {
+                           var data= [];
+                           apidata.forEach(function(userRecord){
+                               data.push({
+                                   id: userRecord.id,
+                                   name: userRecord.fullName,
+                                   avatar: userRecord.avatar,
+                                   type: 'contact'
+                               })
+                           });
+                           data = _.filter(data, function(item) { return item.name.toLowerCase().indexOf(query.toLowerCase()) > -1 });
+                           callback.call(this, data);
+                       }
+                   });
+               },
+               "elastic": false,
+               "allowRepeat": true
            }
        }
 </script>
