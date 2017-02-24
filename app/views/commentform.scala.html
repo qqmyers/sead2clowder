@@ -1,4 +1,4 @@
-@(id: String, resourceType: String)(implicit user: Option[models.User])
+@(id: String, resourceType: String)(implicit user: Option[models.User], request: RequestHeader)
 <link href="@routes.Assets.at("javascripts/mention/jquery.mentionsInput.css")" rel='stylesheet' type='text/css'>
 
 <form class="form-inline">
@@ -114,10 +114,11 @@ function postComment(id, resourceType) {
 
     request.done ( function ( response, textStatus, jqXHR ) {
         $('#commentField_' + id).mentionsInput('getMentions', function(data) {
-            console.log(data)
             // Send email to any users tagged in this comment, and subscribe them to this resource
             data.forEach(function(mentioned){
-                console.log(mentioned.email)
+                var text = '@user.get.fullName mentioned you in a comment: @routes.Datasets.dataset(UUID(id)).absoluteURL()';
+                console.log(text)
+                //util.Mail.sendEmail("New Clowder comment", user, mentioned.email, text)
             })
         });
 
