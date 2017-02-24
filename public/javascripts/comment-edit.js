@@ -17,6 +17,12 @@ function editComment(commentId, commentText, reloadPage){
     
     request.done(function (response, textStatus, jqXHR){
         console.log("Response " + response);
+        $('#editField_' + commentId).mentionsInput('getMentions', function(data) {
+            // Send email to any users tagged in this comment, and subscribe them to this resource
+            data.forEach(function(mentioned){
+                console.log(mentioned.email)
+            })
+        });
         //Sucessful update of the DB - update the interface
     	$("#comment-body_" + commentId).html(theText.replace(/\n/g, "<br>"));
     });

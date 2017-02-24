@@ -1,7 +1,5 @@
 @(id: String, resourceType: String)(implicit user: Option[models.User])
-<head>
 <link href="@routes.Assets.at("javascripts/mention/jquery.mentionsInput.css")" rel='stylesheet' type='text/css'>
-</head>
 
 <form class="form-inline">
 <textarea id="commentField_@id" class="comment-input-box mention"></textarea>
@@ -21,7 +19,7 @@
        origText = commentText;
        commentText = htmlDecode(commentText.replace(/<br>/g, "\n"));
        if ($("#commentField_" + id).length == 0) {
-               var form="<form class=\"form-inline\">";               
+               var form="<form class=\"form-inline\">";
                form += "<textarea id=\"editField_" + id + "\" class=\"comment-input-box mention\"></textarea>";
                form += "<br />";
                form += "<button class=\"btn btn-primary btn-sm\" title=\"Submit Edit\" onclick=\"return updateComment('" + id + "');\" style=\"margin-right:5px;\"><span class=\"glyphicon glyphicon-saved\"></span> Submit</button>";
@@ -69,7 +67,6 @@ function showReplyComment(id) {
 
 function replyComment(id) {
   postComment(id, "comment");
-  $("#form_" + id).remove();
   return false;
 }
 
@@ -116,6 +113,14 @@ function postComment(id, resourceType) {
     }
 
     request.done ( function ( response, textStatus, jqXHR ) {
+        $('#commentField_' + id).mentionsInput('getMentions', function(data) {
+            console.log(data)
+            // Send email to any users tagged in this comment, and subscribe them to this resource
+            data.forEach(function(mentioned){
+                console.log(mentioned.email)
+            })
+        });
+
       var dateNow = new Date();
       var hour = ('0'+dateNow.getHours()).slice(-2);
       var minute = ('0'+dateNow.getMinutes()).slice(-2)
@@ -145,6 +150,8 @@ function postComment(id, resourceType) {
       post += "</div>";
       post += "</div>";
       $("#reply_" + id).prepend("<div class=\"comment-thread\">" + post + "</div>");
+
+      $("#form_" + id).remove();
     });
 
     request.fail(function(jqXHR, textStatus, errorThrown) {
@@ -161,7 +168,6 @@ function postComment(id, resourceType) {
        function getMentionsInputParams() {
            return {
                onDataRequest:function (mode, query, callback) {
-                   var supercall = this;
                    $.ajax({
                        type : 'GET',
                        url: jsRoutes.api.Users.list().url,
@@ -172,6 +178,7 @@ function postComment(id, resourceType) {
                                    id: userRecord.id,
                                    name: userRecord.fullName,
                                    avatar: userRecord.avatar,
+                                   email: userRecord.email,
                                    type: 'contact'
                                })
                            });

@@ -6,6 +6,7 @@
  * Using underscore.js
  *
  * License: MIT License - http://www.opensource.org/licenses/mit-license.php
+ * Git source: https://github.com/podio/jquery-mentions-input
  */
 
 (function ($, _, undefined) {
