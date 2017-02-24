@@ -2,7 +2,7 @@
 //
 //Referenced by comment.scala.html
 //
-function editComment(commentId, commentText, senderName, senderEmail, reloadPage){
+function editComment(commentId, commentText, senderName, senderEmail, commentLink, reloadPage){
 	
 	if(reloadPage === undefined) reloadPage = false;
 	
@@ -20,7 +20,7 @@ function editComment(commentId, commentText, senderName, senderEmail, reloadPage
         $('#editField_' + commentId).mentionsInput('getMentions', function(data) {
             // Send email to any users tagged in this comment, and subscribe them to this resource
             data.forEach(function(mentioned){
-                var text = senderName+' mentioned you in a comment: @routes.Datasets.dataset(UUID(id)).absoluteURL()\n\n';
+                var text = senderName+' mentioned you in a comment: '+commentLink+'\n\n';
                 text += commentText;
                 request = jsRoutes.controllers.Users.sendEmail("New Clowder comment", senderEmail, mentioned.email, text).ajax({
                     type: 'POST'
