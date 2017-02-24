@@ -32,6 +32,7 @@ GET            /assets/*file                                                    
 GET            /users                                                                   @controllers.Users.getUsers(when: String ?= "", id: String ?= "", limit: Int ?=24)
 GET            /users/acceptTermsOfServices                                             @controllers.Users.acceptTermsOfServices(redirect: Option[String] ?= None)
 GET            /login/isLoggedIn                                                        @controllers.Login.isLoggedIn
+POST           /users/sendEmail                                                         @controllers.Users.sendEmail(subject: String, from: String, recipient: String, body: String)
 
 # ----------------------------------------------------------------------
 # PROFILE

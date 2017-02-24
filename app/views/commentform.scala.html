@@ -38,7 +38,7 @@
  function updateComment(id) {
    var text = $("#editField_" + id).val();
    text = htmlEncode(text);
-   editComment(id, text);
+   editComment(id, text, "@user.get.fullName", "@user.get.email.getOrElse("")");
    return false;
  }
 
@@ -116,9 +116,13 @@ function postComment(id, resourceType) {
         $('#commentField_' + id).mentionsInput('getMentions', function(data) {
             // Send email to any users tagged in this comment, and subscribe them to this resource
             data.forEach(function(mentioned){
-                var text = '@user.get.fullName mentioned you in a comment: @routes.Datasets.dataset(UUID(id)).absoluteURL()';
-                console.log(text)
-                //util.Mail.sendEmail("New Clowder comment", user, mentioned.email, text)
+                var emailtext = '@user.get.fullName mentioned you in a comment: @routes.Datasets.dataset(UUID(id)).absoluteURL()\n\n';
+                emailtext += text
+                request = jsRoutes.controllers.Users.sendEmail("New Clowder comment", "@user.get.email.getOrElse("")", mentioned.email, emailtext).ajax({
+                    type: 'POST'
+                }).done(function(response){
+                    console.log(response);
+                })
             })
         });
 

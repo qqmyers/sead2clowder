@@ -2,7 +2,7 @@
 //
 //Referenced by comment.scala.html
 //
-function editComment(commentId, commentText, reloadPage){
+function editComment(commentId, commentText, senderName, senderEmail, reloadPage){
 	
 	if(reloadPage === undefined) reloadPage = false;
 	
@@ -20,7 +20,13 @@ function editComment(commentId, commentText, reloadPage){
         $('#editField_' + commentId).mentionsInput('getMentions', function(data) {
             // Send email to any users tagged in this comment, and subscribe them to this resource
             data.forEach(function(mentioned){
-                console.log(mentioned.email)
+                var text = senderName+' mentioned you in a comment: @routes.Datasets.dataset(UUID(id)).absoluteURL()\n\n';
+                text += commentText;
+                request = jsRoutes.controllers.Users.sendEmail("New Clowder comment", senderEmail, mentioned.email, text).ajax({
+                    type: 'POST'
+                }).done(function(response){
+                    console.log(response);
+                })
             })
         });
         //Sucessful update of the DB - update the interface

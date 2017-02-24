@@ -414,7 +414,8 @@ class Application @Inject() (files: FileService, collections: CollectionService,
         controllers.routes.javascript.CurationObjects.getStatusFromRepository,
         controllers.routes.javascript.CurationObjects.getPublishedData,
         controllers.routes.javascript.Events.getEvents,
-        controllers.routes.javascript.Collections.collection
+        controllers.routes.javascript.Collections.collection,
+        controllers.routes.javascript.Users.sendEmail
       )
     ).as(JSON) 
   }
