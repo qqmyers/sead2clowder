@@ -618,22 +618,6 @@ object FileUtils {
       current.plugin[FileDumpService].foreach {
         _.dump(DumpOfFile(fp, file.id.toString(), file.filename))
       }
-
-      // for metadata files
-      if (file.contentType.equals("application/xml") || file.contentType.equals("text/xml")) {
-        val xmlToJSON = FilesUtils.readXMLgetJSON(fp)
-        Logger.debug("xmlmd=" + xmlToJSON)
-
-        // add xml as xml metadata
-        // TODO is this still valid?
-        files.addXMLMetadata(file.id, xmlToJSON)
-
-        //add file to RDF triple store if triple store is used
-        configuration.getString("userdfSPARQLStore").getOrElse("no") match {
-          case "yes" => sqarql.addFileToGraph(file.id)
-          case _ => {}
-        }
-      }
     }
   }
 

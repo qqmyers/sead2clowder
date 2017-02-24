@@ -193,7 +193,6 @@ class Files @Inject() (
         }
 
         val foldersContainingFile = folders.findByFileId(file.id).sortBy(_.name)
-        val isRDFExportEnabled = current.plugin[RDFExportService].isDefined
 
         val extractionsByFile = extractions.findByFileId(id)
 
@@ -227,14 +226,14 @@ class Files @Inject() (
             plugin.getOutputFormats(contentTypeEnding).map(outputFormats =>
               Ok(views.html.file(file, id.stringify, commentsByFile, previewsWithPreviewer, sectionsWithPreviews,
                 extractorsActive, decodedDatasetsContaining.toList, foldersContainingFile,
-                mds, isRDFExportEnabled, extractionsByFile, outputFormats, space, access, folderHierarchy.reverse.toList, decodedSpacesContaining.toList, allDecodedDatasets.toList)))
+                mds, false, extractionsByFile, outputFormats, space, access, folderHierarchy.reverse.toList, decodedSpacesContaining.toList, allDecodedDatasets.toList)))
           }
           case None =>
             Logger.debug("Polyglot plugin not found")
             //passing None as the last parameter (list of output formats)
             Future(Ok(views.html.file(file, id.stringify, commentsByFile, previewsWithPreviewer, sectionsWithPreviews,
               extractorsActive, decodedDatasetsContaining.toList, foldersContainingFile,
-              mds, isRDFExportEnabled, extractionsByFile, None, space, access, folderHierarchy.reverse.toList, decodedSpacesContaining.toList, allDecodedDatasets.toList)))
+              mds, false, extractionsByFile, None, space, access, folderHierarchy.reverse.toList, decodedSpacesContaining.toList, allDecodedDatasets.toList)))
         }
       }
 
@@ -454,20 +453,8 @@ class Files @Inject() (
                 val serverIP = request.host
                 dtsrequests.insertRequest(serverIP, clientIP, f.filename, id, fileType, f.length, f.uploadDate)
 
-                /** **************************/
-                //for metadata files
-                if (fileType.equals("application/xml") || fileType.equals("text/xml")) {
-                  val xmlToJSON = FilesUtils.readXMLgetJSON(uploadedFile.ref.file)
-                  files.addXMLMetadata(id, xmlToJSON)
-
-                  current.plugin[ElasticsearchPlugin].foreach {
-                    _.index(SearchUtils.getElasticsearchObject(f))
-                  }
-                }
-                else {
-                  current.plugin[ElasticsearchPlugin].foreach {
-                    _.index(SearchUtils.getElasticsearchObject(f))
-                  }
+                current.plugin[ElasticsearchPlugin].foreach {
+                  _.index(SearchUtils.getElasticsearchObject(f))
                 }
                 current.plugin[VersusPlugin].foreach {
                   _.index(f.id.toString, fileType)
@@ -592,21 +579,10 @@ class Files @Inject() (
               // TODO replace null with None
 	            current.plugin[RabbitmqPlugin].foreach{_.extract(ExtractorMessage(id, id, host, key, extra, f.length.toString, null, flags))}
 	            
-	            //for metadata files
-	            if(fileType.equals("application/xml") || fileType.equals("text/xml")){
-	              val xmlToJSON = FilesUtils.readXMLgetJSON(uploadedFile.ref.file)
-	              files.addXMLMetadata(id, xmlToJSON)
-	              
-	              current.plugin[ElasticsearchPlugin].foreach{
-		              _.index(SearchUtils.getElasticsearchObject(f))
-                }
-	            }
-	            else{
-		            current.plugin[ElasticsearchPlugin].foreach{
-		              _.index(SearchUtils.getElasticsearchObject(f))
-                }
-	            }
-
+	            current.plugin[ElasticsearchPlugin].foreach{
+		            _.index(SearchUtils.getElasticsearchObject(f))
+              }
+	        
               current.plugin[VersusPlugin].foreach { _.indexFile(f.id, fileType) }
 
               //add file to RDF triple store if triple store is used
@@ -972,12 +948,6 @@ class Files @Inject() (
               _.extract(ExtractorMessage(id, id, host, key, Map.empty, f.length.toString, null, flags))
             }
 
-            //for metadata files
-            if (fileType.equals("application/xml") || fileType.equals("text/xml")) {
-              val xmlToJSON = FilesUtils.readXMLgetJSON(uploadedFile.ref.file)
-              files.addXMLMetadata(id, xmlToJSON)
-            }
-
             //add file to RDF triple store if triple store is used
             if (fileType.equals("application/xml") || fileType.equals("text/xml")) {
               play.api.Play.configuration.getString("userdfSPARQLStore").getOrElse("no") match {
@@ -1065,19 +1035,8 @@ class Files @Inject() (
               _.extract(ExtractorMessage(id, id, host, key, extra, f.length.toString, null, flags))
             }
 
-            //for metadata files
-            if (fileType.equals("application/xml") || fileType.equals("text/xml")) {
-              val xmlToJSON = FilesUtils.readXMLgetJSON(uploadedFile.ref.file)
-              files.addXMLMetadata(id, xmlToJSON)
-
-              current.plugin[ElasticsearchPlugin].foreach {
-                _.index(SearchUtils.getElasticsearchObject(f))
-              }
-            }
-            else {
-              current.plugin[ElasticsearchPlugin].foreach {
-                _.index(SearchUtils.getElasticsearchObject(f))
-              }
+            current.plugin[ElasticsearchPlugin].foreach {
+              _.index(SearchUtils.getElasticsearchObject(f))
             }
             //add file to RDF triple store if triple store is used
             if (fileType.equals("application/xml") || fileType.equals("text/xml")) {
@@ -1193,28 +1152,14 @@ class Files @Inject() (
                       _.extract(ExtractorMessage(id, id, host, key, extra, f.length.toString, dataset_id, flags))
                     }
 
-                    //for metadata files
-                    if (fileType.equals("application/xml") || fileType.equals("text/xml")) {
-                      val xmlToJSON = FilesUtils.readXMLgetJSON(uploadedFile.ref.file)
-                      files.addXMLMetadata(id, xmlToJSON)
-
-                      current.plugin[ElasticsearchPlugin].foreach {
-                        _.index(SearchUtils.getElasticsearchObject(f))
-                      }
-                    }
-                    else {
-                      current.plugin[ElasticsearchPlugin].foreach {
-                        _.index(SearchUtils.getElasticsearchObject(f))
-                      }
+                    current.plugin[ElasticsearchPlugin].foreach {
+                      _.index(SearchUtils.getElasticsearchObject(f))
                     }
 
                     // add file to dataset
                     // TODO create a service instead of calling salat directly
                     val theFile = files.get(f.id).get
                     datasets.addFile(dataset.id, theFile)
-                    if (!theFile.xmlMetadata.isEmpty) {
-                      datasets.index(dataset_id)
-                    }
 
                     // TODO RK need to replace unknown with the server name and dataset type
                     val dtkey = "unknown." + "dataset." + "unknown"

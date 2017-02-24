@@ -235,17 +235,9 @@ class  Datasets @Inject()(
                   }
                   attachExistingFileHelper(UUID(id), file.id, d, file, request.user)
                   files.index(UUID(file_id))
-                  if (!file.xmlMetadata.isEmpty) {
-                    val xmlToJSON = files.getXMLMetadataJSON(UUID(file_id))
-                    datasets.addXMLMetadata(UUID(id), UUID(file_id), xmlToJSON)
                     current.plugin[ElasticsearchPlugin].foreach {
                       _.index(SearchUtils.getElasticsearchObject(d))
                     }
-                  } else {
-                    current.plugin[ElasticsearchPlugin].foreach {
-                      _.index(SearchUtils.getElasticsearchObject(d))
-                    }
-                  }
 
                   current.plugin[AdminsNotifierPlugin].foreach {
                     _.sendAdminsNotification(Utils.baseUrl(request), "Dataset", "added", id, name)
@@ -443,9 +435,6 @@ class  Datasets @Inject()(
       datasets.addFile(dsId, file)
       events.addSourceEvent(user , file.id, file.filename, dataset.id, dataset.name, "attach_file_dataset")
       files.index(fileId)
-      if (!file.xmlMetadata.isEmpty){
-        datasets.index(dsId)
-      }
 
       if(dataset.thumbnail_id.isEmpty && !file.thumbnail_id.isEmpty){
         datasets.updateThumbnail(dataset.id, UUID(file.thumbnail_id.get))
@@ -532,9 +521,7 @@ class  Datasets @Inject()(
           datasets.removeFile(dataset.id, file.id)
           events.addSourceEvent(user , file.id, file.filename, dataset.id, dataset.name, "detach_file_dataset")
           files.index(fileId)
-          if (!file.xmlMetadata.isEmpty)
-            datasets.index(datasetId)
-
+ 
           Logger.debug("----- Removing a file from dataset completed")
 
           if(!dataset.thumbnail_id.isEmpty && !file.thumbnail_id.isEmpty){
@@ -814,28 +801,6 @@ class  Datasets @Inject()(
         BadRequest(toJson("Error getting dataset  " + id))
       }
     }
-  }
-
-  @ApiOperation(value = "Add user-generated metadata to dataset",
-    notes = "",
-    responseClass = "None", httpMethod = "POST")
-  def addUserMetadata(id: UUID) = PermissionAction(Permission.AddMetadata, Some(ResourceRef(ResourceRef.dataset, id)))(parse.json) { implicit request =>
-    implicit val user = request.user
-    Logger.debug(s"Adding user metadata to dataset $id")
-    datasets.addUserMetadata(id, Json.stringify(request.body))
-
-    datasets.get(id) match {
-      case Some(dataset) => {
-        events.addObjectEvent(user, id, dataset.name, "addMetadata_dataset")
-      }
-    }
-
-    datasets.index(id)
-    configuration.getString("userdfSPARQLStore").getOrElse("no") match {
-      case "yes" => datasets.setUserMetadataWasModified(id, true)
-      case _ => Logger.debug("userdfSPARQLStore not enabled")
-    }
-    Ok(toJson(Map("status" -> "success")))
   }
 
   def datasetFilesGetIdByDatasetAndFilename(datasetId: UUID, filename: String): Option[String] = {
@@ -1790,24 +1755,6 @@ class  Datasets @Inject()(
     deleteDatasetHelper(id, request)
   }
 
-  @ApiOperation(value = "Get the user-generated metadata of the selected dataset in an RDF file",
-    notes = "",
-    responseClass = "None", httpMethod = "GET")
-  def getRDFUserMetadata(id: UUID, mappingNumber: String="1") = PermissionAction(Permission.ViewMetadata, Some(ResourceRef(ResourceRef.dataset, id))) { implicit request =>
-    current.plugin[RDFExportService].isDefined match{
-      case true => {
-        current.plugin[RDFExportService].get.getRDFUserMetadataDataset(id.toString, mappingNumber) match{
-          case Some(resultFile) =>{
-            Ok.chunked(Enumerator.fromStream(new FileInputStream(resultFile)))
-              .withHeaders(CONTENT_TYPE -> "application/rdf+xml")
-              .withHeaders(CONTENT_DISPOSITION -> (FileUtils.encodeAttachment(resultFile.getName(),request.headers.get("user-agent").getOrElse(""))))
-          }
-          case None => BadRequest(toJson("Dataset not found " + id))
-        }
-      }
-      case _ => Ok("RDF export plugin not enabled")
-    }
-  }
 
   def jsonToXML(theJSON: String): java.io.File = {
 
@@ -1836,24 +1783,6 @@ class  Datasets @Inject()(
     return xmlFile
   }
 
-  @ApiOperation(value = "Get URLs of dataset's RDF metadata exports",
-    notes = "URLs of metadata exported as RDF from XML files contained in the dataset, as well as the URL used to export the dataset's user-generated metadata as RDF.",
-    responseClass = "None", httpMethod = "GET")
-  def getRDFURLsForDataset(id: UUID) = PermissionAction(Permission.ViewMetadata, Some(ResourceRef(ResourceRef.dataset, id))) { implicit request =>
-    current.plugin[RDFExportService].isDefined match{
-      case true =>{
-        current.plugin[RDFExportService].get.getRDFURLsForDataset(id.toString)  match {
-          case Some(listJson) => {
-            Ok(listJson)
-          }
-          case None => Logger.error(s"Error getting dataset $id"); InternalServerError
-        }
-      }
-      case false => {
-        Ok("RDF export plugin not enabled")
-      }
-    }
-  }
 
   @ApiOperation(value = "Get technical metadata of the dataset",
     notes = "",
@@ -1870,29 +1799,7 @@ class  Datasets @Inject()(
     }
   }
 
-
-  def getXMLMetadataJSON(id: UUID) = PermissionAction(Permission.ViewMetadata, Some(ResourceRef(ResourceRef.dataset, id))) { implicit request =>
-    datasets.get(id)  match {
-      case Some(dataset) => {
-        Ok(datasets.getXMLMetadataJSON(id))
-      }
-      case None => {Logger.error("Error finding dataset" + id); InternalServerError}
-    }
-  }
-
-  def getUserMetadataJSON(id: UUID) = PermissionAction(Permission.ViewMetadata, Some(ResourceRef(ResourceRef.dataset, id))) { implicit request =>
-    datasets.get(id)  match {
-      case Some(dataset) => {
-        Ok(datasets.getUserMetadataJSON(id))
-      }
-      case None => {
-        Logger.error("Error finding dataset" + id);
-        InternalServerError
-      }
-
-    }
-  }
-
+ 
   def dumpDatasetGroupings = ServerAdminAction { request =>
 
     val unsuccessfulDumps = datasets.dumpAllDatasetGroupings
@@ -1908,20 +1815,6 @@ class  Datasets @Inject()(
     }
   }
 
-  def dumpDatasetsMetadata = ServerAdminAction { request =>
-
-    val unsuccessfulDumps = datasets.dumpAllDatasetMetadata
-    if(unsuccessfulDumps.size == 0)
-      Ok("Dumping of datasets metadata was successful for all datasets.")
-    else{
-      var unsuccessfulMessage = "Dumping of datasets metadata was successful for all datasets except dataset(s) with id(s) "
-      for(badDataset <- unsuccessfulDumps){
-        unsuccessfulMessage = unsuccessfulMessage + badDataset + ", "
-      }
-      unsuccessfulMessage = unsuccessfulMessage.substring(0, unsuccessfulMessage.length()-2) + "."
-      Ok(unsuccessfulMessage)
-    }
-  }
 
   @ApiOperation(value = "Follow dataset.",
     notes = "Add user to dataset followers and add dataset to user followed datasets.",

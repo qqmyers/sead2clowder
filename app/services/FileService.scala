@@ -123,30 +123,11 @@ trait FileService {
    */
   def updateThumbnail(fileId: UUID, thumbnailId: UUID)
 
-  // TODO return JsValue
-  def getXMLMetadataJSON(id: UUID): String
-  
-  def modifyRDFOfMetadataChangedFiles()
-  
-  def modifyRDFUserMetadata(id: UUID, mappingNumber: String="1")
-
-  def dumpAllFileMetadata(): List[String]
-
   def isInDataset(file: File, dataset: Dataset): Boolean
 
   def removeTags(id: UUID, userIdStr: Option[String], eid: Option[String], tags: List[String])
 
-  def addMetadata(fileId: UUID, metadata: JsValue)
-
   def listOutsideDataset(dataset_id: UUID): List[File]
-
-  def getMetadata(id: UUID): scala.collection.immutable.Map[String,Any]
-
-  def getUserMetadata(id: UUID): scala.collection.mutable.Map[String,Any]
-
-  def getUserMetadataJSON(id: UUID): String
-
-  def getTechnicalMetadataJSON(id: UUID): String
 
   def incrementMetadataCount(id: UUID, count: Long)
 
@@ -155,10 +136,6 @@ trait FileService {
   def addVersusMetadata(id: UUID, json: JsValue)
 
   def getJsonArray(list: List[JsObject]): JsArray
-
-  def addUserMetadata(id: UUID, json: String)
-
-  def addXMLMetadata(id: UUID, json: String)  
 
   def findByTag(tag: String, user: Option[User]): List[File]
 
@@ -177,8 +154,6 @@ trait FileService {
   def renameFile(id: UUID, newName: String)
 
   def setContentType(id: UUID, newType: String)
-
-  def setUserMetadataWasModified(id: UUID, wasModified: Boolean)
 
   def removeTemporaries()
 
@@ -213,11 +188,6 @@ trait FileService {
    * Remove follower from a file.
    */
   def removeFollower(id: UUID, userId: UUID)
-
-  /**
-   * Update technical metadata
-   */
-  def updateMetadata(fileId: UUID, metadata: JsValue, extractor_id: String)
 
   def updateDescription(fileId : UUID, description : String)
 

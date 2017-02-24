@@ -433,105 +433,7 @@ class MongoDBDatasetService @Inject() (
     }
   }
 
-  def modifyRDFOfMetadataChangedDatasets(){
-    val changedDatasets = findMetadataChangedDatasets()
-    for(changedDataset <- changedDatasets){
-      modifyRDFUserMetadata(changedDataset.id)
-    }
-  }
-
-  def modifyRDFUserMetadata(id: UUID, mappingNumber: String="1") = {
-    sparql.removeDatasetFromUserGraphs(id)
-    get(id) match {
-      case Some(dataset) => {
-        import play.api.Play.current
-        val theJSON = getUserMetadataJSON(id)
-        val fileSep = System.getProperty("file.separator")
-        val tmpDir = System.getProperty("java.io.tmpdir")
-        var resultDir = tmpDir + fileSep + "clowder__rdfuploadtemporaryfiles" + fileSep + new ObjectId().toString
-        val resultDirFile = new java.io.File(resultDir)
-        resultDirFile.mkdirs()
-
-        if(!theJSON.replaceAll(" ","").equals("{}")){
-          val xmlFile = jsonToXML(theJSON)
-          new LidoToCidocConvertion(play.api.Play.configuration.getString("datasetsxmltordfmapping.dir_"+mappingNumber).getOrElse(""), xmlFile.getAbsolutePath(), resultDir)
-          xmlFile.delete()
-        }
-        else{
-          new java.io.File(resultDir + fileSep + "Results.rdf").createNewFile()
-        }
-        val resultFile = new java.io.File(resultDir + fileSep + "Results.rdf")
-
-        //Connecting RDF metadata with the entity describing the original file
-        val rootNodes = new ArrayList[String]()
-        val rootNodesFile = play.api.Play.configuration.getString("datasetRootNodesFile").getOrElse("")
-        Logger.debug(rootNodesFile)
-        if(!rootNodesFile.equals("*")){
-          val rootNodesReader = new BufferedReader(new FileReader(new java.io.File(rootNodesFile)))
-          var line = rootNodesReader.readLine()
-          while (line != null){
-            Logger.debug((line == null).toString() )
-            rootNodes.add(line.trim())
-            line = rootNodesReader.readLine()
-          }
-          rootNodesReader.close()
-        }
-
-        val resultFileConnected = java.io.File.createTempFile("ResultsConnected", ".rdf")
-
-        val fileWriter =  new BufferedWriter(new FileWriter(resultFileConnected))
-        val fis = new FileInputStream(resultFile)
-        val data = new Array[Byte]  (resultFile.length().asInstanceOf[Int])
-        fis.read(data)
-        fis.close()
-        resultFile.delete()
-        FileUtils.deleteDirectory(resultDirFile)
-        //
-        val s = new String(data, "UTF-8")
-        val rdfDescriptions = s.split("<rdf:Description")
-        fileWriter.write(rdfDescriptions(0))
-        var i = 0
-        for( i <- 1 to (rdfDescriptions.length - 1)){
-          fileWriter.write("<rdf:Description" + rdfDescriptions(i))
-          if(rdfDescriptions(i).contains("<rdf:type")){
-            var isInRootNodes = false
-            if(rootNodesFile.equals("*"))
-              isInRootNodes = true
-            else{
-              var j = 0
-              try{
-                for(j <- 0 to (rootNodes.size()-1)){
-                  if(rdfDescriptions(i).contains("\"" + rootNodes.get(j) + "\"")){
-                    isInRootNodes = true
-                    throw MustBreak
-                  }
-                }
-              }catch {case MustBreak => }
-            }
-
-            if(isInRootNodes){
-              val theResource = rdfDescriptions(i).substring(rdfDescriptions(i).indexOf("\"")+1, rdfDescriptions(i).indexOf("\"", rdfDescriptions(i).indexOf("\"")+1))
-              val theHost = "http://" + play.Play.application().configuration().getString("hostIp").replaceAll("/$", "") + ":" + play.Play.application().configuration().getString("http.port")
-              var connection = "<rdf:Description rdf:about=\"" + theHost +"/api/datasets/"+ id
-              connection = connection	+ "\"><P129_is_about xmlns=\"http://www.cidoc-crm.org/rdfs/cidoc_crm_v5.0.2.rdfs#\" rdf:resource=\"" + theResource
-              connection = connection	+ "\"/></rdf:Description>"
-              fileWriter.write(connection)
-            }
-          }
-        }
-        fileWriter.close()
-
-        sparql.addFromFile(id, resultFileConnected, "dataset")
-        resultFileConnected.delete()
-
-        sparql.addDatasetToGraph(id, "rdfCommunityGraphName")
-
-        setUserMetadataWasModified(id, false)
-      }
-      case None => {}
-    }
-  }
-
+ 
   def jsonToXML(theJSON: String): java.io.File = {
 
     val jsonObject = new JSONObject(theJSON)
@@ -702,110 +604,6 @@ class MongoDBDatasetService @Inject() (
     Dataset.dao.find(filter).sort(order).limit(limit).toList
   }
 
-  def getMetadata(id: UUID): Map[String, Any] = {
-    Dataset.dao.collection.findOne(MongoDBObject("_id" -> new ObjectId(id.stringify)), MongoDBObject("metadata" -> 1)) match {
-      case None => Map.empty
-      case Some(x) => {
-        x.getAs[DBObject]("metadata").get.toMap.asScala.asInstanceOf[scala.collection.mutable.Map[String, Any]].toMap
-      }
-    }
-  }
-
-  def getUserMetadata(id: UUID): scala.collection.mutable.Map[String, Any] = {
-    Dataset.dao.collection.findOne(MongoDBObject("_id" -> new ObjectId(id.stringify)), MongoDBObject("userMetadata" -> 1)) match {
-      case None => new scala.collection.mutable.HashMap[String, Any]
-      case Some(x) => {
-        val returnedMetadata = x.getAs[DBObject]("userMetadata").get.toMap.asScala.asInstanceOf[scala.collection.mutable.Map[String, Any]]
-        returnedMetadata
-      }
-    }
-  }
-
-  def getUserMetadataJSON(id: UUID): String = {
-    Dataset.dao.collection.findOneByID(new ObjectId(id.stringify)) match {
-      case None => "{}"
-      case Some(x) => {
-        x.getAs[DBObject]("userMetadata") match {
-          case Some(y) => {
-            val returnedMetadata = com.mongodb.util.JSON.serialize(x.getAs[DBObject]("userMetadata").get)
-            Logger.debug("retmd: " + returnedMetadata)
-            returnedMetadata
-          }
-          case None => "{}"
-        }
-      }
-    }
-  }
-
-  def getTechnicalMetadataJSON(id: UUID): String = {
-    Dataset.dao.collection.findOneByID(new ObjectId(id.stringify)) match {
-      case None => "{}"
-      case Some(x) => {
-        x.getAs[DBObject]("metadata") match {
-          case Some(y) => {
-            val returnedMetadata = com.mongodb.util.JSON.serialize(x.getAs[DBObject]("metadata").get)
-            Logger.debug("retmd: " + returnedMetadata)
-            returnedMetadata
-          }
-          case None => "{}"
-        }
-      }
-    }
-  }
-
-  def getXMLMetadataJSON(id: UUID): String = {
-    Dataset.dao.collection.findOneByID(new ObjectId(id.stringify)) match {
-      case None => "{}"
-      case Some(x) => {
-        x.getAs[DBObject]("datasetXmlMetadata") match {
-          case Some(y) => {
-            val returnedMetadata = JSON.serialize(x.getAs[DBObject]("datasetXmlMetadata").get)
-            Logger.debug("retmd: " + returnedMetadata)
-            returnedMetadata
-          }
-          case None => "{}"
-        }
-      }
-    }
-  }
-
-  def addMetadata(id: UUID, json: String) {
-    Logger.debug(s"Adding metadata to dataset " + id + " : " + json)
-    val md = JSON.parse(json).asInstanceOf[DBObject]
-    Dataset.dao.collection.findOne(MongoDBObject("_id" -> new ObjectId(id.stringify)), MongoDBObject("metadata" -> 1)) match {
-      case None => {
-        Dataset.update(MongoDBObject("_id" -> new ObjectId(id.stringify)), $set("metadata" -> md), false, false, WriteConcern.Safe)
-      }
-      case Some(x) => {
-        x.getAs[DBObject]("metadata") match {
-          case Some(map) => {
-            val union = map.asInstanceOf[DBObject] ++ md
-            Dataset.update(MongoDBObject("_id" -> new ObjectId(id.stringify)), $set("metadata" -> union), false, false, WriteConcern.Safe)
-          }
-          case None => Map.empty
-        }
-      }
-    }
-  }
-
-  def addXMLMetadata(id: UUID, fileId: UUID, json: String) {
-    Logger.debug("Adding XML metadata to dataset " + id + " from file " + fileId + ": " + json)
-    val md = JsonUtil.parseJSON(json).asInstanceOf[java.util.LinkedHashMap[String, Any]].toMap
-    Dataset.update(MongoDBObject("_id" -> new ObjectId(id.stringify)),
-      $addToSet("datasetXmlMetadata" -> DatasetXMLMetadata.toDBObject(models.DatasetXMLMetadata(md, fileId.stringify))), false, false, WriteConcern.Safe)
-  }
-
-  def removeXMLMetadata(id: UUID, fileId: UUID) {
-    Logger.debug("Removing XML metadata belonging to file " + fileId + " from dataset " + id + ".")
-    Dataset.update(MongoDBObject("_id" -> new ObjectId(id.stringify)), $pull("datasetXmlMetadata" -> MongoDBObject("fileId" -> fileId.stringify)), false, false, WriteConcern.Safe)
-  }
-
-  def addUserMetadata(id: UUID, json: String) {
-    Logger.debug("Adding/modifying user metadata to dataset " + id + " : " + json)
-    val md = com.mongodb.util.JSON.parse(json).asInstanceOf[DBObject]
-    Dataset.update(MongoDBObject("_id" -> new ObjectId(id.stringify)), $set("userMetadata" -> md), false, false, WriteConcern.Safe)
-  }
-
   /** Change the metadataCount field for a dataset */
   def incrementMetadataCount(id: UUID, count: Long) = {
     Dataset.update(MongoDBObject("_id" -> new ObjectId(id.stringify)), $inc("metadataCount" -> count), false, false, WriteConcern.Safe)
@@ -902,12 +700,6 @@ class MongoDBDatasetService @Inject() (
 
   // ---------- Tags related code ends ------------------
 
-  /**
-   * Check recursively whether a dataset's user-input metadata match a requested search tree.
-   */
-  def searchUserMetadata(id: UUID, requestedMetadataQuery: Any): Boolean = {
-    return searchMetadata(id, requestedMetadataQuery.asInstanceOf[java.util.LinkedHashMap[String, Any]], getUserMetadata(id))
-  }
 
 
   def searchAllMetadataFormulateQuery(requestedMetadataQuery: Any): List[Dataset] = {
@@ -1166,7 +958,6 @@ class MongoDBDatasetService @Inject() (
 
   def removeFile(datasetId: UUID, fileId: UUID) {
     Dataset.update(MongoDBObject("_id" -> new ObjectId(datasetId.stringify)), $pull("files" -> new ObjectId(fileId.stringify)), false, false, WriteConcern.Safe)
-    removeXMLMetadata(datasetId, fileId)
   }
 
   def removeFolder(datasetId: UUID, folderId: UUID) {
@@ -1274,73 +1065,6 @@ class MongoDBDatasetService @Inject() (
       }
     }
   }
-
-
-  def dumpAllDatasetMetadata(): List[String] = {
-		    Logger.debug("Dumping metadata of all datasets.")
-
-		    val fileSep = System.getProperty("file.separator")
-		    val lineSep = System.getProperty("line.separator")
-		    var dsMdDumpDir = play.api.Play.configuration.getString("datasetdump.dir").getOrElse("")
-			if(!dsMdDumpDir.endsWith(fileSep))
-				dsMdDumpDir = dsMdDumpDir + fileSep
-			var dsMdDumpMoveDir = play.api.Play.configuration.getString("datasetdumpmove.dir").getOrElse("")
-			if(dsMdDumpMoveDir.equals("")){
-				Logger.warn("Will not move dumped datasets metadata to staging directory. No staging directory set.")
-			}
-			else{
-			    if(!dsMdDumpMoveDir.endsWith(fileSep))
-				  dsMdDumpMoveDir = dsMdDumpMoveDir + fileSep
-			}
-
-			var unsuccessfulDumps: ListBuffer[String] = ListBuffer.empty
-
-			for(dataset <- Dataset.findAll){
-			  try{
-				  val dsId = dataset.id.toString
-
-				  val dsTechnicalMetadata = getTechnicalMetadataJSON(dataset.id)
-				  val dsUserMetadata = getUserMetadataJSON(dataset.id)
-				  val dsXMLMetadata = getXMLMetadataJSON(dataset.id)
-				  if(dsTechnicalMetadata != "{}" || dsUserMetadata != "{}" || dsXMLMetadata != "{}"){
-
-				    val datasetnameNoSpaces = dataset.name.replaceAll("\\s+","_")
-				    val filePathInDirs = dsId.charAt(dsId.length()-3)+ fileSep + dsId.charAt(dsId.length()-2)+dsId.charAt(dsId.length()-1)+ fileSep + dsId + fileSep + datasetnameNoSpaces + "__metadata.txt"
-				    val mdFile = new java.io.File(dsMdDumpDir + filePathInDirs)
-				    mdFile.getParentFile().mkdirs()
-
-				    val fileWriter =  new BufferedWriter(new FileWriter(mdFile))
-					fileWriter.write(dsTechnicalMetadata + lineSep + lineSep + dsUserMetadata + lineSep + lineSep + dsXMLMetadata)
-					fileWriter.close()
-
-					if(!dsMdDumpMoveDir.equals("")){
-					  try{
-						  val mdMoveFile = new java.io.File(dsMdDumpMoveDir + filePathInDirs)
-					      mdMoveFile.getParentFile().mkdirs()
-
-						  if(mdFile.renameTo(mdMoveFile)){
-			            	Logger.debug("Dataset metadata dumped and moved to staging directory successfully.")
-						  }else{
-			            	Logger.warn("Could not move dumped dataset metadata to staging directory.")
-			            	throw new Exception("Could not move dumped dataset metadata to staging directory.")
-						  }
-					  }catch {case ex:Exception =>{
-						  val badDatasetId = dataset.id.toString
-						  Logger.error("Unable to stage dumped metadata of dataset with id "+badDatasetId+": "+ex.printStackTrace())
-						  unsuccessfulDumps += badDatasetId
-					  }}
-					}
-
-				  }
-			  }catch {case ex:Exception =>{
-			    val badDatasetId = dataset.id.toString
-			    Logger.error("Unable to dump metadata of dataset with id "+badDatasetId+": "+ex.printStackTrace())
-			    unsuccessfulDumps += badDatasetId
-			  }}
-			}
-
-		    return unsuccessfulDumps.toList
-	}
 
     def dumpAllDatasetGroupings(): List[String] = {
 

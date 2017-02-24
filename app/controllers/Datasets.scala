@@ -446,9 +446,6 @@ class Datasets @Inject()(
             decodedCommentsByDataset += dComment
           }
 
-          val isRDFExportEnabled = current.plugin[RDFExportService].isDefined
-
-
           filesInDataset.map
           {
             file =>
@@ -544,7 +541,7 @@ class Datasets @Inject()(
             )
           }
           Ok(views.html.dataset(datasetWithFiles, commentsByDataset, filteredPreviewers.toList, m,
-            decodedCollectionsInside.toList, isRDFExportEnabled, sensors, Some(decodedSpaces_canRemove),fileList,
+            decodedCollectionsInside.toList, false, sensors, Some(decodedSpaces_canRemove),fileList,
             filesTags, toPublish, curPubObjects, currentSpace, limit, showDownload, showAccess, access, accessOptions.toList, canAddDatasetToCollection))
         }
         case None => {

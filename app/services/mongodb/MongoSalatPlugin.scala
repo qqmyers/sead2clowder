@@ -235,7 +235,6 @@ class MongoSalatPlugin(app: Application) extends Plugin {
     collection("curationFolders").drop()
     collection("curationObjects").drop()
     collection("datasets").drop()
-    collection("datasetxmlmetadata").drop()
     collection("dtsrequests").drop()
     collection("events").drop()
     collection("extractions").drop()
@@ -412,6 +411,9 @@ class MongoSalatPlugin(app: Application) extends Plugin {
     
     // Change existing 'In Curation' curation objects/pub requests to 'In Prepaparation' 
     updateMongo("change-in-curation-status-to-in-preparation", updateInCurationStatus)
+    
+    // Remove collections for deprecated forms of metadata 
+    updateMongo("remove-deprecated-metadata-collections", updateMetadataStorage)
   }
 
   private def updateMongo(updateKey: String, block: () => Unit): Unit = {
@@ -1374,5 +1376,10 @@ class MongoSalatPlugin(app: Application) extends Plugin {
   private def updateInCurationStatus(): Unit = {
     CurationDAO.update(MongoDBObject("status" -> "In Curation"),
       $set("status" -> "In Preparation"), false, true, WriteConcern.Safe)
+  }
+  
+    private def updateMetadataStorage(): Unit = {
+    collection("datasetxmlmetadata").drop()
+      
   }
 }

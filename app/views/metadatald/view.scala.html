@@ -6,6 +6,8 @@
     @import play.api.libs.json.JsArray
     @import api.Permission
 
+@* This template is shown in the Dataset page and curationObject pages to display both Dataset and File -level metadata *@
+
     @dateFormatter(date: java.util.Date) = @{
         val formatter = new java.text.SimpleDateFormat("MMM d, yyyy")
         formatter.format(date)
