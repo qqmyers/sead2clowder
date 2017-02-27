@@ -3,7 +3,7 @@ package services.mongodb
 import java.net.URL
 import java.util.{ Calendar, Date }
 
-import com.mongodb.{ BasicDBObject, CommandFailureException }
+import com.mongodb.BasicDBObject
 import com.mongodb.casbah.Imports._
 import com.mongodb.casbah.commons.MongoDBObject
 import MongoContext.context
@@ -56,121 +56,123 @@ class MongoSalatPlugin(app: Application) extends Plugin {
     updateDatabase()
 
     // drop old indices
-    scala.util.control.Exception.ignoring(classOf[CommandFailureException]) {
+    scala.util.control.Exception.ignoring(classOf[MongoException]) {
       collection("datasets").dropIndex("tags.name_text")
     }
-    scala.util.control.Exception.ignoring(classOf[CommandFailureException]) {
+    scala.util.control.Exception.ignoring(classOf[MongoException]) {
       collection("uploads.files").dropIndex("tags.name_text")
     }
-    scala.util.control.Exception.ignoring(classOf[CommandFailureException]) {
+    scala.util.control.Exception.ignoring(classOf[MongoException]) {
       collection("uploads.files").dropIndex("tags_1")
     }
-    scala.util.control.Exception.ignoring(classOf[CommandFailureException]) {
+    scala.util.control.Exception.ignoring(classOf[MongoException]) {
       collection("sections").dropIndex("tags.name_text")
     }
-    scala.util.control.Exception.ignoring(classOf[CommandFailureException]) {
+    scala.util.control.Exception.ignoring(classOf[MongoException]) {
       collection("uploads.files").dropIndex("uploadDate_-1")
     }
-    scala.util.control.Exception.ignoring(classOf[CommandFailureException]) {
+    scala.util.control.Exception.ignoring(classOf[MongoException]) {
       collection("uploads.files").dropIndex("author.email_1")
     }
-    scala.util.control.Exception.ignoring(classOf[CommandFailureException]) {
+    scala.util.control.Exception.ignoring(classOf[MongoException]) {
       collection("uploads.files").dropIndex("tags.name_1")
     }
-    scala.util.control.Exception.ignoring(classOf[CommandFailureException]) {
+    scala.util.control.Exception.ignoring(classOf[MongoException]) {
       collection("uploads.files").dropIndex("filename_1_uploadDate_1")
     }
-    scala.util.control.Exception.ignoring(classOf[CommandFailureException]) {
+    scala.util.control.Exception.ignoring(classOf[MongoException]) {
       collection("previews.files").dropIndex("uploadDate_-1_file_id_1")
     }
-    scala.util.control.Exception.ignoring(classOf[CommandFailureException]) {
+    scala.util.control.Exception.ignoring(classOf[MongoException]) {
       collection("previews.files").dropIndex("uploadDate_-1_section_id_1")
     }
-    scala.util.control.Exception.ignoring(classOf[CommandFailureException]) {
+    scala.util.control.Exception.ignoring(classOf[MongoException]) {
       collection("previews.files").dropIndex("section_id_-1")
     }
-    scala.util.control.Exception.ignoring(classOf[CommandFailureException]) {
+    scala.util.control.Exception.ignoring(classOf[MongoException]) {
       collection("previews.files").dropIndex("file_id_-1")
     }
-    scala.util.control.Exception.ignoring(classOf[CommandFailureException]) {
+    scala.util.control.Exception.ignoring(classOf[MongoException]) {
       collection("previews.files").dropIndex("filename_1_uploadDate_1")
     }
-    scala.util.control.Exception.ignoring(classOf[CommandFailureException]) {
+    scala.util.control.Exception.ignoring(classOf[MongoException]) {
       collection("textures.files").dropIndex("file_id_1")
     }
-    scala.util.control.Exception.ignoring(classOf[CommandFailureException]) {
+    scala.util.control.Exception.ignoring(classOf[MongoException]) {
       collection("tiles.files").dropIndex("preview_id_1_filename_1_level_1")
     }
 
     // create indices.
     Logger.debug("Ensuring indices exist")
-    collection("spaces.projects").ensureIndex(MongoDBObject("created" -> -1))
-    collection("spaces.projects").ensureIndex(MongoDBObject("public" -> 1))
-    collection("spaces.projects").ensureIndex(MongoDBObject("creator" -> 1))
+    collection("spaces.projects").createIndex(MongoDBObject("created" -> -1))
+    collection("spaces.projects").createIndex(MongoDBObject("public" -> 1))
+    collection("spaces.projects").createIndex(MongoDBObject("creator" -> 1))
 
-    collection("collections").ensureIndex(MongoDBObject("created" -> -1))
-    collection("collections").ensureIndex(MongoDBObject("spaces" -> 1))
-    collection("collections").ensureIndex(MongoDBObject("datasets._id" -> 1))
-    collection("collections").ensureIndex(MongoDBObject("public" -> 1))
-    collection("collections").ensureIndex(MongoDBObject("author._id" -> 1))
+    collection("collections").createIndex(MongoDBObject("created" -> -1))
+    collection("collections").createIndex(MongoDBObject("spaces" -> 1))
+    collection("collections").createIndex(MongoDBObject("datasets._id" -> 1))
+    collection("collections").createIndex(MongoDBObject("public" -> 1))
+    collection("collections").createIndex(MongoDBObject("author._id" -> 1))
 
-    collection("datasets").ensureIndex(MongoDBObject("created" -> -1))
-    collection("datasets").ensureIndex(MongoDBObject("tags" -> 1))
-    collection("datasets").ensureIndex(MongoDBObject("files._id" -> 1))
-    collection("datasets").ensureIndex(MongoDBObject("tags.name" -> 1))
+    collection("datasets").createIndex(MongoDBObject("created" -> -1))
+    collection("datasets").createIndex(MongoDBObject("tags" -> 1))
+    collection("datasets").createIndex(MongoDBObject("files._id" -> 1))
+    collection("datasets").createIndex(MongoDBObject("tags.name" -> 1))
 
-    collection("datasets").ensureIndex(MongoDBObject("spaces" -> 1))
-    collection("datasets").ensureIndex(MongoDBObject("public" -> 1))
-    collection("datasets").ensureIndex(MongoDBObject("name" -> 1))
-    collection("datasets").ensureIndex(MongoDBObject("author._id" -> 1))
-    collection("datasets").ensureIndex(MongoDBObject("public" -> 1, "spaces" -> 1, "author._id" -> 1))
-    collection("datasets").ensureIndex(MongoDBObject("created" -> -1, "name" -> 1))
-    collection("datasets").ensureIndex(MongoDBObject("created" -> -1, "name" -> 1))
-    collection("datasets").ensureIndex(MongoDBObject("files" -> 1))
+    collection("datasets").createIndex(MongoDBObject("spaces" -> 1))
+    collection("datasets").createIndex(MongoDBObject("public" -> 1))
+    collection("datasets").createIndex(MongoDBObject("name" -> 1))
+    collection("datasets").createIndex(MongoDBObject("author._id" -> 1))
+    collection("datasets").createIndex(MongoDBObject("author.fullName" -> 1))
+    collection("datasets").createIndex(MongoDBObject("public" -> 1, "spaces" -> 1, "author._id" -> 1))
+    collection("datasets").createIndex(MongoDBObject("created" -> -1, "name" -> 1))
+    collection("datasets").createIndex(MongoDBObject("created" -> -1, "name" -> 1))
+    collection("datasets").createIndex(MongoDBObject("files" -> 1))
+    collection("datasets").createIndex(MongoDBObject("name" -> "text"))
 
-    collection("dtsrequests").ensureIndex(MongoDBObject("fileid" -> 1))
+    collection("dtsrequests").createIndex(MongoDBObject("fileid" -> 1))
 
-    collection("events").ensureIndex(MongoDBObject("targetuser._id" -> 1))
-    collection("events").ensureIndex(MongoDBObject("object_id" -> 1))
-    collection("events").ensureIndex(MongoDBObject("user._id" -> 1))
+    collection("events").createIndex(MongoDBObject("targetuser._id" -> 1))
+    collection("events").createIndex(MongoDBObject("object_id" -> 1))
+    collection("events").createIndex(MongoDBObject("user._id" -> 1))
 
-    collection("extractions").ensureIndex(MongoDBObject("file_id" -> 1))
+    collection("extractions").createIndex(MongoDBObject("file_id" -> 1))
 
-    collection("folders").ensureIndex(MongoDBObject("parentDatasetId" -> 1))
+    collection("folders").createIndex(MongoDBObject("parentDatasetId" -> 1))
 
-    collection("uploads").ensureIndex(MongoDBObject("uploadDate" -> -1))
-    collection("uploads").ensureIndex(MongoDBObject("author.email" -> 1))
-    collection("uploads").ensureIndex(MongoDBObject("tags.name" -> 1))
-    collection("uploads").ensureIndex(MongoDBObject("author._id" -> 1, "_id" -> 1))
-    collection("uploads").ensureIndex(MongoDBObject("status" -> 1))
+    collection("uploads").createIndex(MongoDBObject("uploadDate" -> -1))
+    collection("uploads").createIndex(MongoDBObject("author.email" -> 1))
+    collection("uploads").createIndex(MongoDBObject("tags.name" -> 1))
+    collection("uploads").createIndex(MongoDBObject("author._id" -> 1, "_id" -> 1))
+    collection("uploads").createIndex(MongoDBObject("status" -> 1))
 
-    collection("uploadquery.files").ensureIndex(MongoDBObject("uploadDate" -> -1))
+    collection("uploadquery.files").createIndex(MongoDBObject("uploadDate" -> -1))
 
-    collection("previews").ensureIndex(MongoDBObject("uploadDate" -> -1, "file_id" -> 1))
-    collection("previews").ensureIndex(MongoDBObject("uploadDate" -> -1, "section_id" -> 1))
-    collection("previews").ensureIndex(MongoDBObject("section_id" -> -1))
-    collection("previews").ensureIndex(MongoDBObject("file_id" -> -1))
+    collection("previews").createIndex(MongoDBObject("uploadDate" -> -1, "file_id" -> 1))
+    collection("previews").createIndex(MongoDBObject("uploadDate" -> -1, "section_id" -> 1))
+    collection("previews").createIndex(MongoDBObject("section_id" -> -1))
+    collection("previews").createIndex(MongoDBObject("file_id" -> -1))
 
-    collection("textures").ensureIndex(MongoDBObject("file_id" -> 1))
-    collection("tiles").ensureIndex(MongoDBObject("preview_id" -> 1, "filename" -> 1, "level" -> 1))
+    collection("textures").createIndex(MongoDBObject("file_id" -> 1))
+    collection("tiles").createIndex(MongoDBObject("preview_id" -> 1, "filename" -> 1, "level" -> 1))
 
-    collection("sections").ensureIndex(MongoDBObject("uploadDate" -> -1, "file_id" -> 1))
-    collection("sections").ensureIndex(MongoDBObject("file_id" -> -1))
-    collection("sections").ensureIndex(MongoDBObject("tags.name" -> 1))
-    collection("sections").ensureIndex(MongoDBObject("file_id" -> 1, "author._id" -> 1))
+    collection("sections").createIndex(MongoDBObject("uploadDate" -> -1, "file_id" -> 1))
+    collection("sections").createIndex(MongoDBObject("file_id" -> -1))
+    collection("sections").createIndex(MongoDBObject("tags.name" -> 1))
+    collection("sections").createIndex(MongoDBObject("file_id" -> 1, "author._id" -> 1))
 
-    collection("metadata").ensureIndex(MongoDBObject("createdAt" -> -1))
-    collection("metadata").ensureIndex(MongoDBObject("creator" -> 1))
-    collection("metadata").ensureIndex(MongoDBObject("attachedTo" -> 1))
-    collection("metadata").ensureIndex(MongoDBObject("attachedTo.resourceType" -> 1, "attachedTo._id" -> 1))
+    collection("metadata").createIndex(MongoDBObject("createdAt" -> -1))
+    collection("metadata").createIndex(MongoDBObject("creator" -> 1))
+    collection("metadata").createIndex(MongoDBObject("attachedTo" -> 1))
+    collection("metadata").createIndex(MongoDBObject("attachedTo.resourceType" -> 1, "attachedTo._id" -> 1))
 
-    collection("contextld").ensureIndex(MongoDBObject("contextName" -> 1))
+    collection("contextld").createIndex(MongoDBObject("contextName" -> 1))
 
-    collection("dtsrequests").ensureIndex(MongoDBObject("startTime" -> -1, "endTime" -> -1))
-    collection("dtsrequests").ensureIndex(MongoDBObject("file_id" -> -1))
-    collection("versus.descriptors").ensureIndex(MongoDBObject("fileId" -> 1))
+    collection("dtsrequests").createIndex(MongoDBObject("startTime" -> -1, "endTime" -> -1))
+    collection("dtsrequests").createIndex(MongoDBObject("file_id" -> -1))
+    collection("versus.descriptors").createIndex(MongoDBObject("fileId" -> 1))
 
-    collection("multimedia.distances").ensureIndex(MongoDBObject("source_section" -> 1, "representation" -> 1, "distance" -> 1, "target_spaces" -> 1))
+    collection("multimedia.distances").createIndex(MongoDBObject("source_section" -> 1, "representation" -> 1, "distance" -> 1, "target_spaces" -> 1))
   }
 
   override def onStop() {

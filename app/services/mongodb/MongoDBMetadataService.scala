@@ -131,7 +131,7 @@ class MongoDBMetadataService @Inject() (contextService: ContextLDService, datase
   def removeMetadataByAttachTo(resourceRef: ResourceRef): Long = {
     val result = MetadataDAO.remove(MongoDBObject("attachedTo.resourceType" -> resourceRef.resourceType.name,
       "attachedTo._id" -> new ObjectId(resourceRef.id.stringify)), WriteConcern.Safe)
-    val num_removed = result.getField("n").toString.toLong
+    val num_removed = result.getN
 
     //update metadata count for resource
     resourceRef.resourceType.name match {
@@ -159,7 +159,7 @@ class MongoDBMetadataService @Inject() (contextService: ContextLDService, datase
     val result = MetadataDAO.remove(MongoDBObject("attachedTo.resourceType" -> resourceRef.resourceType.name,
       "attachedTo._id" -> new ObjectId(resourceRef.id.stringify),
       "creator.extractorId" -> (regex.r)), WriteConcern.Safe)
-    val num_removed = result.getField("n").toString.toLong
+    val num_removed = result.getN
     
     //update metadata count for resource
     resourceRef.resourceType.name match {
