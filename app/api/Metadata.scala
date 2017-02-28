@@ -1,6 +1,6 @@
 package api
 
-import java.net.{URL, URLEncoder}
+import java.net.{ URL, URLEncoder }
 import java.util.Date
 import javax.inject.{ Inject, Singleton }
 
@@ -63,7 +63,7 @@ class Metadata @Inject() (
     for (md_def <- definitions) {
       val currVal = (md_def.json \ "label").as[String]
       if (currVal.toLowerCase startsWith query.toLowerCase) {
-        listOfTerms.append("metadata."+currVal)
+        listOfTerms.append("metadata." + currVal)
       }
     }
 
@@ -182,7 +182,7 @@ class Metadata @Inject() (
 
   //On GUI, URI is not required, however URI is required in DB. a default one will be generated when needed.
   private def addDefinitionHelper(uri: String, body: JsValue, spaceId: Option[UUID], user: User, space: Option[ProjectSpace]): Result = {
-    metadataService.getDefinitionByUriAndSpace(uri, space map {_.id.toString()} ) match {
+    metadataService.getDefinitionByUriAndSpace(uri, space map { _.id.toString() }) match {
       case Some(metadata) => BadRequest(toJson("Metadata definition with same uri exists."))
       case None => {
         val definition = MetadataDefinition(json = body, spaceId = spaceId)
@@ -372,8 +372,8 @@ class Metadata @Inject() (
       case Some(user) => {
         metadataService.getMetadataById(id) match {
           case Some(m) => {
-            if(m.attachedTo.resourceType == ResourceRef.curationObject && curations.get(m.attachedTo.id).map(_.status != "In Preparation").getOrElse(false)
-            || m.attachedTo.resourceType == ResourceRef.curationFile && curations.getCurationByCurationFile(m.attachedTo.id).map(_.status != "In Preparation").getOrElse(false)) {
+            if (m.attachedTo.resourceType == ResourceRef.curationObject && curations.get(m.attachedTo.id).map(_.status != "In Preparation").getOrElse(false)
+              || m.attachedTo.resourceType == ResourceRef.curationFile && curations.getCurationByCurationFile(m.attachedTo.id).map(_.status != "In Preparation").getOrElse(false)) {
               BadRequest("Publication Request has already been submitted")
             } else {
               metadataService.removeMetadata(id)
@@ -448,7 +448,7 @@ class Metadata @Inject() (
 
     implicit val context = scala.concurrent.ExecutionContext.Implicits.global
     val endpoint = (play.Play.application().configuration().getString("people.uri"))
-    if (endpoint != null) {
+    if (play.api.Play.current.plugin[services.StagingAreaPlugin].isDefined && endpoint != null) {
 
       val futureResponse = WS.url(endpoint).get()
       var jsonResponse: play.api.libs.json.JsValue = new JsArray()
@@ -491,8 +491,27 @@ class Metadata @Inject() (
       }
       result
     } else { //TBD - just get list of Clowder users
+    /*  val lcTerm = term.toLowerCase()
+      Future(Ok(Json.toJson(userService.list.map(jsonPerson).filter((x) => {
+        if (term.length == 0) {
+          true
+        } else {
+          Logger.debug(lcTerm)
+
+          (((x \ "name").as[String].toLowerCase().contains(lcTerm)) ||
+            (x \ "@id").as[String].toLowerCase().contains(lcTerm) ||
+            (x \ "email").as[String].toLowerCase().contains(lcTerm))
+        }
+      }).take(limit))).as("application/json"))
+      */
       Future(NotFound(toJson(Map("failure" -> { "People not found" }))).as("application/json"))
     }
   }
 
+  def jsonPerson(user: User): JsObject = {
+    Json.obj(
+      "name" -> user.fullName,
+      "@id" -> user.id.stringify,
+      "email" -> user.email)
+  }
 }
