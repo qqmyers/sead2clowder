@@ -858,6 +858,8 @@ class Collections @Inject() (datasets: DatasetService,
 
             files.getBytes(currentFile.id) match {
               case Some((inputStream, filename, contentType, contentLength)) => {
+                //TODO use extractor here
+
                 val tempDir : UUID = UUID.generate();
                 val outputFolder = tempDir.stringify;
                 //TODO - make temporary directory from outputFolder, and do that here, pass to unzipit

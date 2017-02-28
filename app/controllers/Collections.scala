@@ -17,7 +17,7 @@ import javax.inject.{Inject, Singleton}
 import api.Permission
 import play.api.Logger
 import play.api.Play.current
-import play.api.libs.json.JsValue
+import play.api.libs.json.{Json, JsValue}
 import play.api.libs.json.Json.toJson
 import services.{CollectionService, DatasetService, _}
 import scala.collection.immutable.List
@@ -799,6 +799,7 @@ class Collections @Inject()(datasets: DatasetService, collections: CollectionSer
     Ok(views.html.collectionList(decodedCollections.toList, prev, next, limit, viewMode, space, spaceName, title, owner, ownerName, when, date))
   }
 
+  //TODO make this use extractor, NOT methods in this controller
   def uploadZip() = PermissionAction(Permission.AddFile) (parse.multipartFormData) {implicit request =>
     val user = request.user
     user match {
@@ -918,63 +919,67 @@ class Collections @Inject()(datasets: DatasetService, collections: CollectionSer
               val clowderurl = Utils.baseUrl(request)
               val creator_url = api.routes.Users.findById(identity.id).absoluteURL(Utils.https(request))(request)
 
-              //CREATE COLLECTION HERE
-              var currentUUID : Option[UUID] = createFromZip(f.id,user,clowderurl,creator_url)
-
-              //Correctly set the updated URLs and data that is needed for the interface to correctly
-              //update the display after a successful upload.
-              val https = controllers.Utils.https(request)
-              val retMap = Map("files" ->
-                Seq(
-                  toJson(
-                    Map(
-                      "name" -> toJson(nameOfFile),
-                      "size" -> toJson(uploadedFile.ref.file.length()),
-                      "url" -> toJson(controllers.routes.Collections.collection(currentUUID.get).absoluteURL(https)),
-                      "deleteUrl" -> toJson(api.routes.Collections.removeCollection(currentUUID.get).absoluteURL(https)),
-                      "deleteType" -> toJson("POST")
-                    )
-                  )
-                )
-              )
-              Ok(toJson(retMap))
+              submitZipFileToExtractor(f.id,host,clientIP,serverIP,identity.id.stringify,None)
+              Ok(toJson(Map("status"->"success")))
             }
             case None => {
               Logger.error("Could not retrieve file that was just saved.")
-              //Changed to return appropriate data and message to the upload interface
-              val retMap = Map("files" ->
-                Seq(
-                  toJson(
-                    Map(
-                      "name" -> toJson(nameOfFile),
-                      "size" -> toJson(uploadedFile.ref.file.length()),
-                      "error" -> toJson("Problem in storing the uploaded file.")
-                    )
-                  )
-                )
-              )
-              Ok(toJson(retMap))
+              BadRequest("")
             }
           }
         }.getOrElse {
-          Logger.error("The file appears to not have been attached correctly during upload.")
-          //This should be a very rare case. Changed to return the simple error message for the interface to display.
-          val retMap = Map("files" ->
-            Seq(
-              toJson(
-                Map(
-                  "error" -> toJson("The file was not correctly attached during upload.")
-                )
-              )
-            )
-          )
-          Ok(toJson(retMap))
-
+          BadRequest("")
         }
       }
       case None => {
         Redirect(routes.Datasets.list()).flashing("error" -> "You are not authorized to create new files.")
       }
+    }
+  }
+
+  def submitZipFileToExtractor(file_id: UUID, host : String, clientIP : String, serverIP : String, userId : String, spaceId : Option[String])   {
+    //Logger.debug(s"Submitting file for extraction with body $request.body")
+    // send file to rabbitmq for processing
+    current.plugin[RabbitmqPlugin] match {
+      case Some(p) =>
+        files.get(file_id) match {
+          case Some(file) => {
+            val id = file.id
+            val fileType = file.contentType
+            val idAndFlags = ""
+
+            val key = "extractors.zip.collection.create"
+
+            val parameters = if (spaceId == None){
+              Json.obj("loggedInUser"->userId)
+            } else {
+              Json.obj("loggedInUser"->userId,"space"->spaceId.get)
+            }
+            dtsrequests.insertRequest(serverIP, clientIP, file.filename, id, fileType, file.length, file.uploadDate)
+
+            val extra = Map("filename" -> file.filename,
+              "parameters" -> parameters.toString,
+              "action" -> "manual-submission")
+            val showPreviews = file.showPreviews
+
+            val newFlags = if (showPreviews.equals("FileLevel"))
+              idAndFlags + "+filelevelshowpreviews"
+            else if (showPreviews.equals("None"))
+              idAndFlags + "+nopreviews"
+            else
+              idAndFlags
+
+            val originalId = if (!file.isIntermediate) {
+              file.id.toString()
+            } else {
+              idAndFlags
+            }
+
+            p.extract(ExtractorMessage(new UUID(originalId), file.id, host, key, extra, file.length.toString, null, newFlags))
+          }
+          case None => Logger.error("File not found")
+        }
+      case None => Logger.error("RabbitMQ not enabled")
     }
   }
 
