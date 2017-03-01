@@ -7033,3 +7033,7 @@ fieldset[disabled] .btn-default.active {
   text-decoration: underline;
   padding-bottom: 5px;
 }
+
+.ellipses {
+	color: #2e6ca2;
+}
