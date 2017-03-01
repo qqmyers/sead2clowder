@@ -7050,4 +7050,6 @@ fieldset[disabled] .btn-default.active {
 	padding-top: 3px!important;
 }
 
-
+.ellipses {
+	color: #2e6ca2;
+}
