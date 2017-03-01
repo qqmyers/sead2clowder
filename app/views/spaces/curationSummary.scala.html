@@ -10,7 +10,7 @@
                 <li>Author: @curationObject.author.fullName</li>
                 <li>Created: @curationObject.created.format("MMM dd, yyyy")</li>
                 <li>Creators: @curationObject.creators.mkString(", ")</li>
-                <li class = "abstract">Abstract: @Html(curationObject.description.replace("\n","<br/>"))</li>
+                <li class = "abstract">Abstract: @Html(curationObject.description.replace("\n","<br>"))</li>
                 
             </ul>
             @if(Permission.checkPermission(Permission.EditStagingArea, ResourceRef(ResourceRef.space, curationObject.space))){
@@ -28,7 +28,8 @@
         </div>
     </div>
     <script src="@routes.Assets.at("javascripts/curationProcess.js")" type="text/javascript"></script>
-
+    <script src="@routes.Assets.at("javascripts/htmlEncodeDecode.js")" type="text/javascript"></script>
+    <script src="@routes.Assets.at("javascripts/descriptionSummary.js")" type="text/javascript"></script>
     <script>
     $(document).ready(getFiles('@curationObject.id'));
     </script>

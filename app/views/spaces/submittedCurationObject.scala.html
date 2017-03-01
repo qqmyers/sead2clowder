@@ -23,7 +23,7 @@
         	  abstract-panel
         	}
         "><br/>
-        @Html(curationObject.description.replace("\n","<br/>"))</p>
+        @Html(curationObject.description.replace("\n","<br>"))</p>
         <b>Creator</b>: @curationObject.author.fullName <br/>
         <b>Created</b>: @curationObject.created.date.format("MMM dd, yyyy") <br/>
         <b>Repository</b>: @curationObject.repository.getOrElse("Not selected.") <br/>
@@ -48,7 +48,7 @@
         }
         case None => {Not Set}
       }<br/>
-          <b>Abstract</b>: @Html(curationObject.description.replace("\n","<br/>"))
+          <b>Abstract</b>: @Html(curationObject.description.replace("\n","<br>"))
 
         <br/>
         <h4> @Messages("dataset.title") <a href ="@routes.Datasets.dataset(curationObject.datasets(0).id)">@curationObject.datasets(0).name</a></h4>
