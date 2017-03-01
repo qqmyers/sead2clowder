@@ -89,7 +89,7 @@
 						<li>Created by <a href= "@routes.Profile.viewProfileUUID(collection.author.id)"> @collection.author.fullName </a></li>
 						<li>Created on @collection.created.format("MMM dd, yyyy")</li>
 					</ul>
-					<div id="aboutdesc" class="col-xs-12 box-white-space"><p id="collection_desc"  class="inline">@if(collection.description.length > 0) { @Html(collection.description)} else {Add a description}</p>
+					<div id="aboutdesc" class="col-xs-12 box-white-space"><p id="collection_desc"  class="inline abstract abstract-panel">@if(collection.description.length > 0) { @Html(collection.description)} else {Add a description}</p>
 						@if(Permission.checkPermission(Permission.EditCollection, ResourceRef(ResourceRef.collection, collection.id))) {
 							<a class="hiddencomplete" id="edit-description" href="javascript:updateDescription()" title ="Click to edit description">
 								<span class="glyphicon glyphicon-edit" aria-hidden="true"></span>
