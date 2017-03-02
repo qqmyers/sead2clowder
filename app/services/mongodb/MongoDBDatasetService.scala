@@ -433,35 +433,7 @@ class MongoDBDatasetService @Inject() (
       case None => { Logger.error("Error getting dataset" + datasetId); return None }
     }
   }
-
  
-  def jsonToXML(theJSON: String): java.io.File = {
-
-    val jsonObject = new JSONObject(theJSON)
-    var xml = org.json.XML.toString(jsonObject)
-
-    Logger.debug("thexml: " + xml)
-
-    //Remove spaces from XML tags
-    var currStart = xml.indexOf("<")
-    var currEnd = -1
-    var xmlNoSpaces = ""
-    while(currStart != -1){
-      xmlNoSpaces = xmlNoSpaces + xml.substring(currEnd+1,currStart)
-      currEnd = xml.indexOf(">", currStart+1)
-      xmlNoSpaces = xmlNoSpaces + xml.substring(currStart,currEnd+1).replaceAll(" ", "_")
-      currStart = xml.indexOf("<", currEnd+1)
-    }
-    xmlNoSpaces = xmlNoSpaces + xml.substring(currEnd+1)
-
-    val xmlFile = java.io.File.createTempFile("xml",".xml")
-    val fileWriter =  new BufferedWriter(new FileWriter(xmlFile))
-    fileWriter.write(xmlNoSpaces)
-    fileWriter.close()
-
-    return xmlFile
-  }
-
   def toJSON(dataset: Dataset): JsValue = {
     var datasetThumbnail = "None"
     if(!dataset.thumbnail_id.isEmpty)

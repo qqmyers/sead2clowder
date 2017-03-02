@@ -264,31 +264,6 @@ class MongoDBFileService @Inject() (
   }
 
 
-  def jsonToXML(theJSON: String): java.io.File = {
-
-    val jsonObject = new JSONObject(theJSON)
-    var xml = org.json.XML.toString(jsonObject)
-
-    //Remove spaces from XML tags
-    var currStart = xml.indexOf("<")
-    var currEnd = -1
-    var xmlNoSpaces = ""
-    while (currStart != -1) {
-      xmlNoSpaces = xmlNoSpaces + xml.substring(currEnd + 1, currStart)
-      currEnd = xml.indexOf(">", currStart + 1)
-      xmlNoSpaces = xmlNoSpaces + xml.substring(currStart, currEnd + 1).replaceAll(" ", "_")
-      currStart = xml.indexOf("<", currEnd + 1)
-    }
-    xmlNoSpaces = xmlNoSpaces + xml.substring(currEnd + 1)
-
-    val xmlFile = java.io.File.createTempFile("xml", ".xml")
-    val fileWriter = new BufferedWriter(new FileWriter(xmlFile))
-    fileWriter.write(xmlNoSpaces)
-    fileWriter.close()
-
-    return xmlFile
-  }
-
   def removeTags(id: UUID, userIdStr: Option[String], eid: Option[String], tags: List[String]) {
     Logger.debug("Removing tags in file " + id + " : " + tags + ", userId: " + userIdStr + ", eid: " + eid)
     val file = get(id).get
