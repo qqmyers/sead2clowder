@@ -1404,7 +1404,7 @@ class Files @Inject()(
     @ApiOperation(value = "Get technical metadata of the resource described by the file",
           notes = "",
           responseClass = "None", httpMethod = "GET")
-    def QgetTechnicalMetadataJSON(id: UUID) = PermissionAction(Permission.ViewMetadata, Some(ResourceRef(ResourceRef.file, id))) { implicit request =>
+    def getTechnicalMetadataJSON(id: UUID) = PermissionAction(Permission.ViewMetadata, Some(ResourceRef(ResourceRef.file, id))) { implicit request =>
         files.get(id) match {
           case Some(file) => {
             val listOfMetadata = metadataService.getMetadataByAttachTo(ResourceRef(ResourceRef.file, id))
