@@ -1062,6 +1062,18 @@ table.borderless tbody tr td, table.borderless tbody tr th {
 	margin-bottom: -5px;
 }
 
+.abstractsummary {
+	display: inline-block;
+	max-height: 250px;
+	max-width: 100%;
+	overflow-y: auto;
+	overflow-wrap: break-word;
+	margin-bottom: -5px;
+	margin-block-end: -5px;
+	margin-block-start: 1px;
+	margin-bottom: -5px;
+}
+
 .abstract-panel {
 	padding: 6px 12px 6px 0px;
 	min-width: 100%;

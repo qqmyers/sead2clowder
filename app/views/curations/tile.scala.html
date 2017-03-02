@@ -8,7 +8,7 @@
         <div class="panel-body">
             <div class="caption break-word">
                 <h4><a href="@(routes.CurationObjects.getCurationObject(curationObject.id))">@Html(curationObject.name)</a></h4>
-                <p class='abstract'>@Html(curationObject.description)<br/><br/>
+                <p class='abstractsummary'>@Html(curationObject.description)<br/><br/>
                     Creator: @curationObject.author.fullName <br/>
                     Created on: @curationObject.created.date.format("MMM dd, yyyy") <br/>
                     Repository: @curationObject.repository.getOrElse("") <br/>

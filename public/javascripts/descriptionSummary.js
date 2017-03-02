@@ -1,39 +1,63 @@
 /**
  * Created by myersjd
  * 
- * These methods look for fields of class 'abstract' and limit them to numrows
+ * These methods look for fields of class 'summary' and limit them to numrows
  * in height. To do this reliably when the font family and size are dynamic
  * (e.g. by theme) and when the abstract text can include linefeeds/blank lines
- * and encoded html characters requires: 
- * - identifying the font family in use and
- *   the font size 
- * - looking at the width of each line, as it will be displayed,
- *   in comparison to the width of the element 
- * - accounting for wrap-around of longer lines, 
- * - taking into account that wrapping is on word boundaries (per
- *   current css) 
- * - re-adjusting upon window resize, 
- * - adding a '...' at the end of a truncated item (using a span of 
- *   class ellipses so that it can be distinguished from the text), 
- *   while accounting for the added length of the '...' string
+ * and encoded html characters requires: - identifying the font family in use
+ * and the font size - looking at the width of each line, as it will be
+ * displayed, in comparison to the width of the element - accounting for
+ * wrap-around of longer lines, - taking into account that wrapping is on word
+ * boundaries (per current css) - re-adjusting upon window resize, - adding a
+ * '...' at the end of a truncated item (using a span of class ellipses so that
+ * it can be distinguished from the text), while accounting for the added length
+ * of the '...' string
  * 
  * 
  * 
  */
 
+var usingDefaultFont = false;
+
 $(function() {
 	var numrows = 8;
 	var canvas = $("<canvas/>")[0];
 	var context = canvas.getContext('2d');
-	context.font = $(".abstract").detectFont();
-	summarizeAbstracts(numrows, context);
-	$(window).resize(function() {
+	if ($(".abstractsummary").length != 0) {
+		context.font = $(".abstractsummary").detectFont();
+		// Try once to see if the font has loaded. Better mechanism would be to
+		// use
+		// aWebFontLoader but this means changing how themes work (they have a
+		// font
+		// import line now)
+		if (usingDefaultFont) {
+			console.log("Checking for slow font");
+			setTimeout(function() {
+				context.font = $(".abstractsummary").detectFont();
+				summarizeAbstracts(numrows, context);
+			}, 500);
+		}
 		summarizeAbstracts(numrows, context);
-	});
+		$(window).resize(function() {
+			context.font = $(".abstractsummary").detectFont();
+			summarizeAbstracts(numrows, context);
+		});
+	}
 });
 
+//Wrapper to call on-demand, e.g. when a new tab is showm
+function doSummarizeAbstracts() {
+	var numrows = 8;
+	var canvas = $("<canvas/>")[0];
+	var context = canvas.getContext('2d');
+	if ($(".abstractsummary").length != 0) {
+		context.font = $(".abstractsummary").detectFont();
+		summarizeAbstracts(numrows, context);
+	}	
+}
+
 function summarizeAbstracts(lines, context) {
-	$(".abstract")
+	$(".abstractsummary")
 			.each(
 					function(index, element) {
 						// Copy original text to a data element so it can be
@@ -101,11 +125,12 @@ function summarizeAbstracts(lines, context) {
 									// a line, and use the remainder of the line
 									// as the source text in the next pass
 									// through the loop
-									//Work on decoded text
+									// Work on decoded text
 									var curText = htmlDecode(textLines[curLine]);
 									var fits = fitWidth(curText, parawidth,
 											context);
-									//If we're at the row limit, we have to truncate
+									// If we're at the row limit, we have to
+									// truncate
 									if (count == (lines - 1)) {
 										// Truncate to add ellipses if needed
 										text = text
@@ -119,18 +144,24 @@ function summarizeAbstracts(lines, context) {
 														.attr("title",
 																"text truncated in this view")[0].outerHTML;
 									} else {
-										//If not, we need to add a row of text (encoded) and use the remainder of this line as the source for the next row
+										// If not, we need to add a row of text
+										// (encoded) and use the remainder of
+										// this line as the source for the next
+										// row
 										text = text
 												+ htmlEncode(curText.substring(
 														0, fits));
 									}
 									textLines[curLine] = htmlEncode(curText
 											.substring(fits));
-									//Added a line to the summary but did not consume a row of the original text
+									// Added a line to the summary but did not
+									// consume a row of the original text
 									count = count + 1;
 								}
 							}
-							//Add the summary as the displayed value (note that it includes linefeeds and possibly a span element, so is html, not text
+							// Add the summary as the displayed value (note that
+							// it includes linefeeds and possibly a span
+							// element, so is html, not text
 							$(this).html(text);
 						}
 					})
@@ -181,6 +212,7 @@ function fitWidth(text, width, context) {
 		}
 		step = step / 2;
 		curWidth = context.measureText(text.substring(0, length)).width;
+
 	}
 	return length;
 }
@@ -222,14 +254,14 @@ function truncateForEllipses(text, context, parawidth) {
 				'display' : 'inline',
 				'visibility' : 'hidden'
 			}).appendTo('body');
-			// console.log(clone, dummy, fonts, font, clone.width(),
-			// dummy.width());
 			if (clone.width() == dummy.width())
 				detectedFont = font;
 			clone.remove();
 			dummy.remove();
 		});
-
+		if (detectedFont != fonts[0]) {
+			usingDefaultFont = true;
+		}
 		return fontsize + " " + detectedFont;
 	}
 })(jQuery);
