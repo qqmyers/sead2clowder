@@ -263,10 +263,14 @@
                 contentType: "application/json"
             });
             $("#"+mid).addClass("popping");
+
             request.done(function (response, textStatus, jqXHR) {
                 var fields = response;
                 var context = "Context is not defined.";
                 if (fields['@@context']) {
+
+                    //FixME - current context is an array and one must retrieve the child object with the key in it.
+                    //The next line returns nothing
                     context = JSON.stringify(fields['@@context'][key]);
                 }
                 
