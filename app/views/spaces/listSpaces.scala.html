@@ -111,6 +111,7 @@
                 function updatePage() {
                     $('#nextlink').attr('href', "@(routes.Spaces.list("a", next, limit, "", owner, showAll, showPublic, onlyTrial))");
                     $('#prevlink').attr('href', "@(routes.Spaces.list("b", prev, limit, "", owner, showAll, showPublic, onlyTrial))");
+                    doSummarizeAbstracts();
                 }
             </script>
 
