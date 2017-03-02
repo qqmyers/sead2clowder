@@ -527,7 +527,9 @@ class Datasets @Inject() (
 
         val isRDFExportEnabled = current.plugin[RDFExportService].isDefined
 
-        filesInDataset.map {
+
+          filesInDataset.map
+          {
           file =>
             file.tags.map {
               tag => filesTags += tag.name
@@ -557,8 +559,7 @@ class Datasets @Inject() (
         var decodedSpaces_canRemove: Map[ProjectSpace, Boolean] = Map.empty
         var isInPublicSpace = false
         dataset.spaces.map {
-          sp =>
-            spaceService.get(sp) match {
+            sp => spaceService.get(sp) match {
               case Some(s) => {
                 decodedSpaces_canRemove += (Utils.decodeSpaceElements(s) -> true)
                 datasetSpaces = s :: datasetSpaces
@@ -618,7 +619,8 @@ class Datasets @Inject() (
           datasetSpaces.map(space =>
             if (Permission.checkPermission(Permission.AddResourceToCollection, ResourceRef(ResourceRef.space, space.id))) {
               canAddDatasetToCollection = true
-            })
+        	}
+          )
         }
         val stagingAreaDefined = play.api.Play.current.plugin[services.StagingAreaPlugin].isDefined
         Ok(views.html.dataset(datasetWithFiles, commentsByDataset, filteredPreviewers.toList, m,
