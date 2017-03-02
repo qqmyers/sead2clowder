@@ -10,6 +10,7 @@
 <script src="@routes.Assets.at("javascripts/jquery.cookie.js")" type="text/javascript"></script>
 <script src="@routes.Assets.at("javascripts/follow-button.js")" type="text/javascript"></script>
 
+
 <div class="row">
     <ol class="breadcrumb">
         @(owner, ownerName) match {
@@ -204,6 +205,7 @@
                     $('#nextlink').attr('href', "@(routes.Datasets.list("a", next, limit, space, None, "", owner))");
                     $('#prevlink').attr('href', "@(routes.Datasets.list("b", prev, limit, space, None, "", owner))");
                 }
+                doSummarizeAbstracts();
 	        }
         </script>
 
@@ -242,5 +244,6 @@
     </div>
 </div>
 
-
+<script src="@routes.Assets.at("javascripts/descriptionSummary.js")" type="text/javascript"></script>
+<script src="@routes.Assets.at("javascripts/htmlEncodeDecode.js")" type="text/javascript"></script>
 }

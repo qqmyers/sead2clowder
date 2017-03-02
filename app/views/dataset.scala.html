@@ -146,7 +146,8 @@
                         </a>
             }
 		</div>    
-        <div class="col-md-12 box-white-space" id="aboutdesc"><span>
+                <div class="col-md-12 box-white-space" id="aboutdesc">
+                <span>
                     @if((dataset.description.length == 0) && (Permission.checkPermission(Permission.EditDataset, ResourceRef(ResourceRef.dataset, dataset.id)))) {
                     	 	Add a @Messages("dataset.description").toLowerCase
                     	
@@ -497,8 +498,8 @@
 		$('#ds_description').text("");
 		$('#edit-description').css("display", "none");
 		$('#edit-description').addClass("hiddencomplete");
-		$("#desc_input").select();
 		$('#ds_description').css("display", "none");
+		$("#desc_input").select();
 	}
 
     function cancelDescription() {
@@ -529,13 +530,12 @@
 			   $('#aboutdesc > span').text(descLabel + ":");
 			 }
 			$('.edit_desc').remove();
+			//multiline add classes else remove them
 			if ($('#ds_description').html().indexOf("<br>")>=0) {
 			$('#ds_description').addClass("abstract-panel");
 			} else {
 			$('#ds_description').removeClass("abstract-panel");
 			}
-			
-			//multiline add classes else remove them
 			$('#ds_description').css("display", "");
 			$('#edit-description').removeClass("inline");
             $('#edit-description').css("display", "");

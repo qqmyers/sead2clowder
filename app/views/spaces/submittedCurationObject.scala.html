@@ -23,8 +23,8 @@
         @if(curationObject.description.contains("\n")) {
         	  abstract-panel
         	}
-        ">
-        @Html(curationObject.description.replace("\n","<br/>"))</p>
+        "><br/>
+        @Html(curationObject.description.replace("\n","<br>"))</p>
         <br/><br/>
         <span><b>Creator(s)</b>: 
           	@if(curationObject.creators.length !=0) {

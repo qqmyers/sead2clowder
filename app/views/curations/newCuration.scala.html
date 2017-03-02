@@ -73,8 +73,12 @@
                 <input type="text" class="form-control" id="name" placeholder="A short name" value="@name">
                 <span class="error hiddencomplete" id="nameerror">The name is a required field.</span>
             </div>
+<<<<<<< HEAD
            
             <div class="form-group">
+=======
+                        <div class="form-group">
+>>>>>>> refs/heads/bugfix/SEAD-1143-escape-html-special-chars
 			  <div id='aboutcreators'>
                 <label id="creators-label" title="Ordered list of those responsible for this publication"> Creator(s): </label>
                         
@@ -91,8 +95,9 @@
 					" id="creatorerror">One or more creators are required </span></div>
 			  </div>  
 			</div>	                
- 			<div class="form-group">
-                <label id="desclabel" for="description"> 
+            
+            <div class="form-group">
+ 				<label id="desclabel" for="description"> 
                 @if(Messages("dataset.description").toLowerCase == Messages("publicationrequest.description").toLowerCase) {
                 	@Messages("publicationrequest.description")
                 } else {
@@ -100,10 +105,15 @@
 				}                		
                 </label>
                 <textarea rows="4" type="text" id="description" class="form-control" >@Html(desc)</textarea>
+<<<<<<< HEAD
                 <span class="error 
+=======
+                               <span class="error 
+>>>>>>> refs/heads/bugfix/SEAD-1143-escape-html-special-chars
                 @if(desc.length >0 ) {hiddencomplete}
                 " id="descerror">The abstract is a required field.</span>
             </div>
+
             @if(!spaceList.isEmpty) {
                 <div class="form-group">
                     <label id="spacelabel" for="space"> Create in @Messages("space.title") </label>
@@ -220,6 +230,6 @@
               $("#creatorerror").hide();
             }
         });
-	</script>
+</script>
 
 }
