@@ -9,6 +9,7 @@
 <script src="@routes.Assets.at("javascripts/spaceModify.js")" type="text/javascript"></script>
 <script src="@routes.Assets.at("javascripts/jquery.cookie.js")" type="text/javascript"></script>
 <script src="@routes.Assets.at("javascripts/follow-button.js")" type="text/javascript"></script>
+
     <div class="row">
         <ol class="breadcrumb">
             @(owner, ownerName) match {
@@ -135,7 +136,6 @@
         }
 
         <script>
-
             var removeIndicator = false;
 	        var viewMode = '@mode.getOrElse("tile")';
 	        $.cookie.raw = true;
@@ -190,9 +190,9 @@
             function updatePage() {
                @space match {
       			case None => {
-                	$('#nextlink').attr('href', "@(routes.Collections.list("a", next, limit, space, "", owner))");
-                	$('#prevlink').attr('href', "@(routes.Collections.list("b", prev, limit, space, "", owner))");
-                }
+                $('#nextlink').attr('href', "@(routes.Collections.list("a", next, limit, space, "", owner))");
+                $('#prevlink').attr('href', "@(routes.Collections.list("b", prev, limit, space, "", owner))");
+            }
         		case Some(s) => {
 		        	@if(next != "") {
       	        		$('#nextlink').attr('href', "@(routes.Collections.sortedListInSpace(s, next.toInt, limit))");
@@ -201,10 +201,8 @@
                   		$('#prevlink').attr('href', "@(routes.Collections.sortedListInSpace(s, prev.toInt-limit, limit))");      	        	}
       	        	}	
             	}
+        	  	doSummarizeAbstracts();
         	  }
-        	  doSummarizeAbstracts();
-          }
-            
         </script>
     </div>
 </div>
