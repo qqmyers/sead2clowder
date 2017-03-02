@@ -198,8 +198,9 @@
       	        		$('#nextlink').attr('href', "@(routes.Collections.sortedListInSpace(s, next.toInt, limit))");
       	        	}
 					@if(prev != "") {
-                  		$('#prevlink').attr('href', "@(routes.Collections.sortedListInSpace(s, prev.toInt-limit, limit))");      	        	}
-      	        	}	
+                  		$('#prevlink').attr('href', "@(routes.Collections.sortedListInSpace(s, prev.toInt-limit, limit))");      	        	
+                  	}
+      	          }	
             	}
         	  	doSummarizeAbstracts();
         	  }
