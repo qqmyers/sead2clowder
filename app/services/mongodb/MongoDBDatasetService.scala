@@ -11,6 +11,7 @@ import api.Permission
 import api.Permission.Permission
 import com.mongodb.casbah.Imports._
 import com.mongodb.casbah.WriteConcern
+import com.mongodb.casbah.commons.MongoDBList
 import com.mongodb.casbah.commons.MongoDBObject
 import com.mongodb.util.JSON
 import com.novus.salat.dao.{ModelCompanion, SalatDAO}
@@ -631,6 +632,39 @@ class MongoDBDatasetService @Inject() (
       false, false, WriteConcern.Safe)
   }
 
+  /**
+   * Add a creator to the end of the dataset's list of creators
+   */
+  def addCreator(id: UUID, creator: String) {
+    //Don't allow duplicates
+    if (Dataset.dao.find(MongoDBObject("_id" -> new ObjectId(id.stringify)) ++ MongoDBObject("creators" -> creator)).length == 0) {
+      val result = Dataset.update(MongoDBObject("_id" -> new ObjectId(id.stringify)),
+        $push("creators" -> creator),
+        false, false, WriteConcern.Safe)
+    }
+  }
+
+  /**
+   * Remove a creator from the dataset's list of creators
+   */
+  def removeCreator(id: UUID, creator: String) {
+    Dataset.dao.update(MongoDBObject("_id" -> new ObjectId(id.stringify)),
+      $pull("creators" -> creator), false, false, WriteConcern.Safe)
+  }
+
+  /**
+   * Move a creator to a new position in the dataset's list of creators
+   */
+  def moveCreator(id: UUID, creator: String, position: Integer) {
+    //Don't move ones that don't exist
+    if (Dataset.dao.find(MongoDBObject("_id" -> new ObjectId(id.stringify)) ++ MongoDBObject("creators" -> creator)).length != 0) {
+      removeCreator(id, creator);
+      Dataset.update(MongoDBObject("_id" -> new ObjectId(id.stringify)),
+        $push("creators" -> MongoDBObject("$each" -> MongoDBList(creator), "$position" -> position)),
+        false, false, WriteConcern.Safe)
+    }
+  }
+
   def updateAuthorFullName(userId: UUID, fullName: String) {
     Dataset.update(MongoDBObject("author._id" -> new ObjectId(userId.stringify)),
       $set("author.fullName" -> fullName), false, true, WriteConcern.Safe)
@@ -1098,8 +1132,7 @@ class MongoDBDatasetService @Inject() (
 				  val filePrintStream =  new PrintStream(groupingFile)
 				  for(fileId <- dataset.files){
             files.get(fileId).foreach(file =>
-				      filePrintStream.println("id:"+file.id.toString+" "+"filename:"+file.filename)
-            )
+            filePrintStream.println("id:" + file.id.toString + " " + "filename:" + file.filename))
 				  }
 				  filePrintStream.close()
 
@@ -1114,18 +1147,22 @@ class MongoDBDatasetService @Inject() (
 			            	Logger.warn("Could not move dumped dataset file grouping to staging directory.")
 			            	throw new Exception("Could not move dumped dataset file grouping to staging directory.")
 						  }
-					  }catch {case ex:Exception =>{
+          } catch {
+            case ex: Exception => {
 						  val badDatasetId = dataset.id.toString
 						  Logger.error("Unable to stage file grouping of dataset with id "+badDatasetId+": "+ex.printStackTrace())
 						  unsuccessfulDumps += badDatasetId
-					  }}
 					}
-			  }catch {case ex:Exception =>{
+          }
+        }
+      } catch {
+        case ex: Exception => {
 			    val badDatasetId = dataset.id.toString
 			    Logger.error("Unable to dump file grouping of dataset with id "+badDatasetId+": "+ex.printStackTrace())
 			    unsuccessfulDumps += badDatasetId
-			  }}
 			}
+      }
+    }
 
 		    return unsuccessfulDumps.toList
 	}

@@ -26,9 +26,10 @@ case class Dataset(
   spaces: List[UUID] = List.empty,
   lastModifiedDate: Date = new Date(),
   followers: List[UUID] = List.empty,
-  status: String = DatasetStatus.PRIVATE.toString// dataset has four status: trial, default, private and public. yet editors of the dataset
+  status: String = DatasetStatus.PRIVATE.toString, // dataset has four status: trial, default, private and public. yet editors of the dataset
   // can only see the default, private and public, where trial equals to private. viewers can only see private and
   // public, where trial and default equals to private/public of its space
+  creators: List[String] = List.empty
 ){
   def isPublic:Boolean = status == DatasetStatus.PUBLIC.toString
   def isDefault:Boolean = status == DatasetStatus.DEFAULT.toString
