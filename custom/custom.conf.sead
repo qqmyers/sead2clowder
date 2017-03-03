@@ -26,6 +26,8 @@ clowder {
 #Additional help menu items
 helpMenu = [{label: "FAQs", url: "http://sead-data.net/faqs"},
             {label: "Help Topics", url: "http://sead-data.net/help-topics"}]
+sortInMemory=true            
+            
 
 
 
