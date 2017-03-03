@@ -1,4 +1,4 @@
-@(metadata: List[models.Metadata], toDelete: Boolean)(implicit user: Option[models.User])
+@(metadata: List[models.Metadata], rdfMetadata: models.rdfMetadata = null, toDelete: Boolean)(implicit user: Option[models.User])
     @import java.net.URL
     @import play.api.libs.json.JsString
     @import play.api.libs.json.JsObject
@@ -167,6 +167,36 @@
         on @dateFormatter(date)
     }
 
+
+@*The Start
+IN the new model, we'll have a set of {category, label, URI, type} entires from the space (or default) and
+a set of {URI, value, agent, date} entries ???
+There is probably more history than just the latest agent/date once editing is allowed... so this becomes a list of id/agent/action/date values???
+ for multivalues - where do deletes get shown?
+
+ *@
+
+	@if(rdfMetadata!=null) {
+		<div>
+		@for((key, value) <- rdfMetadata.entries) {
+			<div title='@key'>@rdfMetadata.defs.apply(key)</div><div>@value.toString()</div>
+		}
+		</div>
+		<div>
+		@for((key, value) <- rdfMetadata.defs) {
+			<div>@key</div><div>@value.toString()</div>
+		}
+		</div>
+		<div>
+		@for((item) <- rdfMetadata.history) {
+			<div>@rdfMetadata.defs.apply(item.uri)</div>
+			<div>@item.value.toString()</div>
+			<div>@item.agent.toString()</div>
+			<div>@item.action</div>
+			<div>@item.date.toString()</div>
+		}
+		</div>
+	}
     @if(metadata.size == 0) {
         <p class="text-center">No metadata available for this resource</p>
     }

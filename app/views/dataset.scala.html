@@ -2,8 +2,8 @@
   comments: List[Comment],
   previewers : List[Previewer],
   m: List[models.Metadata],
+  r: models.rdfMetadata,
   collectionsInside: List[models.Collection],
-  rdfExported: Boolean,
   relatedSensors: List[(String,String,String)],
   datasetSpaces_canRemove : Option[Map[ProjectSpace,Boolean]],
   fileList: List[File],
@@ -17,6 +17,7 @@
 @import api.Permission
 @import play.api.Play.current
 @import _root_.util.Formatters._
+@import play.api.libs.json.JsValue
 
 @main(dataset.name) {
     <script type="text/javascript">
@@ -245,7 +246,7 @@
 	    	<div class="tabbable" id="bottomDatasetTabbable"> <!-- Only required for left/right tabs -->
                 <ul class="nav nav-tabs margin-bottom-20" >
                     <li role="presentation" class="active"><a href="#tab-files" role="tab" data-toggle="tab">Files </a></li>
-                    <li role="presentation"><a href="#tab-metadata" role="tab" data-toggle="tab">Metadata </a></li>
+                    <li role="presentation"><a href="#tab-metadata" role="tab" data-toggle="tab">Metadata</a></li>
                     <li role="presentation"><a href="#tab-visua" role="tab" data-toggle="tab">Visualizations</a></li>
                     <li role="presentation"><a href="#tab-comments" role="tab" data-toggle="tab">Comments (@comments.size)</a></li>
                 </ul>
@@ -268,7 +269,7 @@
                         }
                         <div class="row">
                             <div class="col-md-12" id="metadata-content">
-                                @metadatald.view(m, true)
+                                @metadatald.view(m, r, true)
                             </div>
                         </div>
                         @if(Permission.checkPermission(Permission.EditDataset, ResourceRef(ResourceRef.dataset, dataset.id))

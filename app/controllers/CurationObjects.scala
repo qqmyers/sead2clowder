@@ -8,10 +8,10 @@ import api.Permission._
 import api.{UserRequest, Permission}
 import com.fasterxml.jackson.annotation.JsonValue
 import models._
+import util.JSONLD
 import org.apache.commons.lang.StringEscapeUtils._
 import play.api.Logger
 import play.api.i18n.Messages
-import play.api.libs.Files
 import play.api.libs.json._
 import play.api.libs.json.Json._
 import play.api.libs.json.JsArray
@@ -483,7 +483,7 @@ class CurationObjects @Inject()(
     var metadataKeys = Set.empty[String]
     metadatas.getMetadataByAttachTo(ResourceRef(ResourceRef.curationObject, c.id)).filter(_.creator.typeOfAgent == "cat:user").map {
       item =>
-        for((key, value) <- buildMetadataMap(item.content)) {
+        for((key, value) <- JSONLD.buildMetadataMap(item.content)) {
           metadataList += MetadataPair(key, value)
           metadataKeys += key
         }
@@ -713,7 +713,7 @@ class CurationObjects @Inject()(
           var metadataKeys = Set.empty[String]
           metadatas.getMetadataByAttachTo(ResourceRef(ResourceRef.curationObject, c.id)).filter(_.creator.typeOfAgent == "cat:user").map {
             item =>
-              for((key, value) <- buildMetadataMap(item.content)) {
+              for((key, value) <- JSONLD.buildMetadataMap(item.content)) {
                 metadataList += MetadataPair(key, value)
                 metadataKeys += key
               }
@@ -887,41 +887,7 @@ class CurationObjects @Inject()(
   }
 
 
-  def buildMetadataMap(content: JsValue): Map[String, JsValue] = {
-    var out = scala.collection.mutable.Map.empty[String, JsValue]
-    content match {
-      case o: JsObject => {
-        for ((key, value) <- o.fields) {
-          value match {
-            case o: JsObject => value match {
-              case b: JsArray => out(key) = Json.toJson(buildMetadataMap(value))
-              case b: JsString => out(key) = Json.toJson(b.value)
-              case _ => out(key) = value
-            }
-            case o: JsArray => value match {
-              case b: JsArray => out(key) = Json.toJson(buildMetadataMap(value))
-              case b: JsString => out(key) = Json.toJson(b.value)
-              case _ => out(key) = value
-            }
-            case _ => value match {
-              case b: JsArray => out(key) = Json.toJson(buildMetadataMap(value))
-              case b: JsString => out(key) = Json.toJson(b.value)
-              case _ => out(key) = value
-            }
-          }
-        }
-      }
-      case a: JsArray => {
-        for((value, i) <- a.value.zipWithIndex){
-          out = out ++ buildMetadataMap(value)
-        }
-      }
-
-    }
-
-    out.toMap
-  }
-
+  
   def getPublishedData(index: Int, limit: Int) = UserAction(needActive=false) { implicit request =>
     implicit val user = request.user
     implicit val context = scala.concurrent.ExecutionContext.Implicits.global

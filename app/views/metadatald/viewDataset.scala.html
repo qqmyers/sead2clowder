@@ -1,4 +1,4 @@
-@(dataset: Dataset, metadata: List[models.Metadata])(implicit user: Option[models.User])
+@(dataset: Dataset,  rdfMetadata: models.rdfMetadata, metadata: List[models.Metadata])(implicit user: Option[models.User])
 
 
 @main("Metadata") {
@@ -20,7 +20,7 @@
     </div>
     <div class="row">
         <div class="col-md-12" id="metadata-content">
-            @view(metadata, true)
+            @view(metadata, rdfMetadata, true)
         </div>
     </div>
 }

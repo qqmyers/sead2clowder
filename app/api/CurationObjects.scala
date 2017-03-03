@@ -3,6 +3,7 @@ package api
 import java.net.URI
 import javax.inject.{Inject, Singleton}
 import models._
+import util.JSONLD
 import org.apache.http.client.methods.HttpDelete
 import org.apache.http.impl.client.DefaultHttpClient
 import org.apache.http.util.EntityUtils
@@ -44,7 +45,7 @@ class CurationObjects @Inject()(datasets: DatasetService,
 
             var fileMetadata = scala.collection.mutable.Map.empty[String, JsValue]
             metadatas.getMetadataByAttachTo(ResourceRef(ResourceRef.curationFile, file.id)).filter(_.creator.typeOfAgent == "cat:user").map {
-              item => fileMetadata = fileMetadata ++ curationObjectController.buildMetadataMap(item.content)
+              item => fileMetadata = fileMetadata ++ JSONLD.buildMetadataMap(item.content)
             }
             val size = files.get(file.fileId) match {
               case Some(f) => f.length
@@ -116,7 +117,7 @@ class CurationObjects @Inject()(datasets: DatasetService,
           var metadataKeys = Set.empty[String]
           metadatas.getMetadataByAttachTo(ResourceRef(ResourceRef.curationObject, c.id)).filter(_.creator.typeOfAgent == "cat:user").map {
             item =>
-              for((key, value) <- curationObjectController.buildMetadataMap(item.content)) {
+              for((key, value) <- JSONLD.buildMetadataMap(item.content)) {
                 metadataList += MetadataPair(key, value)
                 metadataKeys += key
               }

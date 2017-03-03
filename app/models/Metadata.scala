@@ -34,9 +34,30 @@ case class Metadata (
   }
 }
 
+//For publication (curationObjects)
 case class MetadataPair(
      label: String,
      content: JsValue)
+  
+     
+object MDAction extends Enumeration {
+  type MDAction = Value
+  val ADD, EDIT, DELETE = Value
+}
+
+//For new RDF MD Model     
+case class MetadataEntry(
+     uri: String,
+     value: JsValue,
+     agent: Agent,
+     action: String, //MDAction
+     date: Date)
+
+case class rdfMetadata(
+  entries: Map[String, JsValue],
+  defs: Map[String, String],
+  history: List[MetadataEntry])
+
 
 trait Agent {
   val id: UUID
