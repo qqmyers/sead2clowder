@@ -48,6 +48,7 @@
             <button type="button" class="btn btn-default active" href="#tile-view" id="tile-view-btn"><span class="glyphicon glyphicon-th-large"></span></button>
             <button type="button" class="btn btn-default" href="#list-view" id="list-view-btn"><span class="glyphicon glyphicon-th-list"></span></button>
         </div>
+@if(play.Play.application().configuration().getBoolean("sortInMemory")) {
   @space match {
     case Some(s) => {
       <div class="btn-group btn-group-sm pull-right">
@@ -61,6 +62,7 @@
         <option value="sizeS">Size (S)</option>
       </select>
       </label>
+      </div>
 <script type="text/javascript">
   $(function() {
 	$(".js-sort-single").select2({minimumResultsForSearch: Infinity});
@@ -72,9 +74,6 @@
   	}
     $('.js-sort-single').val(order).trigger("change");
     
-  
-    @space match {
-      case Some(s) => {
   	    var currentSpace = null;
     	currentSpace = '@s';
   	
@@ -93,16 +92,12 @@
           }
           window.location = request.url;
         });
-      }	
-    }   
-	
   });
 </script>
-
-    </div>
     }
     case None => {}
     }
+}
     
         @status match {
         case Some(st) => {}
@@ -198,6 +193,14 @@
             //Function to unify the changing of the href for the next/previous links. Called on button activation for
             //viewMode style, as well as on initial load of page.
 	        function updatePage() {
+@if(play.Play.application().configuration().getBoolean("sortInMemory")) {
+                @if(next != "") {
+                    $('#nextlink').attr('href', "@(routes.Datasets.sortedListInSpace(space.getOrElse(""), next.toInt, limit))");
+                }
+                @if(prev != "") {
+                    $('#prevlink').attr('href', "@(routes.Datasets.sortedListInSpace(space.getOrElse(""), prev.toInt-limit, limit))");
+                }
+} else {
                 if (status == "publicAll") {
                     $('#nextlink').attr('href', "@(routes.Datasets.list("a", next, limit, space, Some("publicAll"), "", owner))");
                     $('#prevlink').attr('href', "@(routes.Datasets.list("b", prev, limit, space, Some("publicAll"), "", owner))");
@@ -206,6 +209,7 @@
                     $('#prevlink').attr('href', "@(routes.Datasets.list("b", prev, limit, space, None, "", owner))");
                 }
                 doSummarizeAbstracts();
+	        }
 	        }
         </script>
 
