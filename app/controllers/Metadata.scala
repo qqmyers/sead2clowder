@@ -20,7 +20,7 @@ class Metadata @Inject() (
   def view(id: UUID) = PermissionAction(Permission.ViewMetadata) { implicit request =>
     implicit val user = request.user
     metadata.getMetadataById(id) match {
-      case Some(m) => Ok(views.html.metadatald.view(List(m), true))
+      case Some(m) => Ok(views.html.metadatald.view(List(m), null, true))
       case None => NotFound
     }
   }
@@ -36,7 +36,7 @@ class Metadata @Inject() (
                              c <- contextLDService.getContextById(cId))
           yield cId -> c).toMap
 
-        Ok(views.html.metadatald.viewFile(file, mds))
+        Ok(views.html.metadatald.viewFile(file, null, mds))
       }
       case None => NotFound
     }
@@ -47,7 +47,7 @@ class Metadata @Inject() (
     datasets.get(dataset_id) match {
       case Some(dataset) => {
         val m = metadata.getMetadataByAttachTo(ResourceRef(ResourceRef.dataset, dataset_id))
-        Ok(views.html.metadatald.viewDataset(dataset, m))
+        Ok(views.html.metadatald.viewDataset(dataset, null, m))
       }
       case None => NotFound
     }

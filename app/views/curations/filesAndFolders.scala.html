@@ -59,9 +59,9 @@
             <div class="row">
               <div class="col-md-12" id="metadata-content-@file.id.stringify">
                 @if(curation.status =="In Preparation") {
-                    @metadatald.view(m.filter(_.attachedTo.id == file.id), true)
+                    @metadatald.view(m.filter(_.attachedTo.id == file.id), null, true)
                 } else {
-                    @metadatald.view(m.filter(_.attachedTo.id == file.id), false)
+                    @metadatald.view(m.filter(_.attachedTo.id == file.id), null, false)
                 }
               </div>
             </div>

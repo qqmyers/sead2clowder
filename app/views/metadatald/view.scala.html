@@ -1,4 +1,4 @@
-@(metadata: List[models.Metadata], rdfMetadata: models.rdfMetadata = null, toDelete: Boolean)(implicit user: Option[models.User])
+@(metadata: List[models.Metadata], rdfMetadata: models.rdfMetadata, toDelete: Boolean)(implicit user: Option[models.User])
     @import java.net.URL
     @import play.api.libs.json.JsString
     @import play.api.libs.json.JsObject

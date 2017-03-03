@@ -354,7 +354,7 @@ class Metadata @Inject() (
                   case None => {}
                 }
 
-                Ok(views.html.metadatald.view(List(metadata), true)(request.user))
+                Ok(views.html.metadatald.view(List(metadata), null, true)(request.user))
               } else {
                 BadRequest(toJson("Invalid resource type"))
               }
