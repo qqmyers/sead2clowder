@@ -505,12 +505,9 @@ class Datasets @Inject() (
         //RDF MD
         val metadataDefsMap = scala.collection.mutable.Map.empty[String, String]
         val inverseMetadataDefsMap = scala.collection.mutable.Map.empty[String, String] //needed to convert current metadata
-        for (md <- metadata.getDefinitions(Some(dataset.spaces.apply(0)))) {
-          metadataDefsMap((md.json \ "uri").asOpt[String].getOrElse("").toString()) =  (md.json \ "label").asOpt[String].getOrElse("").toString()
-    
-        }
-        Logger.info(metadataDefsMap.toString())
-              
+        
+        var metadataHistoryMap =   scala.collection.mutable.Map.empty[String, List[MetadataEntry]]
+        
         var metadataEntryList = scala.collection.mutable.ListBuffer.empty[MetadataEntry]
         var metadataEntryKeys = Set.empty[String]
         metadata.getMetadataByAttachTo(ResourceRef(ResourceRef.dataset, dataset.id)).map {
@@ -548,14 +545,30 @@ class Datasets @Inject() (
             for ((key, value) <- JSONLD.buildMetadataMap(item.content)) {
               Logger.info(ldItem.toString)
               Logger.info((ldItem \ "created_at").toString())
-              metadataEntryList += MetadataEntry((inverseMetadataDefsMap.apply(key)).toString, value,(ldItem).validate[Agent].get, MDAction.ADD.toString, new SimpleDateFormat("EEE MMM dd hh:mm:ss zzz yyyy").parse((ldItem \ "created_at").toString().replace("\"","")))
+              metadataEntryList += MetadataEntry(item.id, (inverseMetadataDefsMap.apply(key)).toString, value,(ldItem).validate[Agent].get, MDAction.Added.toString, new SimpleDateFormat("EEE MMM dd hh:mm:ss zzz yyyy").parse((ldItem \ "created_at").toString().replace("\"","")))
               metadataEntryKeys += key
             }
           }
         }
+
+        //Fix me - for now, initialize with label/uri pairs from existing metadata. Going forward,
+        //these should added to the space as viewable metadata instead and picked up that way.
+        //For now, the last def wins (whether from an entry or because its in the space defs) 
+        for((key, value) <- inverseMetadataDefsMap) {
+          metadataDefsMap(value) = key
+        }
+        
+        for (md <- metadata.getDefinitions(Some(dataset.spaces.apply(0)))) {
+          metadataDefsMap((md.json \ "uri").asOpt[String].getOrElse("").toString()) =  (md.json \ "label").asOpt[String].getOrElse("").toString()
+    
+        }
+        Logger.info(metadataDefsMap.toString())
+
         var metadataEntryJson = scala.collection.mutable.Map.empty[String, JsValue]
         for (key <- metadataEntryKeys) {
           metadataEntryJson = metadataEntryJson ++ Map((inverseMetadataDefsMap.apply(key)).toString -> Json.toJson(metadataEntryList.filter(_.uri == (inverseMetadataDefsMap.apply(key)).toString).map { item => item.value }toList))
+          
+          metadataHistoryMap = metadataHistoryMap ++ Map((inverseMetadataDefsMap.apply(key)).toString -> metadataEntryList.filter(_.uri == (inverseMetadataDefsMap.apply(key)).toString).toList)
         }
         Logger.info(metadataEntryJson.toString())
         Logger.info(metadataEntryList.toString)
@@ -685,7 +698,7 @@ class Datasets @Inject() (
           )
         }
         val stagingAreaDefined = play.api.Play.current.plugin[services.StagingAreaPlugin].isDefined
-        Ok(views.html.dataset(datasetWithFiles, commentsByDataset, filteredPreviewers.toList, m, rdfMetadata(metadataEntryJson.toMap, metadataDefsMap.toMap, metadataEntryList.toList),
+        Ok(views.html.dataset(datasetWithFiles, commentsByDataset, filteredPreviewers.toList, m, rdfMetadata(metadataEntryJson.toMap, metadataDefsMap.toMap, metadataHistoryMap.toMap),
           decodedCollectionsInside.toList, sensors, Some(decodedSpaces_canRemove), fileList,
           filesTags, toPublish, curPubObjects, currentSpace, limit, showDownload, showAccess, access, accessOptions.toList, canAddDatasetToCollection, stagingAreaDefined))
       }

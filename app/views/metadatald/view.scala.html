@@ -27,6 +27,7 @@
                                     <!-- only with context and user (not extractor) generated -->
                                     @if(contextId.isDefined && agent.typeOfAgent.toLowerCase().indexOf("user") >= 0) {
                                         <!-- ids don't like spaces, you can use regex for removing different characters in metadata names (key) as well -->
+                                        
                                         @defining(contextId.get + "-" + key.replaceAll("[() ]","") + "-" + resourceId.toString()) { mid =>
                                             @if(user.isDefined) {
                                                 <a class='context-key' id='@{mid}' href="javascript:void(0)">@key</a><span>:</span>
@@ -167,6 +168,43 @@
         on @dateFormatter(date)
     }
 
+    @printNewHeader(firstEvent: Boolean, agent: Agent, date: java.util.Date) = {
+    	@if(firstEvent) {
+			@if(agent.isInstanceOf[UserAgent]) {
+			added
+			} else {
+			extracted
+			}    		
+		} else {
+			last modified
+		}
+
+        @dateFormatter(date)
+        by
+        @if(agent.displayName.length > 0) {
+            @if(agent.typeOfAgent.toLowerCase().indexOf("user") >= 0) {
+                @if(user.isDefined) {
+                    <a href= "@routes.Profile.viewProfileUUID(agent.asInstanceOf[UserAgent].user.id)">@agent.displayName</a>
+                } else {
+                    @agent.displayName
+                }
+            } else {
+                @if(agent.url.isDefined) {
+                    <a href="@agent.url" target="_blank">@agent.displayName</a>
+                } else {
+                    @agent.displayName
+                }
+            }
+        } else {
+            @if(agent.url.isDefined) {
+                <a href="@agent.url" target="_blank">@agent.url</a>
+            } else {
+                unknown
+            }
+        }
+        
+    }
+
 
 @*The Start
 IN the new model, we'll have a set of {category, label, URI, type} entires from the space (or default) and
@@ -179,21 +217,72 @@ There is probably more history than just the latest agent/date once editing is a
 	@if(rdfMetadata!=null) {
 		<div>
 		@for((key, value) <- rdfMetadata.entries) {
-			<div title='@key'>@rdfMetadata.defs.apply(key)</div><div>@value.toString()</div>
-		}
+		  <div class="panel panel-default">
+            <div class="panel-heading" role="tab" id="heading_@key">
+                <a data-toggle="collapse" href="#collapse_@key" class="collapse-icon">
+                    <span class="panel-icon glyphicon glyphicon-minus"></span>
+                </a>
+                <span>
+                    <span title='@key'>@rdfMetadata.defs.apply(key)</span>
+                </span>
+                <span class='metaprov'>
+                @defining(rdfMetadata.history.apply(key)) {list =>  
+
+			@printNewHeader(list.length==1, list.head.agent, list.head.date)
+			</span>
+			</div>
+			
+						<div id="collapse_@key" class="panel-collapse collapse in" role="tabpanel" aria-labelledby="heading_@key">
+                <div class="panel-body">
+                    <div class="tree">
+			
+			@value match {
+				case a: JsArray => {
+					@for((valN, n) <- a.value.zipWithIndex) {
+						@valN match {
+							case s: JsString => {
+					<div>@s.value</div>
+					}
+					}
+					}
+					}
+					
+				case s: JsString => {
+					<span>@s.value</span>
+					}
+					}
+              @if(toDelete && Permission.checkPermission(Permission.DeleteMetadata, ResourceRef(ResourceRef.metadata, list.head.id))) {
+                <a id="@list.head.id" title="Delete this metadata" class="btn btn-link delete-icon">
+                  <span class="panel-icon glyphicon glyphicon-trash"></span>
+                </a>
+              }
+					
+			</div>
+			</div>
+			</div>
+			</div>
+			
+			}
+			}
+		
 		</div>
 		<div>
 		@for((key, value) <- rdfMetadata.defs) {
-			<div>@key</div><div>@value.toString()</div>
+            
+			<span>@key</div><div>@value.toString()</span>
+			
 		}
 		</div>
 		<div>
-		@for((item) <- rdfMetadata.history) {
+		@for((key, list) <- rdfMetadata.history) {
+			<div>key</div>
+			@for((item) <- list) {
 			<div>@rdfMetadata.defs.apply(item.uri)</div>
 			<div>@item.value.toString()</div>
 			<div>@item.agent.toString()</div>
 			<div>@item.action</div>
 			<div>@item.date.toString()</div>
+		}
 		}
 		</div>
 	}

@@ -1014,3 +1014,9 @@ table.borderless tbody tr td, table.borderless tbody tr th {
 #creatorAddSelect {
 	width:90%!important;
 }
+
+.metaprov {
+	float:right;
+	font-size: 12px;
+}
+

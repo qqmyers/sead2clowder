@@ -42,11 +42,12 @@ case class MetadataPair(
      
 object MDAction extends Enumeration {
   type MDAction = Value
-  val ADD, EDIT, DELETE = Value
+  val Added, Edited, Deleted = Value
 }
 
 //For new RDF MD Model     
 case class MetadataEntry(
+     id:UUID,
      uri: String,
      value: JsValue,
      agent: Agent,
@@ -56,12 +57,12 @@ case class MetadataEntry(
 case class rdfMetadata(
   entries: Map[String, JsValue],
   defs: Map[String, String],
-  history: List[MetadataEntry])
-
+  history: Map[String, List[MetadataEntry]])
+  //history: List[MetadataEntry])
 
 trait Agent {
   val id: UUID
-  def operation: String
+  def operation: String //Fix Me: Not a property of the agent, but of the MetadataEntry (like date)
   def displayName: String
   def url: Option[URL]
   def typeOfAgent: String
