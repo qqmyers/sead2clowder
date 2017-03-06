@@ -154,7 +154,7 @@
         			} else {
         			@Messages("dataset.description"):
         			}</span> 
-                    <p id ="ds_description" class="inline"> 
+                    <p id ="ds_description" class="inline">
                     @if(dataset.description.length > 0) {
                         @Html(dataset.description)
                     }
@@ -325,7 +325,16 @@
         var pageIndex = 0;
         var folderId;
         var cur_title;
-
+        @if(play.Play.application().configuration().getBoolean("sortInMemory")) {
+        var order = $.cookie('sort-order');
+        if (order == null) {
+            order = "dateN";
+        }
+        else {
+            order = order.replace(/['"]+/g, '');
+        }
+        $.cookie('sort-order', order, {path: '/'});
+        }
         function updateTitle() {
             cur_title = $('#datasettitle').text().trim();
             $('<span class="inline edit_title_div"> </span>').insertAfter($('#datasettitle'));
@@ -367,8 +376,6 @@
         }
         $(document).ready(function(){
 
-
-
             getUpdatedFilesAndFolders();
 
 			$('body').on('click', 'a.disabled', function(event) {
@@ -395,8 +402,6 @@
                     $('#edit-description').removeClass("inline");
                     $('#edit-description').addClass("hiddencomplete");
                  });
-                 
-            
             }
 
             if(@Permission.checkPermission(Permission.EditLicense, ResourceRef(ResourceRef.dataset, dataset.id))) {
@@ -554,10 +559,7 @@
         request.send();
     }
 
-    $(function() {
-    
-    
-    
+    $(function() {	
             $(window).on('fileDelete hashchange', function() {
 
                 getUpdatedFilesAndFolders();
@@ -604,14 +606,25 @@
             });
         });
 
-       function updatePageAndFolder(idx, folderIdd){
-           if(folderIdd != "") {
-               location.hash = "folderId="+folderIdd+"&page="+idx;
-           } else {
-               location.hash="page="+idx;
-           }
-           $(window).trigger("hashchange");
-       }
+        @if(play.Play.application().configuration().getBoolean("sortInMemory")) {
+        function updatePageAndFolder(idx, folderIdd, sort) {
+            if (folderIdd != "") {
+                location.hash = "folderId=" + folderIdd + "&page=" + idx + "&sort=" + sort;
+            } else {
+                location.hash = "page=" + idx + "&sort=" + sort;
+            }
+            $(window).trigger("hashchange");
+        }
+        } else {
+        function updatePageAndFolder(idx, folderIdd) {
+            if (folderIdd != "") {
+                location.hash = "folderId=" + folderIdd + "&page=" + idx;
+            } else {
+                location.hash = "page=" + idx;
+            }
+            $(window).trigger("hashchange");
+        }
+        }
 
        function getUpdatedFilesAndFolders() {
         parseHash();
@@ -683,10 +696,18 @@
             });
             request.done(function(response, textStatus, jsXHR){
                 if(newFolderId == "root") {
+                    @if(play.Play.application().configuration().getBoolean("sortInMemory")) {
+                    updatePageAndFolder(0, '', $(".js-sort-single").val());
+                    } else {
                     updatePageAndFolder(0, '');
+                    }
                     notify("The file " + response.fileName + " has been succesfully moved to the dataset.", "success",  false, 2000);
                 } else {
+                    @if(play.Play.application().configuration().getBoolean("sortInMemory")) {
+                    updatePageAndFolder(0, newFolderId, $(".js-sort-single").val());
+                    } else {
                     updatePageAndFolder(0, newFolderId);
+                    }
                     notify("The file " + response.fileName + " has been succesfully moved to folder: " + response.folderName, "success",  false, 2000);
                 }
 
@@ -742,6 +763,6 @@
 
         }
 
-        </script>
+    </script>
 }
 

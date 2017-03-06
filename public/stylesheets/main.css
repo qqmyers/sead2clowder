@@ -980,6 +980,15 @@ table.borderless tbody tr td, table.borderless tbody tr th {
     background-color: goldenrod;
 }
 
+#folderpath {
+	margin-top:-18px;
+	display:inline-block;
+	min-width:72%;
+}
+.sortchoice {
+	float:right;
+}
+
 .sortable-placeholder-highlight {
 	display:inline-block;
 	width:10px;
