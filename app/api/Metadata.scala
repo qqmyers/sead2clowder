@@ -1,6 +1,6 @@
 package api
 
-import java.net.URL
+import java.net.{URL, URLEncoder}
 import java.util.Date
 import javax.inject.{Inject, Singleton}
 
@@ -370,9 +370,9 @@ class Metadata @Inject()(
       case Some(user) => {
         metadataService.getMetadataById(id) match {
           case Some(m) => {
-            if(m.attachedTo.resourceType == ResourceRef.curationObject && curations.get(m.attachedTo.id).map(_.status != "In Curation").getOrElse(false)
-            || m.attachedTo.resourceType == ResourceRef.curationFile && curations.getCurationByCurationFile(m.attachedTo.id).map(_.status != "In Curation").getOrElse(false)) {
-              BadRequest("Curation Object has already submitted")
+            if(m.attachedTo.resourceType == ResourceRef.curationObject && curations.get(m.attachedTo.id).map(_.status != "In Preparation").getOrElse(false)
+            || m.attachedTo.resourceType == ResourceRef.curationFile && curations.getCurationByCurationFile(m.attachedTo.id).map(_.status != "In Preparation").getOrElse(false)) {
+              BadRequest("Publication Request has already been submitted")
             } else {
               metadataService.removeMetadata(id)
               val mdMap = m.getExtractionSummary
@@ -409,4 +409,30 @@ class Metadata @Inject()(
       case None => BadRequest("Not authorized.")
     }
   }
+
+  @ApiOperation(value = "Get information about a person from SEAD PDT given an person ID", httpMethod = "GET")
+  def getPerson(pid: String) = PermissionAction(Permission.ViewMetadata).async { implicit request =>
+
+    implicit val context = scala.concurrent.ExecutionContext.Implicits.global
+    val endpoint = (play.Play.application().configuration().getString("people.uri") + "/" + URLEncoder.encode(pid, "UTF-8"))
+    val futureResponse = WS.url(endpoint).get()
+    var jsonResponse: play.api.libs.json.JsValue = new JsArray()
+    var success = false
+    val result = futureResponse.map {
+      case response =>
+        if (response.status >= 200 && response.status < 300 || response.status == 304) {
+          Ok(response.json).as("application/json")
+        } else {
+          if (response.status == 404) {
+             
+            NotFound(toJson(Map("failure" -> {"Person with identifier " + pid + " not found"}))).as("application/json")
+
+          } else {
+            InternalServerError(toJson(Map("failure" -> {"Status: " + response.status.toString() + " returned from SEAD /api/people/<id> service"}))).as("application/json")
+          }
+        }
+    }
+    result
+  }
+
 }
