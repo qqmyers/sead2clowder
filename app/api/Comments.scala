@@ -16,7 +16,7 @@ import com.wordnik.swagger.annotations.ApiOperation
  * Comments on datasets.
  *
  */
-class Comments @Inject()(datasets: DatasetService, comments: CommentService, events: EventService) extends ApiController {
+class Comments @Inject()(datasets: DatasetService, comments: CommentService, events: EventService, users: UserService) extends ApiController {
 
   def comment(id: UUID) = PermissionAction(Permission.AddComment, Some(ResourceRef(ResourceRef.comment, id)))(parse.json) { implicit request =>
       Logger.trace("Adding comment")
@@ -191,5 +191,14 @@ class Comments @Inject()(datasets: DatasetService, comments: CommentService, eve
 	  }
   }
   //End, remove comment code
-  
+
+	/**
+		* This will create an event in the specified user's feed indicating they were mentioned in a comment
+		* on the specified resource.
+    */
+	def mentionInComment(userid: UUID, resourceID: UUID, resourceName: String, resourceType: String) =
+		PermissionAction(Permission.AddComment, Some(ResourceRef(Symbol(resourceType), resourceID))) {
+			events.addObjectEvent(users.get(userid), resourceID, resourceName, "mention_"+resourceType+"_comment")
+		  Ok("mention event added to user feed")
+	}
 }

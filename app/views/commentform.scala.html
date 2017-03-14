@@ -116,7 +116,22 @@ function postComment(id, resourceType) {
         $('#commentField_' + id).mentionsInput('getMentions', function(data) {
             // Send email to any users tagged in this comment, and subscribe them to this resource
             data.forEach(function(mentioned){
-                var emailtext = '@user.get.fullName mentioned you in a comment: @routes.Datasets.dataset(UUID(id)).absoluteURL()\n\n';
+                var emailtext = ""
+                @resourceType match {
+                    case "dataset" => {
+                        emailtext += '@user.get.fullName mentioned you in a comment: @routes.Datasets.dataset(UUID(id)).absoluteURL()\n\n';
+                        jsRoutes.api.Comments.mentionInComment(mentioned.id, id, "view comment", "dataset").ajax({type: 'POST'});
+                    }
+                    case "file" => {
+                        emailtext += '@user.get.fullName mentioned you in a comment: @routes.Files.file(UUID(id)).absoluteURL()\n\n';
+                        jsRoutes.api.Comments.mentionInComment(mentioned.id, id, "view comment", "file").ajax({type: 'POST'});
+                    }
+                    case _ => {
+                        emailtext += '@user.get.fullName mentioned you in a comment\n\n';
+                    }
+
+                }
+
                 emailtext += text
                 request = jsRoutes.controllers.Users.sendEmail("New Clowder comment", "@user.get.email.getOrElse("")", mentioned.email, emailtext).ajax({
                     type: 'POST'
