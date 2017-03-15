@@ -197,9 +197,18 @@ class Comments @Inject()(datasets: DatasetService, comments: CommentService, eve
 		* This will create an event in the specified user's feed indicating they were mentioned in a comment
 		* on the specified resource.
     */
-	def mentionInComment(userid: UUID, resourceID: UUID, resourceName: String, resourceType: String) =
+	def mentionInComment(userid: UUID, resourceID: UUID, resourceName: String, resourceType: String, commenterId: UUID) =
 		PermissionAction(Permission.AddComment, Some(ResourceRef(Symbol(resourceType), resourceID))) {
-			events.addObjectEvent(users.get(userid), resourceID, resourceName, "mention_"+resourceType+"_comment")
-		  Ok("mention event added to user feed")
+			users.get(commenterId) match {
+				case Some(u) => {
+					events.addRequestEvent(users.get(userid), u, resourceID, resourceName, "mention_"+resourceType+"_comment")
+					Ok("mention event added to user feed")
+				}
+				case None => {
+					events.addObjectEvent(users.get(userid), resourceID, resourceName, "mention_"+resourceType+"_comment")
+					Ok("mention event added to user feed")
+				}
+			}
+
 	}
 }

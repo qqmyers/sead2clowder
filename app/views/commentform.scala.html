@@ -1,4 +1,4 @@
-@(id: String, resourceType: String)(implicit user: Option[models.User], request: RequestHeader)
+@(id: String, resourceType: String, resourceName: String)(implicit user: Option[models.User], request: RequestHeader)
 <link href="@routes.Assets.at("javascripts/mention/jquery.mentionsInput.css")" rel='stylesheet' type='text/css'>
 
 <form class="form-inline">
@@ -116,15 +116,22 @@ function postComment(id, resourceType) {
         $('#commentField_' + id).mentionsInput('getMentions', function(data) {
             // Send email to any users tagged in this comment, and subscribe them to this resource
             data.forEach(function(mentioned){
-                var emailtext = ""
+                var emailtext = "";
+                var commenterId = @user match {
+                    case Some(u) => {
+                        "@u.id"
+                    } case None => {
+                        ""
+                    }
+                }
                 @resourceType match {
                     case "dataset" => {
                         emailtext += '@user.get.fullName mentioned you in a comment: @routes.Datasets.dataset(UUID(id)).absoluteURL()\n\n';
-                        jsRoutes.api.Comments.mentionInComment(mentioned.id, id, "view comment", "dataset").ajax({type: 'POST'});
+                        jsRoutes.api.Comments.mentionInComment(mentioned.id, id, "@resourceName", "dataset", commenterId).ajax({type: 'POST'});
                     }
                     case "file" => {
                         emailtext += '@user.get.fullName mentioned you in a comment: @routes.Files.file(UUID(id)).absoluteURL()\n\n';
-                        jsRoutes.api.Comments.mentionInComment(mentioned.id, id, "view comment", "file").ajax({type: 'POST'});
+                        jsRoutes.api.Comments.mentionInComment(mentioned.id, id, "@resourceName", "file", commenterId).ajax({type: 'POST'});
                     }
                     case _ => {
                         emailtext += '@user.get.fullName mentioned you in a comment\n\n';
