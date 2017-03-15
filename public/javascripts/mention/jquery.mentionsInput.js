@@ -425,7 +425,7 @@
             _.each(results, function (item, index) {
                 var itemUid = _.uniqueId('mention_'); //Gets the item with unique id
 
-                autocompleteItemCollection[itemUid] = _.extend({}, item, {value: item.name}); //Inserts the new item to autocompleteItemCollection
+                autocompleteItemCollection[itemUid] = _.extend({}, item, {value: item.value}); //Inserts the new item to autocompleteItemCollection
 
                 var elmListItem = $(settings.templates.autocompleteListItem({
                     'id'      : utils.htmlEncode(item.id),

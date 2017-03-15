@@ -12,7 +12,7 @@
   <script src="@routes.Assets.at("javascripts/mention/jquery.mentionsInput.js")" language="javascript"></script>
   <script language="javascript">
        var origText = "";
-       $("#commentField_@id").mentionsInput(getMentionsInputParams())
+       $("#commentField_@id").mentionsInput(getMentionsInputParams());
   
      function showEditComment(id) {
        var commentText = $("#comment-body_" + id).html().replace(/<br>/g, "\n");
@@ -203,7 +203,8 @@ function postComment(id, resourceType) {
                            apidata.forEach(function(userRecord){
                                data.push({
                                    id: userRecord.id,
-                                   name: userRecord.fullName,
+                                   name: userRecord.identityProvider,
+                                   value: userRecord.fullName,
                                    avatar: userRecord.avatar,
                                    email: userRecord.email,
                                    type: 'contact'
