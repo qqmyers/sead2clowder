@@ -14,7 +14,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   type-in support for adding a creator by name, email, or ID, and adjusts the layout/labeling of the owner(was creator) 
   field, and creator and descirption fields. [SEAD-1071](https://opensource.ncsa.illinois.edu/jira/browse/SEAD-1071), 
   [SEAD-610](https://opensource.ncsa.illinois.edu/jira/browse/SEAD-610) 
-
+- Can mention another user using '@' in a comment on a file or dataset, and that user will receive a notification email 
+  and a notice in their event feed. [SEAD-781](https://opensource.ncsa.illinois.edu/bitbucket/projects/CATS/repos/clowder/pull-requests/1117/overview)
 
 ### Changed
 - Updated the POST endpoint `/api/extractors` to accept a list of extractor repositories (git, docker, svn, etc) instead 
