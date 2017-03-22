@@ -12,6 +12,10 @@
         val formatter = new java.text.SimpleDateFormat("MMM d, yyyy")
         formatter.format(date)
     }
+    
+        @safe(key: String) = @{
+        key.replace("/","_").replace(".","_").replace(":","_")
+    }
 
     @printContent(agent: Agent, content: JsValue, contextId: Option[UUID], contextURL: Option[URL], resourceId: UUID) = {
         @content match {
@@ -218,8 +222,8 @@ There is probably more history than just the latest agent/date once editing is a
 		<div>
 		@for((key, value) <- rdfMetadata.entries) {
 		  <div class="panel panel-default">
-            <div class="panel-heading" role="tab" id="heading_@key">
-                <a data-toggle="collapse" href="#collapse_@key" class="collapse-icon">
+            <div class="panel-heading" role="tab" id="heading_@safe(key)">
+                <a data-toggle="collapse" href="#collapse_@safe(key)" class="collapse-icon">
                     <span class="panel-icon glyphicon glyphicon-minus"></span>
                 </a>
                 <span>
@@ -232,29 +236,50 @@ There is probably more history than just the latest agent/date once editing is a
 			</span>
 			</div>
 			
-						<div id="collapse_@key" class="panel-collapse collapse in" role="tabpanel" aria-labelledby="heading_@key">
+						<div id="collapse_@safe(key)" class="panel-collapse collapse in" role="tabpanel" aria-labelledby="heading_@safe(key)">
                 <div class="panel-body">
                     <div class="tree">
 			
 			@value match {
 				case a: JsArray => {
 					@for((valN, n) <- a.value.zipWithIndex) {
+						<div class="metadataentry">
 						@valN match {
 							case s: JsString => {
-					<div>@s.value</div>
+					<span>@s.value</span>
+				
+						@if(toDelete && Permission.checkPermission(Permission.DeleteMetadata, ResourceRef(ResourceRef.metadata, list.head.id))) {
+                <a id="@list.head.id" title="Delete this metadata" class="btn-link delete-icon hidden">
+                  <span class="panel-icon glyphicon glyphicon-trash"></span>
+                </a>
+                }
+                	@if(toDelete && Permission.checkPermission(Permission.EditMetadata, ResourceRef(ResourceRef.metadata, list.head.id))) {
+						   <a id="@list.head.id" title="Edit metadata" class="btn-link edit-icon hidden">
+					<span class="glyphicon glyphicon-edit"></span>
+					</a>
 					}
 					}
 					}
+					</div>
+					}
+				
 					}
 					
 				case s: JsString => {
+					<div class="metadataentry">
 					<span>@s.value</span>
-					}
-					}
-              @if(toDelete && Permission.checkPermission(Permission.DeleteMetadata, ResourceRef(ResourceRef.metadata, list.head.id))) {
-                <a id="@list.head.id" title="Delete this metadata" class="btn btn-link delete-icon">
-                  <span class="panel-icon glyphicon glyphicon-trash"></span>
+					@if(toDelete && Permission.checkPermission(Permission.DeleteMetadata, ResourceRef(ResourceRef.metadata, list.head.id))) {
+                <a id="@list.head.id" title="Delete this metadata" class="btn-link delete-icon">
+                  <span class="panel-icon glyphicon glyphicon-trash  hidden"></span>
                 </a>
+                	@if(toDelete && Permission.checkPermission(Permission.EditMetadata, ResourceRef(ResourceRef.metadata, list.head.id))) {
+						   <a id="@list.head.id" title="Edit metadata" class="btn-link edit-icon">
+					<span class="glyphicon glyphicon-edit  hidden"></span>
+					</a>
+					}
+                </div>
+                }
+					}
               }
 					
 			</div>
@@ -323,6 +348,7 @@ There is probably more history than just the latest agent/date once editing is a
         $(function () {
             $('[data-toggle="tooltip"]').tooltip();
 
+            @*Collapse/expand for metadata entries*@
             $('.collapse')
                 .on('shown.bs.collapse', function(){
                     $(this).parent().find(".panel-icon").removeClass("glyphicon-plus").addClass("glyphicon-minus");
@@ -331,6 +357,7 @@ There is probably more history than just the latest agent/date once editing is a
                     $(this).parent().find(".panel-icon").removeClass("glyphicon-minus").addClass("glyphicon-plus");
                 });
 
+            @*Collapse/expand for json/tree metadata values*@
             $('.tree li').on('click', function (e) {
                 var children = $(this).find('> ul > li');
                 if (children.is(":visible")) {
@@ -342,6 +369,24 @@ There is probably more history than just the latest agent/date once editing is a
                 }
                 e.stopPropagation();
             });
+            
+               if(@Permission.checkPermission(Permission.EditMetadata, ResourceRef(ResourceRef.metadata, metadata.head.id))) {
+                 $(document).on('mouseenter', '.metadataentry', function(ev) {
+                 
+                    $(this).find('.edit-icon').removeClass("hidden");
+                    $(this).find('.edit-icon').addClass("inline");
+                    $(this).find('.delete-icon').removeClass("hidden");
+                    $(this).find('.delete-icon').addClass("inline");
+                    
+                 }).on('mouseleave', '.metadataentry', function() {
+                    $(this).find('.edit-icon').removeClass("inline");
+                    $(this).find('.edit-icon').addClass("hidden");
+                    $(this).find('.delete-icon').removeClass("inline");
+                    $(this).find('.delete-icon').addClass("hidden");
+                    
+                 });
+                 }
+            
         })
 
         $(function () {

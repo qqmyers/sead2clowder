@@ -7067,8 +7067,19 @@ fieldset[disabled] .btn-default.active {
 
 #metadata-content .panel-body > .tree div {
 	padding: 5px 10px 5px 35px;
+	
 }
-
+#metadata-content .panel-body > .tree .metadataentry {
+	display:inline-block;
+	width:100%;
+}
+	
 #metadata-content .tree div:nth-child(even) {
 	background: #f5f5f5
+}
+
+.edit-icon , .delete-icon {
+
+	float:right;
+	padding: 0px 0px 0px 0px;
 }
