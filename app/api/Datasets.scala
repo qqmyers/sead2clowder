@@ -662,7 +662,7 @@ class  Datasets @Inject()(
             var model: RDFModel = null
             json.validate[RDFModel] match {
               case e: JsError => {
-                Logger.error("Errors: " + JsError.toFlatForm(e))
+                Logger.error("RDFModel Errors: " + JsError.toFlatForm(e))
                 BadRequest(JsError.toFlatJson(e))
               }
               case s: JsSuccess[RDFModel] => { 

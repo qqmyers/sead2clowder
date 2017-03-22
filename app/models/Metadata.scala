@@ -2,6 +2,7 @@ package models
 
 import java.net.URL
 import java.util.Date
+import java.nio.charset.StandardCharsets
 import play.api.Logger
 import play.api.libs.json._
 import play.api.data.validation.ValidationError
@@ -183,7 +184,8 @@ object RDFModel {
 
     def reads(json: JsValue) = {
       var model: Option[models.RDFModel] = None
-      var in: java.io.InputStream = new java.io.ByteArrayInputStream( Json.stringify(json).getBytes )
+      Logger.debug(Json.stringify(json));
+      var in: java.io.InputStream = new java.io.ByteArrayInputStream( Json.stringify(json).getBytes(StandardCharsets.UTF_8) )
       
       // Parse JSON-LD
       var m: Model = ModelFactory.createDefaultModel()
@@ -192,7 +194,9 @@ object RDFModel {
         m.read(in, "http://example/base", "JSON-LD")
         if(!m.isEmpty) model = Some(RDFModel(m))
       } catch {
-        case e: Exception => error = e.getLocalizedMessage
+        case e: Exception => { error = e.getLocalizedMessage
+          Logger.debug(e.printStackTrace().toString())
+        }
       }
       if(error != null) JsError(ValidationError(error))
       else
