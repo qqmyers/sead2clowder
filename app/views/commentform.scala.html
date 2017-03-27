@@ -12,7 +12,7 @@
   <script src="@routes.Assets.at("javascripts/mention/jquery.mentionsInput.js")" language="javascript"></script>
   <script language="javascript">
        var origText = "";
-       $("#commentField_@id").mentionsInput(getMentionsInputParams());
+       $("#commentField_@id").mentionsInput(getMentionsInputParams('@resourceType', '@id'));
   
      function showEditComment(id) {
        var commentText = $("#comment-body_" + id).html().replace(/<br>/g, "\n");
@@ -192,14 +192,26 @@ function postComment(id, resourceType) {
   return false;
 }
 
-       function getMentionsInputParams() {
+       function getMentionsInputParams(resourceType, resourceId) {
+           if (resourceType == "dataset") {
+               var geturl = jsRoutes.api.Datasets.users(resourceId).url
+           } else if (resourceType == "file") {
+               var geturl = jsRoutes.api.Files.users(resourceId).url
+           } else {
+               var geturl = jsRoutes.api.Users.list().url
+           }
+
+            console.log("!!")
+           console.log(geturl)
+
            return {
                onDataRequest:function (mode, query, callback) {
                    $.ajax({
                        type : 'GET',
-                       url: jsRoutes.api.Users.list().url,
+                       url: geturl,
                        success : function(apidata) {
                            var data= [];
+                           console.log(apidata)
                            apidata.forEach(function(userRecord){
                                data.push({
                                    id: userRecord.id,

@@ -373,6 +373,8 @@ POST           /api/files/:id/license                                           
 GET            /api/files/:id/extracted_metadata                                        @api.Files.extract(id:UUID)
 PUT            /api/files/:id/filename                                                  @api.Files.updateFileName(id: UUID)
 POST           /api/files/:id/reindex                                                   @api.Files.reindex(id:UUID)
+GET            /api/files/:id/users                                                     @api.Files.users(id: UUID)
+
 
 # ----------------------------------------------------------------------
 # EXTRACTORS ENDPOINTS
@@ -553,6 +555,7 @@ POST           /api/datasets/:id/detachdelete                                   
 POST           /api/datasets/:parentDatasetId/newFolder                                 @api.Folders.createFolder(parentDatasetId: UUID)
 PUT            /api/datasets/:id/access                                                 @api.Datasets.updateAccess(id:UUID, aceess:String ?="PRIVATE")
 POST           /api/datasets/:id/addFileEvent                                           @api.Datasets.addFileEvent(id:UUID, inFolder:Boolean, fileCount: Int )
+GET            /api/datasets/:id/users                                                  @api.Datasets.users(id:UUID)
 
 
 # ----------------------------------------------------------------------
