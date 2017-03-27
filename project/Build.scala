@@ -145,7 +145,7 @@ object ApplicationBuild extends Build {
     javacOptions ++= Seq("-source", jvm, "-target", jvm),
     initialize := {
       val current  = sys.props("java.specification.version")
-      assert(current >= jvm, s"Unsupported JDK: java.specification.version $current != $jvm")
+      assert(current >= "1.8", s"Unsupported JDK: java.specification.version $current != $jvm")
     },
     offline := true,
     lessEntryPoints <<= baseDirectory(customLessEntryPoints),

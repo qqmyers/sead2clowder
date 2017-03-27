@@ -4,7 +4,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/) 
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
-## Unreleased
+## [Unreleased]
+### Added
+### Changed
+### Fixed
+
+## 1.2.0
 
 ### Added
 - Docker container to add normal/admin users for Clowder. [BD-1167](https://opensource.ncsa.illinois.edu/jira/browse/BD-1167)
@@ -18,6 +23,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   and a notice in their event feed. [SEAD-781](https://opensource.ncsa.illinois.edu/bitbucket/projects/CATS/repos/clowder/pull-requests/1117/overview)
 
 ### Changed
+- Clowder now requires Java 8.
 - Updated the POST endpoint `/api/extractors` to accept a list of extractor repositories (git, docker, svn, etc) instead 
   of only one. [BD-1253](https://opensource.ncsa.illinois.edu/jira/browse/BD-1253)
 - Changed default labels in Staging Area plugin, e.g. "Curation Objects" to "Publication Requests" and make them configurable. 
@@ -25,6 +31,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Updated docker compose repositories from ncsa/* to clowder/*. [CATS-734](https://opensource.ncsa.illinois.edu/jira/browse/CATS-734])
 - Improved handling of special characters and long descriptions for datasets and Staging Area publication requests [SEAD-1143](https://opensource.ncsa.illinois.edu/jira/browse/SEAD-1143), [CAT-692](https://opensource.ncsa.illinois.edu/jira/browse/CATS-692)
 - Default for clowder.diskStorage.path changed from /tmp/clowder to /home/clowder/data [CATS-748](https://opensource.ncsa.illinois.edu/jira/browse/SEAD-1143)
+
+### Fixed
+- Fixed email newsfeed template for new events, so that instances with malfunctioning email digest subscriptions can correctly generate digest emails. [SEAD-1108](https://opensource.ncsa.illinois.edu/jira/browse/SEAD-1108)
+
 
 ## 1.1.0
 
