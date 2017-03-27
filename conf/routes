@@ -102,7 +102,8 @@ GET            /files/:file_id/extractions                                      
 # ----------------------------------------------------------------------
 # DATASETS
 # ----------------------------------------------------------------------
-GET            /datasets                                                                @controllers.Datasets.list(when: String ?= "", date: String ?= "", size: Int ?= 12, space: Option[String] ?= None, status: Option[String] ?= None, mode: String ?= "", owner: Option[String] ?= None, showPublic: Boolean ?= true, showOnlyShared : Boolean ?= false)
+GET            /datasets                                                                @controllers.Datasets.list(when: String ?= "", date: String ?= "", size: Int ?= 12, space: Option[String] ?= None, status: Option[String] ?= None, mode: String ?= "", owner: Option[String] ?= None, showPublic: Boolean ?= true)
+GET            /datasets/sorted                                                         @controllers.Datasets.sortedListInSpace(space: String,offset: Integer, limit:Integer, showPublic: Boolean ?= true)
 GET            /datasets/new                                                            @controllers.Datasets.newDataset(space: Option[String], collection: Option[String])
 GET            /datasets/createStep2                                                    @controllers.Datasets.createStep2(id: UUID)
 GET            /datasets/metadataSearch                                                 @controllers.Datasets.metadataSearch
@@ -128,7 +129,8 @@ GET            /datasets/:id/extractions                                        
 # ----------------------------------------------------------------------
 # COLLECTIONS
 # ----------------------------------------------------------------------
-GET            /collections                                                             @controllers.Collections.list(when: String ?= "", date: String ?= "", size: Int ?= 12, space: Option[String] ?= None, mode: String ?= "", owner: Option[String] ?= None, showPublic: Boolean ?= true, showOnlyShared : Boolean ?= false)
+GET            /collections                                                             @controllers.Collections.list(when: String ?= "", date: String ?= "", size: Int ?= 12, space: Option[String] ?= None, mode: String ?= "", owner: Option[String] ?= None, showPublic: Boolean ?= true)
+GET            /collections/sorted                                                      @controllers.Collections.sortedListInSpace(space: String,offset: Integer, limit:Integer,  showPublic: Boolean ?= true)
 GET            /collections/listChildCollections                                        @controllers.Collections.listChildCollections(parentCollectionId : String, when: String ?= "", date: String ?= "", size: Int ?= 12,  space: Option[String] ?= None, mode: String ?= "", owner: Option[String] ?= None)
 GET            /collections/new                                                         @controllers.Collections.newCollection(space: Option[String])
 GET            /collections/:id/newchildCollection                                      @controllers.Collections.newCollectionWithParent(id: UUID)
@@ -301,18 +303,17 @@ DELETE         /api/metadata.jsonld/:id                                         
 
 #GET            /api/metadata.jsonld                                                     @api.Metadata.getUserMetadata()
 
-GET            /api/metadata/search                                                     @api.Metadata.searchByKeyValue(mdkey: Option[String], mdvalue: Option[String], count: Int ?= 10)
-POST           /api/metadata/search                                                     @api.Metadata.search()
-
 GET            /api/metadata/definitions                                                @api.Metadata.getDefinitions()
 GET            /api/metadata/distinctdefinitions                                        @api.Metadata.getDefinitionsDistinctName()
+GET            /api/metadata/autocompletenames                                          @api.Metadata.getAutocompleteName(filter: String)
 GET            /api/metadata/definitions/:id                                            @api.Metadata.getDefinition(id: UUID)
 GET            /api/metadata/url/*in_url                                                @api.Metadata.getUrl(in_url: String)
 PUT            /api/metadata/definitions/:id                                            @api.Metadata.editDefinition(id:UUID, spaceId: Option[String] ?= None)
 POST           /api/metadata/definitions                                                @api.Metadata.addDefinition()
 DELETE         /admin/metadata/definitions/:id                                          @api.Metadata.deleteDefinition(id: UUID)
 
-
+GET            /api/metadata/people		                                        		@api.Metadata.listPeople(term: String, limit:Int)
+GET            /api/metadata/people/:pid 		                                        @api.Metadata.getPerson(pid: String)
 # ----------------------------------------------------------------------
 # LOGOS ENDPOINT
 # ----------------------------------------------------------------------
@@ -376,7 +377,7 @@ POST           /api/files/:id/reindex                                           
 # EXTRACTORS ENDPOINTS
 # ----------------------------------------------------------------------
 GET            /api/extractors                                                          @api.Extractions.listExtractors()
-GET            /api/extractors/:id                                                      @api.Extractions.getExtractorInfo(id: UUID)
+GET            /api/extractors/:name                                                    @api.Extractions.getExtractorInfo(name: String)
 POST           /api/extractors                                                          @api.Extractions.addExtractorInfo()
 
 POST           /api/files/:file_id/extractions                                          @api.Extractions.submitFileToExtractor(file_id: UUID)
@@ -537,6 +538,9 @@ POST           /api/datasets/:id/tags/remove_all                                
 DELETE         /api/datasets/:id/tags                                                   @api.Datasets.removeTags(id: UUID)
 PUT            /api/datasets/:id/title                                                  @api.Datasets.updateName(id:UUID)
 PUT            /api/datasets/:id/description                                            @api.Datasets.updateDescription(id: UUID)
+POST           /api/datasets/:id/creator	                                            @api.Datasets.addCreator(id: UUID)
+DELETE		   /api/datasets/:id/creator/remove											@api.Datasets.removeCreator(id: UUID, creator: String)
+PUT			   /api/datasets/:id/creator/reorder										@api.Datasets.moveCreator(id: UUID, creator: String, newPos: Int)
 POST           /api/datasets/:id/editing                                                @api.Datasets.updateInformation(id: UUID)
 POST           /api/datasets/:id/license                                                @api.Datasets.updateLicense(id: UUID)
 GET            /api/datasets/:id/isBeingProcessed                                       @api.Datasets.isBeingProcessed(id: UUID)
@@ -588,16 +592,18 @@ DELETE         /api/sections/:id                                                
 # ----------------------------------------------------------------------
 # SEARCH ENDPOINT
 # ----------------------------------------------------------------------
+GET            /api/search/json                                                         @api.Search.searchJson(query: String ?= "", grouping: String ?= "AND")
 GET            /api/search/multimediasearch                                             @api.Search.searchMultimediaIndex(section_id: UUID)
+GET            /api/search                                                              @api.Search.search(query: String ?= "")
 
 # ----------------------------------------------------------------------
 # GEOSTREAMS ENDPOINT
 # ----------------------------------------------------------------------
 POST           /api/geostreams/datapoints                                               api.Geostreams.addDatapoint(invalidateCache: Boolean ?= true)
 DELETE         /api/geostreams/datapoints/:id                                           api.Geostreams.deleteDatapoint(id: String)
-GET            /api/geostreams/datapoints                                               api.Geostreams.searchDatapoints(operator = "", since: Option[String] ?= None, until: Option[String] ?= None, geocode: Option[String] ?= None,  stream_id: Option[String] ?= None, sensor_id: Option[String] ?= None, sources: List[String] ?= List.empty, attributes: List[String] ?= List.empty, format: String ?= "json", semi: Option[String])
-GET            /api/geostreams/datapoints/averages                                      api.Geostreams.searchDatapoints(operator = "averages", since: Option[String] ?= None, until: Option[String] ?= None, geocode: Option[String] ?= None,  stream_id: Option[String] ?= None, sensor_id: Option[String] ?= None, sources: List[String] ?= List.empty, attributes: List[String] ?= List.empty, format: String ?= "json", semi: Option[String])
-GET            /api/geostreams/datapoints/trends                                        api.Geostreams.searchDatapoints(operator = "trends", since: Option[String] ?= None, until: Option[String] ?= None, geocode: Option[String] ?= None,  stream_id: Option[String] ?= None, sensor_id: Option[String] ?= None, sources: List[String] ?= List.empty, attributes: List[String] ?= List.empty, format: String ?= "json", semi: Option[String])
+GET            /api/geostreams/datapoints                                               api.Geostreams.searchDatapoints(operator = "", since: Option[String] ?= None, until: Option[String] ?= None, geocode: Option[String] ?= None,  stream_id: Option[String] ?= None, sensor_id: Option[String] ?= None, sources: List[String] ?= List.empty, attributes: List[String] ?= List.empty, format: String ?= "json", semi: Option[String], onlyCount: Boolean ?=false)
+GET            /api/geostreams/datapoints/averages                                      api.Geostreams.searchDatapoints(operator = "averages", since: Option[String] ?= None, until: Option[String] ?= None, geocode: Option[String] ?= None,  stream_id: Option[String] ?= None, sensor_id: Option[String] ?= None, sources: List[String] ?= List.empty, attributes: List[String] ?= List.empty, format: String ?= "json", semi: Option[String], onlyCount: Boolean ?=false)
+GET            /api/geostreams/datapoints/trends                                        api.Geostreams.searchDatapoints(operator = "trends", since: Option[String] ?= None, until: Option[String] ?= None, geocode: Option[String] ?= None,  stream_id: Option[String] ?= None, sensor_id: Option[String] ?= None, sources: List[String] ?= List.empty, attributes: List[String] ?= List.empty, format: String ?= "json", semi: Option[String], onlyCount: Boolean ?=false)
 GET            /api/geostreams/datapoints/bin/:time/:depth                              api.Geostreams.binDatapoints(time, depth: Double, raw: Boolean ?= false, since: Option[String] ?= None, until: Option[String] ?= None, geocode: Option[String] ?= None,  stream_id: Option[String] ?= None, sensor_id: Option[String] ?= None, sources: List[String] ?= List.empty, attributes: List[String] ?= List.empty)
 GET            /api/geostreams/datapoints/:id                                           api.Geostreams.getDatapoint(id: String)
 GET            /api/geostreams/cache                                                    api.Geostreams.cacheListAction
@@ -661,7 +667,6 @@ DELETE         /api/relations/:id                                               
 POST           /api/tiles                                                               @api.ZoomIt.uploadTile
 POST           /api/geometries                                                          @api.Geometry.uploadGeometry
 POST           /api/3dTextures                                                          @api.ThreeDTexture.uploadTexture
-GET            /api/search                                                              @api.Search.search(query: String ?= "")
 POST           /api/sparqlquery                                                         @api.Search.querySPARQL
 POST           /api/projects/addproject                                                 @api.Projects.addproject(project: String)
 POST           /api/institutions/addinstitution                                         @api.Institutions.addinstitution(institution: String)
@@ -675,7 +680,6 @@ GET            /api/users/:id                                                   
 GET            /api/me                                                                  @api.Users.getUser()
 POST           /api/users/:id/updateName                                                @api.Users.updateName(id: UUID, firstName: String, lastName: String)
 POST           /api/users/addUserDatasetView                                            @api.Users.addUserDatasetView(email: String, dataset: UUID)
-POST           /api/users/createNewListInUser                                           @api.Users.createNewListInUser(email: String, field: String, fieldList: List[String])
 POST           /api/users/createNewListInUser                                           @api.Users.createNewListInUser(email: String, field: String, fieldList: List[String])
 POST           /api/users/follow                                                        @api.Users.follow(followeeUUID: UUID)
 POST           /api/users/unfollow                                                      @api.Users.unfollow(followeeUUID: UUID)
@@ -700,7 +704,7 @@ GET            /rss                                                             
 GET            /rss/:etype                                                              @controllers.RSS.siteRSSOfType(limit: Option[Int], etype: String)
 
 # ----------------------------------------------------------------------
-# CURATIONS ENDPOINT
+# CURATIONS ENDPOINT (PUBLICATION REQUESTS)
 # ----------------------------------------------------------------------
 
 GET            /dataset/:id/curations/new                                               @controllers.CurationObjects.newCO(id:UUID, space:String ?= "")

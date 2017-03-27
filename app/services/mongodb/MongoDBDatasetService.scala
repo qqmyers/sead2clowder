@@ -2,27 +2,28 @@ package services.mongodb
 
 import java.io._
 import java.text.SimpleDateFormat
-import java.util.{ArrayList, Date}
-import javax.inject.{Inject, Singleton}
+import java.util.{ ArrayList, Date }
+import javax.inject.{ Inject, Singleton }
 
 import Transformation.LidoToCidocConvertion
-import util.{Parsers, Formatters}
+import util.{Parsers, Formatters, SearchUtils}
 import api.Permission
 import api.Permission.Permission
 import com.mongodb.casbah.Imports._
 import com.mongodb.casbah.WriteConcern
+import com.mongodb.casbah.commons.MongoDBList
 import com.mongodb.casbah.commons.MongoDBObject
 import com.mongodb.util.JSON
-import com.novus.salat.dao.{ModelCompanion, SalatDAO}
+import com.novus.salat.dao.{ ModelCompanion, SalatDAO }
 import jsonutils.JsonUtil
-import models.{File, _}
+import models.{ File, _ }
 import org.apache.commons.io.FileUtils
 import org.bson.types.ObjectId
 import org.json.JSONObject
 import play.api.Logger
 import play.api.Play._
 import play.api.libs.json.Json._
-import play.api.libs.json.{Json, JsValue, JsArray}
+import play.api.libs.json.{ Json, JsValue, JsArray }
 import services._
 import services.mongodb.MongoContext.context
 
@@ -170,14 +171,14 @@ class MongoDBDatasetService @Inject() (
   /**
    * Return a list of datasets the user has access to.
    */
-  def listAccess(limit: Integer, permissions: Set[Permission], user: Option[User], showAll: Boolean, showPublic: Boolean, showOnlyShared : Boolean): List[Dataset] = {
+  def listAccess(limit: Integer, permissions: Set[Permission], user: Option[User], showAll: Boolean, showPublic: Boolean): List[Dataset] = {
     list(None, false, limit, None, None, None, permissions, user, None, showAll, None, showPublic)
   }
 
   /**
    * Return a list of datasets the user has access to.
    */
-  def listAccess(limit: Integer, title: String, permissions: Set[Permission], user: Option[User], showAll: Boolean, showPublic: Boolean, showOnlyShared : Boolean): List[Dataset] = {
+  def listAccess(limit: Integer, title: String, permissions: Set[Permission], user: Option[User], showAll: Boolean, showPublic: Boolean): List[Dataset] = {
     list(None, false, limit, Some(title), None, None, permissions, user, None, showAll, None, showPublic)
   }
 
@@ -210,15 +211,15 @@ class MongoDBDatasetService @Inject() (
   }
 
   /**
-    * Return a list of datasets in a space the user has access to starting at a specific date.
-    */
+   * Return a list of datasets in a space the user has access to starting at a specific date.
+   */
   def listSpaceAccess(date: String, nextPage: Boolean, limit: Integer, permissions: Set[Permission], space: String, user: Option[User], showAll: Boolean, showPublic: Boolean): List[Dataset] = {
     list(Some(date), nextPage, limit, None, None, Some(space), permissions, user, None, showAll, None, showPublic)
   }
 
   /**
-    * Return a list of datasets in a space the user has access to starting at a specific date.
-    */
+   * Return a list of datasets in a space the user has access to starting at a specific date.
+   */
   def listSpaceAccess(date: String, nextPage: Boolean, limit: Integer, title: String, permissions: Set[Permission], space: String, user: Option[User], showAll: Boolean, showPublic: Boolean): List[Dataset] = {
     list(Some(date), nextPage, limit, Some(title), None, Some(space), permissions, user, None, showAll, None, showPublic)
   }
@@ -245,8 +246,8 @@ class MongoDBDatasetService @Inject() (
   }
 
   /**
-    * Return a list of datasets a user can View.
-    */
+   * Return a list of datasets a user can View.
+   */
   def listUser(user: User): List[Dataset] = {
     val orlist = scala.collection.mutable.ListBuffer.empty[MongoDBObject]
 
@@ -286,6 +287,7 @@ class MongoDBDatasetService @Inject() (
   /**
    * Monster function, does all the work. Will create a filters and sorts based on the given parameters
    */
+  private def filteredQuery(date: Option[String], nextPage: Boolean, titleSearch: Option[String], collection: Option[String], space: Option[String], permissions: Set[Permission], user: Option[User], status: Option[String], showAll: Boolean, owner: Option[User], showPublic: Boolean): (DBObject, DBObject) = {
   private def filteredQuery(date: Option[String], nextPage: Boolean, titleSearch: Option[String], collection: Option[String], space: Option[String], permissions: Set[Permission], user: Option[User], status:Option[String], showAll: Boolean, owner: Option[User], showPublic: Boolean, showOnlyShared : Boolean): (DBObject, DBObject) = {
     // filter =
     // - owner   == show datasets owned by owner that user can see
@@ -296,8 +298,8 @@ class MongoDBDatasetService @Inject() (
     val enablePublic = play.Play.application().configuration().getBoolean("enablePublic")
     //emptySpaces should not be used in most cases since your dataset maybe in a space, then you are changed to viewer or kicked off.
     val emptySpaces = MongoDBObject("spaces" -> List.empty)
-    val publicSpaces= spaces.listByStatus(SpaceStatus.PUBLIC.toString).map(s => new ObjectId(s.id.stringify))
-    val onlyShowShared = showOnlyShared
+    val publicSpaces = spaces.listByStatus(SpaceStatus.PUBLIC.toString).map(s => new ObjectId(s.id.stringify))
+
     // create access filter
     val filterAccess = if (showAll || configuration(play.api.Play.current).getString("permissions").getOrElse("public") == "public" && permissions.contains(Permission.ViewDataset)) {
       MongoDBObject()
@@ -308,7 +310,7 @@ class MongoDBDatasetService @Inject() (
           val orlist = scala.collection.mutable.ListBuffer.empty[MongoDBObject]
           if (permissions.contains(Permission.ViewDataset) && enablePublic && showPublic) {
             // if enablePublic == true, only list the dataset user can access, in a space page or /datasets
-            if(!u.superAdminMode) {
+            if (!u.superAdminMode) {
               orlist += MongoDBObject("status" -> DatasetStatus.PUBLIC.toString)
               orlist += MongoDBObject("status" -> DatasetStatus.DEFAULT.toString) ++ ("spaces" $in publicSpaces)
             } else {
@@ -353,7 +355,7 @@ class MongoDBDatasetService @Inject() (
         case None =>
           if (!permissions.intersect(Permission.READONLY).isEmpty && enablePublic && showPublic) {
             $or(MongoDBObject("status" -> DatasetStatus.PUBLIC.toString),
-            MongoDBObject("status" -> DatasetStatus.DEFAULT.toString) ++ ("spaces" $in publicSpaces  ))
+              MongoDBObject("status" -> DatasetStatus.DEFAULT.toString) ++ ("spaces" $in publicSpaces))
           } else {
             MongoDBObject("doesnotexist" -> true)
           }
@@ -392,7 +394,7 @@ class MongoDBDatasetService @Inject() (
       case None => MongoDBObject()
     }
     val filterTitle = titleSearch match {
-      case Some(title) =>  MongoDBObject("name" -> ("(?i)" + title).r)
+      case Some(title) => MongoDBObject("name" -> ("(?i)" + title).r)
       case None => MongoDBObject()
     }
 
@@ -414,7 +416,7 @@ class MongoDBDatasetService @Inject() (
     }
 
     val sort = if (date.isDefined && !nextPage) {
-      MongoDBObject("created"-> 1) ++ MongoDBObject("name" -> 1)
+      MongoDBObject("created" -> 1) ++ MongoDBObject("name" -> 1)
     } else {
       MongoDBObject("created" -> -1) ++ MongoDBObject("name" -> 1)
     }

@@ -13,7 +13,7 @@ import com.mongodb.casbah.commons.MongoDBObject
 import java.text.SimpleDateFormat
 import org.bson.types.ObjectId
 import play.api.Logger
-import util.Formatters
+import util.{Formatters, SearchUtils}
 import scala.collection.mutable.ListBuffer
 import scala.util.Try
 import services._
@@ -140,6 +140,10 @@ class MongoDBCollectionService @Inject() (
    */
   def listUser(date: String, nextPage: Boolean, limit: Integer, title: String, user: Option[User], showAll: Boolean, owner: User): List[Collection] = {
     list(Some(date), nextPage, limit, Some(title), None, Set[Permission](Permission.ViewCollection), user, showAll, Some(owner))
+  }
+  
+  def listSpaceAccess(limit: Integer, space: String, permissions: Set[Permission], user: Option[User], showAll: Boolean, showPublic: Boolean) = {
+    list(None, false, 0, None, Option(space), permissions, user, showAll, None, showPublic)
   }
 
   /**
@@ -848,20 +852,8 @@ class MongoDBCollectionService @Inject() (
   def index(id: UUID) {
     Collection.findOneById(new ObjectId(id.stringify)) match {
       case Some(collection) => {
-
-        var dsCollsId = ""
-        var dsCollsName = ""
-
-        for(dataset <- datasets.listCollection(id.stringify)){
-          dsCollsId = dsCollsId + dataset.id.stringify + " %%% "
-          dsCollsName = dsCollsName + dataset.name + " %%% "
-        }
-
-	    val formatter = new SimpleDateFormat("dd/MM/yyyy")
-
         current.plugin[ElasticsearchPlugin].foreach {
-          _.index("data", "collection", id,
-            List(("name", collection.name), ("description", collection.description), ("created",formatter.format(collection.created)), ("datasetId",dsCollsId),("datasetName",dsCollsName)))
+          _.index(collection, false)
         }
       }
       case None => Logger.error("Collection not found: " + id.stringify)
