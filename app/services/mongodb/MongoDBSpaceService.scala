@@ -59,7 +59,7 @@ class MongoDBSpaceService @Inject() (
    * Return a list of spaces the user has access to.
    */
   def listAccess(limit: Integer, permissions: Set[Permission], user: Option[User], showAll: Boolean, showPublic: Boolean,  onlyTrial: Boolean, showOnlyShared : Boolean): List[ProjectSpace] = {
-    list(None, nextPage=false, limit, None, permissions, user, showAll, None, showPublic, onlyTrial,showOnlyShared)
+    list(None, nextPage=false, limit, None, permissions, user, showAll, None, showPublic, onlyTrial, showOnlyShared)
   }
 
   /**
