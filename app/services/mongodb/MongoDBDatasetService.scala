@@ -295,7 +295,7 @@ class MongoDBDatasetService @Inject() (
     // - default == public only
     val public = MongoDBObject("public" -> true)
     val enablePublic = play.Play.application().configuration().getBoolean("enablePublic")
-    val showOnlyShared = play.Play.application().configuration().getBoolean("showOnlyShared")
+    val showOnlyShared = play.Play.application().configuration().getBoolean("showOnlySharedInExplore")
     //emptySpaces should not be used in most cases since your dataset maybe in a space, then you are changed to viewer or kicked off.
     val emptySpaces = MongoDBObject("spaces" -> List.empty)
     val publicSpaces = spaces.listByStatus(SpaceStatus.PUBLIC.toString).map(s => new ObjectId(s.id.stringify))
