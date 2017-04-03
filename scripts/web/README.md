@@ -1,10 +1,10 @@
-Web Based Interface and Helper Scripts for Clowder
+Web Based Interface and Helper Scripts for Medici
 =================================================
 
 info.php
 --------
 
-Retrieve clowder status info stored in local mongo instance. Prints returned info to screen.
+Retrieve Medici status info stored in local mongo instance. Prints returned info to screen.
 	
 Usage:
 
@@ -13,7 +13,7 @@ Usage:
 extract.php
 -----------
 
-Pass a file to the clowder extraction bus for metadata extraction.  Prints returned JSON to the screen.
+Pass a file to the Medici extraction bus for metadata extraction.  Prints returned JSON to the screen.
 	
 Usage:
 	

@@ -5,8 +5,7 @@ import play.api.Logger
 import play.filters.gzip.GzipFilter
 import play.libs.Akka
 import securesocial.core.SecureSocial
-import services.{AppConfiguration, AppConfigurationService, DI, UserService, DatasetService,
-                FileService, CollectionService, SpaceService}
+import services.{AppConfiguration, DI, UserService}
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -19,7 +18,6 @@ import play.api.mvc.Results._
 import akka.actor.Cancellable
 import filters.CORSFilter
 import julienrf.play.jsonp.Jsonp
-import play.api.libs.json.Json._
 
 /**
  * Configure application. Ensure mongo indexes if mongo plugin is enabled.
@@ -32,8 +30,6 @@ object Global extends WithFilters(new GzipFilter(), new Jsonp(), CORSFilter()) w
 
 
   override def onStart(app: Application) {
-    val appConfig: AppConfigurationService = DI.injector.getInstance(classOf[AppConfigurationService])
-
     ServerStartTime.startTime = Calendar.getInstance().getTime
     Logger.debug("\n----Server Start Time----" + ServerStartTime.startTime + "\n \n")
 
@@ -68,33 +64,6 @@ object Global extends WithFilters(new GzipFilter(), new Jsonp(), CORSFilter()) w
       }
     }
 
-    // Get database counts from appConfig; generate them if unavailable or user count = 0
-    appConfig.getProperty[Long]("countof.users") match {
-      case Some(usersCount) =>
-        Logger.debug("user counts found in appConfig; skipping database counting")
-      case None => {
-        // Write 0 to users count, so other instances can see this and not trigger additional counts
-        appConfig.incrementCount('users, 0)
-
-        Akka.system().scheduler.scheduleOnce(10 seconds) {
-          Logger.debug("initializing appConfig counts")
-          val datasets: DatasetService = DI.injector.getInstance(classOf[DatasetService])
-          val files: FileService = DI.injector.getInstance(classOf[FileService])
-          val collections: CollectionService = DI.injector.getInstance(classOf[CollectionService])
-          val spaces: SpaceService = DI.injector.getInstance(classOf[SpaceService])
-          val users: UserService = DI.injector.getInstance(classOf[UserService])
-
-          // Store the results in appConfig so they can be fetched quickly later
-          appConfig.incrementCount('datasets, datasets.count())
-          appConfig.incrementCount('files, files.count())
-          appConfig.incrementCount('bytes, files.bytes())
-          appConfig.incrementCount('collections, collections.count())
-          appConfig.incrementCount('spaces, spaces.count())
-          appConfig.incrementCount('users, users.count())
-        }
-      }
-    }
-
     Logger.info("Application has started")
   }
 
@@ -116,44 +85,28 @@ object Global extends WithFilters(new GzipFilter(), new Jsonp(), CORSFilter()) w
     val sw = new StringWriter()
     val pw = new PrintWriter(sw)
     ex.printStackTrace(pw)
-
-    if (request.path.contains("/api/")) {
-      Future(InternalServerError(toJson(Map("status" -> "error",
-        "request" -> request.toString(),
-        "exception" -> sw.toString.replace("\n", "\\n")))))
-    } else {
-      implicit val user = SecureSocial.currentUser(request) match{
-        case Some(identity) =>  users.findByIdentity(identity)
-        case None => None
-      }
-      Future(InternalServerError(views.html.errorPage(request, sw.toString)(user)))
+    implicit val user = SecureSocial.currentUser(request) match{
+      case Some(identity) =>  users.findByIdentity(identity)
+      case None => None
     }
+    Future(InternalServerError(
+      views.html.errorPage(request, sw.toString.replace("\n", "   "))(user)))
   }
 
   override def onHandlerNotFound(request: RequestHeader) = {
-    if (request.path.contains("/api/")) {
-      Future(InternalServerError(toJson(Map("status" -> "not found",
-        "request" -> request.toString()))))
-    } else {
-      implicit val user = SecureSocial.currentUser(request) match {
-        case Some(identity) => users.findByIdentity(identity)
-        case None => None
-      }
-      Future(NotFound(views.html.errorPage(request, "Not found")(user)))
+    implicit val user = SecureSocial.currentUser(request) match{
+      case Some(identity) =>  users.findByIdentity(identity)
+      case None => None
     }
+    Future(NotFound(
+      views.html.errorPage(request, "Not found")(user)))
   }
 
   override def onBadRequest(request: RequestHeader, error: String) = {
-    if (request.path.contains("/api/")) {
-      Future(InternalServerError(toJson(Map("status" -> "bad request",
-        "message" -> error,
-        "request" -> request.toString()))))
-    } else {
-      implicit val user = SecureSocial.currentUser(request) match {
-        case Some(identity) => users.findByIdentity(identity)
-        case None => None
-      }
-      Future(BadRequest(views.html.errorPage(request, error)(user)))
+    implicit val user = SecureSocial.currentUser(request) match{
+      case Some(identity) =>  users.findByIdentity(identity)
+      case None => None
     }
+    Future(BadRequest(views.html.errorPage(request, error)(user)))
   }
 }

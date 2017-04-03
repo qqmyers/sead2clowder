@@ -21,8 +21,7 @@
 
             <div class="col-md-12 col-lg-12 col-sm-12">
                 <h1 id="spacenamedisplay" class="space-title"><span class="glyphicon glyphicon-hdd"></span> @space.name</h1>
-                
-            <p><span id="spacedescdisplay" class='abstract'>@Html(space.description.replace("\n","<br>"))</span></p>
+            <p><span id="spacedescdisplay">@space.description</span></p>
             @if(user.isDefined) {
                 <hr/>
                 @if(Permission.checkPermission(Permission.DeleteSpace, ResourceRef(ResourceRef.space, space.id))){
@@ -51,18 +50,13 @@
                     @if(user.isDefined) {
                         <li role="presentation" class="active"><a href="#tab-all" role="tab" data-toggle="tab">All Data</a></li>
                         <li role="presentation"><a href="#tab-public" role="tab" data-toggle="tab">Public Data</a></li>
-                            <!-- Published Data tab and code is disabled, currently it shows Curation objects with Published status.
-                            The use of DOI and remote repositories is being discussed.
-                        if(play.api.Play.current.plugin[services.StagingAreaPlugin].isDefined) -->
-                        @if(false){
+                        @if(play.api.Play.current.plugin[services.StagingAreaPlugin].isDefined) {
                             <li role="presentation"><a href="#tab-publish" role="tab" data-toggle="tab">Published Data</a></li>
                         }
                     } else {
                         @if(play.api.Play.current.plugin[services.StagingAreaPlugin].isDefined) {
                             <li role="presentation" class="active"><a href="#tab-public" role="tab" data-toggle="tab">Public Data</a></li>
-                            <!-- Published Data tab and code is disabled, currently it shows Curation objects with Published status.
-                            The use of DOI and remote repositories is being discussed.
-                            <li role="presentation"><a href="#tab-publish" role="tab" data-toggle="tab">Published Data</a></li> -->
+                            <li role="presentation"><a href="#tab-publish" role="tab" data-toggle="tab">Published Data</a></li>
                         }
                     }
                 }
@@ -71,35 +65,36 @@
                 @if(user.isDefined){
                     <div role="tabpanel" class="tab-pane fade in active" id="tab-all">
                         @spaces.datasetsBySpace(datasets, space, None)
-                        @spaces.collectionsBySpace(collections, space, None)
+                        @spaces.collectionsBySpace(collections, space)
                     </div>
                     <div role="tabpanel" class="tab-pane fade" id="tab-public">
-                        <p>The @Messages("space.title") team has made the following @Messages("datasets.title").toLowerCase and @Messages("collections.title").toLowerCase publicly available.</p>
-                        @spaces.datasetsBySpace(publicDatasets, space, Some(true))
+                        <p>@Messages("space.title") owner has made the following @Messages("datasets.title").toLowerCase and @Messages("collections.title").toLowerCase publicly available.</p>
+                        @spaces.datasetsBySpace(publicDatasets, space, Option(true))
                             <!-- collections follow the space status, there is no public, provate flag on a collection -->
                         @if(space.isPublic) {
-                            @spaces.collectionsBySpace(collections, space, Some(true))
+                            @spaces.collectionsBySpace(collections, space)
                         } else {
-                            <h3>@Messages("collections.title")</h3>
+                            <h3>@Messages("a.in.b", Messages("collections.title"), Messages("space.title"))</h3>
                             <p>There are no public collections associated with this @Messages("space.title"). </p>
                         }
                     </div>
                 } else {
                     <div role="tabpanel" class="tab-pane fade in active" id="tab-public">
-                        <p>The @Messages("space.title") team has made the following @Messages("datasets.title").toLowerCase and @Messages("collections.title").toLowerCase publicly available.
-                            You must be a logged-in member of the @Messages("space.title") to access all the @Messages("datasets.title").toLowerCase and @Messages("collections.title").toLowerCase.
+                        <p>@Messages("space.title") owner has made the following @Messages("datasets.title").toLowerCase and @Messages("collections.title").toLowerCase publicly available.
+                            You must be logged in to access all the @Messages("datasets.title").toLowerCase and @Messages("collections.title").toLowerCase.
                         </p>
-                        @spaces.datasetsBySpace(publicDatasets, space, Some(true))
+                        @spaces.datasetsBySpace(publicDatasets, space, Option(true))
                         @if(space.isPublic) {
-                            @spaces.collectionsBySpace(collections, space, Some(true))
+                            @spaces.collectionsBySpace(collections, space)
                         } else {
-                            <h3>@Messages("collections.title")</h3>
+                            <h3>@Messages("a.in.b", Messages("collections.title"), Messages("space.title"))</h3>
                             <p>There are no public collections associated with this @Messages("space.title"). </p>
                         }
                     </div>
                 }
                 <div role="tabpanel" class="tab-pane fade" id="tab-publish">
-                    @spaces.curationObjectsBySpace(curationObjects, space, Some(true))
+                    <p>Data published from this @Messages("space.title").</p>
+                    @spaces.curationObjectsBySpace(curationObjects, space, Option(true))
                 </div>
             </div>
         </div>
@@ -118,8 +113,6 @@
             }
         </div>
     </div>
-    <script src="@routes.Assets.at("javascripts/descriptionSummary.js")" type="text/javascript"></script>
-    <script src="@routes.Assets.at("javascripts/htmlEncodeDecode.js")" type="text/javascript"></script>
     <script>
         function activateOne(id) {
             // initialize Masonry
@@ -137,7 +130,6 @@
         function activate(){
             activateOne("masonry-datasets");
             activateOne("masonry-collections");
-            doSummarizeAbstracts();
         }
 
         $(document).ready(function () {
@@ -156,5 +148,4 @@
     <script src="@routes.Assets.at("javascripts/deleteUtils.js")" type="text/javascript"></script>
     <script src="@routes.Assets.at("javascripts/spaceModify.js")" type="text/javascript"></script>
     <script src="@routes.Assets.at("javascripts/errorRedirect.js")" language="javascript"></script>
-
 }

@@ -2994,12 +2994,13 @@ select[multiple].input-lg {
   display: inline-block;
   margin-bottom: 0;
   font-weight: normal;
-  text-align: left;
+  text-align: center;
   vertical-align: middle;
   touch-action: manipulation;
   cursor: pointer;
   background-image: none;
   border: 1px solid transparent;
+  white-space: nowrap;
   padding: 6px 12px;
   font-size: 14px;
   line-height: 1.42857143;
@@ -7001,6 +7002,7 @@ fieldset[disabled] .btn-default.active {
 #search-file-title {
   background-color: #000;
   color: #fff;
+  padding-bottom: 5px;
 }
 
 .file-panel .glyphicon-file {
@@ -7032,24 +7034,3 @@ fieldset[disabled] .btn-default.active {
   text-decoration: underline;
   padding-bottom: 5px;
 }
-
-.ellipses {
-	color: #2e6ca2;
-}
-
-.js-sort-single {
-	min-width:100px;
-}
-
-.select2-results__option
-{
-	padding-bottom: 1px!important;
-	padding-top: 1px!important;
-}
-
-.select2-results__options
-{
-	padding-bottom: 3px!important;
-	padding-top: 3px!important;
-}
-

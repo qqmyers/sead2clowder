@@ -1,8 +1,6 @@
 package controllers
 
 import java.util.Date
-import java.net.URLDecoder
-
 import javax.inject.Inject
 import api.Permission._
 import api.{UserRequest, Permission}
@@ -27,7 +25,7 @@ import play.api.libs.json.Reads._
 
 
 /**
- * Methods for interacting with the Curation Objects (now referred to as Publication Requests) in the staging area.
+ * Methods for interacting with the curation objects in the staging area.
  */
 class CurationObjects @Inject()(
   curations: CurationService,
@@ -50,11 +48,11 @@ class CurationObjects @Inject()(
 
   def newCO(datasetId:UUID, spaceId: String) = PermissionAction(Permission.EditDataset, Some(ResourceRef(ResourceRef.dataset, datasetId))) { implicit request =>
     implicit val user = request.user
-    val (name, desc, creators, spaceByDataset) = datasets.get(datasetId) match {
-      case Some(dataset) => (dataset.name, dataset.description, dataset.creators, dataset.spaces
+    val (name, desc, spaceByDataset) = datasets.get(datasetId) match {
+      case Some(dataset) => (dataset.name, dataset.description, dataset.spaces
         .filter (spaceId => Permission.checkPermission(Permission.EditStagingArea, ResourceRef(ResourceRef.space, spaceId)))
         .map(id => spaces.get(id)).flatten)
-      case None => ("", "", List.empty, List.empty)
+      case None => ("", "", List.empty)
     }
     //default space is the space from which user access to the dataset
     val defaultspace = spaceId match {
@@ -68,12 +66,14 @@ class CurationObjects @Inject()(
       case _ => spaces.get(UUID(spaceId))
     }
 
+    val mdCreators = metadatas.searchbyKeyInDataset("Creator", datasetId).map(x => ((x.content)\"Creator").as[String])
+
     Ok(views.html.curations.newCuration(datasetId, name, desc, defaultspace, spaceByDataset, RequiredFieldsConfig.isNameRequired,
-      true, true, creators))
+      true, true, mdCreators))
   }
 
   /**
-    * List Publication Requests.
+    * List curation objects.
     */
   def list(when: String, date: String, limit: Int, space:Option[String]) = UserAction(needActive=false) { implicit request =>
       implicit val user = request.user
@@ -130,8 +130,8 @@ class CurationObjects @Inject()(
   }
 
   /**
-   * Controller flow to create a new publication request/curation object. On success,
-   * the browser is redirected to the new Publication Request page.
+   * Controller flow to create a new curation object. On success,
+   * the browser is redirected to the new Curation page.
    */
   def submit(datasetId:UUID, spaceId:UUID) = PermissionAction(Permission.EditStagingArea, Some(ResourceRef(ResourceRef.space, spaceId))) (parse.multipartFormData)  { implicit request =>
 
@@ -194,8 +194,8 @@ class CurationObjects @Inject()(
                 files = newFiles,
                 folders = List.empty,
                 repository = None,
-                status = "In Preparation",
-                creators = COCreators(0).split(",").toList.map(x => URLDecoder.decode(x, "UTF-8")))
+                status = "In Curation",
+                creators = COCreators(0).split(",").toList)
 
               // insert curation
               Logger.debug("create curation object: " + newCuration.id)
@@ -281,7 +281,7 @@ class CurationObjects @Inject()(
         folder.folders.map(f => copyFolders(f,newCurationFolder.id, "folder", parentCurationObjectId, requestHost))
       }
       case None => {
-        Logger.error("Folder Not found in Publication Request")
+        Logger.error("Curation Folder Not found")
 
       }
     }
@@ -299,7 +299,7 @@ class CurationObjects @Inject()(
           Ok(views.html.curations.newCuration(id, name, desc, defaultspace, spaceByDataset, RequiredFieldsConfig.isNameRequired,
             true, false, c.creators))
 
-        case None => BadRequest(views.html.notFound("Publication Request does not exist."))
+        case None => BadRequest(views.html.notFound("Curation Object does not exist."))
       }
   }
 
@@ -311,17 +311,17 @@ class CurationObjects @Inject()(
           val COName = request.body.asFormUrlEncoded.getOrElse("name", null)
           val CODesc = request.body.asFormUrlEncoded.getOrElse("description", null)
           val COCreators = request.body.asFormUrlEncoded.getOrElse("creators", List.empty)
-          curations.updateInformation(id, CODesc(0), COName(0), c.space, spaceId, COCreators(0).split(",").toList.map(x => URLDecoder.decode(x, "UTF-8")))
+          curations.updateInformation(id, CODesc(0), COName(0), c.space, spaceId, COCreators(0).split(",").toList)
           events.addObjectEvent(user, id, COName(0), "update_curation_information")
 
               Redirect(routes.CurationObjects.getCurationObject(id))
           }
-          case None => BadRequest(views.html.notFound("Publication Request does not exist."))
+          case None => BadRequest(views.html.notFound("Curation Object does not exist."))
       }
   }
 
   /**
-   * Delete publication request / curation object.
+   * Delete curation object.
    */
   def deleteCuration(id: UUID) = PermissionAction(Permission.EditStagingArea, Some(ResourceRef(ResourceRef.curationObject, id))) {
     implicit request =>
@@ -329,14 +329,14 @@ class CurationObjects @Inject()(
 
       curations.get(id) match {
         case Some(c) => {
-          Logger.debug("delete Publication Request / Curation object: " + c.id)
+          Logger.debug("delete Curation object: " + c.id)
           val spaceId = c.space
 
           curations.remove(id)
           //spaces.get(spaceId) is checked in Space.stagingArea
           Redirect(routes.Spaces.stagingArea(spaceId))
         }
-        case None => InternalServerError("Publication Request Not found")
+        case None => InternalServerError("Curation Object Not found")
       }
   }
 
@@ -344,29 +344,23 @@ class CurationObjects @Inject()(
     implicit val user = request.user
     curations.get(curationId) match {
       case Some(cOld) => {
-        spaces.get(cOld.space) match {
-          case Some(s) => {
-            // this update is not written into MongoDB, only for page view purpose
-            val c = datasets.get(cOld.datasets(0).id) match {
-              case Some(dataset) => cOld.copy(datasets = List(dataset))
-              // dataset is deleted
-              case None => cOld
-            }
-            // metadata of curation files are getting from getUpdatedFilesAndFolders
-            val m = metadatas.getMetadataByAttachTo(ResourceRef(ResourceRef.curationObject, c.id))
-            val isRDFExportEnabled = current.plugin[RDFExportService].isDefined
-            val fileByDataset = curations.getCurationFiles(curations.getAllCurationFileIds(c.id))
-            if (c.status != "In Preparation") {
-              Ok(views.html.spaces.submittedCurationObject(c, fileByDataset, m, limit, s.name ))
-            } else {
-              Ok(views.html.spaces.curationObject(c, m , isRDFExportEnabled, limit))
-            }
-          }
-          case None => BadRequest(views.html.notFound("Space does not exist."))
+        // this update is not written into MongoDB, only for page view purpose
+        val c = datasets.get(cOld.datasets(0).id) match {
+          case Some(dataset) => cOld.copy(datasets = List(dataset))
+          // dataset is deleted
+          case None => cOld
         }
-
+        // metadata of curation files are getting from getUpdatedFilesAndFolders
+        val m = metadatas.getMetadataByAttachTo(ResourceRef(ResourceRef.curationObject, c.id))
+        val isRDFExportEnabled = current.plugin[RDFExportService].isDefined
+        val fileByDataset = curations.getCurationFiles(curations.getAllCurationFileIds(c.id))
+        if (c.status != "In Curation") {
+          Ok(views.html.spaces.submittedCurationObject(c, fileByDataset, m, limit ))
+        } else {
+          Ok(views.html.spaces.curationObject(c, m , isRDFExportEnabled, limit))
+        }
       }
-      case None => BadRequest(views.html.notFound("Publication Request does not exist."))
+      case None => BadRequest(views.html.notFound("Curation Object does not exist."))
     }
   }
 
@@ -418,14 +412,14 @@ class CurationObjects @Inject()(
                 val next = cf.files.length + cf.folders.length > limit * (filepageUpdate+1)
                 Ok(views.html.curations.filesAndFolders(c, Some(cf.id.stringify), foldersList, folderHierarchy.reverse.toList, pageIndex, next, limitFileList.toList, mCurationFile))
               }
-              case None => BadRequest(views.html.notFound("Folder does not exist in Publication Request."))
+              case None => BadRequest(views.html.notFound("Curation Folder does not exist."))
             }
           }
 
         }
 
       }
-      case None => BadRequest(views.html.notFound("Publication Request does not exist."))
+      case None => BadRequest(views.html.notFound("Curation Object does not exist."))
     }
   }
 
@@ -458,7 +452,7 @@ class CurationObjects @Inject()(
               }
 
             }
-            case None => BadRequest(views.html.notFound("Publication Request does not exist."))
+            case None => BadRequest(views.html.notFound("Curation Object does not exist."))
           }
   }
 
@@ -531,7 +525,7 @@ class CurationObjects @Inject()(
       aggregation = aggregation ++ Map("Creator" -> Json.toJson(c.creators))
     }
     if(!metadataDefsMap.contains("Creator")){
-      metadataDefsMap("Creator") = Json.toJson(Map("@id" -> "http://purl.org/dc/terms/creator", "@container" -> "@list"))
+      metadataDefsMap("Creator") = Json.toJson("http://purl.org/dc/terms/creator")
     }
     if(metadataJson.contains("Abstract")) {
       val value = List(c.description) ++ metadataList.filter(_.label == "Abstract").map{item => item.content.as[String]}
@@ -667,7 +661,7 @@ class CurationObjects @Inject()(
               val repPreferences = usr.repositoryPreferences.map{ value => value._1 -> value._2.toString().split(",").toList}
               Ok(views.html.spaces.curationDetailReport( c, mmResp(0), repository, repPreferences))
             }
-            case None => InternalServerError("Publication Request not found")
+            case None => InternalServerError("Curation Object not found")
           }
         }
         case None => InternalServerError("User not found")
@@ -767,7 +761,7 @@ class CurationObjects @Inject()(
             aggregation = aggregation ++ Map("Creator" -> Json.toJson(c.creators))
           }
           if(!metadataDefsMap.contains("Creator")){
-            metadataDefsMap("Creator") = Json.toJson(Map("@id" -> "http://purl.org/dc/terms/creator", "@container" -> "@list"))
+            metadataDefsMap("Creator") = Json.toJson("http://purl.org/dc/terms/creator")
           }
 
           val rightsholder = user.map ( usr => usr.profile match {
@@ -882,7 +876,7 @@ class CurationObjects @Inject()(
             }
         }
       }
-      case None => Future(InternalServerError(toJson("Publication Request not found.")))
+      case None => Future(InternalServerError(toJson("Curation object not found.")))
     }
   }
 
@@ -940,7 +934,7 @@ class CurationObjects @Inject()(
                 "id" -> (js \ "Identifier").asOpt[String],
                 "title" -> (js \ "Title").asOpt[String],
                 "author" -> (js \ "Creator").asOpt[String],
-                "Abstract" -> (js \ "Abstract").asOpt[String],
+                "description" -> (js \ "Abstract").asOpt[String],
                 spaceTitle -> (js \ "Publishing Project Name").asOpt[String],
                 "Published Dataset" -> (js \ "DOI" ).asOpt[String],
                 "Publication Date" -> (js \ "Publication Date").asOpt[String])

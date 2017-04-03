@@ -23,9 +23,12 @@ import play.api.libs.json._
 import play.api.libs.json.Json._
 import play.api.mvc.AnyContent
 import services._
-import _root_.util.{FileUtils, JSONLD, License, SearchUtils}
+import _root_.util.{FileUtils, JSONLD, License}
+import _root_.util.{JSONLD, License}
+import views.html.dataset
 import scala.concurrent.{ExecutionContext, Future}
 import scala.collection.mutable.ListBuffer
+import org.apache.commons.io.input.CountingInputStream
 
 /**
  * Dataset API.
@@ -48,8 +51,7 @@ class  Datasets @Inject()(
   spaces: SpaceService,
   folders: FolderService,
   relations: RelationService,
-  userService: UserService,
-  appConfig: AppConfigurationService) extends ApiController {
+  userService: UserService) extends ApiController {
 
   @ApiOperation(value = "Get a specific dataset",
     notes = "This will return a sepcific dataset requested",
@@ -102,10 +104,10 @@ class  Datasets @Inject()(
                 if (d.spaces.isEmpty) {
                   title match {
                     case Some(t) => {
-                      datasetAll = datasets.listAccess(limit, t, permission, user, superAdmin, true)
+                      datasetAll = datasets.listAccess(limit, t, permission, user, superAdmin, true,false)
                     }
                     case None => {
-                      datasetAll = datasets.listAccess(limit, permission, user, superAdmin, true)
+                      datasetAll = datasets.listAccess(limit, permission, user, superAdmin, true,false)
                     }
                   }
                 } else {
@@ -131,10 +133,10 @@ class  Datasets @Inject()(
         if (x.spaces.isEmpty) {
           title match {
             case Some(t) => {
-              datasetAll = datasets.listAccess(limit, t, permission, user, superAdmin, true)
+              datasetAll = datasets.listAccess(limit, t, permission, user, superAdmin, true,false)
             }
             case None => {
-              datasetAll = datasets.listAccess(limit, permission, user, superAdmin, true)
+              datasetAll = datasets.listAccess(limit, permission, user, superAdmin, true,false)
             }
           }
         } else {
@@ -160,16 +162,16 @@ class  Datasets @Inject()(
   private def listDatasets(title: Option[String], date: Option[String], limit: Int, permission: Set[Permission], user: Option[User], superAdmin: Boolean) : List[Dataset] = {
     (title, date) match {
       case (Some(t), Some(d)) => {
-        datasets.listAccess(d, true, limit, t, permission, user, superAdmin, true)
+        datasets.listAccess(d, true, limit, t, permission, user, superAdmin, true,false)
       }
       case (Some(t), None) => {
-        datasets.listAccess(limit, t, permission, user, superAdmin, true)
+        datasets.listAccess(limit, t, permission, user, superAdmin, true,false)
       }
       case (None, Some(d)) => {
-        datasets.listAccess(d, true, limit, permission, user, superAdmin, true)
+        datasets.listAccess(d, true, limit, permission, user, superAdmin, true,false)
       }
       case (None, None) => {
-        datasets.listAccess(limit, permission, user, superAdmin, true)
+        datasets.listAccess(limit, permission, user, superAdmin, true,false)
       }
     }
   }
@@ -180,12 +182,12 @@ class  Datasets @Inject()(
   def listOutsideCollection(collectionId: UUID) = PrivateServerAction { implicit request =>
     collections.get(collectionId) match {
       case Some(collection) => {
-        val list = for (dataset <- datasets.listAccess(0, Set[Permission](Permission.ViewDataset), request.user, request.user.fold(false)(_.superAdminMode), false); if (!datasets.isInCollection(dataset, collection)))
+        val list = for (dataset <- datasets.listAccess(0, Set[Permission](Permission.ViewDataset), request.user, request.user.fold(false)(_.superAdminMode), false,false); if (!datasets.isInCollection(dataset, collection)))
           yield dataset
         Ok(toJson(list))
       }
       case None => {
-        val list = datasets.listAccess(0, Set[Permission](Permission.ViewDataset), request.user, request.user.fold(false)(_.superAdminMode), false)
+        val list = datasets.listAccess(0, Set[Permission](Permission.ViewDataset), request.user, request.user.fold(false)(_.superAdminMode), false,false)
         Ok(toJson(list))
       }
     }
@@ -217,11 +219,8 @@ class  Datasets @Inject()(
         }
         case None => InternalServerError("User Not found")
       }
-      appConfig.incrementCount('datasets, 1)
-
       //event will be added whether creation is success.
       events.addObjectEvent(request.user, d.id, d.name, "create_dataset")
-      datasets.index(d.id)
 
       (request.body \ "file_id").asOpt[String] match {
         case Some(file_id) => {
@@ -239,19 +238,18 @@ class  Datasets @Inject()(
                     val xmlToJSON = files.getXMLMetadataJSON(UUID(file_id))
                     datasets.addXMLMetadata(UUID(id), UUID(file_id), xmlToJSON)
                     current.plugin[ElasticsearchPlugin].foreach {
-                      _.index(SearchUtils.getElasticsearchObject(d))
+                      _.index("data", "dataset", UUID(id),
+                        List(("name", d.name), ("description", d.description), ("xmlmetadata", xmlToJSON)))
                     }
                   } else {
                     current.plugin[ElasticsearchPlugin].foreach {
-                      _.index(SearchUtils.getElasticsearchObject(d))
+                      _.index("data", "dataset", UUID(id), List(("name", d.name), ("description", d.description)))
                     }
                   }
 
                   current.plugin[AdminsNotifierPlugin].foreach {
                     _.sendAdminsNotification(Utils.baseUrl(request), "Dataset", "added", id, name)
                   }
-
-
                   Ok(toJson(Map("id" -> id)))
                 }
                 case None => Ok(toJson(Map("status" -> "error")))
@@ -319,14 +317,10 @@ class  Datasets @Inject()(
           case Some(id) => {
             //In this case, the dataset has been created and inserted. Now notify the space service and check
             //for the presence of existing files.
-            appConfig.incrementCount('datasets, 1)
-
-            datasets.index(d.id)
             Logger.debug("About to call addDataset on spaces service")
             d.spaces.map( spaceId => spaces.get(spaceId)).flatten.map{ s =>
               spaces.addDataset(d.id, s.id)
               events.addSourceEvent(request.user, d.id, d.name, s.id, s.name, "add_dataset_space")
-
             }
             //Add this dataset to a collection if needed
             (request.body \ "collection").asOpt[List[String]] match {
@@ -671,65 +665,53 @@ class  Datasets @Inject()(
         datasets.get(id) match {
           case Some(x) => {
             val json = request.body
-            // parse request for JSON-LD model
-            var model: RDFModel = null
-            json.validate[RDFModel] match {
-              case e: JsError => {
-                Logger.error("Errors: " + JsError.toFlatForm(e))
-                BadRequest(JsError.toFlatJson(e))
-              }
-              case s: JsSuccess[RDFModel] => { 
-                model = s.get 
-                
-                //parse request for agent/creator info
-                //creator can be UserAgent or ExtractorAgent
-                var creator: models.Agent = null
-                json.validate[Agent] match {
-                  case s: JsSuccess[Agent] => {
-                    creator = s.get
-    
-                    // check if the context is a URL to external endpoint
-                    val contextURL: Option[URL] = (json \ "@context").asOpt[String].map(new URL(_))
-    
-                    // check if context is a JSON-LD document
-                    val contextID: Option[UUID] = (json \ "@context").asOpt[JsObject]
-                      .map(contextService.addContext(new JsString("context name"), _))
-    
-                    // when the new metadata is added
-                    val createdAt = new Date()
-    
-                    //parse the rest of the request to create a new models.Metadata object
-                    val attachedTo = ResourceRef(ResourceRef.dataset, id)
-                    val content = (json \ "content")
-                    val version = None
-                    val metadata = models.Metadata(UUID.generate, attachedTo, contextID, contextURL, createdAt, creator,
-                      content, version)
-    
-                    //add metadata to mongo
-                    metadataService.addMetadata(metadata)
-                    val mdMap = metadata.getExtractionSummary
-    
-                    //send RabbitMQ message
-                    current.plugin[RabbitmqPlugin].foreach { p =>
-                      val dtkey = s"${p.exchange}.metadata.added"
-                      p.extract(ExtractorMessage(UUID(""), UUID(""), controllers.Utils.baseUrl(request), dtkey, mdMap, "", metadata.attachedTo.id, ""))
-                    }
+            //parse request for agent/creator info
+            //creator can be UserAgent or ExtractorAgent
+            var creator: models.Agent = null
+            json.validate[Agent] match {
+              case s: JsSuccess[Agent] => {
+                creator = s.get
 
-                    datasets.index(id)
-                    Ok(toJson("Metadata successfully added to db"))
-    
-                  }
-                  case e: JsError => {
-                    Logger.error("Error getting creator");
-                    BadRequest(toJson(s"Creator data is missing or incorrect."))
-                  }
+                // check if the context is a URL to external endpoint
+                val contextURL: Option[URL] = (json \ "@context").asOpt[String].map(new URL(_))
+
+                // check if context is a JSON-LD document
+                val contextID: Option[UUID] = (json \ "@context").asOpt[JsObject]
+                  .map(contextService.addContext(new JsString("context name"), _))
+
+                // when the new metadata is added
+                val createdAt = new Date()
+
+                //parse the rest of the request to create a new models.Metadata object
+                val attachedTo = ResourceRef(ResourceRef.dataset, id)
+                val content = (json \ "content")
+                val version = None
+                val metadata = models.Metadata(UUID.generate, attachedTo, contextID, contextURL, createdAt, creator,
+                  content, version)
+
+                //add metadata to mongo
+                metadataService.addMetadata(metadata)
+                val mdMap = metadata.getExtractionSummary
+
+                //send RabbitMQ message
+                current.plugin[RabbitmqPlugin].foreach { p =>
+                  val dtkey = s"${p.exchange}.metadata.added"
+                  p.extract(ExtractorMessage(UUID(""), UUID(""), controllers.Utils.baseUrl(request), dtkey, mdMap, "", metadata.attachedTo.id, ""))
                 }
-              }
+
+                datasets.index(id)
+                Ok(toJson("Metadata successfully added to db"))
+            }
+            case e: JsError => {
+              Logger.error("Error getting creator");
+              BadRequest(toJson(s"Creator data is missing or incorrect."))
             }
           }
-          case None => Logger.error(s"Error getting dataset $id"); NotFound
+
         }
+        case None => Logger.error(s"Error getting dataset $id"); NotFound
       }
+    }
 
 
   @ApiOperation(value="Retrieve available metadata definitions for a dataset. It is an aggregation of the metadata that a space belongs to.",
@@ -1056,7 +1038,6 @@ class  Datasets @Inject()(
           events.addObjectEvent(user, id, dataset.name, "update_dataset_information")
         }
       }
-      datasets.index(id)
       Ok(Json.obj("status" -> "success"))
     }
     else {
@@ -1093,10 +1074,6 @@ class  Datasets @Inject()(
       datasets.get(id) match {
         case Some(dataset) => {
           events.addObjectEvent(user, id, dataset.name, "update_dataset_information")
-          datasets.index(id)
-          // file in this dataset need to be indexed as well since dataset name will show in file list
-          dataset.files.map(files.index(_))
-          folders.findByParentDatasetId(id).map(_.files).flatten.map(files.index(_))
         }
       }
       Ok(Json.obj("status" -> "success"))
@@ -1137,7 +1114,6 @@ class  Datasets @Inject()(
           events.addObjectEvent(user, id, dataset.name, "update_dataset_information")
         }
       }
-      datasets.index(id)
       Ok(Json.obj("status" -> "success"))
     }
     else {
@@ -1147,98 +1123,6 @@ class  Datasets @Inject()(
   }
   //End, Update Dataset Information code
 
-    @ApiOperation(value = "Add a creator to the Dataset's list of Creators.",
-    notes = "Takes one argument, a UUID of the dataset. Request body takes key-value pair for creator.",
-    responseClass = "None", httpMethod = "POST")
-  def addCreator(id: UUID) = PermissionAction(Permission.EditDataset, Some(ResourceRef(ResourceRef.dataset, id)))(parse.json) { implicit request =>
-    implicit val user = request.user
-    if (UUID.isValid(id.stringify)) {
-
-      //Set up the vars we are looking for
-      var creator: String = null
-
-      val aResult: JsResult[String] = (request.body \ "creator").validate[String]
-
-      // Pattern matching
-      aResult match {
-        case s: JsSuccess[String] => {
-          creator = s.get
-        }
-        case e: JsError => {
-          Logger.error("Errors: " + JsError.toFlatJson(e).toString())
-          BadRequest(toJson(s"creator data is missing."))
-        }
-      }
-      Logger.debug(s"updateInformation for dataset with id  $id. New creator is:  $creator ")
-
-      datasets.addCreator(id, creator)
-      datasets.get(id) match {
-        case Some(dataset) => {
-          events.addObjectEvent(user, id, dataset.name, "update_dataset_information")
-        }
-      }
-      datasets.index(id)
-      Ok(Json.obj("status" -> "success"))
-    }
-    else {
-      Logger.error(s"The given id $id is not a valid ObjectId.")
-      BadRequest(toJson(s"The given id $id is not a valid ObjectId."))
-    }
-  }
-  //End, Update Dataset Information code  
-    
-    @ApiOperation(value = "Remove a creator from the Dataset's list of Creators.",
-    
-    notes = "Takes the UUID of the dataset and the entry to delete (a String).",
-    responseClass = "None", httpMethod = "DELETE")
-  def removeCreator(id: UUID, creator: String) = PermissionAction(Permission.EditDataset, Some(ResourceRef(ResourceRef.dataset, id))) { implicit request =>
-    implicit val user = request.user
-    if (UUID.isValid(id.stringify)) {
-
-      Logger.debug(s"Remove Creator for dataset with id  $id. :  $creator ")
-
-      datasets.removeCreator(id, creator)
-      datasets.get(id) match {
-        case Some(dataset) => {
-          events.addObjectEvent(user, id, dataset.name, "update_dataset_information")
-        }
-      }
-      datasets.index(id)
-      Ok(Json.obj("status" -> "success"))
-    }
-    else {
-      Logger.error(s"The given id $id is not a valid ObjectId.")
-      BadRequest(toJson(s"The given id $id is not a valid ObjectId."))
-    }
-  }
-  //End, removeCreator  
-    
-    @ApiOperation(value = "Move a creator in a Dataset's list of creators.",
-  
-    notes = "Takes the UUID of the dataset, the creator to move (a String) and the new position of the creator in the overall list of creators.",
-    responseClass = "None", httpMethod = "PUT")
-  def moveCreator(id: UUID, creator: String, newPos: Int) = PermissionAction(Permission.EditDataset, Some(ResourceRef(ResourceRef.dataset, id))) { implicit request =>
-    implicit val user = request.user
-    if (UUID.isValid(id.stringify)) {
-      
-      Logger.debug(s"Move Creator for dataset with id  $id. :  $creator  to $newPos")
-      datasets.moveCreator(id, creator, newPos)
-      datasets.get(id) match {
-        case Some(dataset) => {
-          events.addObjectEvent(user, id, dataset.name, "update_dataset_information")
-        }
-      }
-      datasets.index(id)
-      Ok(Json.obj("status" -> "success"))
-    }
-    else {
-      Logger.error(s"The given id $id is not a valid ObjectId.")
-      BadRequest(toJson(s"The given id $id is not a valid ObjectId."))
-    }
-  }
-  //End, move Creator
-  
-  
   //Update License code
   /**
     * REST endpoint: POST: update the license data associated with a specific Dataset
@@ -1859,7 +1743,6 @@ class  Datasets @Inject()(
         }
         events.addObjectEvent(request.user, dataset.id, dataset.name, "delete_dataset")
         datasets.removeDataset(id)
-        appConfig.incrementCount('datasets, -1)
 
         current.plugin[ElasticsearchPlugin].foreach {
           _.delete("data", "dataset", id.stringify)
@@ -1892,7 +1775,7 @@ class  Datasets @Inject()(
           case Some(resultFile) =>{
             Ok.chunked(Enumerator.fromStream(new FileInputStream(resultFile)))
               .withHeaders(CONTENT_TYPE -> "application/rdf+xml")
-              .withHeaders(CONTENT_DISPOSITION -> (FileUtils.encodeAttachment(resultFile.getName(),request.headers.get("user-agent").getOrElse(""))))
+              .withHeaders(CONTENT_DISPOSITION -> ("attachment; filename=" + resultFile.getName()))
           }
           case None => BadRequest(toJson("Dataset not found " + id))
         }
@@ -2460,8 +2343,8 @@ class  Datasets @Inject()(
             // Use custom enumerator to create the zip file on the fly
             // Use a 1MB in memory byte array
             Ok.chunked(enumeratorFromDataset(dataset,1024*1024, compression,bagit,user)).withHeaders(
-              CONTENT_TYPE -> "application/zip",
-              CONTENT_DISPOSITION -> (FileUtils.encodeAttachment(dataset.name+ ".zip", request.headers.get("user-agent").getOrElse("")))
+              "Content-Type" -> "application/zip",
+              "Content-Disposition" -> ("attachment; filename=\"" + dataset.name+ ".zip\"")
             )
           }
           // If the dataset wasn't found by ID

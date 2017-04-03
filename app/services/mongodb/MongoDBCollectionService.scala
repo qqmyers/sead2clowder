@@ -13,7 +13,7 @@ import com.mongodb.casbah.commons.MongoDBObject
 import java.text.SimpleDateFormat
 import org.bson.types.ObjectId
 import play.api.Logger
-import util.{Formatters, SearchUtils}
+import util.Formatters
 import scala.collection.mutable.ListBuffer
 import scala.util.Try
 import services._
@@ -61,7 +61,7 @@ class MongoDBCollectionService @Inject() (
     * Return a list of collections in a space and checks for permissions
     */
   def listInSpaceList(title: Option[String], date: Option[String], limit: Integer, spaces: List[UUID], permissions: Set[Permission], user: Option[User]): List[Collection] = {
-    val (filter, sort) = filteredQuery(date, false, title, None, permissions, user, true, None, true)
+    val (filter, sort) = filteredQuery(date, false, title, None, permissions, user, true, None, true,false)
     Collection.find(filter ++  ("spaces" $in spaces.map(x => new ObjectId(x.stringify)))).limit(limit).toList
   }
 
@@ -82,29 +82,29 @@ class MongoDBCollectionService @Inject() (
   /**
    * Return a list of collections the user has access to.
    */
-  def listAccess(limit: Integer, permissions: Set[Permission], user: Option[User], showAll: Boolean, showPublic: Boolean): List[Collection] = {
-    list(None, false, limit, None, None, permissions, user, showAll, None, showPublic)
+  def listAccess(limit: Integer, permissions: Set[Permission], user: Option[User], showAll: Boolean, showPublic: Boolean, showOnlyShared : Boolean): List[Collection] = {
+    list(None, false, limit, None, None, permissions, user, showAll, None, showPublic,showOnlyShared)
   }
 
   /**
    * Return a list of collections the user has access to.
    */
-  def listAccess(limit: Integer, title: String, permissions: Set[Permission], user: Option[User], showAll: Boolean, showPublic: Boolean): List[Collection] = {
-    list(None, false, limit, Some(title), None, permissions, user, showAll, None, showPublic)
+  def listAccess(limit: Integer, title: String, permissions: Set[Permission], user: Option[User], showAll: Boolean, showPublic: Boolean, showOnlyShared : Boolean): List[Collection] = {
+    list(None, false, limit, Some(title), None, permissions, user, showAll, None, showPublic,showOnlyShared)
   }
 
   /**
    * Return a list of collections the user has access to starting at a specific date.
    */
-  def listAccess(date: String, nextPage: Boolean, limit: Integer, permissions: Set[Permission], user: Option[User], showAll: Boolean, showPublic: Boolean): List[Collection] = {
-    list(Some(date), nextPage, limit, None, None, permissions, user, showAll, None, showPublic)
+  def listAccess(date: String, nextPage: Boolean, limit: Integer, permissions: Set[Permission], user: Option[User], showAll: Boolean, showPublic: Boolean, showOnlyShared : Boolean): List[Collection] = {
+    list(Some(date), nextPage, limit, None, None, permissions, user, showAll, None, showPublic,showOnlyShared)
   }
 
   /**
    * Return a list of collections the user has access to starting at a specific date.
    */
-  def listAccess(date: String, nextPage: Boolean, limit: Integer, title: String, permissions: Set[Permission], user: Option[User], showAll: Boolean, showPublic: Boolean): List[Collection] = {
-    list(Some(date), nextPage, limit, Some(title), None, permissions, user, showAll, None, showPublic)
+  def listAccess(date: String, nextPage: Boolean, limit: Integer, title: String, permissions: Set[Permission], user: Option[User], showAll: Boolean, showPublic: Boolean, showOnlyShared : Boolean): List[Collection] = {
+    list(Some(date), nextPage, limit, Some(title), None, permissions, user, showAll, None, showPublic,showOnlyShared)
   }
 
   /**
@@ -141,24 +141,20 @@ class MongoDBCollectionService @Inject() (
   def listUser(date: String, nextPage: Boolean, limit: Integer, title: String, user: Option[User], showAll: Boolean, owner: User): List[Collection] = {
     list(Some(date), nextPage, limit, Some(title), None, Set[Permission](Permission.ViewCollection), user, showAll, Some(owner))
   }
-  
-  def listSpaceAccess(limit: Integer, space: String, permissions: Set[Permission], user: Option[User], showAll: Boolean, showPublic: Boolean) = {
-    list(None, false, 0, None, Option(space), permissions, user, showAll, None, showPublic)
-  }
 
   /**
    * Return count of the requested collections
    */
   private def count(date: Option[String], nextPage: Boolean, title: Option[String], space: Option[String], permissions: Set[Permission], user: Option[User], showAll: Boolean, owner: Option[User]): Long = {
-    val (filter, _) = filteredQuery(date, nextPage, title, space, Set[Permission](Permission.ViewCollection), user, showAll, owner, true)
+    val (filter, _) = filteredQuery(date, nextPage, title, space, Set[Permission](Permission.ViewCollection), user, showAll, owner, true,false)
     Collection.count(filter)
   }
 
   /**
    * Return a list of the requested collections
    */
-  private def list(date: Option[String], nextPage: Boolean, limit: Integer, title: Option[String], space: Option[String], permissions: Set[Permission], user: Option[User], showAll: Boolean, owner: Option[User], showPublic: Boolean = true) : List[Collection] = {
-    val (filter, sort) = filteredQuery(date, nextPage, title, space, permissions, user, showAll, owner, showPublic)
+  private def list(date: Option[String], nextPage: Boolean, limit: Integer, title: Option[String], space: Option[String], permissions: Set[Permission], user: Option[User], showAll: Boolean, owner: Option[User], showPublic: Boolean = true, showOnlyShared : Boolean = false): List[Collection] = {
+    val (filter, sort) = filteredQuery(date, nextPage, title, space, permissions, user, showAll, owner, showPublic,showOnlyShared)
     if (date.isEmpty || nextPage) {
       Collection.find(filter).sort(sort).limit(limit).toList
     } else {
@@ -169,7 +165,7 @@ class MongoDBCollectionService @Inject() (
   /**
    * Monster function, does all the work. Will create a filters and sorts based on the given parameters
    */
-  private def filteredQuery(date: Option[String], nextPage: Boolean, titleSearch: Option[String], space: Option[String], permissions: Set[Permission], user: Option[User], showAll: Boolean, owner: Option[User], showPublic: Boolean):(DBObject, DBObject) = {
+  private def filteredQuery(date: Option[String], nextPage: Boolean, titleSearch: Option[String], space: Option[String], permissions: Set[Permission], user: Option[User], showAll: Boolean, owner: Option[User], showPublic: Boolean, showOnlyShared : Boolean):(DBObject, DBObject) = {
 
     // In /Collections page you should see:
     //  a) Parent Collections in a space you belong to ( root_collections.length > 0 and you belong to the space).
@@ -187,7 +183,7 @@ class MongoDBCollectionService @Inject() (
 
     val publicSpaces= spaces.listByStatus(SpaceStatus.PUBLIC.toString).map(s => new ObjectId(s.id.stringify))
     val enablePublic = play.Play.application().configuration().getBoolean("enablePublic")
-    val onlyShowShared = play.Play.application().configuration().getBoolean("showOnlySharedInExplore")
+    val onlyShowShared = showOnlyShared
 //    val rootQuery = $or(("root_spaces" $exists true), ("parent_collection_ids" $exists false))
     val filterAccess = if (showAll || (configuration(play.api.Play.current).getString("permissions").getOrElse("public") == "public" && permissions.contains(Permission.ViewCollection))) {
       MongoDBObject()
@@ -852,8 +848,20 @@ class MongoDBCollectionService @Inject() (
   def index(id: UUID) {
     Collection.findOneById(new ObjectId(id.stringify)) match {
       case Some(collection) => {
+
+        var dsCollsId = ""
+        var dsCollsName = ""
+
+        for(dataset <- datasets.listCollection(id.stringify)){
+          dsCollsId = dsCollsId + dataset.id.stringify + " %%% "
+          dsCollsName = dsCollsName + dataset.name + " %%% "
+        }
+
+	    val formatter = new SimpleDateFormat("dd/MM/yyyy")
+
         current.plugin[ElasticsearchPlugin].foreach {
-          _.index(collection, false)
+          _.index("data", "collection", id,
+            List(("name", collection.name), ("description", collection.description), ("created",formatter.format(collection.created)), ("datasetId",dsCollsId),("datasetName",dsCollsName)))
         }
       }
       case None => Logger.error("Collection not found: " + id.stringify)

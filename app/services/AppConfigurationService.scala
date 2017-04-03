@@ -6,7 +6,6 @@ import java.util.Date
 import models.UserTermsOfServices
 import org.apache.commons.io.IOUtils
 import util.ResourceLister
-import models.{DBCounts, ResourceRef}
 
 /**
  * Application wide configuration options. This class contains the service definition
@@ -16,25 +15,25 @@ import models.{DBCounts, ResourceRef}
  */
 trait AppConfigurationService {
   /** Adds an additional value to the property with the specified key. */
-  def addPropertyValue(key: String, value: Any)
+  def addPropertyValue(key: String, value: AnyRef)
 
   /** Removes the value from the property with the specified key. */
-  def removePropertyValue(key: String, value: Any)
+  def removePropertyValue(key: String, value: AnyRef)
 
   /** Checks to see if the value is part of the property with the specified key. */
-  def hasPropertyValue(key: String, value: Any): Boolean
+  def hasPropertyValue(key: String, value: AnyRef): Boolean
 
   /**
    * Gets the configuration property with the specified key. If the key is not found
    * it wil return None.
    */
-  def getProperty[objectType <: Any](key: String): Option[objectType]
+  def getProperty[objectType <: AnyRef](key: String): Option[objectType]
 
   /**
    * Gets the configuration property with the specified key. If the key is not found
    * it wil return the default value (empty string if not specified).
    */
-  def getProperty[objectType <: Any](key: String, default: objectType): objectType = {
+  def getProperty[objectType <: AnyRef](key: String, default: objectType): objectType = {
     getProperty[objectType](key) match {
       case Some(x) => x
       case None => default
@@ -45,20 +44,13 @@ trait AppConfigurationService {
    * Sets the configuration property with the specified key to the specified value. If the
    * key already existed it will return the old value, otherwise it returns None.
    */
-  def setProperty(key: String, value: Any): Option[Any]
+  def setProperty(key: String, value: AnyRef): Option[AnyRef]
 
   /**
    * Remove the configuration property with the specified key and returns the value if any
    * was set, otherwise it will return None.
    */
-  def removeProperty(key: String): Option[Any]
-
-  /** Try to get counts from appConfig, and if generate is true initialize them if not found there **/
-  def getIndexCounts(): DBCounts
-
-  /** Increment configuration property with specified key by value. **/
-  def incrementCount(key: Symbol, value: Long)
-
+  def removeProperty(key: String): Option[AnyRef]
 }
 
 /**

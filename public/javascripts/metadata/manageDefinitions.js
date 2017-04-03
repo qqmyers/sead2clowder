@@ -5,11 +5,7 @@ function addDefinition(data, pageURL, spaceId){
   }
   if($(".definitionAction").text().indexOf( "Edit") > -1) {
     var id = $('.definitionAction').attr('id');
-    var editUrl = jsRoutes.api.Metadata.editDefinition(id);
-    if(spaceId != "") {
-    	editUrl = jsRoutes.api.Metadata.editDefinition(id, spaceId);
-    }
-    var request = editUrl.ajax({
+    var request = jsRoutes.api.Metadata.editDefinition(id, spaceId).ajax({
       type: 'POST',
       data: JSON.stringify(data),
       contentType: "application/json"

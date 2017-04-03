@@ -144,7 +144,6 @@ function addDatasetToSpace(id, spaceTitle) {
             $("#add-to-space-widget").addClass("hidden");
             $('#dataset-users').removeClass("hidden");
         }
-        $('#publish').removeClass('disabled');
 
     });
 
@@ -184,9 +183,6 @@ function removeDatasetFromSpace(spaceId, datasetId, event){
             $("#add-to-space-widget").removeClass("hidden");
             $('#dataset-users').addClass("hidden");
         }
-        if($('#spacesList .row').length == 0) {
-        	$('#publish').addClass('disabled');
-       	}
 
     });
 
@@ -219,9 +215,6 @@ function removeDatasetFromSpaceAndRedirect(spaceId, datasetId, isreload, url){
                 $("#add-to-space-widget").removeClass("hidden");
                 $('#dataset-users').addClass("hidden");
             }
-            if($('#spacesList .row').length == 0) {
-            	$('#publish').addClass('disabled');
-           	}
             if(response.isTrial.valueOf() ==="true"){
                 $('#access').hide();
             }
