@@ -2,27 +2,28 @@ package services.mongodb
 
 import java.io._
 import java.text.SimpleDateFormat
-import java.util.{ArrayList, Date}
-import javax.inject.{Inject, Singleton}
+import java.util.{ ArrayList, Date }
+import javax.inject.{ Inject, Singleton }
 
 import Transformation.LidoToCidocConvertion
-import util.{Parsers, Formatters}
+import util.{Parsers, Formatters, SearchUtils}
 import api.Permission
 import api.Permission.Permission
 import com.mongodb.casbah.Imports._
 import com.mongodb.casbah.WriteConcern
+import com.mongodb.casbah.commons.MongoDBList
 import com.mongodb.casbah.commons.MongoDBObject
 import com.mongodb.util.JSON
-import com.novus.salat.dao.{ModelCompanion, SalatDAO}
+import com.novus.salat.dao.{ ModelCompanion, SalatDAO }
 import jsonutils.JsonUtil
-import models.{File, _}
+import models.{ File, _ }
 import org.apache.commons.io.FileUtils
 import org.bson.types.ObjectId
 import org.json.JSONObject
 import play.api.Logger
 import play.api.Play._
 import play.api.libs.json.Json._
-import play.api.libs.json.{Json, JsValue, JsArray}
+import play.api.libs.json.{ Json, JsValue, JsArray }
 import services._
 import services.mongodb.MongoContext.context
 
@@ -37,15 +38,15 @@ import scala.util.parsing.json.JSONArray
  */
 @Singleton
 class MongoDBDatasetService @Inject() (
-  collections: CollectionService,
-  files: FileService,
-  comments: CommentService,
-  sparql: RdfSPARQLService,
-  spaces: SpaceService,
-  userService: UserService,
-  folders: FolderService,
-  metadatas:MetadataService,
-  events: EventService) extends DatasetService {
+    collections: CollectionService,
+    files: FileService,
+    comments: CommentService,
+    sparql: RdfSPARQLService,
+    spaces: SpaceService,
+    userService: UserService,
+    folders: FolderService,
+    metadatas: MetadataService,
+    events: EventService) extends DatasetService {
 
   object MustBreak extends Exception {}
 
@@ -60,104 +61,104 @@ class MongoDBDatasetService @Inject() (
    * Count all datasets in a space
    */
   def countSpace(space: String): Long = {
-    count(None, false, None, None, Some(space), Set[Permission](Permission.ViewDataset), None, showAll=true, None)
+    count(None, false, None, None, Some(space), Set[Permission](Permission.ViewDataset), None, showAll = true, None)
   }
 
   /**
    * Return a list of datasets in a space, this does not check for permissions
    */
   def listSpace(limit: Integer, space: String): List[Dataset] = {
-    list(None, false, limit, None, None, Some(space), Set[Permission](Permission.ViewDataset), None, status=None, showAll=true, owner=None)
+    list(None, false, limit, None, None, Some(space), Set[Permission](Permission.ViewDataset), None, status = None, showAll = true, owner = None)
   }
 
   /**
    * Return a list of datasets in a space starting at a specific date, this does not check for permissions
    */
   def listSpace(date: String, nextPage: Boolean, limit: Integer, space: String): List[Dataset] = {
-    list(Some(date), nextPage, limit, None, None, Some(space), Set[Permission](Permission.ViewDataset), None, status=None, showAll=true, owner=None)
+    list(Some(date), nextPage, limit, None, None, Some(space), Set[Permission](Permission.ViewDataset), None, status = None, showAll = true, owner = None)
   }
 
   /**
-    * Return a list of datasets in a space
-    */
-  def listSpace(limit: Integer, space: String, user:Option[User]): List[Dataset] = {
-    list(None, false, limit, None, None, Some(space), Set[Permission](Permission.ViewDataset), user, status=None, showAll=false, owner=None)
+   * Return a list of datasets in a space
+   */
+  def listSpace(limit: Integer, space: String, user: Option[User]): List[Dataset] = {
+    list(None, false, limit, None, None, Some(space), Set[Permission](Permission.ViewDataset), user, status = None, showAll = false, owner = None)
   }
 
   /**
-    * Return a list of datasets in a space starting at a specific date, this does not check for permissions
-    */
-  def listSpace(date: String, nextPage: Boolean, limit: Integer, space: String, user:Option[User]): List[Dataset] = {
-    list(Some(date), nextPage, limit, None, None, Some(space), Set[Permission](Permission.ViewDataset), user, status=None, showAll=false, owner=None)
+   * Return a list of datasets in a space starting at a specific date, this does not check for permissions
+   */
+  def listSpace(date: String, nextPage: Boolean, limit: Integer, space: String, user: Option[User]): List[Dataset] = {
+    list(Some(date), nextPage, limit, None, None, Some(space), Set[Permission](Permission.ViewDataset), user, status = None, showAll = false, owner = None)
   }
 
   /**
-    * Return a list of datasets in a space filtered by status, this does not check for permissions
-    */
+   * Return a list of datasets in a space filtered by status, this does not check for permissions
+   */
   def listSpaceStatus(limit: Integer, space: String, status: String): List[Dataset] = {
-    list(None, false, limit, None, None, Some(space), Set[Permission](Permission.ViewDataset), None, Some(status), showAll=true, owner=None)
+    list(None, false, limit, None, None, Some(space), Set[Permission](Permission.ViewDataset), None, Some(status), showAll = true, owner = None)
   }
   /**
-    * Return a list of datasets in a space filtered by status
-    */
-  def listSpaceStatus(limit: Integer, space: String, status: String, user:Option[User]): List[Dataset] = {
-    list(None, false, limit, None, None, Some(space), Set[Permission](Permission.ViewDataset), user, Some(status), showAll=true, owner=None)
+   * Return a list of datasets in a space filtered by status
+   */
+  def listSpaceStatus(limit: Integer, space: String, status: String, user: Option[User]): List[Dataset] = {
+    list(None, false, limit, None, None, Some(space), Set[Permission](Permission.ViewDataset), user, Some(status), showAll = true, owner = None)
   }
 
   /**
-    * Return a list of datasets in a space filtered by status
-    */
-  def listSpaceStatus(date: String, nextPage: Boolean, limit: Integer, space: String, status: String, user:Option[User]): List[Dataset] = {
-    list(Some(date), nextPage, limit, None, None, Some(space), Set[Permission](Permission.ViewDataset), user, Some(status), showAll=true, owner=None)
+   * Return a list of datasets in a space filtered by status
+   */
+  def listSpaceStatus(date: String, nextPage: Boolean, limit: Integer, space: String, status: String, user: Option[User]): List[Dataset] = {
+    list(Some(date), nextPage, limit, None, None, Some(space), Set[Permission](Permission.ViewDataset), user, Some(status), showAll = true, owner = None)
   }
 
   /**
    * Count all datasets in a collection
    */
   def countCollection(collection: String): Long = {
-    count(None, false, None, Some(collection), None, Set[Permission](Permission.ViewDataset), None, showAll=true, None)
+    count(None, false, None, Some(collection), None, Set[Permission](Permission.ViewDataset), None, showAll = true, None)
   }
 
   /**
    * Return a list of datasets in a collection, this does not check for permissions
    */
   def listCollection(collection: String): List[Dataset] = {
-    list(None, false, 0, None, Some(collection), None, Set[Permission](Permission.ViewDataset), None, status=None, showAll=false, owner=None)
+    list(None, false, 0, None, Some(collection), None, Set[Permission](Permission.ViewDataset), None, status = None, showAll = false, owner = None)
   }
 
   /**
    * Return a list of datasets in a collection, this does not check for permissions
    */
   def listCollection(limit: Integer, collection: String): List[Dataset] = {
-    list(None, false, limit, None, Some(collection), None, Set[Permission](Permission.ViewDataset), None, status=None, showAll=false, owner=None)
+    list(None, false, limit, None, Some(collection), None, Set[Permission](Permission.ViewDataset), None, status = None, showAll = false, owner = None)
   }
 
   /**
    * Return a list of datasets in a collection starting at a specific date, this does not check for permissions
    */
   def listCollection(date: String, nextPage: Boolean, limit: Integer, collection: String): List[Dataset] = {
-    list(Some(date), nextPage, limit, None, Some(collection), None, Set[Permission](Permission.ViewDataset), None, status=None, showAll=false, owner=None)
+    list(Some(date), nextPage, limit, None, Some(collection), None, Set[Permission](Permission.ViewDataset), None, status = None, showAll = false, owner = None)
   }
 
   /**
-    * Return a list of datasets in a collection
-    */
-  def listCollection(collection: String, user:Option[User]): List[Dataset] = {
-    list(None, false, 0, None, Some(collection), None, Set[Permission](Permission.ViewDataset), user, status=None, showAll=false, owner=None)
+   * Return a list of datasets in a collection
+   */
+  def listCollection(collection: String, user: Option[User]): List[Dataset] = {
+    list(None, false, 0, None, Some(collection), None, Set[Permission](Permission.ViewDataset), user, status = None, showAll = false, owner = None)
   }
 
   /**
-    * Return a list of datasets in a collection
-    */
-  def listCollection(limit: Integer, collection: String, user:Option[User]): List[Dataset] = {
-    list(None, false, limit, None, Some(collection), None, Set[Permission](Permission.ViewDataset), user, status=None, showAll=false, owner=None)
+   * Return a list of datasets in a collection
+   */
+  def listCollection(limit: Integer, collection: String, user: Option[User]): List[Dataset] = {
+    list(None, false, limit, None, Some(collection), None, Set[Permission](Permission.ViewDataset), user, status = None, showAll = false, owner = None)
   }
 
   /**
-    * Return a list of datasets in a collection starting at a specific date
-    */
-  def listCollection(date: String, nextPage: Boolean, limit: Integer, collection: String, user:Option[User]): List[Dataset] = {
-    list(Some(date), nextPage, limit, None, Some(collection), None, Set[Permission](Permission.ViewDataset), user, status=None, showAll=false, owner=None)
+   * Return a list of datasets in a collection starting at a specific date
+   */
+  def listCollection(date: String, nextPage: Boolean, limit: Integer, collection: String, user: Option[User]): List[Dataset] = {
+    list(Some(date), nextPage, limit, None, Some(collection), None, Set[Permission](Permission.ViewDataset), user, status = None, showAll = false, owner = None)
   }
 
   /**
@@ -196,29 +197,29 @@ class MongoDBDatasetService @Inject() (
   }
 
   /**
-    * Return a list of datasets in a space the user has access to.
-    */
+   * Return a list of datasets in a space the user has access to.
+   */
   def listSpaceAccess(limit: Integer, permissions: Set[Permission], space: String, user: Option[User], showAll: Boolean, showPublic: Boolean): List[Dataset] = {
     list(None, false, limit, None, None, Some(space), permissions, user, None, showAll, None, showPublic)
   }
 
   /**
-    * Return a list of datasets in a space the user has access to.
-    */
+   * Return a list of datasets in a space the user has access to.
+   */
   def listSpaceAccess(limit: Integer, title: String, permissions: Set[Permission], space: String, user: Option[User], showAll: Boolean, showPublic: Boolean): List[Dataset] = {
     list(None, false, limit, Some(title), None, Some(space), permissions, user, None, showAll, None, showPublic)
   }
 
   /**
-    * Return a list of datasets in a space the user has access to starting at a specific date.
-    */
+   * Return a list of datasets in a space the user has access to starting at a specific date.
+   */
   def listSpaceAccess(date: String, nextPage: Boolean, limit: Integer, permissions: Set[Permission], space: String, user: Option[User], showAll: Boolean, showPublic: Boolean): List[Dataset] = {
     list(Some(date), nextPage, limit, None, None, Some(space), permissions, user, None, showAll, None, showPublic)
   }
 
   /**
-    * Return a list of datasets in a space the user has access to starting at a specific date.
-    */
+   * Return a list of datasets in a space the user has access to starting at a specific date.
+   */
   def listSpaceAccess(date: String, nextPage: Boolean, limit: Integer, title: String, permissions: Set[Permission], space: String, user: Option[User], showAll: Boolean, showPublic: Boolean): List[Dataset] = {
     list(Some(date), nextPage, limit, Some(title), None, Some(space), permissions, user, None, showAll, None, showPublic)
   }
@@ -245,8 +246,8 @@ class MongoDBDatasetService @Inject() (
   }
 
   /**
-    * Return a list of datasets a user can View.
-    */
+   * Return a list of datasets a user can View.
+   */
   def listUser(user: User): List[Dataset] = {
     val orlist = scala.collection.mutable.ListBuffer.empty[MongoDBObject]
 
@@ -308,7 +309,7 @@ class MongoDBDatasetService @Inject() (
           val orlist = scala.collection.mutable.ListBuffer.empty[MongoDBObject]
           if (permissions.contains(Permission.ViewDataset) && enablePublic && showPublic) {
             // if enablePublic == true, only list the dataset user can access, in a space page or /datasets
-            if(!u.superAdminMode) {
+            if (!u.superAdminMode) {
               orlist += MongoDBObject("status" -> DatasetStatus.PUBLIC.toString)
               orlist += MongoDBObject("status" -> DatasetStatus.DEFAULT.toString) ++ ("spaces" $in publicSpaces)
             } else {
@@ -324,6 +325,8 @@ class MongoDBDatasetService @Inject() (
             } else if (!owner.isEmpty){
               orlist += MongoDBObject("author._id" -> new ObjectId(u.id.stringify))
             }
+          if (user == owner || owner.isEmpty) {
+            orlist += MongoDBObject("author._id" -> new ObjectId(u.id.stringify))
           }
           val permissionsString = permissions.map(_.toString)
           val okspaces = if (onlyShowShared){
@@ -353,7 +356,7 @@ class MongoDBDatasetService @Inject() (
         case None =>
           if (!permissions.intersect(Permission.READONLY).isEmpty && enablePublic && showPublic) {
             $or(MongoDBObject("status" -> DatasetStatus.PUBLIC.toString),
-            MongoDBObject("status" -> DatasetStatus.DEFAULT.toString) ++ ("spaces" $in publicSpaces  ))
+              MongoDBObject("status" -> DatasetStatus.DEFAULT.toString) ++ ("spaces" $in publicSpaces))
           } else {
             MongoDBObject("doesnotexist" -> true)
           }
@@ -392,7 +395,7 @@ class MongoDBDatasetService @Inject() (
       case None => MongoDBObject()
     }
     val filterTitle = titleSearch match {
-      case Some(title) =>  MongoDBObject("name" -> ("(?i)" + title).r)
+      case Some(title) => MongoDBObject("name" -> ("(?i)" + title).r)
       case None => MongoDBObject()
     }
 
@@ -414,7 +417,7 @@ class MongoDBDatasetService @Inject() (
     }
 
     val sort = if (date.isDefined && !nextPage) {
-      MongoDBObject("created"-> 1) ++ MongoDBObject("name" -> 1)
+      MongoDBObject("created" -> 1) ++ MongoDBObject("name" -> 1)
     } else {
       MongoDBObject("created" -> -1) ++ MongoDBObject("name" -> 1)
     }
@@ -453,7 +456,7 @@ class MongoDBDatasetService @Inject() (
         for (fileId <- dataset.files) {
           files.get(fileId) match {
             case Some(file) => {
-              if(file.filename.equals(filename)) {
+              if (file.filename.equals(filename)) {
                 return Some(fileId)
               }
             }
@@ -466,14 +469,14 @@ class MongoDBDatasetService @Inject() (
     }
   }
 
-  def modifyRDFOfMetadataChangedDatasets(){
+  def modifyRDFOfMetadataChangedDatasets() {
     val changedDatasets = findMetadataChangedDatasets()
-    for(changedDataset <- changedDatasets){
+    for (changedDataset <- changedDatasets) {
       modifyRDFUserMetadata(changedDataset.id)
     }
   }
 
-  def modifyRDFUserMetadata(id: UUID, mappingNumber: String="1") = {
+  def modifyRDFUserMetadata(id: UUID, mappingNumber: String = "1") = {
     sparql.removeDatasetFromUserGraphs(id)
     get(id) match {
       case Some(dataset) => {
@@ -481,13 +484,13 @@ class MongoDBDatasetService @Inject() (
         val theJSON = getUserMetadataJSON(id)
         val fileSep = System.getProperty("file.separator")
         val tmpDir = System.getProperty("java.io.tmpdir")
-        var resultDir = tmpDir + fileSep + "medici__rdfuploadtemporaryfiles" + fileSep + new ObjectId().toString
+        var resultDir = tmpDir + fileSep + "clowder__rdfuploadtemporaryfiles" + fileSep + new ObjectId().toString
         val resultDirFile = new java.io.File(resultDir)
         resultDirFile.mkdirs()
 
-        if(!theJSON.replaceAll(" ","").equals("{}")){
+        if (!theJSON.replaceAll(" ", "").equals("{}")) {
           val xmlFile = jsonToXML(theJSON)
-          new LidoToCidocConvertion(play.api.Play.configuration.getString("datasetsxmltordfmapping.dir_"+mappingNumber).getOrElse(""), xmlFile.getAbsolutePath(), resultDir)
+          new LidoToCidocConvertion(play.api.Play.configuration.getString("datasetsxmltordfmapping.dir_" + mappingNumber).getOrElse(""), xmlFile.getAbsolutePath(), resultDir)
           xmlFile.delete()
         }
         else{
@@ -499,11 +502,11 @@ class MongoDBDatasetService @Inject() (
         val rootNodes = new ArrayList[String]()
         val rootNodesFile = play.api.Play.configuration.getString("datasetRootNodesFile").getOrElse("")
         Logger.debug(rootNodesFile)
-        if(!rootNodesFile.equals("*")){
+        if (!rootNodesFile.equals("*")) {
           val rootNodesReader = new BufferedReader(new FileReader(new java.io.File(rootNodesFile)))
           var line = rootNodesReader.readLine()
-          while (line != null){
-            Logger.debug((line == null).toString() )
+          while (line != null) {
+            Logger.debug((line == null).toString())
             rootNodes.add(line.trim())
             line = rootNodesReader.readLine()
           }
@@ -512,9 +515,9 @@ class MongoDBDatasetService @Inject() (
 
         val resultFileConnected = java.io.File.createTempFile("ResultsConnected", ".rdf")
 
-        val fileWriter =  new BufferedWriter(new FileWriter(resultFileConnected))
+        val fileWriter = new BufferedWriter(new FileWriter(resultFileConnected))
         val fis = new FileInputStream(resultFile)
-        val data = new Array[Byte]  (resultFile.length().asInstanceOf[Int])
+        val data = new Array[Byte](resultFile.length().asInstanceOf[Int])
         fis.read(data)
         fis.close()
         resultFile.delete()
@@ -524,30 +527,30 @@ class MongoDBDatasetService @Inject() (
         val rdfDescriptions = s.split("<rdf:Description")
         fileWriter.write(rdfDescriptions(0))
         var i = 0
-        for( i <- 1 to (rdfDescriptions.length - 1)){
+        for (i <- 1 to (rdfDescriptions.length - 1)) {
           fileWriter.write("<rdf:Description" + rdfDescriptions(i))
-          if(rdfDescriptions(i).contains("<rdf:type")){
+          if (rdfDescriptions(i).contains("<rdf:type")) {
             var isInRootNodes = false
-            if(rootNodesFile.equals("*"))
+            if (rootNodesFile.equals("*"))
               isInRootNodes = true
-            else{
+            else {
               var j = 0
-              try{
-                for(j <- 0 to (rootNodes.size()-1)){
-                  if(rdfDescriptions(i).contains("\"" + rootNodes.get(j) + "\"")){
+              try {
+                for (j <- 0 to (rootNodes.size() - 1)) {
+                  if (rdfDescriptions(i).contains("\"" + rootNodes.get(j) + "\"")) {
                     isInRootNodes = true
                     throw MustBreak
                   }
                 }
-              }catch {case MustBreak => }
+              } catch { case MustBreak => }
             }
 
-            if(isInRootNodes){
-              val theResource = rdfDescriptions(i).substring(rdfDescriptions(i).indexOf("\"")+1, rdfDescriptions(i).indexOf("\"", rdfDescriptions(i).indexOf("\"")+1))
+            if (isInRootNodes) {
+              val theResource = rdfDescriptions(i).substring(rdfDescriptions(i).indexOf("\"") + 1, rdfDescriptions(i).indexOf("\"", rdfDescriptions(i).indexOf("\"") + 1))
               val theHost = "http://" + play.Play.application().configuration().getString("hostIp").replaceAll("/$", "") + ":" + play.Play.application().configuration().getString("http.port")
-              var connection = "<rdf:Description rdf:about=\"" + theHost +"/api/datasets/"+ id
-              connection = connection	+ "\"><P129_is_about xmlns=\"http://www.cidoc-crm.org/rdfs/cidoc_crm_v5.0.2.rdfs#\" rdf:resource=\"" + theResource
-              connection = connection	+ "\"/></rdf:Description>"
+              var connection = "<rdf:Description rdf:about=\"" + theHost + "/api/datasets/" + id
+              connection = connection + "\"><P129_is_about xmlns=\"http://www.cidoc-crm.org/rdfs/cidoc_crm_v5.0.2.rdfs#\" rdf:resource=\"" + theResource
+              connection = connection + "\"/></rdf:Description>"
               fileWriter.write(connection)
             }
           }
@@ -576,16 +579,16 @@ class MongoDBDatasetService @Inject() (
     var currStart = xml.indexOf("<")
     var currEnd = -1
     var xmlNoSpaces = ""
-    while(currStart != -1){
-      xmlNoSpaces = xmlNoSpaces + xml.substring(currEnd+1,currStart)
-      currEnd = xml.indexOf(">", currStart+1)
-      xmlNoSpaces = xmlNoSpaces + xml.substring(currStart,currEnd+1).replaceAll(" ", "_")
-      currStart = xml.indexOf("<", currEnd+1)
+    while (currStart != -1) {
+      xmlNoSpaces = xmlNoSpaces + xml.substring(currEnd + 1, currStart)
+      currEnd = xml.indexOf(">", currStart + 1)
+      xmlNoSpaces = xmlNoSpaces + xml.substring(currStart, currEnd + 1).replaceAll(" ", "_")
+      currStart = xml.indexOf("<", currEnd + 1)
     }
-    xmlNoSpaces = xmlNoSpaces + xml.substring(currEnd+1)
+    xmlNoSpaces = xmlNoSpaces + xml.substring(currEnd + 1)
 
-    val xmlFile = java.io.File.createTempFile("xml",".xml")
-    val fileWriter =  new BufferedWriter(new FileWriter(xmlFile))
+    val xmlFile = java.io.File.createTempFile("xml", ".xml")
+    val fileWriter = new BufferedWriter(new FileWriter(xmlFile))
     fileWriter.write(xmlNoSpaces)
     fileWriter.close()
 
@@ -594,8 +597,8 @@ class MongoDBDatasetService @Inject() (
 
   def toJSON(dataset: Dataset): JsValue = {
     var datasetThumbnail = "None"
-    if(!dataset.thumbnail_id.isEmpty)
-      datasetThumbnail = dataset.thumbnail_id.toString().substring(5,dataset.thumbnail_id.toString().length-1)
+    if (!dataset.thumbnail_id.isEmpty)
+      datasetThumbnail = dataset.thumbnail_id.toString().substring(5, dataset.thumbnail_id.toString().length - 1)
 
     toJson(Map("id" -> dataset.id.toString, "datasetname" -> dataset.name, "description" -> dataset.description,
       "created" -> dataset.created.toString, "thumbnail" -> datasetThumbnail, "authorId" -> dataset.author.id.stringify))
@@ -605,13 +608,13 @@ class MongoDBDatasetService @Inject() (
    * Return a list of tags and counts found in sections
    */
   def getTags(user: Option[User]): Map[String, Long] = {
-    if(configuration(play.api.Play.current).getString("permissions").getOrElse("public") == "public"){
-      val x = Dataset.dao.collection.aggregate( MongoDBObject("$unwind" -> "$tags"),
+    if (configuration(play.api.Play.current).getString("permissions").getOrElse("public") == "public") {
+      val x = Dataset.dao.collection.aggregate(MongoDBObject("$unwind" -> "$tags"),
         MongoDBObject("$group" -> MongoDBObject("_id" -> "$tags.name", "count" -> MongoDBObject("$sum" -> 1L))))
       x.results.map(x => (x.getAsOrElse[String]("_id", "??"), x.getAsOrElse[Long]("count", 0L))).toMap
 
     } else {
-      val x = Dataset.dao.collection.aggregate(MongoDBObject("$match" ->  buildTagFilter(user)), MongoDBObject("$unwind" -> "$tags"),
+      val x = Dataset.dao.collection.aggregate(MongoDBObject("$match" -> buildTagFilter(user)), MongoDBObject("$unwind" -> "$tags"),
         MongoDBObject("$group" -> MongoDBObject("_id" -> "$tags.name", "count" -> MongoDBObject("$sum" -> 1L))))
       x.results.map(x => (x.getAsOrElse[String]("_id", "??"), x.getAsOrElse[Long]("count", 0L))).toMap
 
@@ -620,18 +623,18 @@ class MongoDBDatasetService @Inject() (
 
   private def buildTagFilter(user: Option[User]): MongoDBObject = {
     val orlist = collection.mutable.ListBuffer.empty[MongoDBObject]
-    if(!(configuration(play.api.Play.current).getString("permissions").getOrElse("public") == "public")){
+    if (!(configuration(play.api.Play.current).getString("permissions").getOrElse("public") == "public")) {
       user match {
-        case Some(u)  => {
-          orlist += MongoDBObject("status" -> DatasetStatus.PUBLIC.toString )
+        case Some(u) => {
+          orlist += MongoDBObject("status" -> DatasetStatus.PUBLIC.toString)
           orlist += MongoDBObject("spaces" -> List.empty) ++ MongoDBObject("author._id" -> new ObjectId(u.id.stringify))
           val okspaces = u.spaceandrole.filter(_.role.permissions.intersect(Set(Permission.ViewDataset.toString)).nonEmpty)
-          if(okspaces.nonEmpty){
+          if (okspaces.nonEmpty) {
             orlist += ("spaces" $in okspaces.map(x => new ObjectId(x.spaceId.stringify)))
           }
 
         }
-        case None => orlist += MongoDBObject("status" -> DatasetStatus.PUBLIC.toString )
+        case None => orlist += MongoDBObject("status" -> DatasetStatus.PUBLIC.toString)
       }
     }
     else {
@@ -703,8 +706,9 @@ class MongoDBDatasetService @Inject() (
     (for (dataset <- Dataset.find(MongoDBObject())) yield dataset).toList.filterNot(listContaining.toSet)
   }
 
+  // TODO: This is apparently not called anywhere, can we remove?
   def findByTag(tag: String, user: Option[User]): List[Dataset] = {
-    if(configuration(play.api.Play.current).getString("permissions").getOrElse("public") == "public"){
+    if (configuration(play.api.Play.current).getString("permissions").getOrElse("public") == "public") {
       Dataset.dao.find(MongoDBObject("tags.name" -> tag)).toList
     } else {
       Dataset.dao.find(buildTagFilter(user) ++
@@ -713,6 +717,7 @@ class MongoDBDatasetService @Inject() (
   }
 
   def findByTag(tag: String, start: String, limit: Integer, reverse: Boolean, user: Option[User]): List[Dataset] = {
+    // TODO: Re-implement this using Elasticsearch
     var filter = if (start == "") {
       MongoDBObject("tags.name" -> tag)
     } else {
@@ -722,7 +727,7 @@ class MongoDBDatasetService @Inject() (
         MongoDBObject("tags.name" -> tag) ++ ("created" $lte Parsers.fromISO8601(start))
       }
     }
-    if(!(configuration(play.api.Play.current).getString("permissions").getOrElse("public") == "public")) {
+    if (!(configuration(play.api.Play.current).getString("permissions").getOrElse("public") == "public")) {
       filter = buildTagFilter(user) ++ filter
     }
     val order = if (reverse) {
@@ -846,9 +851,9 @@ class MongoDBDatasetService @Inject() (
    * Implementation of updateInformation defined in services/DatasetService.scala.
    */
   def updateInformation(id: UUID, description: String, name: String) {
-      val result = Dataset.update(MongoDBObject("_id" -> new ObjectId(id.stringify)),
-          $set("description" -> description, "name" -> name),
-          false, false, WriteConcern.Safe)
+    val result = Dataset.update(MongoDBObject("_id" -> new ObjectId(id.stringify)),
+      $set("description" -> description, "name" -> name),
+      false, false, WriteConcern.Safe)
   }
 
   def updateName(id: UUID, name: String) {
@@ -858,10 +863,43 @@ class MongoDBDatasetService @Inject() (
       false, false, WriteConcern.Safe)
   }
 
-  def updateDescription(id: UUID, description: String){
+  def updateDescription(id: UUID, description: String) {
     val result = Dataset.update(MongoDBObject("_id" -> new ObjectId(id.stringify)),
       $set("description" -> description),
       false, false, WriteConcern.Safe)
+  }
+
+  /**
+   * Add a creator to the end of the dataset's list of creators
+   */
+  def addCreator(id: UUID, creator: String) {
+    //Don't allow duplicates
+    if (Dataset.dao.find(MongoDBObject("_id" -> new ObjectId(id.stringify)) ++ MongoDBObject("creators" -> creator)).length == 0) {
+      val result = Dataset.update(MongoDBObject("_id" -> new ObjectId(id.stringify)),
+        $push("creators" -> creator),
+        false, false, WriteConcern.Safe)
+    }
+  }
+
+  /**
+   * Remove a creator from the dataset's list of creators
+   */
+  def removeCreator(id: UUID, creator: String) {
+    Dataset.dao.update(MongoDBObject("_id" -> new ObjectId(id.stringify)),
+      $pull("creators" -> creator), false, false, WriteConcern.Safe)
+  }
+
+  /**
+   * Move a creator to a new position in the dataset's list of creators
+   */
+  def moveCreator(id: UUID, creator: String, position: Integer) {
+    //Don't move ones that don't exist
+    if (Dataset.dao.find(MongoDBObject("_id" -> new ObjectId(id.stringify)) ++ MongoDBObject("creators" -> creator)).length != 0) {
+      removeCreator(id, creator);
+      Dataset.update(MongoDBObject("_id" -> new ObjectId(id.stringify)),
+        $push("creators" -> MongoDBObject("$each" -> MongoDBList(creator), "$position" -> position)),
+        false, false, WriteConcern.Safe)
+    }
   }
 
   def updateAuthorFullName(userId: UUID, fullName: String) {
@@ -873,10 +911,10 @@ class MongoDBDatasetService @Inject() (
    * Implementation of updateLicenseing defined in services/DatasetService.scala.
    */
   def updateLicense(id: UUID, licenseType: String, rightsHolder: String, licenseText: String, licenseUrl: String, allowDownload: String) {
-      val licenseData = models.LicenseData(m_licenseType = licenseType, m_rightsHolder = rightsHolder, m_licenseText = licenseText, m_licenseUrl = licenseUrl, m_allowDownload = allowDownload.toBoolean)
-      val result = Dataset.update(MongoDBObject("_id" -> new ObjectId(id.stringify)),
-          $set("licenseData" -> LicenseData.toDBObject(licenseData)),
-          false, false, WriteConcern.Safe)
+    val licenseData = models.LicenseData(m_licenseType = licenseType, m_rightsHolder = rightsHolder, m_licenseText = licenseText, m_licenseUrl = licenseUrl, m_allowDownload = allowDownload.toBoolean)
+    val result = Dataset.update(MongoDBObject("_id" -> new ObjectId(id.stringify)),
+      $set("licenseData" -> LicenseData.toDBObject(licenseData)),
+      false, false, WriteConcern.Safe)
   }
 
   def addTags(id: UUID, userIdStr: Option[String], eid: Option[String], tags: List[String]) {
@@ -940,7 +978,6 @@ class MongoDBDatasetService @Inject() (
     return searchMetadata(id, requestedMetadataQuery.asInstanceOf[java.util.LinkedHashMap[String, Any]], getUserMetadata(id))
   }
 
-
   def searchAllMetadataFormulateQuery(requestedMetadataQuery: Any): List[Dataset] = {
     Logger.debug("top: " + requestedMetadataQuery.asInstanceOf[java.util.LinkedHashMap[String, Any]].toString())
     var theQuery = searchMetadataFormulateQuery(requestedMetadataQuery.asInstanceOf[java.util.LinkedHashMap[String, Any]], "all")
@@ -982,28 +1019,28 @@ class MongoDBDatasetService @Inject() (
           if (reqValue.isInstanceOf[String]) {
             val currValue = reqValue.asInstanceOf[String]
             if (keyTrimmed.endsWith("__not")) {
-              if(currValue.contains(" IGNORE CASE") || currValue.contains(" ANYWHERE")){
+              if (currValue.contains(" IGNORE CASE") || currValue.contains(" ANYWHERE")) {
                 var realValue = currValue.replace(" IGNORE CASE", "").replace(" ANYWHERE", "");
-                if(!currValue.contains(" ANYWHERE")){
-                  realValue = "^"+realValue+"$";
+                if (!currValue.contains(" ANYWHERE")) {
+                  realValue = "^" + realValue + "$";
                 }
-                if(currValue.contains(" IGNORE CASE")){
-                  realValue = "(?i)"+realValue;
+                if (currValue.contains(" IGNORE CASE")) {
+                  realValue = "(?i)" + realValue;
                 }
-                builder += MongoDBObject(actualKey -> MongoDBObject("$not" ->  realValue.r))
+                builder += MongoDBObject(actualKey -> MongoDBObject("$not" -> realValue.r))
               }
               else{
-                builder += MongoDBObject(actualKey -> MongoDBObject("$ne" ->  currValue))
+                builder += MongoDBObject(actualKey -> MongoDBObject("$ne" -> currValue))
               }
             }
             else {
-              if(currValue.contains(" IGNORE CASE") || currValue.contains(" ANYWHERE")){
+              if (currValue.contains(" IGNORE CASE") || currValue.contains(" ANYWHERE")) {
                 var realValue = currValue.replace(" IGNORE CASE", "").replace(" ANYWHERE", "");
-                if(!currValue.contains(" ANYWHERE")){
-                  realValue = "^"+realValue+"$";
+                if (!currValue.contains(" ANYWHERE")) {
+                  realValue = "^" + realValue + "$";
                 }
-                if(currValue.contains(" IGNORE CASE")){
-                  realValue = "(?i)"+realValue;
+                if (currValue.contains(" IGNORE CASE")) {
+                  realValue = "(?i)" + realValue;
                 }
                 builder += MongoDBObject(actualKey -> realValue.r)
               }
@@ -1033,33 +1070,33 @@ class MongoDBDatasetService @Inject() (
               if (reqValue.isInstanceOf[String]) {
                 val currValue = reqValue.asInstanceOf[String]
                 if (keyTrimmed.endsWith("__not")) {
-                  if(currValue.contains(" IGNORE CASE") || currValue.contains(" ANYWHERE")){
-	                var realValue = currValue.replace(" IGNORE CASE", "").replace(" ANYWHERE", "");
-	                if(!currValue.contains(" ANYWHERE")){
-	                  realValue = "^"+realValue+"$";
-	                }
-	                if(currValue.contains(" IGNORE CASE")){
-	                  realValue = "(?i)"+realValue;
-	                }
-	                objectForEach += MongoDBObject(tempActualKey -> MongoDBObject("$not" ->  realValue.r))
+                  if (currValue.contains(" IGNORE CASE") || currValue.contains(" ANYWHERE")) {
+                    var realValue = currValue.replace(" IGNORE CASE", "").replace(" ANYWHERE", "");
+                    if (!currValue.contains(" ANYWHERE")) {
+                      realValue = "^" + realValue + "$";
+                    }
+                    if (currValue.contains(" IGNORE CASE")) {
+                      realValue = "(?i)" + realValue;
+                    }
+                    objectForEach += MongoDBObject(tempActualKey -> MongoDBObject("$not" -> realValue.r))
                   }
                   else{
-                	objectForEach += MongoDBObject(tempActualKey -> MongoDBObject("$ne" ->  currValue))
+                    objectForEach += MongoDBObject(tempActualKey -> MongoDBObject("$ne" -> currValue))
                   }
                 }
                 else {
-                  if(currValue.contains(" IGNORE CASE") || currValue.contains(" ANYWHERE")){
-	                var realValue = currValue.replace(" IGNORE CASE", "").replace(" ANYWHERE", "");
-	                if(!currValue.contains(" ANYWHERE")){
-	                  realValue = "^"+realValue+"$";
-	                }
-	                if(currValue.contains(" IGNORE CASE")){
-	                  realValue = "(?i)"+realValue;
-	                }
-	                objectForEach += MongoDBObject(tempActualKey -> realValue.r)
+                  if (currValue.contains(" IGNORE CASE") || currValue.contains(" ANYWHERE")) {
+                    var realValue = currValue.replace(" IGNORE CASE", "").replace(" ANYWHERE", "");
+                    if (!currValue.contains(" ANYWHERE")) {
+                      realValue = "^" + realValue + "$";
+                    }
+                    if (currValue.contains(" IGNORE CASE")) {
+                      realValue = "(?i)" + realValue;
+                    }
+                    objectForEach += MongoDBObject(tempActualKey -> realValue.r)
                   }
                   else{
-                	objectForEach += MongoDBObject(tempActualKey -> currValue)
+                    objectForEach += MongoDBObject(tempActualKey -> currValue)
                   }
                 }
               } else {
@@ -1096,7 +1133,6 @@ class MongoDBDatasetService @Inject() (
       return new MongoDBObject()
     }
   }
-
 
   /**
    * Check recursively whether a (sub)tree of a dataset's metadata matches a requested search subtree.
@@ -1186,7 +1222,6 @@ class MongoDBDatasetService @Inject() (
     Dataset.update(MongoDBObject("_id" -> new ObjectId(datasetId.stringify)), $addToSet("folders" -> new ObjectId(folderId.stringify)), false, false, WriteConcern.Safe)
   }
 
-
   def addCollection(datasetId: UUID, collectionId: UUID) {
     Dataset.update(MongoDBObject("_id" -> new ObjectId(datasetId.stringify)), $addToSet("collections" -> new ObjectId(collectionId.stringify)), false, false, WriteConcern.Safe)
   }
@@ -1209,10 +1244,10 @@ class MongoDBDatasetService @Inject() (
       case Some(dataset) => {
         val filesInDataset = dataset.files map {
           f => {
-            files.get(f).getOrElse {
-              None
+              files.get(f).getOrElse {
+                None
+              }
             }
-          }
         }
         for (file <- filesInDataset) {
           if (file.isInstanceOf[models.File]) {
@@ -1241,13 +1276,13 @@ class MongoDBDatasetService @Inject() (
           if (notTheDataset.size == 0)
             files.removeFile(f)
         }
-        for (folder <- dataset.folders ) {
+        for (folder <- dataset.folders) {
           folders.delete(folder)
         }
         for (follower <- dataset.followers) {
           userService.unfollowDataset(follower, id)
         }
-        for(space <- dataset.spaces) {
+        for (space <- dataset.spaces) {
           spaces.removeDataset(dataset.id, space)
         }
         metadatas.removeMetadataByAttachTo(ResourceRef(ResourceRef.dataset, id))
@@ -1267,65 +1302,8 @@ class MongoDBDatasetService @Inject() (
   def index(id: UUID) {
     Dataset.findOneById(new ObjectId(id.stringify)) match {
       case Some(dataset) => {
-        var tagListBuffer = new ListBuffer[String]()
-
-        for (tag <- dataset.tags) {
-          tagListBuffer += tag.name
-        }
-
-        val tagsJson = new JSONArray(tagListBuffer.toList)
-
-        val commentsByDataset = for (comment <- comments.findCommentsByDatasetId(id, false)) yield {
-          comment.text
-        }
-        val commentJson = new JSONArray(commentsByDataset)
-
-        val usrMd = getUserMetadataJSON(id)
-        val techMd = getTechnicalMetadataJSON(id)
-        val xmlMd = getXMLMetadataJSON(id)
-
-        // Create mapping in JSON-LD metadata from name -> contents
-        val metadataMap = metadatas.getMetadataByAttachTo(ResourceRef(ResourceRef.dataset, id))
-        var allMd = Map[String, JsArray]()
-        for (md <- metadataMap) {
-          if (allMd.keySet.exists(_ == md.creator.displayName)) {
-            // If we already have metadata from this creator, add this metadata to their array
-            var existingMd = allMd(md.creator.displayName).as[JsArray]
-            existingMd = existingMd :+ md.content
-            allMd += (md.creator.displayName -> existingMd)
-          } else {
-            // Otherwise add a new entry for this creator
-            allMd += (md.creator.displayName -> new JsArray(Seq(md.content)))
-          }
-        }
-        val allMdStr = Json.toJson(allMd).toString()
-
-        var fileDsId = ""
-        var fileDsName = ""
-        for(fileId <- dataset.files){
-          fileDsId = fileDsId + fileId.stringify + "  "
-          files.get(fileId).foreach(file =>  fileDsName = fileDsName + file.filename + "  ")
-
-        }
-
-        var dsCollsId = ""
-        var dsCollsName = ""
-
-        dataset.collections.foreach(c => {
-          collections.get(c) match {
-            case Some(collection) => {
-              dsCollsId = dsCollsId + collection.id.stringify + " %%% "
-              dsCollsName = dsCollsName + collection.name + " %%% "
-            }
-            case None =>
-          }
-        })
-
-        val formatter = new SimpleDateFormat("dd/MM/yyyy")
-
         current.plugin[ElasticsearchPlugin].foreach {
-          _.index("data", "dataset", id,
-            List(("name", dataset.name), ("description", dataset.description), ("author",dataset.author.fullName),("created",formatter.format(dataset.created)), ("fileId",fileDsId),("fileName",fileDsName), ("collId",dsCollsId),("collName",dsCollsName), ("tag", tagsJson.toString), ("comments", commentJson.toString), ("usermetadata", usrMd), ("technicalmetadata", techMd), ("xmlmetadata", xmlMd), ("metadata", allMdStr)))
+          _.index(dataset, false)
         }
       }
       case None => Logger.error("Dataset not found: " + id)
@@ -1337,10 +1315,10 @@ class MongoDBDatasetService @Inject() (
       MongoDBObject("_id" -> new ObjectId(datasetId.stringify)),
       $addToSet("spaces" -> Some(new ObjectId(spaceId.stringify))),
       false, false)
-     if (get(datasetId).exists(_.isTRIAL == true) && spaces.get(spaceId).exists(_.isTrial == false)) {
-       Dataset.update(MongoDBObject("_id" -> new ObjectId(datasetId.stringify)),
-       $set("status" -> DatasetStatus.DEFAULT.toString),
-       false, false)
+    if (get(datasetId).exists(_.isTRIAL == true) && spaces.get(spaceId).exists(_.isTrial == false)) {
+      Dataset.update(MongoDBObject("_id" -> new ObjectId(datasetId.stringify)),
+        $set("status" -> DatasetStatus.DEFAULT.toString),
+        false, false)
     }
   }
 
@@ -1349,7 +1327,6 @@ class MongoDBDatasetService @Inject() (
       MongoDBObject("_id" -> new ObjectId(datasetId.stringify)),
       $pull("spaces" -> Some(new ObjectId(spaceId.stringify))),
       false, false)
-
 
     if (play.Play.application().configuration().getBoolean("verifySpaces")) {
 
@@ -1363,145 +1340,150 @@ class MongoDBDatasetService @Inject() (
     }
   }
 
-
   def dumpAllDatasetMetadata(): List[String] = {
-		    Logger.debug("Dumping metadata of all datasets.")
+    Logger.debug("Dumping metadata of all datasets.")
 
-		    val fileSep = System.getProperty("file.separator")
-		    val lineSep = System.getProperty("line.separator")
-		    var dsMdDumpDir = play.api.Play.configuration.getString("datasetdump.dir").getOrElse("")
-			if(!dsMdDumpDir.endsWith(fileSep))
-				dsMdDumpDir = dsMdDumpDir + fileSep
-			var dsMdDumpMoveDir = play.api.Play.configuration.getString("datasetdumpmove.dir").getOrElse("")
-			if(dsMdDumpMoveDir.equals("")){
-				Logger.warn("Will not move dumped datasets metadata to staging directory. No staging directory set.")
+    val fileSep = System.getProperty("file.separator")
+    val lineSep = System.getProperty("line.separator")
+    var dsMdDumpDir = play.api.Play.configuration.getString("datasetdump.dir").getOrElse("")
+    if (!dsMdDumpDir.endsWith(fileSep))
+      dsMdDumpDir = dsMdDumpDir + fileSep
+    var dsMdDumpMoveDir = play.api.Play.configuration.getString("datasetdumpmove.dir").getOrElse("")
+    if (dsMdDumpMoveDir.equals("")) {
+      Logger.warn("Will not move dumped datasets metadata to staging directory. No staging directory set.")
 			}
 			else{
-			    if(!dsMdDumpMoveDir.endsWith(fileSep))
-				  dsMdDumpMoveDir = dsMdDumpMoveDir + fileSep
-			}
+      if (!dsMdDumpMoveDir.endsWith(fileSep))
+        dsMdDumpMoveDir = dsMdDumpMoveDir + fileSep
+    }
 
-			var unsuccessfulDumps: ListBuffer[String] = ListBuffer.empty
+    var unsuccessfulDumps: ListBuffer[String] = ListBuffer.empty
 
-			for(dataset <- Dataset.findAll){
-			  try{
-				  val dsId = dataset.id.toString
+    for (dataset <- Dataset.findAll) {
+      try {
+        val dsId = dataset.id.toString
 
-				  val dsTechnicalMetadata = getTechnicalMetadataJSON(dataset.id)
-				  val dsUserMetadata = getUserMetadataJSON(dataset.id)
-				  val dsXMLMetadata = getXMLMetadataJSON(dataset.id)
-				  if(dsTechnicalMetadata != "{}" || dsUserMetadata != "{}" || dsXMLMetadata != "{}"){
+        val dsTechnicalMetadata = getTechnicalMetadataJSON(dataset.id)
+        val dsUserMetadata = getUserMetadataJSON(dataset.id)
+        val dsXMLMetadata = getXMLMetadataJSON(dataset.id)
+        if (dsTechnicalMetadata != "{}" || dsUserMetadata != "{}" || dsXMLMetadata != "{}") {
 
-				    val datasetnameNoSpaces = dataset.name.replaceAll("\\s+","_")
-				    val filePathInDirs = dsId.charAt(dsId.length()-3)+ fileSep + dsId.charAt(dsId.length()-2)+dsId.charAt(dsId.length()-1)+ fileSep + dsId + fileSep + datasetnameNoSpaces + "__metadata.txt"
-				    val mdFile = new java.io.File(dsMdDumpDir + filePathInDirs)
-				    mdFile.getParentFile().mkdirs()
+          val datasetnameNoSpaces = dataset.name.replaceAll("\\s+", "_")
+          val filePathInDirs = dsId.charAt(dsId.length() - 3) + fileSep + dsId.charAt(dsId.length() - 2) + dsId.charAt(dsId.length() - 1) + fileSep + dsId + fileSep + datasetnameNoSpaces + "__metadata.txt"
+          val mdFile = new java.io.File(dsMdDumpDir + filePathInDirs)
+          mdFile.getParentFile().mkdirs()
 
-				    val fileWriter =  new BufferedWriter(new FileWriter(mdFile))
-					fileWriter.write(dsTechnicalMetadata + lineSep + lineSep + dsUserMetadata + lineSep + lineSep + dsXMLMetadata)
-					fileWriter.close()
+          val fileWriter = new BufferedWriter(new FileWriter(mdFile))
+          fileWriter.write(dsTechnicalMetadata + lineSep + lineSep + dsUserMetadata + lineSep + lineSep + dsXMLMetadata)
+          fileWriter.close()
 
-					if(!dsMdDumpMoveDir.equals("")){
-					  try{
-						  val mdMoveFile = new java.io.File(dsMdDumpMoveDir + filePathInDirs)
-					      mdMoveFile.getParentFile().mkdirs()
+          if (!dsMdDumpMoveDir.equals("")) {
+            try {
+              val mdMoveFile = new java.io.File(dsMdDumpMoveDir + filePathInDirs)
+              mdMoveFile.getParentFile().mkdirs()
 
-						  if(mdFile.renameTo(mdMoveFile)){
-			            	Logger.debug("Dataset metadata dumped and moved to staging directory successfully.")
-						  }else{
-			            	Logger.warn("Could not move dumped dataset metadata to staging directory.")
-			            	throw new Exception("Could not move dumped dataset metadata to staging directory.")
-						  }
+              if (mdFile.renameTo(mdMoveFile)) {
+                Logger.debug("Dataset metadata dumped and moved to staging directory successfully.")
+              } else {
+                Logger.warn("Could not move dumped dataset metadata to staging directory.")
+                throw new Exception("Could not move dumped dataset metadata to staging directory.")
+              }
 					  }catch {case ex:Exception =>{
-						  val badDatasetId = dataset.id.toString
-						  Logger.error("Unable to stage dumped metadata of dataset with id "+badDatasetId+": "+ex.printStackTrace())
-						  unsuccessfulDumps += badDatasetId
-					  }}
-					}
+                val badDatasetId = dataset.id.toString
+                Logger.error("Unable to stage dumped metadata of dataset with id " + badDatasetId + ": " + ex.printStackTrace())
+                unsuccessfulDumps += badDatasetId
+              }
+            }
+          }
 
-				  }
-			  }catch {case ex:Exception =>{
-			    val badDatasetId = dataset.id.toString
-			    Logger.error("Unable to dump metadata of dataset with id "+badDatasetId+": "+ex.printStackTrace())
-			    unsuccessfulDumps += badDatasetId
-			  }}
-			}
+        }
+      } catch {
+        case ex: Exception => {
+          val badDatasetId = dataset.id.toString
+          Logger.error("Unable to dump metadata of dataset with id " + badDatasetId + ": " + ex.printStackTrace())
+          unsuccessfulDumps += badDatasetId
+        }
+      }
+    }
 
-		    return unsuccessfulDumps.toList
-	}
+    return unsuccessfulDumps.toList
+  }
 
-    def dumpAllDatasetGroupings(): List[String] = {
+  def dumpAllDatasetGroupings(): List[String] = {
 
-		    Logger.debug("Dumping dataset groupings of all datasets.")
+    Logger.debug("Dumping dataset groupings of all datasets.")
 
-		    val fileSep = System.getProperty("file.separator")
-		    val lineSep = System.getProperty("line.separator")
-		    var datasetsDumpDir = play.api.Play.configuration.getString("datasetdump.dir").getOrElse("")
-			if(!datasetsDumpDir.endsWith(fileSep))
-				datasetsDumpDir = datasetsDumpDir + fileSep
-			var dsDumpMoveDir = play.api.Play.configuration.getString("datasetdumpmove.dir").getOrElse("")
-			if(dsDumpMoveDir.equals("")){
-				Logger.warn("Will not move dumped dataset groupings to staging directory. No staging directory set.")
+    val fileSep = System.getProperty("file.separator")
+    val lineSep = System.getProperty("line.separator")
+    var datasetsDumpDir = play.api.Play.configuration.getString("datasetdump.dir").getOrElse("")
+    if (!datasetsDumpDir.endsWith(fileSep))
+      datasetsDumpDir = datasetsDumpDir + fileSep
+    var dsDumpMoveDir = play.api.Play.configuration.getString("datasetdumpmove.dir").getOrElse("")
+    if (dsDumpMoveDir.equals("")) {
+      Logger.warn("Will not move dumped dataset groupings to staging directory. No staging directory set.")
 			}
 			else{
-			    if(!dsDumpMoveDir.endsWith(fileSep))
-				  dsDumpMoveDir = dsDumpMoveDir + fileSep
-			}
+      if (!dsDumpMoveDir.endsWith(fileSep))
+        dsDumpMoveDir = dsDumpMoveDir + fileSep
+    }
 
-			var unsuccessfulDumps: ListBuffer[String] = ListBuffer.empty
+    var unsuccessfulDumps: ListBuffer[String] = ListBuffer.empty
 
-			for(dataset <- Dataset.findAll){
-			  try{
-				  val dsId = dataset.id.toString
-				  val datasetnameNoSpaces = dataset.name.replaceAll("\\s+","_")
-				  val filePathInDirs = dsId.charAt(dsId.length()-3)+ fileSep + dsId.charAt(dsId.length()-2)+dsId.charAt(dsId.length()-1)+ fileSep + dsId + fileSep + datasetnameNoSpaces + ".txt"
+    for (dataset <- Dataset.findAll) {
+      try {
+        val dsId = dataset.id.toString
+        val datasetnameNoSpaces = dataset.name.replaceAll("\\s+", "_")
+        val filePathInDirs = dsId.charAt(dsId.length() - 3) + fileSep + dsId.charAt(dsId.length() - 2) + dsId.charAt(dsId.length() - 1) + fileSep + dsId + fileSep + datasetnameNoSpaces + ".txt"
 
-				  val groupingFile = new java.io.File(datasetsDumpDir + filePathInDirs)
-				  groupingFile.getParentFile().mkdirs()
+        val groupingFile = new java.io.File(datasetsDumpDir + filePathInDirs)
+        groupingFile.getParentFile().mkdirs()
 
-				  val filePrintStream =  new PrintStream(groupingFile)
-				  for(fileId <- dataset.files){
-            files.get(fileId).foreach(file =>
-				      filePrintStream.println("id:"+file.id.toString+" "+"filename:"+file.filename)
-            )
-				  }
-				  filePrintStream.close()
+        val filePrintStream = new PrintStream(groupingFile)
+        for (fileId <- dataset.files) {
+          files.get(fileId).foreach(file =>
+            filePrintStream.println("id:" + file.id.toString + " " + "filename:" + file.filename))
+        }
+        filePrintStream.close()
 
-				  if(!dsDumpMoveDir.equals("")){
-					  try{
-						  val groupingMoveFile = new java.io.File(dsDumpMoveDir + filePathInDirs)
-					      groupingMoveFile.getParentFile().mkdirs()
+        if (!dsDumpMoveDir.equals("")) {
+          try {
+            val groupingMoveFile = new java.io.File(dsDumpMoveDir + filePathInDirs)
+            groupingMoveFile.getParentFile().mkdirs()
 
-						  if(groupingFile.renameTo(groupingMoveFile)){
-			            	Logger.debug("Dataset file grouping dumped and moved to staging directory successfully.")
-						  }else{
-			            	Logger.warn("Could not move dumped dataset file grouping to staging directory.")
-			            	throw new Exception("Could not move dumped dataset file grouping to staging directory.")
-						  }
-					  }catch {case ex:Exception =>{
-						  val badDatasetId = dataset.id.toString
-						  Logger.error("Unable to stage file grouping of dataset with id "+badDatasetId+": "+ex.printStackTrace())
-						  unsuccessfulDumps += badDatasetId
-					  }}
-					}
-			  }catch {case ex:Exception =>{
-			    val badDatasetId = dataset.id.toString
-			    Logger.error("Unable to dump file grouping of dataset with id "+badDatasetId+": "+ex.printStackTrace())
-			    unsuccessfulDumps += badDatasetId
-			  }}
-			}
+            if (groupingFile.renameTo(groupingMoveFile)) {
+              Logger.debug("Dataset file grouping dumped and moved to staging directory successfully.")
+            } else {
+              Logger.warn("Could not move dumped dataset file grouping to staging directory.")
+              throw new Exception("Could not move dumped dataset file grouping to staging directory.")
+            }
+          } catch {
+            case ex: Exception => {
+              val badDatasetId = dataset.id.toString
+              Logger.error("Unable to stage file grouping of dataset with id " + badDatasetId + ": " + ex.printStackTrace())
+              unsuccessfulDumps += badDatasetId
+            }
+          }
+        }
+      } catch {
+        case ex: Exception => {
+          val badDatasetId = dataset.id.toString
+          Logger.error("Unable to dump file grouping of dataset with id " + badDatasetId + ": " + ex.printStackTrace())
+          unsuccessfulDumps += badDatasetId
+        }
+      }
+    }
 
-		    return unsuccessfulDumps.toList
-	}
+    return unsuccessfulDumps.toList
+  }
 
   def addFollower(id: UUID, userId: UUID) {
     Dataset.dao.update(MongoDBObject("_id" -> new ObjectId(id.stringify)),
-                    $addToSet("followers" -> new ObjectId(userId.stringify)), false, false, WriteConcern.Safe)
+      $addToSet("followers" -> new ObjectId(userId.stringify)), false, false, WriteConcern.Safe)
   }
 
   def removeFollower(id: UUID, userId: UUID) {
     Dataset.dao.update(MongoDBObject("_id" -> new ObjectId(id.stringify)),
-                    $pull("followers" -> new ObjectId(userId.stringify)), false, false, WriteConcern.Safe)
+      $pull("followers" -> new ObjectId(userId.stringify)), false, false, WriteConcern.Safe)
   }
 
 }
@@ -1526,8 +1508,8 @@ object DatasetXMLMetadata extends ModelCompanion[DatasetXMLMetadata, ObjectId] {
  * services classes that utilize it.
  */
 object LicenseData extends ModelCompanion[LicenseData, ObjectId] {
-//  val collection = MongoConnection()("test-alt")("licensedata")
-//  val dao = new SalatDAO[LicenseData, ObjectId](collection = collection) {}
+  //  val collection = MongoConnection()("test-alt")("licensedata")
+  //  val dao = new SalatDAO[LicenseData, ObjectId](collection = collection) {}
   val dao = current.plugin[MongoSalatPlugin] match {
     case None => throw new RuntimeException("No MongoSalatPlugin");
     case Some(x) => new SalatDAO[LicenseData, ObjectId](collection = x.collection("licensedata")) {}

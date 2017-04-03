@@ -20,25 +20,26 @@ class DiskByteStorageService extends ByteStorageService {
    * Save the bytes to disk, returns (path, length)
    */
   def save(inputStream: InputStream, prefix: String): Option[(String, Long)] = {
-    Play.current.configuration.getString("medici2.diskStorage.path") match {
+    Play.current.configuration.getString("clowder.diskStorage.path") match {
       case Some(root) => {
-        var depth = Play.current.configuration.getInt("medici2.diskStorage.depth").getOrElse(3)
+        var depth = Play.current.configuration.getInt("clowder.diskStorage.depth").getOrElse(3)
 
         var relativePath = ""
-        var idstr = UUID.generate().stringify
+        val id = UUID.generate().stringify
+        var folders = id
         // id seems to be same at the start but more variable at the end
-        while (depth > 0 && idstr.length > 4) {
+        while (depth > 0 && folders.length > 4) {
           depth -= 1
           if (relativePath == "") {
-            relativePath = idstr.takeRight(2)
+            relativePath = folders.takeRight(2)
           } else {
-            relativePath += java.io.File.separatorChar + idstr.takeRight(2)
+            relativePath += java.io.File.separatorChar + folders.takeRight(2)
           }
-          idstr = idstr.dropRight(2)
+          folders = folders.dropRight(2)
         }
 
         // need to use whole id again, to make sure it is unique
-        relativePath += java.io.File.separatorChar + idstr
+        relativePath += java.io.File.separatorChar + id
 
         // combine all pieces
         val filePath = makePath(root, prefix, relativePath)
@@ -83,7 +84,7 @@ class DiskByteStorageService extends ByteStorageService {
    * Delete actualy bytes from disk
    */
   def delete(path: String, prefix: String): Boolean = {
-    Play.current.configuration.getString("medici2.diskStorage.path") match {
+    Play.current.configuration.getString("clowder.diskStorage.path") match {
       case Some(root) => {
         if (path.startsWith(makePath(root, prefix, ""))) {
           // delete the bytes

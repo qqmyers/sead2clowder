@@ -35,12 +35,13 @@ class Extractions @Inject()(
   extractors: ExtractorService,
   previews: PreviewService,
   sqarql: RdfSPARQLService,
-  thumbnails: ThumbnailService) extends ApiController {
+  thumbnails: ThumbnailService,
+  appConfig: AppConfigurationService) extends ApiController {
 
   /**
    * Uploads file for extraction and returns a file id ; It does not index the file.
    * This is very similar to upload().
-   * Needs to be decided on the semantics of upload for DTS extraction service and its difference to upload file to Medici for curation and storage.
+   * Needs to be decided on the semantics of upload for DTS extraction service and its difference to upload file to Clowder for curation and storage.
    * This may change accordingly.
    */
   @ApiOperation(value = "Uploads a file for extraction of metadata and returns file id",
@@ -95,6 +96,10 @@ class Extractions @Inject()(
                 val file = files.save(inputStream, filename, response.header("Content-Type"), user, null)
                 file match {
                   case Some(f) => {
+                    // Add new file & byte count to appConfig
+                    appConfig.incrementCount('files, 1)
+                    appConfig.incrementCount('bytes, f.length)
+
                     var fileType = f.contentType
                     val id = f.id
                     fileType = f.contentType
@@ -485,15 +490,26 @@ class Extractions @Inject()(
   @ApiOperation(value = "Lists information about a specific extractor",
     notes = "  ",
     responseClass = "None", httpMethod = "GET")
-  def getExtractorInfo(extractor_id: UUID) = AuthenticatedAction { implicit request =>
-    Ok(Json.toJson(extractors.getExtractorInfo(extractor_id)))
+  def getExtractorInfo(extractorName: String) = AuthenticatedAction { implicit request =>
+    extractors.getExtractorInfo(extractorName) match {
+      case Some(info) => Ok(Json.toJson(info))
+      case None => NotFound(Json.obj("status" -> "KO", "message" -> "Extractor info not found"))
+    }
   }
 
   @ApiOperation(value = "Register information about an extractor. Used when an extractor starts up.",
     notes = "  ",
     responseClass = "None", httpMethod = "POST")
   def addExtractorInfo() = AuthenticatedAction(parse.json) { implicit request =>
-    val extractionInfoResult = request.body.validate[ExtractorInfo]
+
+    // If repository is of type object, change it into an array.
+    // This is for backward compatibility with requests from existing extractors.
+    val requestJson = request.body \ "repository" match {
+      case rep: JsObject => request.body.as[JsObject] ++ Json.obj("repository" ->  Json.arr(rep))
+      case _ => request.body
+    }
+
+    val extractionInfoResult = requestJson.validate[ExtractorInfo]
     extractionInfoResult.fold(
       errors => {
         BadRequest(Json.obj("status" -> "KO", "message" -> JsError.toFlatJson(errors)))
@@ -553,7 +569,11 @@ class Extractions @Inject()(
               idAndFlags
             }
 
-            p.extract(ExtractorMessage(new UUID(originalId), file.id, host, key, extra, file.length.toString, null, newFlags))
+            var datasetId: UUID = null
+            datasets.findByFileId(file_id).map(ds => {
+              datasetId = ds.id
+            })
+            p.extract(ExtractorMessage(new UUID(originalId), file.id, host, key, extra, file.length.toString, datasetId, newFlags))
             Ok(Json.obj("status" -> "OK"))
           }
           case None =>
