@@ -201,9 +201,6 @@ function postComment(id, resourceType) {
                var geturl = jsRoutes.api.Users.list().url
            }
 
-            console.log("!!")
-           console.log(geturl)
-
            return {
                onDataRequest:function (mode, query, callback) {
                    $.ajax({

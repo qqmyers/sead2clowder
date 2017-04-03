@@ -2642,7 +2642,7 @@ class  Datasets @Inject()(
         }
         else NotFound(s"Error: No users found for $id.")
       }
-      case None => NotFound(s"Error: $id not found.")
+      case None => NotFound(s"Error: No dataset with $id found.")
     }
 
   }

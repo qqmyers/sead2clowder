@@ -1806,7 +1806,7 @@ class Files @Inject()(
             "identityProvider" -> user.format(true)
           ))))
         }
-        else NotFound(s"Error: No users found for $id.")
+        else NotFound(s"Error: No user found for $id.")
       }
       case None => NotFound(s"File $id not found")
     }

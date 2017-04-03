@@ -202,11 +202,11 @@ class Comments @Inject()(datasets: DatasetService, comments: CommentService, eve
 			users.get(commenterId) match {
 				case Some(u) => {
 					events.addRequestEvent(users.get(userid), u, resourceID, resourceName, "mention_"+resourceType+"_comment")
-					Ok("mention event added to user feed")
+					Ok(s"Mention event added to ${u.fullName}'s feed")
 				}
 				case None => {
 					events.addObjectEvent(users.get(userid), resourceID, resourceName, "mention_"+resourceType+"_comment")
-					Ok("mention event added to user feed")
+					Ok(s"Mention event added to ${u.fullName}'s feed")
 				}
 			}
 
