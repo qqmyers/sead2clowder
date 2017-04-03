@@ -6,13 +6,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 ### Added
+- Added ability to download Collection. Download Collection and Dataset both use BagIt by default. [CATS-571] (https://opensource.ncsa.illinois.edu/jira/browse/CATS-571)
 ### Changed
 ### Fixed
 
 ## 1.2.0
 
 ### Added
-- Docker container to add normal/admin users for Clowder. [BD-1167](https://opensource.ncsa.illinois.edu/jira/browse/BD-1167)
+- Docker container to add normal/admin users for Clowder. [BD-1167](https://opensource.ncsa.illinois.edu/jira/browse/BD-1167) 
 - ORCID/other ID expansion - uses SEAD's PDT service to expand user ids entered as creator/contact metadata so they show 
   as a name, link to profile, and email(if available)[SEAD-1126](https://opensource.ncsa.illinois.edu/jira/browse/SEAD-1126) 
 - Can add a list of creators to a Dataset and publication request(Staging Area plugin). This addition also supports 
