@@ -538,9 +538,9 @@ class Spaces @Inject()(spaces: SpaceService, users: UserService, events: EventSe
            title = Some(Messages("trial.title", Messages("spaces.title")))
          }
          if (date != "") {
-           spaces.listAccess (date, nextPage, limit, Set[Permission] (Permission.ViewSpace), request.user, showAll, showPublic, trialValue,showOnlyShared)
+           spaces.listAccess (date, nextPage, limit, Set[Permission] (Permission.ViewSpace), request.user, showAll, showPublic, trialValue)
          } else {
-           spaces.listAccess(limit, Set[Permission](Permission.ViewSpace), request.user, showAll, showPublic, trialValue, showOnlyShared)
+           spaces.listAccess(limit, Set[Permission](Permission.ViewSpace), request.user, showAll, showPublic, trialValue)
          }
 
 
@@ -552,7 +552,7 @@ class Spaces @Inject()(spaces: SpaceService, users: UserService, events: EventSe
        val first = Formatters.iso8601(spaceList.head.created)
        val space = person match {
          case Some(p) => spaces.listUser(first, nextPage=false, 1, request.user, showAll, p)
-         case None => spaces.listAccess(first, nextPage = false, 1, Set[Permission](Permission.ViewSpace), request.user, showAll, showPublic, onlyTrial,showOnlyShared)
+         case None => spaces.listAccess(first, nextPage = false, 1, Set[Permission](Permission.ViewSpace), request.user, showAll, showPublic, onlyTrial)
        }
        if (space.nonEmpty && space.head.id != spaceList.head.id) {
          first
@@ -568,7 +568,7 @@ class Spaces @Inject()(spaces: SpaceService, users: UserService, events: EventSe
        val last = Formatters.iso8601(spaceList.last.created)
        val ds = person match {
          case Some(p) => spaces.listUser(last, nextPage=true, 1, request.user, showAll, p)
-         case None => spaces.listAccess(last, nextPage=true, 1, Set[Permission](Permission.ViewSpace), request.user, showAll, showPublic, onlyTrial,showOnlyShared)
+         case None => spaces.listAccess(last, nextPage=true, 1, Set[Permission](Permission.ViewSpace), request.user, showAll, showPublic, onlyTrial)
        }
        if (ds.nonEmpty && ds.head.id != spaceList.last.id) {
          last
