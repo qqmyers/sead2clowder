@@ -185,14 +185,14 @@ class MongoDBDatasetService @Inject() (
   /**
    * Return a list of datasets the user has access to starting at a specific date.
    */
-  def listAccess(date: String, nextPage: Boolean, limit: Integer, permissions: Set[Permission], user: Option[User], showAll: Boolean, showPublic: Boolean, showOnlyShared : Boolean): List[Dataset] = {
+  def listAccess(date: String, nextPage: Boolean, limit: Integer, permissions: Set[Permission], user: Option[User], showAll: Boolean, showPublic: Boolean): List[Dataset] = {
     list(Some(date), nextPage, limit, None, None, None, permissions, user, None, showAll, None, showPublic)
   }
 
   /**
    * Return a list of datasets the user has access to starting at a specific date.
    */
-  def listAccess(date: String, nextPage: Boolean, limit: Integer, title: String, permissions: Set[Permission], user: Option[User], showAll: Boolean, showPublic: Boolean, showOnlyShared : Boolean): List[Dataset] = {
+  def listAccess(date: String, nextPage: Boolean, limit: Integer, title: String, permissions: Set[Permission], user: Option[User], showAll: Boolean, showPublic: Boolean): List[Dataset] = {
     list(Some(date), nextPage, limit, Some(title), None, None, permissions, user, None, showAll, None, showPublic)
   }
 
@@ -267,7 +267,7 @@ class MongoDBDatasetService @Inject() (
    * return count based on input
    */
   private def count(date: Option[String], nextPage: Boolean, title: Option[String], collection: Option[String], space: Option[String], permissions: Set[Permission], user: Option[User], showAll: Boolean, owner: Option[User]): Long = {
-    val (filter, _) = filteredQuery(date, nextPage, title, collection, space, Set[Permission](Permission.ViewDataset), user, None, showAll, owner, true,false)
+    val (filter, _) = filteredQuery(date, nextPage, title, collection, space, Set[Permission](Permission.ViewDataset), user, None, showAll, owner, true)
     Dataset.count(filter)
   }
 
@@ -275,8 +275,8 @@ class MongoDBDatasetService @Inject() (
   /**
    * return list based on input
    */
-  private def list(date: Option[String], nextPage: Boolean, limit: Integer, title: Option[String], collection: Option[String], space: Option[String], permissions: Set[Permission], user: Option[User], status: Option[String], showAll: Boolean, owner: Option[User], showPublic: Boolean = true, showOnlyShared : Boolean = true): List[Dataset] = {
-    val (filter, sort) = filteredQuery(date, nextPage, title, collection, space, permissions, user, status, showAll, owner, showPublic,showOnlyShared)
+  private def list(date: Option[String], nextPage: Boolean, limit: Integer, title: Option[String], collection: Option[String], space: Option[String], permissions: Set[Permission], user: Option[User], status: Option[String], showAll: Boolean, owner: Option[User], showPublic: Boolean = true): List[Dataset] = {
+    val (filter, sort) = filteredQuery(date, nextPage, title, collection, space, permissions, user, status, showAll, owner, showPublic)
     if (date.isEmpty || nextPage) {
       Dataset.find(filter).sort(sort).limit(limit).toList
     } else {
@@ -287,7 +287,7 @@ class MongoDBDatasetService @Inject() (
   /**
    * Monster function, does all the work. Will create a filters and sorts based on the given parameters
    */
-  private def filteredQuery(date: Option[String], nextPage: Boolean, titleSearch: Option[String], collection: Option[String], space: Option[String], permissions: Set[Permission], user: Option[User], status:Option[String], showAll: Boolean, owner: Option[User], showPublic: Boolean, showOnlyShared : Boolean): (DBObject, DBObject) = {
+  private def filteredQuery(date: Option[String], nextPage: Boolean, titleSearch: Option[String], collection: Option[String], space: Option[String], permissions: Set[Permission], user: Option[User], status:Option[String], showAll: Boolean, owner: Option[User], showPublic: Boolean): (DBObject, DBObject) = {
     // filter =
     // - owner   == show datasets owned by owner that user can see
     // - space   == show all datasets in space
@@ -321,14 +321,14 @@ class MongoDBDatasetService @Inject() (
           //if you are viewing other user's datasets, return the ones you have permission. otherwise filterAccess should
           // including your own datasets. the if condition here is mainly for efficiency.
           if(user == owner || owner.isEmpty) {
-            if (owner.isEmpty && !onlyShowShared){
+            if (owner.isEmpty && !showOnlyShared){
               orlist += MongoDBObject("author._id" -> new ObjectId(u.id.stringify))
             } else if (!owner.isEmpty){
               orlist += MongoDBObject("author._id" -> new ObjectId(u.id.stringify))
             }
           }
           val permissionsString = permissions.map(_.toString)
-          val okspaces = if (onlyShowShared){
+          val okspaces = if (showOnlyShared){
             u.spaceandrole.filter(_.role.permissions.intersect(permissionsString).nonEmpty).filter((p: UserSpaceAndRole)=>
               (spaces.get(p.spaceId) match {
                 case Some(space) => {
@@ -363,7 +363,7 @@ class MongoDBDatasetService @Inject() (
     }
     val filterOwner = owner match {
       case Some(o) => {
-        if (onlyShowShared){
+        if (showOnlyShared){
           MongoDBObject()
         } else {
           MongoDBObject("author._id" -> new ObjectId(o.id.stringify))
@@ -398,7 +398,7 @@ class MongoDBDatasetService @Inject() (
       case None => MongoDBObject()
     }
 
-    val filterNotShared = if (onlyShowShared && owner.isEmpty){
+    val filterNotShared = if (showOnlyShared && owner.isEmpty){
       MongoDBObject("root_spaces" -> MongoDBObject("$not" -> MongoDBObject("$size" -> 0)))
     } else {
       MongoDBObject()

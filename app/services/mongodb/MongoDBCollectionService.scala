@@ -83,21 +83,21 @@ class MongoDBCollectionService @Inject() (
    * Return a list of collections the user has access to.
    */
   def listAccess(limit: Integer, permissions: Set[Permission], user: Option[User], showAll: Boolean, showPublic: Boolean, showOnlyShared : Boolean): List[Collection] = {
-    list(None, false, limit, None, None, permissions, user, showAll, None, showPublic,showOnlyShared)
+    list(None, false, limit, None, None, permissions, user, showAll, None, showPublic, showOnlyShared)
   }
 
   /**
    * Return a list of collections the user has access to.
    */
   def listAccess(limit: Integer, title: String, permissions: Set[Permission], user: Option[User], showAll: Boolean, showPublic: Boolean, showOnlyShared : Boolean): List[Collection] = {
-    list(None, false, limit, Some(title), None, permissions, user, showAll, None, showPublic,showOnlyShared)
+    list(None, false, limit, Some(title), None, permissions, user, showAll, None, showPublic, showOnlyShared)
   }
 
   /**
    * Return a list of collections the user has access to starting at a specific date.
    */
   def listAccess(date: String, nextPage: Boolean, limit: Integer, permissions: Set[Permission], user: Option[User], showAll: Boolean, showPublic: Boolean, showOnlyShared : Boolean): List[Collection] = {
-    list(Some(date), nextPage, limit, None, None, permissions, user, showAll, None, showPublic,showOnlyShared)
+    list(Some(date), nextPage, limit, None, None, permissions, user, showAll, None, showPublic, showOnlyShared)
   }
 
   /**
@@ -158,7 +158,7 @@ class MongoDBCollectionService @Inject() (
    * Return a list of the requested collections
    */
   private def list(date: Option[String], nextPage: Boolean, limit: Integer, title: Option[String], space: Option[String], permissions: Set[Permission], user: Option[User], showAll: Boolean, owner: Option[User], showPublic: Boolean = true, showOnlyShared : Boolean = false): List[Collection] = {
-    val (filter, sort) = filteredQuery(date, nextPage, title, space, permissions, user, showAll, owner, showPublic,showOnlyShared)
+    val (filter, sort) = filteredQuery(date, nextPage, title, space, permissions, user, showAll, owner, showPublic, showOnlyShared)
     if (date.isEmpty || nextPage) {
       Collection.find(filter).sort(sort).limit(limit).toList
     } else {
