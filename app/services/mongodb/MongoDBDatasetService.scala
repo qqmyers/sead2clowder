@@ -320,13 +320,11 @@ class MongoDBDatasetService @Inject() (
           //if you are viewing other user's datasets, return the ones you have permission. otherwise filterAccess should
           // including your own datasets. the if condition here is mainly for efficiency.
           if(user == owner || owner.isEmpty) {
-            if (owner.isEmpty && !onlyShowShared){
+            if (owner.isEmpty && !onlyShowShared) {
               orlist += MongoDBObject("author._id" -> new ObjectId(u.id.stringify))
-            } else if (!owner.isEmpty){
+            } else if (!owner.isEmpty) {
               orlist += MongoDBObject("author._id" -> new ObjectId(u.id.stringify))
             }
-          if (user == owner || owner.isEmpty) {
-            orlist += MongoDBObject("author._id" -> new ObjectId(u.id.stringify))
           }
           val permissionsString = permissions.map(_.toString)
           val okspaces = if (onlyShowShared){
