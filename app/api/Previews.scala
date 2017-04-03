@@ -21,8 +21,6 @@ import java.io.FileReader
 import javax.inject.{Inject, Singleton}
 import services.{TileService, PreviewService}
 import com.wordnik.swagger.annotations.{ApiOperation, Api}
-import util.FileUtils
-
 /**
  * Files and datasets previews.
  */
@@ -91,7 +89,7 @@ class Previews @Inject()(previews: PreviewService, tiles: TileService) extends A
               case None => {
                 Ok.chunked(Enumerator.fromStream(inputStream))
                   .withHeaders(CONTENT_TYPE -> contentType)
-                  .withHeaders(CONTENT_DISPOSITION -> (FileUtils.encodeAttachment(filename, request.headers.get("user-agent").getOrElse(""))))
+                  .withHeaders(CONTENT_DISPOSITION -> ("attachment; filename=" + filename))
 
               }
             }
@@ -250,7 +248,7 @@ class Previews @Inject()(previews: PreviewService, tiles: TileService) extends A
                   case None => {
                     Ok.chunked(Enumerator.fromStream(inputStream))
                       .withHeaders(CONTENT_TYPE -> contentType)
-                      .withHeaders(CONTENT_DISPOSITION -> (FileUtils.encodeAttachment(tilename, request.headers.get("user-agent").getOrElse(""))))
+                      .withHeaders(CONTENT_DISPOSITION -> ("attachment; filename=" + tilename))
 
                   }
                 }

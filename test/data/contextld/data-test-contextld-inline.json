@@ -11,7 +11,7 @@
       "@type": "@id"
     }
   },
-  "name": "Clowder Context",
-  "homepage": "http://clowder.ncsa.illinois.edu",
+  "name": "Medici Context",
+  "homepage": "http://isda.ncsa.illinois.edu/drupal/",
   "image": "http://isda.ncsa.illinois.edu/drupal/sites/all/themes/danland/images/slideshows/mHARP_banner1a.png"
 }

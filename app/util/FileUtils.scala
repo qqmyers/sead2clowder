@@ -22,9 +22,6 @@ import scala.collection.mutable
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
 
-import javax.mail.internet.MimeUtility
-import java.net.URLEncoder
-
 object FileUtils {
   val appConfig: AppConfigurationService = DI.injector.getInstance(classOf[AppConfigurationService])
 
@@ -37,7 +34,6 @@ object FileUtils {
   lazy val events: EventService = DI.injector.getInstance(classOf[EventService])
   lazy val userService: UserService = DI.injector.getInstance(classOf[UserService])
   lazy val folders: FolderService = DI.injector.getInstance(classOf[FolderService])
-
 
   def getContentType(filename: Option[String], contentType: Option[String]): String = {
     getContentType(filename.getOrElse(""), contentType)
@@ -543,9 +539,6 @@ object FileUtils {
           case Some(f) => {
             val fixedfile = f.copy(filename=nameOfFile, contentType=fileType, loader=loader, loader_id=loader_id, length=length, author=realUser)
             files.save(fixedfile)
-            //Update counts
-            appConfig.incrementCount('files, 1)
-            appConfig.incrementCount('bytes, f.length)
             Logger.debug("Uploading Completed")
             Some(fixedfile)
           }
@@ -567,9 +560,6 @@ object FileUtils {
   private def savePath(file: File, path: String): Option[File] = {
     files.get(file.id) match {
       case Some(f) => {
-        //Update counts
-        appConfig.incrementCount('files, 1)
-        appConfig.incrementCount('bytes, f.length)
         return Some(f)
       }
       case None => {
@@ -589,8 +579,6 @@ object FileUtils {
           case Some(f) => {
             val fixedfile = f.copy(contentType=conn.getContentType, loader=loader, loader_id=loader_id, length=length)
             files.save(fixedfile)
-            appConfig.incrementCount('files, 1)
-            appConfig.incrementCount('bytes, f.length)
             Logger.debug("Uploading Completed")
             Some(fixedfile)
           }
@@ -738,41 +726,4 @@ object FileUtils {
   // ----------------------------------------------------------------------
   // END File upload
   // ----------------------------------------------------------------------
-  
-  //Download CONTENT-DISPOSITION encoding
-  //
-  def encodeAttachment(filename: String, userAgent: String) : String = {
-    val filenameStar = if (userAgent.indexOf("MSIE") > -1) {
-                              URLEncoder.encode(filename, "UTF-8")
-                            } else if (userAgent.indexOf("Edge") > -1){
-                              MimeUtility.encodeText(filename
-                                  .replaceAll(",","%2C")
-                                  .replaceAll("\"","%22")
-                                  .replaceAll("/","%2F")
-                                  .replaceAll("=","%3D")
-                                  .replaceAll("&","%26")
-                                  .replaceAll(":","%3A")
-                                  .replaceAll(";","%3B")
-                                  .replaceAll("\\?","%3F")
-                                  .replaceAll("\\*","%2A")
-                                  ,"utf-8","Q")
-                            } else {
-                              MimeUtility.encodeText(filename
-                                  .replaceAll("%","%25")
-                                  .replaceAll(" ","%20")
-                                  .replaceAll("\"","%22")
-                                  .replaceAll(",","%2C")
-                                  .replaceAll("/","%2F")
-                                  .replaceAll("=","%3D")
-                                  .replaceAll(":","%3A")
-                                  .replaceAll(";","%3B")
-                                  .replaceAll("\\*","%2A")
-                                  ,"utf-8","Q")
-                            }
-    Logger.debug(userAgent + ": " + filenameStar)
-    
-    //Return the complete attachment header info
-    "attachment; filename*=UTF-8''" + filenameStar
-  }
-  
 }

@@ -9,7 +9,6 @@ import javax.inject.Inject
 import models._
 import services._
 import com.wordnik.swagger.annotations.ApiOperation
-import play.api.i18n.Messages
 
 
 
@@ -93,8 +92,8 @@ class Comments @Inject()(datasets: DatasetService, comments: CommentService, eve
 						                 Ok(Json.obj("status" -> "success"))
 						             }
 						             else {
-						                 Logger.error(s"Only the ${Messages("owner").toLowerCase()} can delete the comment.")
-						                 BadRequest(toJson(s"Only ${Messages("owner").toLowerCase()} can delete the comment."))
+						                 Logger.error("Only the owner can delete the comment.")
+						                 BadRequest(toJson("Only owner can delete the comment."))
 						             }
 						       }						       
 						       case None => {
@@ -169,8 +168,8 @@ class Comments @Inject()(datasets: DatasetService, comments: CommentService, eve
 	    		                 Ok(Json.obj("status" -> "success"))
 	    		             }
 	    		             else {
-	    		                 Logger.error(s"Only the ${Messages("owner").toLowerCase()} can edit the comment.")
-	    		                 BadRequest(toJson(s"Only ${Messages("owner").toLowerCase()} can edit the comment."))
+	    		                 Logger.error("Only the owner can edit the comment.")
+	    		                 BadRequest(toJson("Only owner can edit the comment."))
 	    		             }
 	    		         }
 	    		         case None => {

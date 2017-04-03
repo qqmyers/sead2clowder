@@ -23,13 +23,7 @@ import controllers.Utils
  */
 @Api(value = "/collections", listingPath = "/api-docs.json/collections", description = "Collections are groupings of datasets")
 @Singleton
-class Collections @Inject() (datasets: DatasetService,
-                             collections: CollectionService,
-                             previews: PreviewService,
-                             userService: UserService,
-                             events: EventService,
-                             spaces:SpaceService,
-                             appConfig: AppConfigurationService) extends ApiController {
+class Collections @Inject() (datasets: DatasetService, collections: CollectionService, previews: PreviewService, userService: UserService, events: EventService, spaces:SpaceService) extends ApiController {
 
   @ApiOperation(value = "Create a collection",
       notes = "",
@@ -55,7 +49,6 @@ class Collections @Inject() (datasets: DatasetService,
 
           collections.insert(c) match {
             case Some(id) => {
-              appConfig.incrementCount('collections, 1)
               c.spaces.map(spaceId => spaces.get(spaceId)).flatten.map{ s =>
                 spaces.addCollection(c.id, s.id, user)
                 collections.addToRootSpaces(c.id, s.id)
@@ -159,7 +152,6 @@ class Collections @Inject() (datasets: DatasetService,
       case Some(collection) => {
         events.addObjectEvent(request.user , collection.id, collection.name, "delete_collection")
         collections.delete(collectionId)
-        appConfig.incrementCount('collections, -1)
         current.plugin[AdminsNotifierPlugin].foreach {
           _.sendAdminsNotification(Utils.baseUrl(request),"Collection","removed",collection.id.stringify, collection.name)
         }
@@ -173,13 +165,13 @@ class Collections @Inject() (datasets: DatasetService,
     notes = "This will check for Permission.ViewCollection",
     responseClass = "None", multiValueResponse=true, httpMethod = "GET")
   def list(title: Option[String], date: Option[String], limit: Int) = PrivateServerAction { implicit request =>
-    Ok(toJson(listCollections(title, date, limit, Set[Permission](Permission.ViewCollection), false, request.user, request.user.fold(false)(_.superAdminMode))))
+    Ok(toJson(lisCollections(title, date, limit, Set[Permission](Permission.ViewCollection), false, request.user, request.user.fold(false)(_.superAdminMode))))
   }
   @ApiOperation(value = "List all collections the user can edit",
     notes = "This will check for Permission.AddResourceToCollection and Permission.EditCollection",
     responseClass = "None", httpMethod = "GET")
   def listCanEdit(title: Option[String], date: Option[String], limit: Int) = PrivateServerAction { implicit request =>
-    Ok(toJson(listCollections(title, date, limit, Set[Permission](Permission.AddResourceToCollection, Permission.EditCollection), false, request.user, request.user.fold(false)(_.superAdminMode))))
+    Ok(toJson(lisCollections(title, date, limit, Set[Permission](Permission.AddResourceToCollection, Permission.EditCollection), false, request.user, request.user.fold(false)(_.superAdminMode))))
   }
 
   def addDatasetToCollectionOptions(datasetId: UUID, title: Option[String], date: Option[String], limit: Int) = PrivateServerAction { implicit request =>
@@ -202,7 +194,7 @@ class Collections @Inject() (datasets: DatasetService,
       }
     }
     if(listAll) {
-      collectionList = listCollections(title, date, limit, Set[Permission](Permission.AddResourceToCollection, Permission.EditCollection), false, request.user, request.user.fold(false)(_.superAdminMode))
+      collectionList = lisCollections(title, date, limit, Set[Permission](Permission.AddResourceToCollection, Permission.EditCollection), false, request.user, request.user.fold(false)(_.superAdminMode))
     }
     Ok(toJson(collectionList))
   }
@@ -214,7 +206,7 @@ class Collections @Inject() (datasets: DatasetService,
   def listPossibleParents(currentCollectionId : String, title: Option[String], date: Option[String], limit: Int) = PrivateServerAction { implicit request =>
     val selfAndAncestors = collections.getSelfAndAncestors(UUID(currentCollectionId))
     val descendants = collections.getAllDescendants(UUID(currentCollectionId)).toList
-    val allCollections = listCollections(title, date, limit, Set[Permission](Permission.AddResourceToCollection, Permission.EditCollection), false, request.user, request.user.fold(false)(_.superAdminMode))
+    val allCollections = lisCollections(None, None, limit, Set[Permission](Permission.AddResourceToCollection, Permission.EditCollection), false, request.user, request.user.fold(false)(_.superAdminMode))
     val possibleNewParents = allCollections.filter((c: Collection) =>
       if(play.api.Play.current.plugin[services.SpaceSharingPlugin].isDefined) {
         (!selfAndAncestors.contains(c) && !descendants.contains(c))
@@ -241,7 +233,7 @@ class Collections @Inject() (datasets: DatasetService,
    * Returns list of collections based on parameters and permissions.
    * TODO this needs to be cleaned up when do permissions for adding to a resource
    */
-  private def listCollections(title: Option[String], date: Option[String], limit: Int, permission: Set[Permission], mine: Boolean, user: Option[User], superAdmin: Boolean) : List[Collection] = {
+  private def lisCollections(title: Option[String], date: Option[String], limit: Int, permission: Set[Permission], mine: Boolean, user: Option[User], superAdmin: Boolean) : List[Collection] = {
     if (mine && user.isEmpty) return List.empty[Collection]
 
     (title, date) match {
@@ -314,7 +306,6 @@ class Collections @Inject() (datasets: DatasetService,
           }
 
         }
-        collections.index(Some(id))
         Ok(Json.obj("status" -> "success"))
       }
       else {
@@ -349,7 +340,6 @@ class Collections @Inject() (datasets: DatasetService,
           }
 
         }
-        collections.index(Some(id))
         Ok(Json.obj("status" -> "success"))
       }
       else {
@@ -521,7 +511,6 @@ class Collections @Inject() (datasets: DatasetService,
 
           collections.insert(c) match {
             case Some(id) => {
-              appConfig.incrementCount('collections, 1)
               c.spaces.map{ spaceId =>
                 spaces.get(spaceId)}.flatten.map{ s =>
                   spaces.addCollection(c.id, s.id, request.user)

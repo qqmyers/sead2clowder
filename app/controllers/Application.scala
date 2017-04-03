@@ -9,8 +9,6 @@ import play.api.mvc.Action
 import services._
 import models.{UUID, User, Event}
 import play.api.Logger
-import play.api.libs.concurrent.Execution.Implicits._
-import models.DBCounts
 
 import scala.collection.mutable.ListBuffer
 
@@ -35,8 +33,6 @@ class Application @Inject() (files: FileService, collections: CollectionService,
    * Main page.
    */
   def index = UserAction(needActive = false) { implicit request =>
-    val appConfig: AppConfigurationService = DI.injector.getInstance(classOf[AppConfigurationService])
-
   	implicit val user = request.user
 
     var newsfeedEvents = List.empty[Event]
@@ -149,10 +145,15 @@ class Application @Inject() (files: FileService, collections: CollectionService,
        followedFiles.take(8), followedDatasets.take(8), followedCollections.take(8),followedSpaces.take(8), Some(true)))
       }
       case _ => {
-        val counts = appConfig.getIndexCounts()
-        Ok(views.html.index(counts.numDatasets, counts.numFiles, counts.numBytes,
-          counts.numCollections, counts.numSpaces, counts.numUsers,
-          AppConfiguration.getDisplayName, AppConfiguration.getWelcomeMessage))
+        val datasetsCount = datasets.count()
+        val filesCount = files.count()
+        val filesBytes = files.bytes()
+        val collectionsCount = collections.count()
+        val spacesCount = spaces.count()
+        val usersCount = users.count()
+
+        Ok(views.html.index(datasetsCount, filesCount, filesBytes, collectionsCount,
+          spacesCount, usersCount, AppConfiguration.getDisplayName, AppConfiguration.getWelcomeMessage))
       }
     }
   }
@@ -161,7 +162,7 @@ class Application @Inject() (files: FileService, collections: CollectionService,
     implicit val user = request.user
     val datasetsCount = datasets.count()
     val filesCount = files.count()
-    val filesBytes = 0
+    val filesBytes = files.bytes()
     val collectionsCount = collections.count()
     val spacesCount = spaces.count()
     val usersCount = users.count()
@@ -259,9 +260,6 @@ class Application @Inject() (files: FileService, collections: CollectionService,
         api.routes.javascript.Datasets.updateInformation,
         api.routes.javascript.Datasets.updateName,
         api.routes.javascript.Datasets.updateDescription,
-        api.routes.javascript.Datasets.addCreator,
-        api.routes.javascript.Datasets.removeCreator,
-        api.routes.javascript.Datasets.moveCreator,
         api.routes.javascript.Datasets.updateLicense,
         api.routes.javascript.Datasets.follow,
         api.routes.javascript.Datasets.unfollow,
@@ -295,8 +293,6 @@ class Application @Inject() (files: FileService, collections: CollectionService,
         api.routes.javascript.Previews.download,
         api.routes.javascript.Previews.getMetadata,
         api.routes.javascript.Search.searchMultimediaIndex,
-        api.routes.javascript.Search.search,
-        api.routes.javascript.Search.searchJson,
         api.routes.javascript.Sections.add,
         api.routes.javascript.Sections.delete,
         api.routes.javascript.Sections.comment,
@@ -369,18 +365,16 @@ class Application @Inject() (files: FileService, collections: CollectionService,
         api.routes.javascript.ContextLD.removeById,
         api.routes.javascript.ContextLD.getContextById,
         api.routes.javascript.Metadata.addUserMetadata,
+        api.routes.javascript.Metadata.searchByKeyValue,
         api.routes.javascript.Metadata.getDefinitions,
         api.routes.javascript.Metadata.getDefinition,
         api.routes.javascript.Metadata.getDefinitionsDistinctName,
-        api.routes.javascript.Metadata.getAutocompleteName,
         api.routes.javascript.Metadata.getUrl,
         api.routes.javascript.Metadata.addDefinition,
         api.routes.javascript.Metadata.addDefinitionToSpace,
         api.routes.javascript.Metadata.editDefinition,
         api.routes.javascript.Metadata.deleteDefinition,
         api.routes.javascript.Metadata.removeMetadata,
-        api.routes.javascript.Metadata.listPeople,
-        api.routes.javascript.Metadata.getPerson,
         api.routes.javascript.Events.sendExceptionEmail,
         api.routes.javascript.Extractions.submitFileToExtractor,
         api.routes.javascript.Extractions.submitDatasetToExtractor,
@@ -417,11 +411,9 @@ class Application @Inject() (files: FileService, collections: CollectionService,
         controllers.routes.javascript.CurationObjects.getStatusFromRepository,
         controllers.routes.javascript.CurationObjects.getPublishedData,
         controllers.routes.javascript.Events.getEvents,
-        controllers.routes.javascript.Collections.sortedListInSpace,
-        controllers.routes.javascript.Datasets.sortedListInSpace,
         controllers.routes.javascript.Collections.collection
       )
     ).as(JSON) 
   }
-
+  
 }

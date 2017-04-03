@@ -14,17 +14,18 @@ import play.api.Play
 import securesocial.controllers.TemplatesPlugin
 import securesocial.core.providers.utils.Mailer
 import securesocial.core.providers.{Token, UsernamePasswordProvider}
-import services.{AppConfigurationService, AppConfiguration, UserService}
+import services.AppConfiguration
 import javax.inject.Inject
 
 import play.api.http.Status._
+import services.UserService
 import play.api.mvc.{Action, Results}
 import util.{Direction, Formatters, Mail}
 
 /**
  * Manage users.
  */
-class Users @Inject() (users: UserService, appConfig: AppConfigurationService) extends SecuredController {
+class Users @Inject() (users: UserService) extends SecuredController {
   //Custom signup initiation code, to be used if config is set to send signup link emails to admins to forward to users
 
   val TokenDurationKey = securesocial.controllers.Registration.TokenDurationKey
@@ -63,7 +64,6 @@ class Users @Inject() (users: UserService, appConfig: AppConfigurationService) e
       isSignUp = isSignUp
     )
     securesocial.core.UserService.save(token)
-    appConfig.incrementCount('users, 1)
     (uuid, token)
   }
 
