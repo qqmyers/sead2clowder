@@ -609,17 +609,32 @@ class ElasticsearchPlugin(application: Application) extends Plugin {
   /** Create appropriate search object based on operator */
   def parseMustOperators(builder: XContentBuilder, key: String, value: String, operator: String): XContentBuilder = {
     // TODO: Suppert lte, gte (<=, >=)
-    operator match {
-      /**case ":" => {
-        // TODO: Elasticsearch recommends not starting query with wildcard
-        // TODO: Consider inverted index? https://www.elastic.co/blog/found-elasticsearch-from-the-bottom-up
-        //builder.startObject("wildcard").field(key, value+"*").endObject()
-        builder.startObject().startObject("match").field(key, value).endObject().endObject()
-      }**/
-      case "==" => builder.startObject().startObject("match_phrase").field(key, value).endObject().endObject()
-      case "<" => builder.startObject().startObject("range").startObject(key).field("lt", value).endObject().endObject().endObject()
-      case ">" => builder.startObject().startObject("range").startObject(key).field("gt", value).endObject().endObject().endObject()
-      case _ => {}
+    if (key.indexOf("*") == -1) {
+      operator match {
+        /**case ":" => {
+          // TODO: Elasticsearch recommends not starting query with wildcard
+          // TODO: Consider inverted index? https://www.elastic.co/blog/found-elasticsearch-from-the-bottom-up
+          //builder.startObject("wildcard").field(key, value+"*").endObject()
+          builder.startObject().startObject("match").field(key, value).endObject().endObject()
+        }**/
+        case "==" => builder.startObject().startObject("match_phrase").field(key, value).endObject().endObject()
+        case "<" => builder.startObject().startObject("range").startObject(key).field("lt", value).endObject().endObject().endObject()
+        case ">" => builder.startObject().startObject("range").startObject(key).field("gt", value).endObject().endObject().endObject()
+        case _ => {}
+      }
+    } else {
+      operator match {
+        /**case ":" => {
+          // TODO: Elasticsearch recommends not starting query with wildcard
+          // TODO: Consider inverted index? https://www.elastic.co/blog/found-elasticsearch-from-the-bottom-up
+          //builder.startObject("wildcard").field(key, value+"*").endObject()
+          builder.startObject().startObject("match").field(key, value).endObject().endObject()
+        }**/
+        case "==" => builder.startObject().startObject("query_string").array("fields", key).field("query", value).endObject().endObject()
+        case "<" => builder.startObject().startObject("range").startObject(key).field("lt", value).endObject().endObject().endObject()
+        case ">" => builder.startObject().startObject("range").startObject(key).field("gt", value).endObject().endObject().endObject()
+        case _ => {}
+      }
     }
     builder
   }

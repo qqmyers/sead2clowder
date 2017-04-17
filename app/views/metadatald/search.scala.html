@@ -120,8 +120,12 @@
                 for (var i = 0; i < fields.length; i++) {
                     var elem = $("<option></option>");
                     elem.attr("data-type", fields[i].json.type);
-                    elem.attr("data-id", fields[i].json.label);
-                    elem.attr("value", "metadata."+fields[i].json.label);
+                    elem.attr("data-id", "metadata*"+fields[i].json.label.substring(
+                                    fields[i].json.label.lastIndexOf('.')+1,
+                                    fields[i].json.label.length));
+                    elem.attr("value", "metadata*"+fields[i].json.label.substring(
+                                    fields[i].json.label.lastIndexOf('.')+1,
+                                    fields[i].json.label.length));
                     elem.text(fields[i].json.label);
                     $("#add-metadata-select-"+String(rowId)).append(elem);
                 }
@@ -152,10 +156,13 @@
                                 // Metadata Definitions
                                 if (typeof(entry) == 'object') {
                                     var entryGroup = "Metadata Definitions";
-                                    var entryData = {text: entry.json.label, id: "metadata."+entry.json.label};
+                                    var entryData = {text: entry.json.label,
+                                        id: "metadata*"+entry.json.label};
                                 // suggestions from elasticsearch
                                 } else {
                                     if (entry.indexOf('.') > -1) {
+                                        var entryData = {id: entry,
+                                            text: entry.substring(entry.lastIndexOf('.')+1, entry.length)}
                                         if (entry.indexOf('/extractors/') > -1) {
                                             // Group extractor-specific fields together under extractor
                                             var entryGroup = entry.substring(entry.indexOf('/extractors/')+12, entry.lastIndexOf('.'))+" (Extractor)";
@@ -167,12 +174,14 @@
                                         else {
                                             // This should be metadata definitions otherwise
                                             var entryGroup = "Metadata Definitions";
+                                            var entryData = {id: "metadata*"+entry.substring(entry.lastIndexOf('.')+1, entry.length),
+                                                text: entry.substring(entry.lastIndexOf('.')+1, entry.length)}
                                         }
-                                        var entryData = {id: entry, text: entry.substring(entry.lastIndexOf('.')+1, entry.length)}
                                     } else {
                                         // Simple entry
                                         var entryGroup = ""
-                                        var entryData = {text: entry, id: entry}
+                                        var entryData = {text: entry,
+                                            id: "metadata*"+entry.substring(entry.lastIndexOf('.')+1, entry.length)}
                                     }
                                 }
                                 if (!outMap.hasOwnProperty(entryGroup))
@@ -226,6 +235,8 @@
                         var leafKey = rowkey
                     }
 
+
+
                     searchObj.push({
                         "field_key": rowkey,
                         "operator": rowop,
@@ -235,7 +246,7 @@
                     });
                 }
             }
-
+            console.log(searchObj)
             return searchObj;
         }
 
