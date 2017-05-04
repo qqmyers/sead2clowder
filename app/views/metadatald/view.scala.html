@@ -1,10 +1,11 @@
-@(metadata: List[models.Metadata], rdfMetadata: models.rdfMetadata, toDelete: Boolean)(implicit user: Option[models.User])
+@(metadata: List[models.Metadata], rdfMetadata: models.RdfMetadata, toDelete: Boolean)(implicit user: Option[models.User])
     @import java.net.URL
     @import play.api.libs.json.JsString
     @import play.api.libs.json.JsObject
     @import play.api.libs.json.JsValue
     @import play.api.libs.json.JsArray
     @import api.Permission
+    @import play.api.libs.json._
 
 @* This template is shown in the Dataset page and curationObject pages to display both Dataset and File -level metadata *@
 
@@ -13,8 +14,8 @@
         formatter.format(date)
     }
     
-        @safe(key: String) = @{
-        key.replace("/","_").replace(".","_").replace(":","_")
+    @safe(key: String) = @{
+        key.replace("/","_").replace(".","_").replace(":","_").replace(" ","_")
     }
 
     @printContent(agent: Agent, content: JsValue, contextId: Option[UUID], contextURL: Option[URL], resourceId: UUID) = {
@@ -172,41 +173,73 @@
         on @dateFormatter(date)
     }
 
-    @printNewHeader(firstEvent: Boolean, agent: Agent, date: java.util.Date) = {
-    	@if(firstEvent) {
-			@if(agent.isInstanceOf[UserAgent]) {
-			added
-			} else {
-			extracted
-			}    		
-		} else {
-			last modified
-		}
-
-        @dateFormatter(date)
-        by
-        @if(agent.displayName.length > 0) {
-            @if(agent.typeOfAgent.toLowerCase().indexOf("user") >= 0) {
-                @if(user.isDefined) {
-                    <a href= "@routes.Profile.viewProfileUUID(agent.asInstanceOf[UserAgent].user.id)">@agent.displayName</a>
-                } else {
-                    @agent.displayName
-                }
-            } else {
-                @if(agent.url.isDefined) {
-                    <a href="@agent.url" target="_blank">@agent.displayName</a>
-                } else {
-                    @agent.displayName
-                }
-            }
-        } else {
-            @if(agent.url.isDefined) {
-                <a href="@agent.url" target="_blank">@agent.url</a>
-            } else {
-                unknown
-            }
+   @getProfile(userid: String) = {
+   	 @defining(""".*/api/users/([^\?]+).*""".r) {profile =>
+   	 	@userid match {
+        	case profile(g) => {
+        		@routes.Profile.viewProfileUUID(UUID(g))
+        	}
+        	case _ => {
+        		@routes.Profile.viewProfileUUID(UUID("000000000000000000000000"))
+        	}	
         }
-        
+     }
+   }
+   
+    @printNewHeader(firstEvent: Boolean, agentString: String, date: java.util.Date) = {
+      @defining(Json.parse(agentString)) {agent => 
+        @defining((agent \ "@type").as[String]) {agenttype =>  
+    	  @if(agent != null) {
+    	    @if(firstEvent) {
+
+    		  @agenttype match {
+    		    case "cat:user"  => {
+    			  added
+    			}
+    		    case "cat:extractor" => {
+    			  extracted
+    			}
+    		  }
+    		} else {
+			last modified
+		    }
+
+            @dateFormatter(date)
+            by 
+        		
+            @if((agent \ "name").as[String].length > 0) {
+        	  @agenttype match  {
+    		    case "cat:user"  => {
+    		      @if((agent \ "user_id").isInstanceOf[JsString]) {
+                    <a href= "
+                    @getProfile(((agent \ "user_id").as[String]))
+        		    ">@((agent \ "name").as[String])</a>
+                  } else {
+                    @((agent \ "name").as[String])
+                  }
+      		    }
+    		    case "cat:extractor" => {
+    		      @if((agent \ "extractor_id").isInstanceOf[JsString]) {
+                    <a href= "@((agent \ "extractor_id").as[String])">@((agent \ "name").as[String])</a>
+                  } else {
+                    @((agent \ "name").as[String])
+                  }
+    		    }
+    		  }
+    		} else {
+              @if((agent \ "user_id").isInstanceOf[JsString]) {
+                <a href=@getProfile(((agent \ "user_id").as[String]))" target="_blank">@((agent \ "user_id").as[String])</a>
+              } else {
+                @if((agent \ "extractor_id").isInstanceOf[JsString]) {
+                  <a href="@((agent \ "extractor_id").as[String])" target="_blank">@((agent \ "extractor_id").as[String])</a>
+                } else {
+                  unknown
+                }
+              }
+            }
+          }
+    	}
+      }
     }
 
 
@@ -220,46 +253,46 @@ There is probably more history than just the latest agent/date once editing is a
 
 	@if(rdfMetadata!=null) {
 		<div>
-		@for((key, value) <- rdfMetadata.entries) {
+		@for((label, value) <- rdfMetadata.entries) {
 		  <div class="panel panel-default">
-            <div class="panel-heading" role="tab" id="heading_@safe(key)">
-                <a data-toggle="collapse" href="#collapse_@safe(key)" class="collapse-icon">
+            <div class="panel-heading" role="tab" id="heading_@safe(label)">
+                <a data-toggle="collapse" href="#collapse_@safe(label)" class="collapse-icon">
                     <span class="panel-icon glyphicon glyphicon-minus"></span>
                 </a>
                 <span>
-                    <span title='@key'>@rdfMetadata.defs.apply(key)</span>
+                    <span title='@rdfMetadata.defs.apply(label)'>@label</span>
                 </span>
                 <span class='metaprov'>
-                @defining(rdfMetadata.history.apply(key)) {list =>  
+                @defining(rdfMetadata.history.apply(label)) {list =>  
 
 			@printNewHeader(list.length==1, list.head.agent, list.head.date)
 			</span>
 			</div>
 			
-						<div id="collapse_@safe(key)" class="panel-collapse collapse in" role="tabpanel" aria-labelledby="heading_@safe(key)">
+						<div id="collapse_@safe(label)" class="panel-collapse collapse in" role="tabpanel" aria-labelledby="heading_@safe(label)">
                 <div class="panel-body">
                     <div class="tree">
 			
 			@value match {
-				case a: JsArray => {
-					@for((valN, n) <- a.value.zipWithIndex) {
-						<div class="metadataentry">
-						@valN match {
+				case o: JsObject => {
+					@for((k,v) <- o.value) {
+					  <div class="metadataentry" id='@k'>
+						@v match {
 							case s: JsString => {
-					<span>@s.value</span>
+								<span>@s.value</span>
 				
-						@if(toDelete && Permission.checkPermission(Permission.DeleteMetadata, ResourceRef(ResourceRef.metadata, list.head.id))) {
-                <a id="@list.head.id" title="Delete this metadata" class="btn-link delete-icon hidden">
-                  <span class="panel-icon glyphicon glyphicon-trash"></span>
-                </a>
-                }
-                	@if(toDelete && Permission.checkPermission(Permission.EditMetadata, ResourceRef(ResourceRef.metadata, list.head.id))) {
-						   <a id="@list.head.id" title="Edit metadata" class="btn-link edit-icon hidden">
-					<span class="glyphicon glyphicon-edit"></span>
-					</a>
-					}
-					}
-					}
+								@if(toDelete && Permission.checkPermission(Permission.DeleteMetadata, ResourceRef(ResourceRef.metadata, list.head.id))) {
+                					<a  title="Delete this metadata" class="btn-link delete-icon hidden">
+					                  <span class="panel-icon glyphicon glyphicon-trash"></span>
+                					</a>
+				                }
+                				@if(toDelete && Permission.checkPermission(Permission.EditMetadata, ResourceRef(ResourceRef.metadata, list.head.id))) {
+						   			<a  title="Edit metadata" class="btn-link edit-icon hidden">
+										<span class="glyphicon glyphicon-edit"></span>
+									</a>
+								}
+							}
+						}
 					</div>
 					}
 				
@@ -267,18 +300,21 @@ There is probably more history than just the latest agent/date once editing is a
 					
 				case s: JsString => {
 					<div class="metadataentry">
-					<span>@s.value</span>
+					<span>Shouldn't happen! @s.value</span>
 					@if(toDelete && Permission.checkPermission(Permission.DeleteMetadata, ResourceRef(ResourceRef.metadata, list.head.id))) {
                 <a id="@list.head.id" title="Delete this metadata" class="btn-link delete-icon">
                   <span class="panel-icon glyphicon glyphicon-trash  hidden"></span>
                 </a>
+                }
                 	@if(toDelete && Permission.checkPermission(Permission.EditMetadata, ResourceRef(ResourceRef.metadata, list.head.id))) {
 						   <a id="@list.head.id" title="Edit metadata" class="btn-link edit-icon">
 					<span class="glyphicon glyphicon-edit  hidden"></span>
 					</a>
+				
 					}
+						
                 </div>
-                }
+                
 					}
               }
 					
@@ -292,22 +328,26 @@ There is probably more history than just the latest agent/date once editing is a
 		
 		</div>
 		<div>
-		@for((key, value) <- rdfMetadata.defs) {
+		@for((label, pred) <- rdfMetadata.defs) {
             
-			<span>@key</div><div>@value.toString()</span>
+			<div><span>@label</span><span>@pred</span></div>
 			
 		}
 		</div>
 		<div>
-		@for((key, list) <- rdfMetadata.history) {
-			<div>key</div>
+		@for((label, list) <- rdfMetadata.history) {
+			<div>
 			@for((item) <- list) {
-			<div>@rdfMetadata.defs.apply(item.uri)</div>
+			<div>
+			<div>@label</div>
+			<div>@item.uri</div>
 			<div>@item.value.toString()</div>
-			<div>@item.agent.toString()</div>
+			@*<div>@item.agent.toString()</div>*@
 			<div>@item.action</div>
 			<div>@item.date.toString()</div>
+			</div>
 		}
+		</div>
 		}
 		</div>
 	}
@@ -389,6 +429,29 @@ There is probably more history than just the latest agent/date once editing is a
             
         })
 
+        $(function () {
+            $('.edit-icon').unbind().on('click', function(){
+                var edit_icon = $(this);
+
+                var request = jsRoutes.api.Metadata.updateMetadata(this.id).ajax({
+                    type: 'PUT'
+                });
+
+                request.done(function (response, textStatus, jqXHR) {
+                    edit_icon.closest(".panel").remove();
+                });
+
+                request.fail(function (jqXHR, textStatus, errorThrown){
+                    console.error("The following error occured: " + textStatus, errorThrown);
+                    var errMsg = "You must be logged in to add metadata";
+                    if (!checkErrorAndRedirect(jqXHR, errMsg)) {
+                      notify("Metadata was not edited due to : " + errorThrown, "error");
+                    }
+                });
+            });
+        })
+        
+        
         $(function () {
             $('.delete-icon').unbind().on('click', function(){
                 var delete_icon = $(this);

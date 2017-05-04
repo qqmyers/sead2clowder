@@ -503,6 +503,9 @@ class Datasets @Inject() (
         val m = metadata.getMetadataByAttachTo(ResourceRef(ResourceRef.dataset, dataset.id))
 
         //RDF MD
+        
+        val metadataSummary = metadata.getMetadataSummary(ResourceRef(ResourceRef.dataset, dataset.id), Some(dataset.spaces.apply(0)))
+        /*
         val metadataDefsMap = scala.collection.mutable.Map.empty[String, String]
         val inverseMetadataDefsMap = scala.collection.mutable.Map.empty[String, String] //needed to convert current metadata
         
@@ -566,13 +569,15 @@ class Datasets @Inject() (
 
         var metadataEntryJson = scala.collection.mutable.Map.empty[String, JsValue]
         for (key <- metadataEntryKeys) {
-          metadataEntryJson = metadataEntryJson ++ Map((inverseMetadataDefsMap.apply(key)).toString -> Json.toJson(metadataEntryList.filter(_.uri == (inverseMetadataDefsMap.apply(key)).toString).map { item => item.value }toList))
+          var current=0;
+          metadataEntryJson = metadataEntryJson ++ Map((inverseMetadataDefsMap.apply(key)).toString -> Json.toJson(metadataEntryList.filter(_.uri == (inverseMetadataDefsMap.apply(key)).toString).map { item => {current +=1 ;  (current.toString + "_" + item.value.hashCode.toString) -> item.value} }toMap))
+         
           
           metadataHistoryMap = metadataHistoryMap ++ Map((inverseMetadataDefsMap.apply(key)).toString -> metadataEntryList.filter(_.uri == (inverseMetadataDefsMap.apply(key)).toString).toList)
         }
         Logger.info(metadataEntryJson.toString())
         Logger.info(metadataEntryList.toString)
-
+*/
         
         
         
@@ -698,7 +703,7 @@ class Datasets @Inject() (
           )
         }
         val stagingAreaDefined = play.api.Play.current.plugin[services.StagingAreaPlugin].isDefined
-        Ok(views.html.dataset(datasetWithFiles, commentsByDataset, filteredPreviewers.toList, m, rdfMetadata(metadataEntryJson.toMap, metadataDefsMap.toMap, metadataHistoryMap.toMap),
+        Ok(views.html.dataset(datasetWithFiles, commentsByDataset, filteredPreviewers.toList, m, metadataSummary,
           decodedCollectionsInside.toList, sensors, Some(decodedSpaces_canRemove), fileList,
           filesTags, toPublish, curPubObjects, currentSpace, limit, showDownload, showAccess, access, accessOptions.toList, canAddDatasetToCollection, stagingAreaDefined))
       }

@@ -367,6 +367,8 @@ class Application @Inject() (files: FileService, collections: CollectionService,
         api.routes.javascript.ContextLD.removeById,
         api.routes.javascript.ContextLD.getContextById,
         api.routes.javascript.Metadata.addUserMetadata,
+        api.routes.javascript.Metadata.updateMetadata,
+        
         api.routes.javascript.Metadata.getDefinitions,
         api.routes.javascript.Metadata.getDefinition,
         api.routes.javascript.Metadata.getDefinitionsDistinctName,

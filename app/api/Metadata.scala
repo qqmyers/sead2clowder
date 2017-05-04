@@ -365,6 +365,16 @@ class Metadata @Inject() (
       }
   }
 
+    @ApiOperation(value = "Update a metadata entry",
+    responseClass = "None", httpMethod = "PUT")
+  def updateMetadata(id: UUID, entryId: String) = PermissionAction(Permission.DeleteMetadata, Some(ResourceRef(ResourceRef.metadata, id))) { implicit request =>
+    request.user match {
+            case Some(user) => {
+              BadRequest("Not implemented")
+            }
+    }
+    }
+    
   @ApiOperation(value = "Delete the metadata represented in Json-ld format",
     responseClass = "None", httpMethod = "DELETE")
   def removeMetadata(id: UUID) = PermissionAction(Permission.DeleteMetadata, Some(ResourceRef(ResourceRef.metadata, id))) { implicit request =>

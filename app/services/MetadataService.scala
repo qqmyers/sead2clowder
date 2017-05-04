@@ -35,11 +35,14 @@ trait MetadataService {
   /** Remove metadata by attachTo from a specific extractor */
   def removeMetadataByAttachToAndExtractor(resourceRef: ResourceRef, extractorName: String): Long
   
+  /** Get the current summary of all metadata actions for this resource */
+  def getMetadataSummary(resourceRef: ResourceRef, SpaceId:Option[UUID]): models.RdfMetadata
+  
   /** Get metadata context if available */
   def getMetadataContext(metadataId: UUID): Option[JsValue]
 
   /** Update Metadata */
-  def updateMetadata(metadataId: UUID, json: JsValue)
+  def updateMetadata(itemId: UUID, metadataId: UUID, json: JsValue)
 
   /** Vocabulary definitions for user fields **/
   def getDefinitions(spaceId: Option[UUID] = None): List[MetadataDefinition]
