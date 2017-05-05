@@ -1,5 +1,4 @@
 package services.mongodb
-import com.mongodb.casbah.commons.MongoDBObject
 import com.mongodb.util.JSON
 import org.elasticsearch.action.search.SearchResponse
 import play.api.Logger
@@ -186,117 +185,156 @@ class MongoDBMetadataService @Inject() (contextService: ContextLDService, datase
 
   def getMetadataSummary(resourceRef: ResourceRef, spaceId: Option[UUID]): RdfMetadata = {
     //RDF MD
-    val metadataDefsMap = scala.collection.mutable.Map.empty[String, String]
-    val inverseMetadataDefsMap = scala.collection.mutable.Map.empty[String, String] //needed to convert current metadata
 
-    var metadataHistoryMap = scala.collection.mutable.Map.empty[String, List[MetadataEntry]]
+    //Try to get a cached copy
+    MetadataSummaryDAO.findOne(MongoDBObject("attachedTo.resourceType" -> resourceRef.resourceType.name,
+      "attachedTo._id" -> new ObjectId(resourceRef.id.stringify))) match {
+      case Some(x) => {
 
-    var metadataEntryList = scala.collection.mutable.ListBuffer.empty[MetadataEntry]
-    var metadataEntryPreds = Set.empty[String]
-    getMetadataByAttachTo(resourceRef).map {
-      item =>
-        {
-          val ldItem = JSONLD.jsonMetadataWithContext(item)
-          Logger.info((ldItem \ ("@context")).toString())
-          (ldItem \ ("@context")) match {
-            case a: JsArray => {
-              (a.as[List[JsValue]]).foreach(j => {
-                j match {
-                  case o: JsObject => {
-                    for ((label, pred) <- o.value) {
-                      inverseMetadataDefsMap(label.toString()) = pred.as[String]
+        /* Since Salat doesn't serialize collections reversibly, we need to parse and rebuild the 
+         * history collection manually (or change the design to store each history entry 
+         * (e.g. one per term per annotated item) as a separate doc)
+         */
+        var metadataHistoryMap = scala.collection.mutable.Map.empty[String, List[MetadataEntry]]
+        //Get the doc as nested DBObjects/DBLists
+        val y = MetadataSummaryDAO.toDBObject(x);
+        //Get the history element (an object with a List of MetadataEntries associated with each key
+        val z: BasicDBObject = y.getAsOrElse[BasicDBObject]("history", new BasicDBObject())
+        
+        for (label <- z.keys) {
+          // For each entry in the list, corresponding to entries for a given term, 
+          // retrieve the list entries and convert them to MetadataEntries
+          val list = z.getAsOrElse(label, DBList.empty)
+          val newList = list.map(_ match {
+            case x: BasicDBList => Some(MetadataEntry(x))
+            case _ => None
+          }).flatten
+          //Add the list for the latest term to the history map
+          metadataHistoryMap = metadataHistoryMap ++ Map(label -> newList.toList)
+        }
+/*
+        for ((label: String, list: MongoDBList) <- (MongoDBList)(y.get("history"))) {
+          Logger.info(label);
+          Logger.info(": " + x.history.apply(label).toList.toString());
+          metadataHistoryMap = metadataHistoryMap ++ Map(label -> x.history.apply(label).toList)
+        }
+        */
+        //replace the history entry and return the updated summary
+        val rdf = RdfMetadata(x.id, x.attachedTo, x.entries, x.defs, metadataHistoryMap.toMap)
+        rdf
+      }
+      case None => {
+        //Otherwise calculate and store a new summary
+
+        val metadataDefsMap = scala.collection.mutable.Map.empty[String, String]
+        val inverseMetadataDefsMap = scala.collection.mutable.Map.empty[String, String] //needed to convert current metadata
+
+        var metadataHistoryMap = scala.collection.mutable.Map.empty[String, List[MetadataEntry]]
+
+        var metadataEntryList = scala.collection.mutable.ListBuffer.empty[MetadataEntry]
+        var metadataEntryPreds = Set.empty[String]
+        getMetadataByAttachTo(resourceRef).map {
+          item =>
+            {
+              val ldItem = JSONLD.jsonMetadataWithContext(item)
+              Logger.info((ldItem \ ("@context")).toString())
+              (ldItem \ ("@context")) match {
+                case a: JsArray => {
+                  (a.as[List[JsValue]]).foreach(j => {
+                    j match {
+                      case o: JsObject => {
+                        for ((label, pred) <- o.value) {
+                          inverseMetadataDefsMap(label.toString()) = pred.as[String]
+                        }
+                      }
+                      case _ => {
+                        Logger.info("Found context entry in array: " + j.toString())
+                      }
                     }
-                  }
-                  case _ => {
-                    Logger.info("Found context entry in array: " + j.toString())
+                  })
+                }
+                case o: JsObject => {
+                  for ((label, pred) <- o.value) {
+                    inverseMetadataDefsMap(label.toString()) = pred.as[String]
                   }
                 }
-              })
-            }
-            case o: JsObject => {
-              for ((label, pred) <- o.value) {
-                inverseMetadataDefsMap(label.toString()) = pred.as[String]
+                case _ => {
+                  Logger.info("Found context entry: " + (ldItem \ ("@context")).toString())
+                }
+              }
+
+              for ((label, value) <- JSONLD.buildMetadataMap(item.content)) {
+                Logger.info(ldItem.toString)
+                Logger.info((ldItem \ "created_at").toString())
+                Logger.info((ldItem \ "agent").toString())
+                //Logger.info(Json.toJson((ldItem).validate[Agent].get).toString)
+
+                //metadataEntryList += MetadataEntry(item.id, inverseMetadataDefsMap.apply(label), value.as[String], (ldItem).validate[Agent].get, MDAction.Added.toString, new SimpleDateFormat("EEE MMM dd hh:mm:ss zzz yyyy").parse((ldItem \ "created_at").toString().replace("\"", "")))
+                metadataEntryList += MetadataEntry(item.id, inverseMetadataDefsMap.apply(label), value.as[String], Json.toJson((ldItem).validate[Agent].get).toString, MDAction.Added.toString, new SimpleDateFormat("EEE MMM dd hh:mm:ss zzz yyyy").parse((ldItem \ "created_at").toString().replace("\"", "")))
+                //metadataEntryList += MetadataEntry(item.id, inverseMetadataDefsMap.apply(label), value.as[String], (ldItem).validate[Agent].get, MDAction.Added.toString, new SimpleDateFormat("EEE MMM dd hh:mm:ss zzz yyyy").parse((ldItem \ "created_at").toString().replace("\"", "")))
+
+                metadataEntryPreds += inverseMetadataDefsMap.apply(label)
               }
             }
-            case _ => {
-              Logger.info("Found context entry: " + (ldItem \ ("@context")).toString())
-            }
-          }
-
-          for ((label, value) <- JSONLD.buildMetadataMap(item.content)) {
-            Logger.info(ldItem.toString)
-            Logger.info((ldItem \ "created_at").toString())
-            Logger.info((ldItem \ "agent").toString())
-            //Logger.info(Json.toJson((ldItem).validate[Agent].get).toString)
-            
-            
-            //metadataEntryList += MetadataEntry(item.id, inverseMetadataDefsMap.apply(label), value.as[String], (ldItem).validate[Agent].get, MDAction.Added.toString, new SimpleDateFormat("EEE MMM dd hh:mm:ss zzz yyyy").parse((ldItem \ "created_at").toString().replace("\"", "")))
-            metadataEntryList += MetadataEntry(item.id, inverseMetadataDefsMap.apply(label), value.as[String], Json.toJson((ldItem).validate[Agent].get).toString, MDAction.Added.toString, new SimpleDateFormat("EEE MMM dd hh:mm:ss zzz yyyy").parse((ldItem \ "created_at").toString().replace("\"", "")))
-            //metadataEntryList += MetadataEntry(item.id, inverseMetadataDefsMap.apply(label), value.as[String], (ldItem).validate[Agent].get, MDAction.Added.toString, new SimpleDateFormat("EEE MMM dd hh:mm:ss zzz yyyy").parse((ldItem \ "created_at").toString().replace("\"", "")))
-            
-            metadataEntryPreds += inverseMetadataDefsMap.apply(label)
-          }
         }
-    }
-    //The inverse map has all labels that were used to map to predicates - may be many to one
-    Logger.info("Inverse Context: " + inverseMetadataDefsMap.toString())
-    
+        //The inverse map has all labels that were used to map to predicates - may be many to one
+        Logger.info("Inverse Context: " + inverseMetadataDefsMap.toString())
 
-    //Fix me - for now, initialize with label/uri pairs from existing metadata. Going forward,
-    //these should added to the space as viewable metadata instead and picked up that way.
-    //For now, the last def wins (whether from an entry or because its in the space defs) 
+        //Fix me - for now, initialize with label/uri pairs from existing metadata. Going forward,
+        //these should added to the space as viewable metadata instead and picked up that way.
+        //For now, the last def wins (whether from an entry or because its in the space defs) 
 
-    /* Since preds with '.' (such as URLs!) can't be stored as keys in Mongo docs, we can normalize 
+        /* Since preds with '.' (such as URLs!) can't be stored as keys in Mongo docs, we can normalize 
      * all labels and then store the label/predicate definition maps and the label/values entries
      * with labels restricted to being Mongo-safe
      * 
      */
 
-    for ((label, pred) <- inverseMetadataDefsMap) {
-      metadataDefsMap(pred) = label
-    }
+        for ((label, pred) <- inverseMetadataDefsMap) {
+          metadataDefsMap(pred) = label
+        }
 
-    for (md <- getDefinitions(spaceId)) {
-      metadataDefsMap((md.json \ "uri").asOpt[String].getOrElse("").toString()) = (md.json \ "label").asOpt[String].getOrElse("").toString()
+        for (md <- getDefinitions(spaceId)) {
+          metadataDefsMap((md.json \ "uri").asOpt[String].getOrElse("").toString()) = (md.json \ "label").asOpt[String].getOrElse("").toString()
 
-    }
-    //The metadataDefsMap now has all 1-1 predicate to label pairs that will be used for a canonical context
-    Logger.info("Context: " + metadataDefsMap.toString())
-    
+        }
+        //The metadataDefsMap now has all 1-1 predicate to label pairs that will be used for a canonical context
+        Logger.info("Context: " + metadataDefsMap.toString())
 
-    var metadataEntryJson = scala.collection.mutable.Map.empty[String, JsValue]
-    for (pred <- metadataEntryPreds) {
-      var current = 0;
-      metadataEntryJson = metadataEntryJson ++ Map(metadataDefsMap.apply(pred) -> Json.toJson(metadataEntryList.filter(_.uri == pred).map { item => { current += 1; (current.toString + "_" + item.value.hashCode.toString) -> item.value } }toMap))
+        var metadataEntryJson = scala.collection.mutable.Map.empty[String, JsValue]
+        for (pred <- metadataEntryPreds) {
+          var current = 0;
+          metadataEntryJson = metadataEntryJson ++ Map(metadataDefsMap.apply(pred) -> Json.toJson(metadataEntryList.filter(_.uri == pred).map { item => { current += 1; (current.toString + "_" + item.value.hashCode.toString) -> item.value } }toMap))
 
-      metadataHistoryMap = metadataHistoryMap ++ Map((metadataDefsMap.apply(pred)).toString -> metadataEntryList.filter(_.uri == pred).toList)
-    }
-    Logger.info(metadataEntryJson.toString)
-    Logger.info(metadataEntryList.toString)
-    
-    //For storage, we now need a canonical (1:1) inverseMetadataDefsMap
-    inverseMetadataDefsMap.clear
-    
-     for ((pred, label) <- metadataDefsMap) {
-      inverseMetadataDefsMap(label) = pred
-    }
+          metadataHistoryMap = metadataHistoryMap ++ Map((metadataDefsMap.apply(pred)).toString -> metadataEntryList.filter(_.uri == pred).toList)
+        }
+        Logger.info(metadataEntryJson.toString)
+        Logger.info(metadataEntryList.toString)
 
-    val rdf = RdfMetadata(UUID.generate(), metadataEntryJson.toMap, inverseMetadataDefsMap.toMap, metadataHistoryMap.toMap)
-    val rdf2 = RdfMetadata(UUID.generate(), metadataEntryJson.toMap, inverseMetadataDefsMap.toMap, metadataHistoryMap.toMap)
-    val mid = MetadataSummaryDAO.insert(rdf2, WriteConcern.Safe)
- /*   val me = metadataEntryList.head
+        //For storage, we now need a canonical (1:1) inverseMetadataDefsMap
+        inverseMetadataDefsMap.clear
+
+        for ((pred, label) <- metadataDefsMap) {
+          inverseMetadataDefsMap(label) = pred
+        }
+
+        val rdf = RdfMetadata(UUID.generate(), resourceRef, metadataEntryJson.toMap, inverseMetadataDefsMap.toMap, metadataHistoryMap.toMap)
+        val mid = MetadataSummaryDAO.insert(rdf, WriteConcern.Safe)
+        /*   val me = metadataEntryList.head
     val med = MetadataEntryDAO
     Logger.info("haveDao: " + me.toString())
    val mid = med.insert(me, WriteConcern.Safe)
    */
-     current.plugin[MongoSalatPlugin] match {
-      case None => throw new RuntimeException("No MongoSalatPlugin")
-      case Some(x) =>
-        Logger.info(s"Looking good ${mid.toString}")
+        current.plugin[MongoSalatPlugin] match {
+          case None => throw new RuntimeException("No MongoSalatPlugin")
+          case Some(x) =>
+            Logger.info(s"Looking good ${mid.toString}")
 
+        }
+
+        rdf
+      }
     }
-    
-    rdf
   }
 
   /** Get metadata context if available  **/
@@ -421,13 +459,6 @@ object MetadataSummaryDAO extends ModelCompanion[RdfMetadata, ObjectId] {
   val dao = current.plugin[MongoSalatPlugin] match {
     case None => throw new RuntimeException("No MongoSalatPlugin")
     case Some(x) => new SalatDAO[RdfMetadata, ObjectId](collection = x.collection("metadatasummary")) {}
-  }
-}
-
-object MetadataEntryDAO extends ModelCompanion[MetadataEntry, ObjectId] {
-  val dao = current.plugin[MongoSalatPlugin] match {
-    case None => throw new RuntimeException("No MongoSalatPlugin")
-    case Some(x) => new SalatDAO[MetadataEntry, ObjectId](collection = x.collection("metadataentry")) {}
   }
 }
 

@@ -12,6 +12,7 @@ import org.apache.jena.riot.RDFLanguages
 import org.apache.jena.riot.ReaderRIOT
 import org.apache.jena.rdf.model.{ Model, ModelFactory }
 import org.apache.jena.riot.system._
+import com.mongodb.BasicDBList
 
 /**
  * A piece of metadata for a section/file/dataset/collection/space
@@ -50,10 +51,14 @@ case class MetadataEntry(
   value: String,
   agent: String,
   action: String, //MDAction
-  date: Date)
+  date: Date) {
+  //Construct from a stored list
+  def this(l:BasicDBList) = this(UUID(l.get(0).asInstanceOf[BasicDBList].get(0).asInstanceOf[String]), l.get(1).asInstanceOf[String], l.get(2).asInstanceOf[String], l.get(3).asInstanceOf[String], l.get(4).asInstanceOf[String], l.get(5).asInstanceOf[Date])
+}
 
 case class RdfMetadata(
   id: UUID = UUID.generate,
+  attachedTo: ResourceRef,
   entries: Map[String, JsValue],
   defs: Map[String, String],
   history: Map[String, List[MetadataEntry]])
@@ -200,6 +205,8 @@ object Metadata {
 
 
 object MetadataEntry {
+  
+  def apply(l:BasicDBList) = new MetadataEntry(l)
 
   implicit object ExtractorAgentWrites extends Writes[ExtractorAgent] {
     def writes(extractor: ExtractorAgent): JsObject = {
