@@ -75,7 +75,7 @@ object ApplicationBuild extends Build {
 
     // mongo storage
     "com.novus" %% "salat" % "1.9.5" exclude("org.scala-stm", "scala-stm_2.10.0"),
-    "org.mongodb" %% "casbah" % "3.1.1",
+    "org.mongodb" %% "casbah" % "2.6.3",
 
     // geostreams
     "org.postgresql" % "postgresql" % "9.4-1203-jdbc41",
