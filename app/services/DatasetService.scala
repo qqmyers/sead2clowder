@@ -5,6 +5,9 @@ import models._
 import play.api.libs.json.JsValue
 import com.mongodb.casbah.Imports._
 import models.File
+import util.Direction.Direction
+import util.{Direction, SearchOptions, SortBy}
+import util.SortBy.SortBy
 
 /**
  * Generic dataset service.
@@ -152,6 +155,12 @@ trait DatasetService {
     * Return a list of all the datasets the user can view or has created.
     */
   def listUser( user: User): List[Dataset]
+
+  /**
+    * Return a list of datasets based on the search options
+    */
+  def list(options: SearchOptions, nextPage: Boolean, user: Option[User], showAll: Boolean) : JsValue //Iterator[Dataset]
+
   /**
    * Get dataset.
    */

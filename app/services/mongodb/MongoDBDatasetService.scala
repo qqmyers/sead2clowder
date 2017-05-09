@@ -6,7 +6,7 @@ import java.util.{ArrayList, Date}
 import javax.inject.{Inject, Singleton}
 
 import Transformation.LidoToCidocConvertion
-import util.{Parsers, Formatters, SearchUtils}
+import util._
 import api.Permission
 import api.Permission.Permission
 import com.mongodb.casbah.Imports._
@@ -22,7 +22,7 @@ import org.json.JSONObject
 import play.api.Logger
 import play.api.Play._
 import play.api.libs.json.Json._
-import play.api.libs.json.{Json, JsValue, JsArray}
+import play.api.libs.json.{JsArray, JsValue, Json}
 import services._
 import services.mongodb.MongoContext.context
 
@@ -388,6 +388,107 @@ class MongoDBDatasetService @Inject() (
 
     (filterAccess ++ filterDate ++ filterTitle ++ filterStatus ++ filterCollection ++ filterSpace ++ filterOwner, sort)
   }
+
+  def list(options: SearchOptions, nextPage: Boolean, user: Option[User], showAll: Boolean): JsValue = {
+    val filter = scala.collection.mutable.ListBuffer.empty[MongoDBObject]
+
+    // check the permissions
+
+    // check author
+    options.owner match {
+      case Some(owner) => filter.append(MongoDBObject("author._id" -> new ObjectId(owner.stringify)))
+      case None => {}
+    }
+
+    // add title filter
+    options.title match {
+      case Some(title) => filter.append(MongoDBObject("$text" -> MongoDBObject("$search" -> title, "$caseSensitive" -> false)))
+      case None => {}
+    }
+
+    // create the sorting options
+    val direction = options.direction match {
+      case Direction.ASC => 1
+      case Direction.DESC => -1
+    }
+    val sort = if (options.title.isDefined) {
+      MongoDBObject("name"-> direction)
+    } else {
+      options.sortBy match {
+        case SortBy.DATE => {
+          (options.last, options.lastID) match {
+            case (Some(last), Some(lastID)) => {
+              val date = Parsers.parseDate(last).getOrElse(new Date())
+              filter.append($or(MongoDBObject("created" -> MongoDBObject("$gt" -> date)),
+                                $and(MongoDBObject("created" -> date)),
+                                     MongoDBObject("_id" -> MongoDBObject("$gt" -> new ObjectId(lastID.stringify)))))
+            }
+            case (Some(last), None) => {
+              val date = Parsers.parseDate(last).getOrElse(new Date())
+              filter.append(MongoDBObject("created" -> MongoDBObject("$gt" -> date)))
+            }
+            case (None, Some(lastID)) => {
+              filter.append(MongoDBObject("_id" -> MongoDBObject("$gt" -> new ObjectId(lastID.stringify))))
+            }
+            case (None, None) => {}
+          }
+          MongoDBObject("created"-> direction, "_id" -> 1)
+        }
+        case SortBy.TITLE => {
+          (options.last, options.lastID) match {
+            case (Some(last), Some(lastID)) => {
+              filter.append($or(MongoDBObject("name" -> MongoDBObject("$gt" -> last)),
+                                $and(MongoDBObject("name" -> last)),
+                                     MongoDBObject("_id" -> MongoDBObject("$gt" -> new ObjectId(lastID.stringify)))))
+            }
+            case (Some(last), None) => {
+              filter.append(MongoDBObject("name" -> MongoDBObject("$gt" -> last)))
+            }
+            case (None, Some(lastID)) => {
+              filter.append(MongoDBObject("_id" -> MongoDBObject("$gt" -> new ObjectId(lastID.stringify))))
+            }
+            case (None, None) => {}
+          }
+          MongoDBObject("name"-> direction, "_id" -> 1)
+        }
+        case SortBy.AUTHOR => {
+          (options.last, options.lastID) match {
+            case (Some(last), Some(lastID)) => {
+              filter.append($or(MongoDBObject("author.fullName" -> MongoDBObject("$gt" -> last)),
+                $and(MongoDBObject("author.fullName" -> last)),
+                MongoDBObject("_id" -> MongoDBObject("$gt" -> new ObjectId(lastID.stringify)))))
+            }
+            case (Some(last), None) => {
+              filter.append(MongoDBObject("author.fullName" -> MongoDBObject("$gt" -> last)))
+            }
+            case (None, Some(lastID)) => {
+              filter.append(MongoDBObject("_id" -> MongoDBObject("$gt" -> new ObjectId(lastID.stringify))))
+            }
+            case (None, None) => {}
+          }
+          MongoDBObject("author.fullName"-> direction, "_id" -> 1)
+        }
+      }
+    }
+
+    // Return the all datasets
+    val myfilter = if (filter.isEmpty) {
+      MongoDBObject()
+    } else {
+      $and(filter.map(_.asDBObject))
+    }
+    val query = com.mongodb.util.JSON.serialize(myfilter)
+    val plan = com.mongodb.util.JSON.serialize(Dataset.find(myfilter).sort(sort).limit(options.limit).explain)
+    val datasets = Dataset.find(myfilter).sort(sort).limit(options.limit).toIterator
+    Json.obj("query" -> Json.parse(query),
+              "plan" -> Json.parse(plan),
+             "results" -> Json.toJson(datasets.map(d => Json.toJson(d)).toList))
+      //      "counts" -> getCounts(request.user),
+      //      "plugins" -> getPlugins(request.user),
+      //      "extractors" -> Json.toJson(extractors.getExtractorNames()))))
+    //Logger.info(Dataset.find(filter).sort(sort).limit(options.limit).explain.toString())
+  }
+
 
   def isInCollection(dataset: Dataset, collection: Collection): Boolean = {
     dataset.collections.contains(collection.id.stringify)

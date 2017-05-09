@@ -4,11 +4,12 @@ import javax.inject.Inject
 
 import com.wordnik.swagger.annotations.ApiOperation
 import play.api.Logger
-import models.User
+import models.{UUID, User}
 import play.api.Play._
 import play.api.libs.json.{JsValue, Json}
 import services._
 import services.mongodb.MongoSalatPlugin
+import util.{Direction, SearchOptions, SortBy}
 
 import scala.collection.mutable
 
@@ -37,10 +38,23 @@ class Status @Inject()(spaces: SpaceService,
     responseClass = "None", httpMethod = "GET")
   def status = UserAction(needActive=false) { implicit request =>
 
-    Ok(Json.obj("version" -> getVersionInfo,
-      "counts" -> getCounts(request.user),
-      "plugins" -> getPlugins(request.user),
-      "extractors" -> Json.toJson(extractors.getExtractorNames())))
+    val option = SearchOptions(direction = Direction.ASC,
+                               sortBy = SortBy.AUTHOR,
+//                               last = Some("Craig Willis")
+//                               last = Some("Thu Apr 28 11:40:14 CDT 2016"),
+                               lastID = Some(UUID("57223ceee4b082fbf2a8f7e8"))
+//                               title = Some("RGB"),
+//                               owner=Some(UUID("578f76948e7e1aecb7cad4c5"))
+
+                              )
+    val datasets = DI.injector.getInstance(classOf[DatasetService]).list(option, nextPage=false, request.user, showAll=false)
+
+    Ok(datasets)
+
+//    Ok(Json.obj("version" -> getVersionInfo,
+//      "counts" -> getCounts(request.user),
+//      "plugins" -> getPlugins(request.user),
+//      "extractors" -> Json.toJson(extractors.getExtractorNames())))
   }
 
   def getPlugins(user: Option[User]): JsValue = {
