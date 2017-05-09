@@ -99,22 +99,22 @@ trait DatasetService {
   /**
    * Return a list of datasets the user has access to.
    */
-  def listAccess(limit: Integer, permisions: Set[Permission], user: Option[User], showAll: Boolean, showPublic: Boolean): List[Dataset]
+  def listAccess(limit: Integer, permisions: Set[Permission], user: Option[User], showAll: Boolean, showPublic: Boolean, showOnlyShared : Boolean): List[Dataset]
 
   /**
    * Return a list of datasets the user has access to.
    */
-  def listAccess(limit: Integer, title: String, permisions: Set[Permission], user: Option[User], showAll: Boolean, showPublic: Boolean): List[Dataset]
+  def listAccess(limit: Integer, title: String, permisions: Set[Permission], user: Option[User], showAll: Boolean, showPublic: Boolean, showOnlyShared : Boolean): List[Dataset]
 
   /**
    * Return a list of datasets the user has access to starting at a specific date.
    */
-  def listAccess(date: String, nextPage: Boolean, limit: Integer, permisions: Set[Permission], user: Option[User], showAll: Boolean, showPublic: Boolean): List[Dataset]
+  def listAccess(date: String, nextPage: Boolean, limit: Integer, permisions: Set[Permission], user: Option[User], showAll: Boolean, showPublic: Boolean, showOnlyShared : Boolean): List[Dataset]
 
   /**
    * Return a list of datasets the user has access to starting at a specific date.
    */
-  def listAccess(date: String, nextPage: Boolean, limit: Integer, title: String, permisions: Set[Permission], user: Option[User], showAll: Boolean, showPublic: Boolean): List[Dataset]
+  def listAccess(date: String, nextPage: Boolean, limit: Integer, title: String, permisions: Set[Permission], user: Option[User], showAll: Boolean, showPublic: Boolean, showOnlyShared : Boolean): List[Dataset]
 
   /**
     * Return a list of datasets in a space the user has access to.
@@ -355,6 +355,21 @@ trait DatasetService {
    * Remove follower from a dataset.
    */
   def removeFollower(id: UUID, userId: UUID)
+  
+  /**
+   * Add a creator to the end of the dataset's list of creators
+   */
+  def addCreator(id: UUID, creator: String)
+  
+  /**
+   * Remove a creator from the dataset's list of creators
+   */
+  def removeCreator(id: UUID, creator: String)
+  
+  /**
+   * Move a creator to a new position in the dataset's list of creators
+   */
+  def moveCreator(id: UUID, creator: String, position: Integer)
 
 }
 

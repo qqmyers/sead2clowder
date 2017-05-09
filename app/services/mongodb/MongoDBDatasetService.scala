@@ -11,6 +11,7 @@ import api.Permission
 import api.Permission.Permission
 import com.mongodb.casbah.Imports._
 import com.mongodb.casbah.WriteConcern
+import com.mongodb.casbah.commons.MongoDBList
 import com.mongodb.casbah.commons.MongoDBObject
 import com.mongodb.util.JSON
 import com.novus.salat.dao.{ModelCompanion, SalatDAO}
@@ -170,28 +171,28 @@ class MongoDBDatasetService @Inject() (
   /**
    * Return a list of datasets the user has access to.
    */
-  def listAccess(limit: Integer, permissions: Set[Permission], user: Option[User], showAll: Boolean, showPublic: Boolean): List[Dataset] = {
+  def listAccess(limit: Integer, permissions: Set[Permission], user: Option[User], showAll: Boolean, showPublic: Boolean, showOnlyShared : Boolean): List[Dataset] = {
     list(None, false, limit, None, None, None, permissions, user, None, showAll, None, showPublic)
   }
 
   /**
    * Return a list of datasets the user has access to.
    */
-  def listAccess(limit: Integer, title: String, permissions: Set[Permission], user: Option[User], showAll: Boolean, showPublic: Boolean): List[Dataset] = {
+  def listAccess(limit: Integer, title: String, permissions: Set[Permission], user: Option[User], showAll: Boolean, showPublic: Boolean, showOnlyShared : Boolean): List[Dataset] = {
     list(None, false, limit, Some(title), None, None, permissions, user, None, showAll, None, showPublic)
   }
 
   /**
    * Return a list of datasets the user has access to starting at a specific date.
    */
-  def listAccess(date: String, nextPage: Boolean, limit: Integer, permissions: Set[Permission], user: Option[User], showAll: Boolean, showPublic: Boolean): List[Dataset] = {
+  def listAccess(date: String, nextPage: Boolean, limit: Integer, permissions: Set[Permission], user: Option[User], showAll: Boolean, showPublic: Boolean, showOnlyShared : Boolean): List[Dataset] = {
     list(Some(date), nextPage, limit, None, None, None, permissions, user, None, showAll, None, showPublic)
   }
 
   /**
    * Return a list of datasets the user has access to starting at a specific date.
    */
-  def listAccess(date: String, nextPage: Boolean, limit: Integer, title: String, permissions: Set[Permission], user: Option[User], showAll: Boolean, showPublic: Boolean): List[Dataset] = {
+  def listAccess(date: String, nextPage: Boolean, limit: Integer, title: String, permissions: Set[Permission], user: Option[User], showAll: Boolean, showPublic: Boolean, showOnlyShared : Boolean): List[Dataset] = {
     list(Some(date), nextPage, limit, Some(title), None, None, permissions, user, None, showAll, None, showPublic)
   }
 
@@ -266,7 +267,7 @@ class MongoDBDatasetService @Inject() (
    * return count based on input
    */
   private def count(date: Option[String], nextPage: Boolean, title: Option[String], collection: Option[String], space: Option[String], permissions: Set[Permission], user: Option[User], showAll: Boolean, owner: Option[User]): Long = {
-    val (filter, _) = filteredQuery(date, nextPage, title, collection, space, Set[Permission](Permission.ViewDataset), user, None, showAll, owner, true)
+    val (filter, _) = filteredQuery(date, nextPage, title, collection, space, Set[Permission](Permission.ViewDataset), user, None, showAll, owner, true, false)
     Dataset.count(filter)
   }
 
@@ -274,8 +275,8 @@ class MongoDBDatasetService @Inject() (
   /**
    * return list based on input
    */
-  private def list(date: Option[String], nextPage: Boolean, limit: Integer, title: Option[String], collection: Option[String], space: Option[String], permissions: Set[Permission], user: Option[User], status: Option[String], showAll: Boolean, owner: Option[User], showPublic: Boolean = true): List[Dataset] = {
-    val (filter, sort) = filteredQuery(date, nextPage, title, collection, space, permissions, user, status, showAll, owner, showPublic)
+  private def list(date: Option[String], nextPage: Boolean, limit: Integer, title: Option[String], collection: Option[String], space: Option[String], permissions: Set[Permission], user: Option[User], status: Option[String], showAll: Boolean, owner: Option[User], showPublic: Boolean = true, showOnlyShared : Boolean = false): List[Dataset] = {
+    val (filter, sort) = filteredQuery(date, nextPage, title, collection, space, permissions, user, status, showAll, owner, showPublic, showOnlyShared)
     if (date.isEmpty || nextPage) {
       Dataset.find(filter).sort(sort).limit(limit).toList
     } else {
@@ -286,7 +287,7 @@ class MongoDBDatasetService @Inject() (
   /**
    * Monster function, does all the work. Will create a filters and sorts based on the given parameters
    */
-  private def filteredQuery(date: Option[String], nextPage: Boolean, titleSearch: Option[String], collection: Option[String], space: Option[String], permissions: Set[Permission], user: Option[User], status:Option[String], showAll: Boolean, owner: Option[User], showPublic: Boolean): (DBObject, DBObject) = {
+  private def filteredQuery(date: Option[String], nextPage: Boolean, titleSearch: Option[String], collection: Option[String], space: Option[String], permissions: Set[Permission], user: Option[User], status:Option[String], showAll: Boolean, owner: Option[User], showPublic: Boolean, showOnlyShared : Boolean): (DBObject, DBObject) = {
     // filter =
     // - owner   == show datasets owned by owner that user can see
     // - space   == show all datasets in space
@@ -296,7 +297,7 @@ class MongoDBDatasetService @Inject() (
     val enablePublic = play.Play.application().configuration().getBoolean("enablePublic")
     //emptySpaces should not be used in most cases since your dataset maybe in a space, then you are changed to viewer or kicked off.
     val emptySpaces = MongoDBObject("spaces" -> List.empty)
-    val publicSpaces= spaces.listByStatus(SpaceStatus.PUBLIC.toString).map(s => new ObjectId(s.id.stringify))
+    val publicSpaces = spaces.listByStatus(SpaceStatus.PUBLIC.toString).map(s => new ObjectId(s.id.stringify))
 
     // create access filter
     val filterAccess = if (showAll || configuration(play.api.Play.current).getString("permissions").getOrElse("public") == "public" && permissions.contains(Permission.ViewDataset)) {
@@ -319,10 +320,29 @@ class MongoDBDatasetService @Inject() (
           //if you are viewing other user's datasets, return the ones you have permission. otherwise filterAccess should
           // including your own datasets. the if condition here is mainly for efficiency.
           if(user == owner || owner.isEmpty) {
-            orlist += MongoDBObject("author._id" -> new ObjectId(u.id.stringify))
+            if (owner.isEmpty && !showOnlyShared){
+              orlist += MongoDBObject("author._id" -> new ObjectId(u.id.stringify))
+            } else if (!owner.isEmpty){
+              orlist += MongoDBObject("author._id" -> new ObjectId(u.id.stringify))
+            }
           }
           val permissionsString = permissions.map(_.toString)
-          val okspaces = u.spaceandrole.filter(_.role.permissions.intersect(permissionsString).nonEmpty)
+          val okspaces = if (showOnlyShared){
+            u.spaceandrole.filter(_.role.permissions.intersect(permissionsString).nonEmpty).filter((p: UserSpaceAndRole)=>
+              (spaces.get(p.spaceId) match {
+                case Some(space) => {
+                  if (space.userCount > 1){
+                    true
+                  } else {
+                    false
+                  }
+                }
+                case None => false
+              })
+            )
+          } else {
+            u.spaceandrole.filter(_.role.permissions.intersect(permissionsString).nonEmpty)
+          }
           if (okspaces.nonEmpty) {
             orlist += ("spaces" $in okspaces.map(x => new ObjectId(x.spaceId.stringify)))
           }
@@ -334,14 +354,21 @@ class MongoDBDatasetService @Inject() (
         case None =>
           if (!permissions.intersect(Permission.READONLY).isEmpty && enablePublic && showPublic) {
             $or(MongoDBObject("status" -> DatasetStatus.PUBLIC.toString),
-            MongoDBObject("status" -> DatasetStatus.DEFAULT.toString) ++ ("spaces" $in publicSpaces  ))
+              MongoDBObject("status" -> DatasetStatus.DEFAULT.toString) ++ ("spaces" $in publicSpaces))
           } else {
             MongoDBObject("doesnotexist" -> true)
           }
       }
     }
     val filterOwner = owner match {
-      case Some(o) => MongoDBObject("author._id" -> new ObjectId(o.id.stringify))
+      case Some(o) => {
+        if (showOnlyShared){
+          MongoDBObject()
+        } else {
+          MongoDBObject("author._id" -> new ObjectId(o.id.stringify))
+        }
+
+      }
       case None => MongoDBObject()
     }
     val filterSpace = space match {
@@ -369,6 +396,13 @@ class MongoDBDatasetService @Inject() (
       case Some(title) =>  MongoDBObject("name" -> ("(?i)" + title).r)
       case None => MongoDBObject()
     }
+
+    val filterNotShared = if (showOnlyShared && owner.isEmpty){
+      MongoDBObject("root_spaces" -> MongoDBObject("$not" -> MongoDBObject("$size" -> 0)))
+    } else {
+      MongoDBObject()
+    }
+
     val filterDate = date match {
       case Some(d) => {
         if (nextPage) {
@@ -549,7 +583,7 @@ class MongoDBDatasetService @Inject() (
         val theJSON = getUserMetadataJSON(id)
         val fileSep = System.getProperty("file.separator")
         val tmpDir = System.getProperty("java.io.tmpdir")
-        var resultDir = tmpDir + fileSep + "clowder__rdfuploadtemporaryfiles" + fileSep + new ObjectId().toString
+        var resultDir = tmpDir + fileSep + "medici__rdfuploadtemporaryfiles" + fileSep + new ObjectId().toString
         val resultDirFile = new java.io.File(resultDir)
         resultDirFile.mkdirs()
 
@@ -771,7 +805,6 @@ class MongoDBDatasetService @Inject() (
     (for (dataset <- Dataset.find(MongoDBObject())) yield dataset).toList.filterNot(listContaining.toSet)
   }
 
-  // TODO: This is apparently not called anywhere, can we remove?
   def findByTag(tag: String, user: Option[User]): List[Dataset] = {
     if(configuration(play.api.Play.current).getString("permissions").getOrElse("public") == "public"){
       Dataset.dao.find(MongoDBObject("tags.name" -> tag)).toList
@@ -782,7 +815,6 @@ class MongoDBDatasetService @Inject() (
   }
 
   def findByTag(tag: String, start: String, limit: Integer, reverse: Boolean, user: Option[User]): List[Dataset] = {
-    // TODO: Re-implement this using Elasticsearch
     var filter = if (start == "") {
       MongoDBObject("tags.name" -> tag)
     } else {
@@ -934,6 +966,39 @@ class MongoDBDatasetService @Inject() (
       false, false, WriteConcern.Safe)
   }
 
+  /**
+   * Add a creator to the end of the dataset's list of creators
+   */
+  def addCreator(id: UUID, creator: String) {
+    //Don't allow duplicates
+    if (Dataset.dao.find(MongoDBObject("_id" -> new ObjectId(id.stringify)) ++ MongoDBObject("creators" -> creator)).length == 0) {
+      val result = Dataset.update(MongoDBObject("_id" -> new ObjectId(id.stringify)),
+        $push("creators" -> creator),
+        false, false, WriteConcern.Safe)
+    }
+  }
+
+  /**
+   * Remove a creator from the dataset's list of creators
+   */
+  def removeCreator(id: UUID, creator: String) {
+    Dataset.dao.update(MongoDBObject("_id" -> new ObjectId(id.stringify)),
+      $pull("creators" -> creator), false, false, WriteConcern.Safe)
+  }
+
+  /**
+   * Move a creator to a new position in the dataset's list of creators
+   */
+  def moveCreator(id: UUID, creator: String, position: Integer) {
+    //Don't move ones that don't exist
+    if (Dataset.dao.find(MongoDBObject("_id" -> new ObjectId(id.stringify)) ++ MongoDBObject("creators" -> creator)).length != 0) {
+      removeCreator(id, creator);
+      Dataset.update(MongoDBObject("_id" -> new ObjectId(id.stringify)),
+        $push("creators" -> MongoDBObject("$each" -> MongoDBList(creator), "$position" -> position)),
+        false, false, WriteConcern.Safe)
+    }
+  }
+
   def updateAuthorFullName(userId: UUID, fullName: String) {
     Dataset.update(MongoDBObject("author._id" -> new ObjectId(userId.stringify)),
       $set("author.fullName" -> fullName), false, true, WriteConcern.Safe)
@@ -1009,7 +1074,6 @@ class MongoDBDatasetService @Inject() (
   def searchUserMetadata(id: UUID, requestedMetadataQuery: Any): Boolean = {
     return searchMetadata(id, requestedMetadataQuery.asInstanceOf[java.util.LinkedHashMap[String, Any]], getUserMetadata(id))
   }
-
 
   def searchAllMetadataFormulateQuery(requestedMetadataQuery: Any): List[Dataset] = {
     Logger.debug("top: " + requestedMetadataQuery.asInstanceOf[java.util.LinkedHashMap[String, Any]].toString())
@@ -1256,7 +1320,6 @@ class MongoDBDatasetService @Inject() (
     Dataset.update(MongoDBObject("_id" -> new ObjectId(datasetId.stringify)), $addToSet("folders" -> new ObjectId(folderId.stringify)), false, false, WriteConcern.Safe)
   }
 
-
   def addCollection(datasetId: UUID, collectionId: UUID) {
     Dataset.update(MongoDBObject("_id" -> new ObjectId(datasetId.stringify)), $addToSet("collections" -> new ObjectId(collectionId.stringify)), false, false, WriteConcern.Safe)
   }
@@ -1350,10 +1413,10 @@ class MongoDBDatasetService @Inject() (
       MongoDBObject("_id" -> new ObjectId(datasetId.stringify)),
       $addToSet("spaces" -> Some(new ObjectId(spaceId.stringify))),
       false, false)
-     if (get(datasetId).exists(_.isTRIAL == true) && spaces.get(spaceId).exists(_.isTrial == false)) {
-       Dataset.update(MongoDBObject("_id" -> new ObjectId(datasetId.stringify)),
-       $set("status" -> DatasetStatus.DEFAULT.toString),
-       false, false)
+    if (get(datasetId).exists(_.isTRIAL == true) && spaces.get(spaceId).exists(_.isTrial == false)) {
+      Dataset.update(MongoDBObject("_id" -> new ObjectId(datasetId.stringify)),
+        $set("status" -> DatasetStatus.DEFAULT.toString),
+        false, false)
     }
   }
 
@@ -1362,7 +1425,6 @@ class MongoDBDatasetService @Inject() (
       MongoDBObject("_id" -> new ObjectId(datasetId.stringify)),
       $pull("spaces" -> Some(new ObjectId(spaceId.stringify))),
       false, false)
-
 
     if (play.Play.application().configuration().getBoolean("verifySpaces")) {
 
