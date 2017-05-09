@@ -130,6 +130,15 @@ class MongoSalatPlugin(app: Application) extends Plugin {
     collection("datasets").createIndex(MongoDBObject("files" -> 1))
     collection("datasets").createIndex(MongoDBObject("name" -> "text"))
 
+    // db.datasets.createIndex({"created": 1, "_id": 1})
+    // db.datasets.createIndex({"created": -1, "_id": 1})
+    // db.datasets.createIndex({"name": 1, "_id": 1})
+    // db.datasets.createIndex({"name": -1, "_id": 1})
+    collection("datasets").createIndex(MongoDBObject("created" -> 1, "_id" -> 1))
+    collection("datasets").createIndex(MongoDBObject("created" -> -1, "_id" -> 1))
+    collection("datasets").createIndex(MongoDBObject("name" -> 1, "_id" -> 1))
+    collection("datasets").createIndex(MongoDBObject("name" -> -1, "_id" -> 1))
+
     collection("dtsrequests").createIndex(MongoDBObject("fileid" -> 1))
 
     collection("events").createIndex(MongoDBObject("targetuser._id" -> 1))

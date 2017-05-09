@@ -38,15 +38,12 @@ class Status @Inject()(spaces: SpaceService,
     responseClass = "None", httpMethod = "GET")
   def status = UserAction(needActive=false) { implicit request =>
 
-    val option = SearchOptions(direction = Direction.ASC,
-                               sortBy = SortBy.AUTHOR,
-//                               last = Some("Craig Willis")
-//                               last = Some("Thu Apr 28 11:40:14 CDT 2016"),
-                               lastID = Some(UUID("57223ceee4b082fbf2a8f7e8"))
-//                               title = Some("RGB"),
-//                               owner=Some(UUID("578f76948e7e1aecb7cad4c5"))
+    val option = SearchOptions(direction = Direction.withName(request.queryString.get("direction").fold("ASC")(_.head)),
+                               sortBy = SortBy.withName(request.queryString.get("sort").fold("DATE")(_.head)),
+                               last = request.queryString.get("last").map(_.head),
+                               lastID = request.queryString.get("id").map(x => UUID(x.head)),
+                               owner = request.queryString.get("owner").map(x => UUID(x.head)))
 
-                              )
     val datasets = DI.injector.getInstance(classOf[DatasetService]).list(option, nextPage=false, request.user, showAll=false)
 
     Ok(datasets)
