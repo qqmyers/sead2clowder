@@ -456,7 +456,7 @@ There is probably more history than just the latest agent/date once editing is a
             $('.delete-icon').unbind().on('click', function(){
                 var delete_icon = $(this);
 
-                var request = jsRoutes.api.Metadata.removeMetadata(this.id).ajax({
+                var request = jsRoutes.api.Metadata.removeMetadata($(this).parent().attr('id')).ajax({
                     type: 'DELETE'
                 });
 
