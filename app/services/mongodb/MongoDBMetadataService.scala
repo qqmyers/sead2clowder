@@ -16,6 +16,7 @@ import com.mongodb.casbah.commons.TypeImports.ObjectId
 import com.mongodb.casbah.WriteConcern
 import _root_.util.JSONLD
 import java.text.SimpleDateFormat
+import scala.language.postfixOps
 
 import services.{ ContextLDService, DatasetService, FileService, FolderService, ExtractorMessage, RabbitmqPlugin, MetadataService, ElasticsearchPlugin, CurationService }
 import api.{ UserRequest, Permission }
@@ -200,7 +201,7 @@ class MongoDBMetadataService @Inject() (contextService: ContextLDService, datase
         val y = MetadataSummaryDAO.toDBObject(x);
         //Get the history element (an object with a List of MetadataEntries associated with each key
         val z: BasicDBObject = y.getAsOrElse[BasicDBObject]("history", new BasicDBObject())
-        
+
         for (label <- z.keys) {
           // For each entry in the list, corresponding to entries for a given term, 
           // retrieve the list entries and convert them to MetadataEntries
@@ -212,7 +213,7 @@ class MongoDBMetadataService @Inject() (contextService: ContextLDService, datase
           //Add the list for the latest term to the history map
           metadataHistoryMap = metadataHistoryMap ++ Map(label -> newList.toList)
         }
-/*
+        /*
         for ((label: String, list: MongoDBList) <- (MongoDBList)(y.get("history"))) {
           Logger.info(label);
           Logger.info(": " + x.history.apply(label).toList.toString());
@@ -285,10 +286,10 @@ class MongoDBMetadataService @Inject() (contextService: ContextLDService, datase
         //For now, the last def wins (whether from an entry or because its in the space defs) 
 
         /* Since preds with '.' (such as URLs!) can't be stored as keys in Mongo docs, we can normalize 
-     * all labels and then store the label/predicate definition maps and the label/values entries
-     * with labels restricted to being Mongo-safe
-     * 
-     */
+     		 * all labels and then store the label/predicate definition maps and the label/values entries
+		     * with labels restricted to being Mongo-safe
+		     * 
+		     */
 
         for ((label, pred) <- inverseMetadataDefsMap) {
           metadataDefsMap(pred) = label
