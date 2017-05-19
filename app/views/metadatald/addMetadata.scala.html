@@ -167,10 +167,13 @@ line-height: 1.5;
                     // reset submission value
                     $("#@id  #selected_field").empty();
                     $("#@id #add-metadata-select").val('').trigger("chosen:updated");
+                    
+                    
                     if($('#'+'@contentDiv'+' .panel').length == 0) {
                         $('#' + "@contentDiv").empty();
                     }
-                    $('#'+"@contentDiv").prepend(response);
+                    addEntries(response);
+                  //  $('#'+"@contentDiv").prepend(response);
                     notify("Metadata successfully added.", "success", false, 2000);
                 });
 

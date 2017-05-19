@@ -299,7 +299,7 @@ GET            /api/files/:id/metadata.jsonld                                   
 DELETE         /api/files/:id/metadata.jsonld                                           @api.Files.removeMetadataJsonLD(id: UUID, extractor: Option[String] ?= None)
 
 POST           /api/metadata.jsonld                                                     @api.Metadata.addUserMetadata()
-DELETE         /api/metadata.jsonld/:id                                                 @api.Metadata.removeMetadata(id:UUID)
+DELETE         /api/metadata.jsonld/:attachedtype/:attachedid/:term/:itemid             @api.Metadata.removeMetadata(attachedtype:String, attachedid:String, term: String, itemid: String)
 PUT            /api/metadata.jsonld/:id/:entryId                                        @api.Metadata.updateMetadata(id:UUID, entryId:String)
 
 #GET            /api/metadata.jsonld                                                     @api.Metadata.getUserMetadata()

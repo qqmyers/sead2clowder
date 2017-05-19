@@ -3,13 +3,18 @@ package services
 import api.UserRequest
 import play.api.libs.Files
 import play.api.libs.json.JsValue
-import models.{MetadataDefinition, ResourceRef, UUID, Metadata, User}
+import play.api.libs.json.JsObject
+import models.{MetadataDefinition, ResourceRef, UUID, Metadata, User, Agent}
 import play.api.mvc.MultipartFormData
+import java.util.Date
 
 /**
  * MetadataService for add and query metadata
  */
 trait MetadataService {
+
+    /** Add metadata to the metadata collection and attach to a section /file/dataset/collection */
+  def addMetadata(content: JsValue, context: JsValue, attachedTo: ResourceRef, createdAt: Date, creator: Agent, spaceId:Option[UUID]): JsObject
   
   /** Add metadata to the metadata collection and attach to a section /file/dataset/collection */
   def addMetadata(metadata: Metadata) : UUID
@@ -27,7 +32,7 @@ trait MetadataService {
   def getMetadataByCreator(resourceRef: ResourceRef, typeofAgent:String): List[Metadata]
 
   /** Remove metadata */
-  def removeMetadata(metadataId: UUID)
+  def removeMetadata(attachedTo: ResourceRef, term: String, itemId: String, deletedAt: Date, deletor:Agent, spaceId:Option[UUID])
 
   /** Remove metadata by attachTo*/
   def removeMetadataByAttachTo(resourceRef: ResourceRef): Long

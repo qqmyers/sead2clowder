@@ -273,150 +273,170 @@ class Metadata @Inject() (
       request.user match {
         case Some(user) => {
           val json = request.body
-          // parse request for JSON-LD model
-          var model: RDFModel = null
-          json.validate[RDFModel] match {
-            case e: JsError => {
-              Logger.error("Errors: " + JsError.toFlatForm(e))
-              BadRequest(JsError.toFlatJson(e))
-            }
-            case s: JsSuccess[RDFModel] => {
-              model = s.get
-              // when the new metadata is added
-              val createdAt = new Date()
+          // when the new metadata is added
+          val createdAt = new Date()
 
-              // build creator uri
-              // TODO switch to internal id and then build url when returning?
-              val userURI = controllers.routes.Application.index().absoluteURL() + "api/users/" + user.id
-              val creator = UserAgent(user.id, "cat:user", MiniUser(user.id, user.fullName, user.avatarUrl.getOrElse(""), user.email), Some(new URL(userURI)))
+          // build creator uri
+          // TODO switch to internal id and then build url when returning?
+          val userURI = controllers.routes.Application.index().absoluteURL() + "api/users/" + user.id
+          val creator = UserAgent(user.id, "cat:user", MiniUser(user.id, user.fullName, user.avatarUrl.getOrElse(""), user.email), Some(new URL(userURI)))
 
-              val context: JsValue = (json \ "@context")
+          val context: JsValue = (json \ "@context")
 
-              // figure out what resource this is attached to
-              val attachedTo =
-                if ((json \ "file_id").asOpt[String].isDefined)
-                  Some(ResourceRef(ResourceRef.file, UUID((json \ "file_id").as[String])))
-                else if ((json \ "dataset_id").asOpt[String].isDefined)
-                  Some(ResourceRef(ResourceRef.dataset, UUID((json \ "dataset_id").as[String])))
-                else if ((json \ "curationObject_id").asOpt[String].isDefined)
-                  Some(ResourceRef(ResourceRef.curationObject, UUID((json \ "curationObject_id").as[String])))
-                else if ((json \ "curationFile_id").asOpt[String].isDefined)
-                  Some(ResourceRef(ResourceRef.curationFile, UUID((json \ "curationFile_id").as[String])))
-                else None
+          // figure out what resource this is attached to
+          val (attachedTo, space) =
+            if ((json \ "file_id").asOpt[String].isDefined) {
+              files.get(UUID((json \ "file_id").as[String])) match {
+                case Some(file) => {
 
-              // check if the context is a URL to external endpoint
-              val contextURL: Option[URL] = context.asOpt[String].map(new URL(_))
+                  (Some(ResourceRef(ResourceRef.file, UUID((json \ "file_id").as[String]))), None)
+                }
+              }
+            } else if ((json \ "dataset_id").asOpt[String].isDefined) {
+              datasets.get(UUID((json \ "dataset_id").as[String])) match {
+                case Some(dataset) => {
+                  (Some(ResourceRef(ResourceRef.dataset, UUID((json \ "dataset_id").as[String]))), Some(dataset.spaces.apply(0)))
+                }
+              }
+            } else if ((json \ "curationObject_id").asOpt[String].isDefined) {
+              (Some(ResourceRef(ResourceRef.curationObject, UUID((json \ "curationObject_id").as[String]))), None)
+            } else if ((json \ "curationFile_id").asOpt[String].isDefined) {
+              (Some(ResourceRef(ResourceRef.curationFile, UUID((json \ "curationFile_id").as[String]))), None)
+            } else (None, None)
 
-              // check if context is a JSON-LD document
-              val contextID: Option[UUID] =
-                if (context.isInstanceOf[JsObject]) {
-                  context.asOpt[JsObject].map(contextService.addContext(new JsString("context name"), _))
-                } else if (context.isInstanceOf[JsArray]) {
-                  context.asOpt[JsArray].map(contextService.addContext(new JsString("context name"), _))
-                } else None
+          //parse the rest of the request to create a new models.Metadata object
+          val content = (json \ "content")
 
-              //parse the rest of the request to create a new models.Metadata object
-              val content = (json \ "content")
-              val version = None
+          if (attachedTo.isDefined) {
 
-              if (attachedTo.isDefined) {
-                val metadata = models.Metadata(UUID.generate, attachedTo.get, contextID, contextURL, createdAt, creator,
-                  content, version)
+            //add metadata to mongo
+            val newInfo = metadataService.addMetadata(content, context, attachedTo.get, createdAt, creator, space)
+            Logger.info("new stuff is: " + newInfo.toString())
+            val mdMap = Map("metadata" -> content,
+              "resourceType" -> attachedTo.get.resourceType.name,
+              "resourceId" -> attachedTo.get.id.toString)
 
-                //add metadata to mongo
-                metadataService.addMetadata(metadata)
-                val mdMap = metadata.getExtractionSummary
-
-                attachedTo match {
-                  case Some(resource) => {
-                    resource.resourceType match {
-                      case ResourceRef.dataset => {
-                        datasets.index(resource.id)
-                        //send RabbitMQ message
-                        current.plugin[RabbitmqPlugin].foreach { p =>
-                          val dtkey = s"${p.exchange}.metadata.added"
-                          p.extract(ExtractorMessage(UUID(""), UUID(""), controllers.Utils.baseUrl(request),
-                            dtkey, mdMap, "", metadata.attachedTo.id, ""))
-                        }
-                      }
-                      case ResourceRef.file => {
-                        files.index(resource.id)
-                        //send RabbitMQ message
-                        current.plugin[RabbitmqPlugin].foreach { p =>
-                          val dtkey = s"${p.exchange}.metadata.added"
-                          p.extract(ExtractorMessage(metadata.attachedTo.id, UUID(""), controllers.Utils.baseUrl(request),
-                            dtkey, mdMap, "", UUID(""), ""))
-                        }
-                      }
-                      case _ => {}
+            attachedTo match {
+              case Some(resource) => {
+                resource.resourceType match {
+                  case ResourceRef.dataset => {
+                    datasets.index(resource.id)
+                    //send RabbitMQ message
+                    current.plugin[RabbitmqPlugin].foreach { p =>
+                      val dtkey = s"${p.exchange}.metadata.added"
+                      p.extract(ExtractorMessage(UUID(""), UUID(""), controllers.Utils.baseUrl(request),
+                        dtkey, mdMap, "", attachedTo.get.id, ""))
                     }
                   }
-                  case None => {}
+                  case ResourceRef.file => {
+                    files.index(resource.id)
+                    //send RabbitMQ message
+                    current.plugin[RabbitmqPlugin].foreach { p =>
+                      val dtkey = s"${p.exchange}.metadata.added"
+                      p.extract(ExtractorMessage(attachedTo.get.id, UUID(""), controllers.Utils.baseUrl(request),
+                        dtkey, mdMap, "", UUID(""), ""))
+                    }
+                  }
+                  case _ => {}
                 }
-
-                Ok(views.html.metadatald.view(List(metadata), null, true)(request.user))
-              } else {
-                BadRequest(toJson("Invalid resource type"))
               }
+              case None => {}
             }
+            /*           
+val metadata = models.Metadata(UUID.generate, attachedTo.get, None, Some(new URL("http://noteal.com")), createdAt, creator,
+                  content, None)
+            Ok(views.html.metadatald.view(List(metadata), null, true)(request.user))
+            * 
+            */
+            Ok(newInfo)
+          } else {
+            BadRequest(toJson("Invalid resource type"))
           }
         }
         case None => BadRequest(toJson("Invalid user"))
       }
   }
 
-    @ApiOperation(value = "Update a metadata entry",
+  @ApiOperation(value = "Update a metadata entry",
     responseClass = "None", httpMethod = "PUT")
   def updateMetadata(id: UUID, entryId: String) = PermissionAction(Permission.DeleteMetadata, Some(ResourceRef(ResourceRef.metadata, id))) { implicit request =>
     request.user match {
-            case Some(user) => {
-              BadRequest("Not implemented")
-            }
+      case Some(user) => {
+        BadRequest("Not implemented")
+      }
     }
-    }
-    
+  }
+
   @ApiOperation(value = "Delete the metadata represented in Json-ld format",
     responseClass = "None", httpMethod = "DELETE")
-  def removeMetadata(id: UUID) = PermissionAction(Permission.DeleteMetadata, Some(ResourceRef(ResourceRef.metadata, id))) { implicit request =>
+  def removeMetadata(attachedtype: String, attachedid: String, term: String, itemid: String) = PermissionAction(Permission.DeleteMetadata, Some(ResourceRef(Symbol(attachedtype), UUID(attachedid)))) { implicit request =>
+    val attachedUuid = UUID(attachedid)
     request.user match {
       case Some(user) => {
-        metadataService.getMetadataById(id) match {
-          case Some(m) => {
-            if (m.attachedTo.resourceType == ResourceRef.curationObject && curations.get(m.attachedTo.id).map(_.status != "In Preparation").getOrElse(false)
-              || m.attachedTo.resourceType == ResourceRef.curationFile && curations.getCurationByCurationFile(m.attachedTo.id).map(_.status != "In Preparation").getOrElse(false)) {
-              BadRequest("Publication Request has already been submitted")
-            } else {
-              metadataService.removeMetadata(id)
-              val mdMap = m.getExtractionSummary
+        
+        if (attachedtype == ResourceRef.curationObject.name && curations.get(attachedUuid).map(_.status != "In Preparation").getOrElse(false)
+          || attachedtype == ResourceRef.curationFile.name && curations.getCurationByCurationFile(attachedUuid).map(_.status != "In Preparation").getOrElse(false)) {
+          BadRequest("Publication Request has already been submitted")
+        } else {
 
-              current.plugin[RabbitmqPlugin].foreach { p =>
-                val dtkey = s"${p.exchange}.metadata.removed"
-                p.extract(ExtractorMessage(UUID(""), UUID(""), request.host, dtkey, mdMap, "", id, ""))
-              }
+          val deletedAt = new Date()
 
-              Logger.debug("re-indexing after metadata removal")
-              current.plugin[ElasticsearchPlugin].foreach { p =>
-                // Delete existing index entry and re-index
-                m.attachedTo.resourceType match {
-                  case ResourceRef.file => {
-                    p.delete("data", "file", m.attachedTo.id.stringify)
-                    files.index(m.attachedTo.id)
-                  }
-                  case ResourceRef.dataset => {
-                    p.delete("data", "dataset", m.attachedTo.id.stringify)
-                    datasets.index(m.attachedTo.id)
-                  }
-                  case _ => {
-                    Logger.error("unknown attached resource type for metadata - not reindexing")
-                  }
+          // build creator uri
+          // TODO switch to internal id and then build url when returning?
+          val userURI = controllers.routes.Application.index().absoluteURL() + "api/users/" + user.id
+          val deletor = UserAgent(user.id, "cat:user", MiniUser(user.id, user.fullName, user.avatarUrl.getOrElse(""), user.email), Some(new URL(userURI)))
+          val space = attachedtype match {
+            case ResourceRef.file.name => {
+              files.get(attachedUuid) match {
+                case Some(file) => {
+                  None
                 }
               }
+            }
+            case ResourceRef.dataset.name => {
+              datasets.get(attachedUuid) match {
+                case Some(dataset) => {
+                  Some(dataset.spaces.apply(0))
+                }
+              }
+            }
+            case ResourceRef.curationObject.name => { None }
+            case ResourceRef.curationFile.name => { None }
+            case _ => None
+          }
 
-              Ok(JsObject(Seq("status" -> JsString("ok"))))
+          val content = metadataService.removeMetadata(ResourceRef(Symbol(attachedtype), attachedUuid), term, itemid, deletedAt, deletor, space)
+
+          val mdMap = Map("metadata" -> content,
+            "resourceType" -> attachedtype,
+            "resourceId" -> attachedUuid)
+
+          current.plugin[RabbitmqPlugin].foreach { p =>
+            val dtkey = s"${p.exchange}.metadata.removed"
+            p.extract(ExtractorMessage(UUID(""), UUID(""), request.host, dtkey, mdMap, "", attachedUuid, ""))
+          }
+
+          Logger.debug("re-indexing after metadata removal")
+          current.plugin[ElasticsearchPlugin].foreach { p =>
+            // Delete existing index entry and re-index
+            Symbol(attachedtype) match {
+              case ResourceRef.file => {
+                p.delete("data", "file", attachedUuid.stringify)
+                files.index(attachedUuid)
+              }
+              case ResourceRef.dataset => {
+                p.delete("data", "dataset", attachedUuid.stringify)
+                datasets.index(attachedUuid)
+              }
+              case _ => {
+                Logger.error("unknown attached resource type for metadata - not reindexing")
+              }
             }
           }
-          case None => BadRequest(toJson("Invalid Metadata"))
+
+          Ok(JsObject(Seq("status" -> JsString("ok"))))
         }
+
       }
       case None => BadRequest("Not authorized.")
     }
@@ -501,7 +521,7 @@ class Metadata @Inject() (
       }
       result
     } else { //TBD - just get list of Clowder users
-    /*  val lcTerm = term.toLowerCase()
+      /*  val lcTerm = term.toLowerCase()
       Future(Ok(Json.toJson(userService.list.map(jsonPerson).filter((x) => {
         if (term.length == 0) {
           true

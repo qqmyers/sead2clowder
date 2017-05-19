@@ -248,24 +248,24 @@ IN the new model, we'll have a set of {category, label, URI, type} entires from 
 a set of {URI, value, agent, date} entries ???
 There is probably more history than just the latest agent/date once editing is allowed... so this becomes a list of id/agent/action/date values???
  for multivalues - where do deletes get shown?
+*@
 
- *@
 
 	@if(rdfMetadata!=null) {
 		<div>
 		@for((label, value) <- rdfMetadata.entries) {
-		  <div class="panel panel-default">
+		  <div class="mdblock panel panel-default">
             <div class="panel-heading" role="tab" id="heading_@safe(label)">
                 <a data-toggle="collapse" href="#collapse_@safe(label)" class="collapse-icon">
                     <span class="panel-icon glyphicon glyphicon-minus"></span>
                 </a>
                 <span>
-                    <span title='@rdfMetadata.defs.apply(label)'>@label</span>
+                    <span class='pred' title='@rdfMetadata.defs.apply(label)'>@label</span>
                 </span>
                 <span class='metaprov'>
                 @defining(rdfMetadata.history.apply(label)) {list =>  
-
-			@printNewHeader(list.length==1, list.head.agent, list.head.date)
+				
+			@printNewHeader(list.length==1, list.head.agent, list.head.date) 
 			</span>
 			</div>
 			
@@ -281,16 +281,7 @@ There is probably more history than just the latest agent/date once editing is a
 							case s: JsString => {
 								<span>@s.value</span>
 				
-								@if(toDelete && Permission.checkPermission(Permission.DeleteMetadata, ResourceRef(ResourceRef.metadata, list.head.id))) {
-                					<a  title="Delete this metadata" class="btn-link delete-icon hidden">
-					                  <span class="panel-icon glyphicon glyphicon-trash"></span>
-                					</a>
-				                }
-                				@if(toDelete && Permission.checkPermission(Permission.EditMetadata, ResourceRef(ResourceRef.metadata, list.head.id))) {
-						   			<a  title="Edit metadata" class="btn-link edit-icon hidden">
-										<span class="glyphicon glyphicon-edit"></span>
-									</a>
-								}
+							
 							}
 						}
 					</div>
@@ -323,6 +314,7 @@ There is probably more history than just the latest agent/date once editing is a
 			</div>
 			</div>
 			
+			
 			}
 			}
 		
@@ -342,7 +334,7 @@ There is probably more history than just the latest agent/date once editing is a
 			<div>@label</div>
 			<div>@item.uri</div>
 			<div>@item.value.toString()</div>
-			@*<div>@item.agent.toString()</div>*@
+			<div>@item.agent.toString()</div>
 			<div>@item.action</div>
 			<div>@item.date.toString()</div>
 			</div>
@@ -351,6 +343,7 @@ There is probably more history than just the latest agent/date once editing is a
 		}
 		</div>
 	}
+	 
     @if(metadata.size == 0) {
         <p class="text-center">No metadata available for this resource</p>
     }
@@ -409,8 +402,13 @@ There is probably more history than just the latest agent/date once editing is a
                 }
                 e.stopPropagation();
             });
-            
-               if(@Permission.checkPermission(Permission.EditMetadata, ResourceRef(ResourceRef.metadata, metadata.head.id))) {
+
+            @if(rdfMetadata!=null) {
+               if(@Permission.checkPermission(Permission.EditMetadata, rdfMetadata.attachedTo)) {
+
+               $('.metadataentry').each(function(index) {
+               addIcons($(this));
+               });
                  $(document).on('mouseenter', '.metadataentry', function(ev) {
                  
                     $(this).find('.edit-icon').removeClass("hidden");
@@ -426,6 +424,7 @@ There is probably more history than just the latest agent/date once editing is a
                     
                  });
                  }
+                 }
             
         })
 
@@ -439,6 +438,7 @@ There is probably more history than just the latest agent/date once editing is a
 
                 request.done(function (response, textStatus, jqXHR) {
                     edit_icon.closest(".panel").remove();
+                    notify("Metadata successfully edited.", "success", false, 2000);
                 });
 
                 request.fail(function (jqXHR, textStatus, errorThrown){
@@ -455,13 +455,19 @@ There is probably more history than just the latest agent/date once editing is a
         $(function () {
             $('.delete-icon').unbind().on('click', function(){
                 var delete_icon = $(this);
-
-                var request = jsRoutes.api.Metadata.removeMetadata($(this).parent().attr('id')).ajax({
+				var header = $(this).parents('.mdblock');
+				var pred = header.find('.pred').attr('title');
+                var request = jsRoutes.api.Metadata.removeMetadata('@rdfMetadata.attachedTo.resourceType.name','@rdfMetadata.attachedTo.id.toString', pred, $(this).parent().attr('id')).ajax({
                     type: 'DELETE'
                 });
 
                 request.done(function (response, textStatus, jqXHR) {
-                    delete_icon.closest(".panel").remove();
+                    if(delete_icon.closest(".tree").children().length == 1) {
+                      delete_icon.closest(".mdblock").remove(); } 
+                    else {
+                      delete_icon.closest(".metadataentry").remove();
+                    }
+                    notify("Metadata successfully deleted.", "success", false, 2000);
                 });
 
                 request.fail(function (jqXHR, textStatus, errorThrown){
@@ -525,5 +531,55 @@ There is probably more history than just the latest agent/date once editing is a
         function leaveMetadataContext(mid) {
             $("#"+mid).removeClass("popping");
             $("#"+mid).popover('hide');
+        }
+        
+        var defs = {};
+        @for((label, value) <- rdfMetadata.defs.dropRight(1)) {
+        	defs["@label"] = "@value";
+        }
+        
+        
+      function addEntries(update) {
+        var items = update.entries;
+        //update overall list
+        for(var key in update.defs) {
+          defs[key] = update.defs[key];
+        }
+        var newdefs = update.defs;
+
+        for(var key in items) {
+         if(!$("#heading_" + safe(key)).length) {
+         //Add header block
+           var blockid = 'heading_' + safe(key);
+           var m_names = new Array("Jan", "Feb", "Mar", 
+			"Apr", "May", "Jun", "Jul", "Aug", "Sep", 
+			"Oct", "Nov", "Dec");
+           var today = new Date();
+           var mon =m_names[today.getMonth()];
+           var day = today.getDate();
+           var year = today.getFullYear();
+           $('#metadata-content > div:first-child').prepend($('<div/>').addClass('mdblock panel panel-default').append($('<div/>').addClass('panel-heading').attr('role','tab').attr('id',blockid)));
+           $('#'+blockid).append($('<a/>').attr('data-toggle','collapse').attr('href','#collapse_' + safe(key)).addClass('collapse-icon').append($('<span/>').addClass('panel-icon glyphicon glyphicon-minus')));
+           $('#'+blockid).append($('<span/>').append($('<span/>').addClass('pred').attr('title',defs[key]).text(key)));
+           $('#'+blockid).append($('<span/>').addClass('metaprov').text('added ' + mon + ' ' + day + ', ' + year + ' by ').append($('<a/>').attr('href','@routes.Profile.viewProfileUUID(user.get.getMiniUser.id)').text('@user.get.getMiniUser.fullName')));
+           $('#'+blockid).parent().append($('<div/>').attr('id','collapse_'+safe(key)).addClass('panel-collapse collapse in').attr('role','tabpanel').attr('aria-labelledby',blockid).append($('<div/>').addClass('panel-body').append($('<div/>').addClass('tree')))); 
+         }
+         //Now add new entries
+         for(mEntry in items[key]) {
+           $("<div/>").prependTo($("#collapse_" + safe(key) + " .tree")).addClass("metadataentry").attr("id",mEntry).append($("<span/>").text((items[key])[mEntry]));
+           addIcons($('#'+mEntry));
+         }
+        }
+      }
+        
+        function addIcons(entry) {
+        	@if(toDelete && Permission.checkPermission(Permission.DeleteMetadata, rdfMetadata.attachedTo)) {
+	        	entry.append($("<a/>").attr("title","Delete this metadata").addClass("btn-link delete-icon hidden").append($("<span/>").addClass("panel-icon glyphicon glyphicon-trash")));
+		        entry.append($("<a/>").attr("title","Edit metadata").addClass("btn-link edit-icon hidden").append($("<span/>").addClass("glyphicon glyphicon-edit")));
+        	}
+        }
+        
+        function safe(name) {
+        	return name.replace("/","_").replace(".","_").replace(":","_").replace(" ","_")
         }
     </script>
