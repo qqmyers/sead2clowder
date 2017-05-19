@@ -540,6 +540,7 @@ There is probably more history than just the latest agent/date once editing is a
         
         
       function addEntries(update) {
+      
         var items = update.entries;
         //update overall list
         for(var key in update.defs) {
@@ -580,6 +581,6 @@ There is probably more history than just the latest agent/date once editing is a
         }
         
         function safe(name) {
-        	return name.replace("/","_").replace(".","_").replace(":","_").replace(" ","_")
+        	return name.replace(/\//g,"_").replace(/\./g,"_").replace(/\:/g,"_").replace(/ /g,"_")
         }
     </script>
