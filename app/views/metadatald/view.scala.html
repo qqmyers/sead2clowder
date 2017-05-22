@@ -279,7 +279,11 @@ There is probably more history than just the latest agent/date once editing is a
 					  <div class="metadataentry" id='@k'>
 						@v match {
 							case s: JsString => {
-								<span>@s.value</span>
+								<span
+								@if(rdfMetadata.defs.apply(label) == "http://purl.org/dc/terms/contact") {
+								class = 'person'
+								}
+								>@s.value</span>
 				
 							
 							}
