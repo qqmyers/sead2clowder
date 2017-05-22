@@ -103,9 +103,8 @@ class MongoDBMetadataService @Inject() (contextService: ContextLDService, datase
         case x: JsObject => x.keys.size
         case _ => 0
       }
-      var current = existingSize + filteredList.size + 1
-      Logger.info("Max size: " + current)
-      val newEntries = Json.toJson(filteredList.map { item => { current -= 1; (current.toString + "_" + item.value.hashCode.toString) -> item.value } }.toMap)
+      
+      val newEntries = Json.toJson(filteredList.map { item => { (UUID.generate().stringify) -> item.value } }.toMap)
       Logger.info("New entries: " + newEntries.toString())
       newMetadataEntryJson = newMetadataEntryJson ++ Map(label -> newEntries)
       Logger.info("new entrymap updated for " + label)
@@ -208,19 +207,9 @@ class MongoDBMetadataService @Inject() (contextService: ContextLDService, datase
     //Remove it from entries
     val delVal = (existingValues.as[JsObject] \ itemId).as[String]
     val updatedValues = existingValues.as[JsObject] - itemId
-    var finalVals = scala.collection.mutable.Map[String, String]().empty
-
-    var current = updatedValues.keys.size + 1;
-    updatedValues.keys.foreach { key =>
-      {
-        val curValue = (updatedValues \ key).as[String]
-        current -= 1
-        finalVals = finalVals ++ Map(current.toString + "_" + curValue.hashCode.toString -> curValue)
-      }
-    }
-    finalVals.size match {
+    updatedValues.keys.size match {
       case 0 => metadataEntryJson.remove(inverseDefs.get(term).get)
-      case _ => metadataEntryJson(inverseDefs.get(term).get) = Json.toJson(finalVals.toMap) 
+      case _ => metadataEntryJson(inverseDefs.get(term).get) = updatedValues 
     }
     
 
@@ -412,9 +401,7 @@ class MongoDBMetadataService @Inject() (contextService: ContextLDService, datase
         val metadataEntryJson = scala.collection.mutable.Map.empty[String, JsValue]
         for (pred <- metadataEntryPreds) {
           val filteredList = metadataEntryList.filter(_.uri == pred)
-          var current = filteredList.size + 1;
-          //metadataEntryJson = metadataEntryJson ++ Map(metadataDefsMap.apply(pred) -> Json.toJson(filteredList.map { item => { current -= 1; (current.toString + "_" + item.value.hashCode.toString) -> item.value } }toMap))
-          metadataEntryJson(metadataDefsMap.apply(pred)) = Json.toJson(filteredList.map { item => { current -= 1; (current.toString + "_" + item.value.hashCode.toString) -> item.value } }toMap)
+          metadataEntryJson(metadataDefsMap.apply(pred)) = Json.toJson(filteredList.map { item => {  (UUID.generate().stringify) -> item.value } }toMap)
 
           metadataHistoryMap = metadataHistoryMap ++ Map((metadataDefsMap.apply(pred)).toString -> filteredList.toList)
         }
