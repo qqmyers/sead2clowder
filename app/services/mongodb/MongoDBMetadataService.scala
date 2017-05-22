@@ -82,7 +82,7 @@ class MongoDBMetadataService @Inject() (contextService: ContextLDService, datase
         Logger.info("There: " + Json.toJson(creator).as[JsObject])
         //Now create an entry and add it to the list
         Logger.info(uri + " : " + (excontent.apply(0).as[JsObject] \ uri).toString()) // + (x \ y \\ "@value").as[String]) }}
-        val me = MetadataEntry(UUID.generate(), uri, (excontent.apply(0).as[JsObject] \ uri).as[String], Json.toJson(creator).as[JsObject].toString(), MDAction.Added.toString(), createdAt)
+        val me = MetadataEntry(UUID.generate(), uri, (excontent.apply(0).as[JsObject] \ uri).as[String], Json.toJson(creator).as[JsObject].toString(), MDAction.Added.toString(), None, createdAt)
         Logger.info("ME: " + me.toString())
         newMDEntries += me
 
@@ -104,7 +104,7 @@ class MongoDBMetadataService @Inject() (contextService: ContextLDService, datase
         case _ => 0
       }
       
-      val newEntries = Json.toJson(filteredList.map { item => { (UUID.generate().stringify) -> item.value } }.toMap)
+      val newEntries = Json.toJson(filteredList.map { item => { (item.id.stringify) -> item.value } }.toMap)
       Logger.info("New entries: " + newEntries.toString())
       newMetadataEntryJson = newMetadataEntryJson ++ Map(label -> newEntries)
       Logger.info("new entrymap updated for " + label)
@@ -215,7 +215,7 @@ class MongoDBMetadataService @Inject() (contextService: ContextLDService, datase
 
     //Add a history entry for the delete
     var metadataHistoryMap = collection.mutable.Map() ++ summary.history
-    val me = MetadataEntry(UUID.generate(), term, delVal, Json.toJson(deletor).as[JsObject].toString(), MDAction.Deleted.toString(), deletedAt)
+    val me = MetadataEntry(UUID.generate(), term, delVal, Json.toJson(deletor).as[JsObject].toString(), MDAction.Deleted.toString(), Some(itemId), deletedAt)
     metadataHistoryMap(inverseDefs.get(term).get) = List(me) ++ metadataHistoryMap.applyOrElse(inverseDefs.get(term).get, { label: String => List[MetadataEntry]() })
     //Store update
     //Now - update the metadatasummary with new info (entries, possibly defs, and history...
@@ -357,7 +357,7 @@ class MongoDBMetadataService @Inject() (contextService: ContextLDService, datase
                 //Kludge - some entries may not have a valid jsonld context mapping the content to the term above. In this case, we can just parse the json 
                 for ((label, value) <- JSONLD.buildMetadataMap(item.content)) {
 
-                  metadataEntryList += MetadataEntry(item.id, prefixes.get(label), value.as[String], Json.toJson((ldItem).validate[Agent].get).toString, MDAction.Added.toString, new SimpleDateFormat("EEE MMM dd hh:mm:ss zzz yyyy").parse((ldItem \ "created_at").toString().replace("\"", "")))
+                  metadataEntryList += MetadataEntry(item.id, prefixes.get(label), value.as[String], Json.toJson((ldItem).validate[Agent].get).toString, MDAction.Added.toString, None, new SimpleDateFormat("EEE MMM dd hh:mm:ss zzz yyyy").parse((ldItem \ "created_at").toString().replace("\"", "")))
                   //metadataEntryList += MetadataEntry(item.id, inverseMetadataDefsMap.apply(label), value.as[String], (ldItem).validate[Agent].get, MDAction.Added.toString, new SimpleDateFormat("EEE MMM dd hh:mm:ss zzz yyyy").parse((ldItem \ "created_at").toString().replace("\"", "")))
 
                   metadataEntryPreds += prefixes.get(label)
@@ -372,7 +372,7 @@ class MongoDBMetadataService @Inject() (contextService: ContextLDService, datase
                     newDefs(metadataDefsMap.apply(uri)) = uri
                     //Now create an entry and add it to the list
                     Logger.info(uri + " : " + (excontent.apply(0).as[JsObject] \ uri).toString()) // + (x \ y \\ "@value").as[String]) }}
-                    metadataEntryList += MetadataEntry(UUID.generate(), uri, (excontent.apply(0).as[JsObject] \ uri).as[String], Json.toJson((ldItem).validate[Agent].get).toString, MDAction.Added.toString(), new SimpleDateFormat("EEE MMM dd hh:mm:ss zzz yyyy").parse((ldItem \ "created_at").toString().replace("\"", "")))
+                    metadataEntryList += MetadataEntry(UUID.generate(), uri, (excontent.apply(0).as[JsObject] \ uri).as[String], Json.toJson((ldItem).validate[Agent].get).toString, MDAction.Added.toString(), None, new SimpleDateFormat("EEE MMM dd hh:mm:ss zzz yyyy").parse((ldItem \ "created_at").toString().replace("\"", "")))
 
                     metadataEntryPreds += uri
                   }
@@ -401,7 +401,7 @@ class MongoDBMetadataService @Inject() (contextService: ContextLDService, datase
         val metadataEntryJson = scala.collection.mutable.Map.empty[String, JsValue]
         for (pred <- metadataEntryPreds) {
           val filteredList = metadataEntryList.filter(_.uri == pred)
-          metadataEntryJson(metadataDefsMap.apply(pred)) = Json.toJson(filteredList.map { item => {  (UUID.generate().stringify) -> item.value } }toMap)
+          metadataEntryJson(metadataDefsMap.apply(pred)) = Json.toJson(filteredList.map { item => {  (item.id.stringify) -> item.value } }toMap)
 
           metadataHistoryMap = metadataHistoryMap ++ Map((metadataDefsMap.apply(pred)).toString -> filteredList.toList)
         }

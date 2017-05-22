@@ -51,9 +51,10 @@ case class MetadataEntry(
   value: String,
   agent: String,
   action: String, //MDAction
+  itemActedOn: Option[String] = None,
   date: Date) {
   //Construct from a stored list
-  def this(l:BasicDBList) = this(UUID(l.get(0).asInstanceOf[BasicDBList].get(0).asInstanceOf[String]), l.get(1).asInstanceOf[String], l.get(2).asInstanceOf[String], l.get(3).asInstanceOf[String], l.get(4).asInstanceOf[String], l.get(5).asInstanceOf[Date])
+  def this(l:BasicDBList) = this(UUID(l.get(0).asInstanceOf[BasicDBList].get(0).asInstanceOf[String]), l.get(1).asInstanceOf[String], l.get(2).asInstanceOf[String], l.get(3).asInstanceOf[String], l.get(4).asInstanceOf[String], Option(l.get(5).asInstanceOf[String]), l.get(6).asInstanceOf[Date])
 }
 
 case class RdfMetadata(
