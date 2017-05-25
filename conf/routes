@@ -258,6 +258,7 @@ GET            /admin/extractions                                               
 GET            /admin/dataDumps                                                         @controllers.Admin.viewDumpers
 GET            /admin/sensors                                                           @controllers.Admin.sensors
 POST           /api/sensors/config                                                      @api.Admin.sensorsConfig
+GET            /admin/metadata/promote                                                  @controllers.Admin.promoteMetadataFields
 
 # ----------------------------------------------------------------------
 # JAVASCRIPT ENDPOINTS

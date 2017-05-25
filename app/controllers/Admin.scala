@@ -321,6 +321,11 @@ class Admin @Inject() (sectionIndexInfo: SectionIndexInfoService, userService: U
     Ok(views.html.manageMetadataDefinitions(metadata.toList, None, None))
   }
 
+  def promoteMetadataFields() = ServerAdminAction { implicit request =>
+    implicit val user = request.user
+    Ok(views.html.admin.promoteExtractedMetadataFields())
+  }
+
   val roleForm = Form(
     mapping(
       "id" -> optional(Utils.CustomMappings.uuidType),
