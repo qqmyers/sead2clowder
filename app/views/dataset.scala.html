@@ -572,6 +572,11 @@
         request.send();
     }
 
+            function updateBreadCrumb(folderId, folderName) {
+		folderPath = '&gt<li><span title="' + folderName + '">' + folderName +   '</span></li>';	
+		$('#breadcrumb').append(folderPath);
+	    }
+
     $(function() {
             $(window).on('fileDelete hashchange', function() {
 
@@ -773,6 +778,7 @@
             request.fail(function(jqXHR, textStatus, errorThrown){
                 notify("Error getting all folders in dataset" + errorThrown, "error");
             });
+
 
         }
 
