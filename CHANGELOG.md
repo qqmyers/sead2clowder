@@ -8,15 +8,18 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Added
 - Only show spaces, collections and datasets that are shared with other users under 'explore' tab. 
   In application.conf, this is set by the showOnlySharedInExplore whose default value is false. 
-- Added ability to download Collection. Download Collection and Dataset both use BagIt by default. [CATS-571] (https://opensource.ncsa.illinois.edu/jira/browse/CATS-571)
+- Ability to download Collection. Download Collection and Dataset both use BagIt by default. [CATS-571] (https://opensource.ncsa.illinois.edu/jira/browse/CATS-571)
 - Ability to mention other users using '@' in a comment on a file or dataset. Mentioned users will receive a notification email 
   and a notice in their event feed. [SEAD-781](https://opensource.ncsa.illinois.edu/jira/browse/SEAD-781)
+- Description field to metadata definition. [SEAD-1101](https://opensource.ncsa.illinois.edu/jira/browse/SEAD-1101)
 
 ### Changed
 - Ability to search datapoints, averages and trends using a start and end time.
 - Ability to change how many items are displayed on the listing pages. [SEAD-1149](https://opensource.ncsa.illinois.edu/jira/browse/SEAD-1149)
 - When downloading datasets there is no folder with the id for each file. [SEAD-1038](https://opensource.ncsa.illinois.edu/jira/browse/SEAD-1038)
 - Datasets can be copied with Download Files and View Dataset permissions instead of just the owner. [SEAD-1162](https://opensource.ncsa.illinois.edu/jira/browse/SEAD-1162)
+- Selections can now be downloaded, tagged or deleted directly from the top menu bar through the new action dropdown.
+- Can assign any GeoJSON geometry to Geostreams entities in the PostGIS database, not just lat/long coordinates. [CATS-643](https://opensource.ncsa.illinois.edu/jira/browse/CATS-643)
 
 ### Fixed
 - Binning on geostreaming api for hour and minutes. [GEOD-886](https://opensource.ncsa.illinois.edu/jira/browse/GEOD-886)
@@ -26,6 +29,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Copy of dataset. When a dataset is copied, the newly created dataset will have the system generated metadata, previews, and thumbnails for the dataset and the files.[CATS-729](https://opensource.ncsa.illinois.edu/jira/browse/CATS-729) 
 - Return 409 Conflict when submitting file for manual extraction and file is not "PROCESSED". 
   [CATS-754](https://opensource.ncsa.illinois.edu/jira/browse/CATS-754)
+- Listing of files in dataset breaks when user permissions in a space are set to View. 
+  [CATS-767](https://opensource.ncsa.illinois.edu/jira/browse/CATS-767)
 
 ## 1.2.0  - 2017-03-24 
 
