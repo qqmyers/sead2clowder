@@ -16,15 +16,6 @@
 
 <div class="row">
     <ol class="breadcrumb">
-
-<li id='folderpath'>
-@if(folderHierarchy.length > 0 ) {
-        @folderHierarchy.map { cFolder =>
-        > <a href="javascript:updatePageAndFolder(0, '@cFolder.id.stringify')"> @cFolder.displayName</a>
-        }
-
-}
-</li>
         @(owner, ownerName) match {
             case (Some(o), Some(n)) => {
         	@if(user.isDefined) {
