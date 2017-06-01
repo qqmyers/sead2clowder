@@ -573,8 +573,8 @@
     }
 
             function updateBreadCrumb(folderId, folderName) {
-		folderPath = '&gt<li><span title="' + folderName + '">' + folderName +   '</span></li>';	
-		$('#breadcrumb').append(folderPath);
+		folderPath = '<li><span title="' + folderName + '">' + folderName +   '</span></li>';	
+		$('.breadcrumb').append(folderPath);
 	    }
 
     $(function() {
