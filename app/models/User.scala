@@ -5,7 +5,7 @@ import java.security.MessageDigest
 import java.util.Date
 
 import play.api.Play.configuration
-import play.api.libs.json.Json
+import play.api.libs.json.{JsValue, Json, Writes}
 import securesocial.core._
 import services.AppConfiguration
 
@@ -106,6 +106,10 @@ case class MiniUser(
    fullName: String,
    avatarURL: String,
    email: Option[String])
+
+object MiniUser {
+  implicit val userFormat = Json.format[MiniUser]
+}
 
 case class ClowderUser(
   id: UUID = UUID.generate(),

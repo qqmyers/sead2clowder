@@ -42,9 +42,13 @@ class Status @Inject()(spaces: SpaceService,
                                sortBy = SortBy.withName(request.queryString.get("sort").fold("DATE")(_.head)),
                                last = request.queryString.get("last").map(_.head),
                                lastID = request.queryString.get("id").map(x => UUID(x.head)),
-                               owner = request.queryString.get("owner").map(x => UUID(x.head)))
+                               owner = request.queryString.get("owner").map(x => UUID(x.head)),
+                               permission = Permission.withName(request.queryString.get("permission").fold("ViewDataset")(_.head)),
+                               showAll = request.queryString.get("all").fold(false)(x => x.head.asInstanceOf[Boolean]),
+                               showPublic = request.queryString.get("public").fold(false)(x => x.head.asInstanceOf[Boolean]),
+                               sharedSpaces = request.queryString.get("shared").fold(false)(x => x.head.asInstanceOf[Boolean]))
 
-    val datasets = DI.injector.getInstance(classOf[DatasetService]).list(option, nextPage=false, request.user, showAll=false)
+    val datasets = DI.injector.getInstance(classOf[DatasetService]).list(option, request.user)
 
     Ok(datasets)
 

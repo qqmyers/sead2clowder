@@ -15,9 +15,18 @@ object SortBy extends Enumeration {
   val DATE, TITLE, AUTHOR = Value
 }
 
+object SpaceSelector extends Enumeration {
+  type SpaceSelector = Value
+
+  val ALL, MINE, SHARED = Value
+}
+
+import api.Permission
+import api.Permission.Permission
 import models.UUID
-import util.Direction.Direction
-import util.SortBy.SortBy
+import util.Direction._
+import util.SortBy._
+import util.SpaceSelector._
 
 case class SearchOptions(
   // by what should the results be sorted
@@ -34,8 +43,14 @@ case class SearchOptions(
   title: Option[String] = None,
   // only return results for the following user
   owner: Option[UUID] = None,
-  // should public results be returned
-  public: Boolean = false,
   // maximum number of results
-  limit: Integer = 20
+  limit: Integer = 20,
+  // permission requested on searched items
+  permission: Permission,
+  // limit to spaces shared with others
+  sharedSpaces: Boolean = false,
+  // limit to spaced that are mine
+  showAll: Boolean = true,
+  // add spaces that are public
+  showPublic: Boolean = true
 )

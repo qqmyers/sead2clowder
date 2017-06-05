@@ -423,21 +423,95 @@ class MongoDBDatasetService @Inject() (
     (filterAccess ++ filterDate ++ filterTitle ++ filterStatus ++ filterCollection ++ filterSpace ++ filterOwner, sort)
   }
 
-  def list(options: SearchOptions, nextPage: Boolean, user: Option[User], showAll: Boolean): JsValue = {
+  // showAll == true, show all datasets
+  // showAll == false, only show mine
+  def list(options: SearchOptions, user: Option[User]): JsValue = {
     val filter = scala.collection.mutable.ListBuffer.empty[MongoDBObject]
 
     // check the permissions
+    val public = MongoDBObject("public" -> true)
+    val enablePublic = play.Play.application().configuration().getBoolean("enablePublic")
+    //emptySpaces should not be used in most cases since your dataset maybe in a space, then you are changed to viewer or kicked off.
+    val emptySpaces = MongoDBObject("spaces" -> List.empty)
+    val publicSpaces = spaces.listByStatus(SpaceStatus.PUBLIC.toString).map(s => new ObjectId(s.id.stringify))
+
+    // create access filter
+    if (!(options.showAll && configuration(play.api.Play.current).getString("permissions").getOrElse("public") == "public" && options.permission != Permission.ViewDataset)) {
+      user match {
+        case Some(u) => {
+
+          val orlist = scala.collection.mutable.ListBuffer.empty[MongoDBObject]
+          if (options.permission == Permission.ViewDataset && enablePublic && options.showPublic) {
+            // if enablePublic == true, only list the dataset user can access, in a space page or /datasets
+            if(!u.superAdminMode) {
+              orlist += MongoDBObject("status" -> DatasetStatus.PUBLIC.toString)
+              orlist += MongoDBObject("status" -> DatasetStatus.DEFAULT.toString) ++ ("spaces" $in publicSpaces)
+            } else {
+              // superAdmin can access all datasets, in a space page or /datasets
+              orlist += MongoDBObject()
+            }
+          }
+          //if you are viewing other user's datasets, return the ones you have permission. otherwise filterAccess should
+          // including your own datasets. the if condition here is mainly for efficiency.
+//          if(user == owner || owner.isEmpty) {
+//            if (owner.isEmpty && !showOnlyShared){
+//              orlist += MongoDBObject("author._id" -> new ObjectId(u.id.stringify))
+//            } else if (!owner.isEmpty){
+//              orlist += MongoDBObject("author._id" -> new ObjectId(u.id.stringify))
+//            }
+//          }
+          val permission = options.permission.toString
+          val permittedSpaces = u.spaceandrole.filter(_.role.permissions.contains(permission))
+          if (options.sharedSpaces) {
+            val sharedspaces = permittedSpaces.filter((p: UserSpaceAndRole)=>
+              spaces.get(p.spaceId) match {
+                case Some(space) => {
+                  if (space.userCount > 1){
+                    true
+                  } else {
+                    false
+                  }
+                }
+                case None => false
+              }
+            )
+            if (sharedspaces.nonEmpty) {
+              orlist += ("spaces" $in sharedspaces.map(x => new ObjectId(x.spaceId.stringify)))
+            }
+          } else {
+            if (permittedSpaces.nonEmpty) {
+              orlist += ("spaces" $in permittedSpaces.map(x => new ObjectId(x.spaceId.stringify)))
+            }
+          }
+          if (orlist.nonEmpty) {
+            filter.append($or(orlist.map(_.asDBObject)))
+          } else {
+            filter.append(MongoDBObject("doesnotexist" -> true))
+          }
+        }
+        case None =>
+          if (Permission.READONLY.contains(options.permission) && enablePublic && options.showPublic) {
+            filter.append($or(MongoDBObject("status" -> DatasetStatus.PUBLIC.toString),
+                              MongoDBObject("status" -> DatasetStatus.DEFAULT.toString) ++ ("spaces" $in publicSpaces)))
+          } else {
+            filter.append(MongoDBObject("doesnotexist" -> true))
+          }
+      }
+    }
+
+    // add mine filter
+    if (user.isDefined && !options.showAll) {
+      filter.append(MongoDBObject("author._id" -> new ObjectId(user.get.id.stringify)))
+    }
 
     // check author
-    options.owner match {
-      case Some(owner) => filter.append(MongoDBObject("author._id" -> new ObjectId(owner.stringify)))
-      case None => {}
+    if (options.owner.isDefined) {
+      filter.append(MongoDBObject("author._id" -> new ObjectId(options.owner.get.stringify)))
     }
 
     // add title filter
-    options.title match {
-      case Some(title) => filter.append(MongoDBObject("$text" -> MongoDBObject("$search" -> title, "$caseSensitive" -> false)))
-      case None => {}
+    if (options.title.isDefined) {
+      filter.append(MongoDBObject("$text" -> MongoDBObject("$search" -> options.title.get, "$caseSensitive" -> false)))
     }
 
     // create the sorting options

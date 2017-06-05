@@ -159,7 +159,7 @@ trait DatasetService {
   /**
     * Return a list of datasets based on the search options
     */
-  def list(options: SearchOptions, nextPage: Boolean, user: Option[User], showAll: Boolean) : JsValue //Iterator[Dataset]
+  def list(options: SearchOptions, user: Option[User]) : JsValue //Iterator[Dataset]
 
   /**
    * Get dataset.
