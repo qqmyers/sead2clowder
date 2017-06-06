@@ -35,66 +35,6 @@
 <script src="@routes.Assets.at("javascripts/terraformer/terraformer-1.0.5.min.js")"></script>
 <script src="@routes.Assets.at("javascripts/terraformer/terraformer-wkt-parser-1.1.0.min.js")"></script>
 
-<style>
-.ui-autocomplete-category {
-font-weight: bold;
-padding: .2em .4em;
-margin: .8em 0 .2em;
-line-height: 1.5;
-}
-</style>
-
-<script>
-    // Assumption: the input list contains: <cat_short_name>;<cat_display_name> or <cat_short_name>:<var_name>, where <cat_display_name> contains no ":", and <var_name> contains no ";".
-    $.widget( "custom.catcomplete", $.ui.autocomplete, {
-        _create: function() {
-            this._super();
-            this.widget().menu( "option", "items", "> :not(.ui-autocomplete-category)" );
-        },
-        _renderMenu: function( ul, items ) {
-            var that = this;
-            var currentCategory = "";
-            var category = "";
-            var dispCatMap = new Map();
-            $.each( items, function( index, item ) {
-                //console.log("in renderMenu: item: ", item);
-                var label = item.label;
-                var char_index = label.indexOf(";");
-                if (char_index > -1) {
-                    var shortName = label.slice(0, char_index);
-                    var displName = label.slice(char_index + 1);
-                    //console.log("Setting category name '" + shortName + "' to '" + displName + "'");
-                    dispCatMap.set(shortName, displName);
-                }
-            });
-            $.each( items, function( index, item ) {
-                var li;
-                // Each item from an original array of strings was converted to an object { label: "val1", value: "val1" }.
-                //console.log("item: ", item);
-                var label = item.label;
-                var char_index = label.indexOf(":");
-                if (char_index > -1) {
-                    category = label.slice(0, char_index);
-                    item.label = label.slice(char_index + 1);
-                }
-                if ( category != currentCategory ) {
-                    //console.log("category changed from " + currentCategory + " to: " + category);
-                    var displayed_cat_name = category;
-                    if (dispCatMap.has(category)) {
-                        displayed_cat_name = dispCatMap.get(category);
-                    }
-                    ul.append( "<li class='ui-autocomplete-category'>" + displayed_cat_name + "</li>" );
-                    currentCategory = category;
-                }
-                // Used to be: Display only the items containing ":".
-                // Don't display the items containing ";".
-                if (label.indexOf(";") <= 0) {
-                    li = that._renderItemData( ul, item );
-                }
-            });
-        }
-    });
-</script>
 
 <script language="javascript">
     // submit metadata entry to server
@@ -104,6 +44,106 @@ line-height: 1.5;
         var field_label = $("#@id  #field-value").data("label");
         var field_id = $("#@id  #field-value").data("id");
         var field_type = $("#@id  #add-metadata-select option:selected").data("type");
+        var field_value = "";
+        var field_types_with_simple_values = {"string": 1, "listjquery": 1, "listgeocode": 1, "scientific_variable": 1,
+            "datetime": 1, "wkt": 1};
+        if (field_type in field_types_with_simple_values) {
+            field_value = $("#@id  #field-value").val();
+        } else if (field_type === "list") {
+            field_value = $("#@id  #field-value option:selected").val();
+        }  else {
+            console.log("Wrong field type: " + field_type);
+        }
+
+        var error = false;
+        if (field_value != "") {
+            // define contexts
+            var contexts = [];
+            contexts.push("https://clowder.ncsa.illinois.edu/contexts/metadata.jsonld");
+            var context = {};
+            context[field_label] = field_id;
+            context["content_ld"] = "https://clowder.ncsa.illinois.edu/metadata#content_ld"
+            contexts.push(context);
+
+            var content = {};
+            if (field_type === "listgeocode") {
+                // geocode example: "Champaign, IL, USA: 40.12, -88.24"
+                var parts = field_value.split(":");
+                var geoval = {};
+                geoval["Label"] = parts[0].trim();
+                var lat_lng = parts[1].trim().split(",");
+                geoval["Latitude"] = lat_lng[0].trim();
+                geoval["Longitude"] = lat_lng[1].trim();
+                content[field_label] = geoval;
+                context["Latitude"]= "http://www.w3.org/2003/01/geo/wgs84_pos#lat";
+                context["Longitude"]= "http://www.w3.org/2003/01/geo/wgs84_pos#lon";
+                context["Label"]= "http://www.w3.org/2000/01/rdf-schema#label";
+            } else if (field_type === "scientific_variable") {
+                content[field_label] = field_value;
+                var unit_val = $("#@id #unit-value").val();
+                if (unit_val) {
+                    content["Unit"] = unit_val;
+                }
+            } else if (field_type === "wkt") {
+                try {
+                    var primitive = Terraformer.WKT.parse(field_value);
+                    content["GeoJSON"] = primitive;
+                } catch(err) {
+                    notify("There is an error in your WKT. " + err, "error", false, 2000);
+                    error = true;
+                }
+            } else {
+                content[field_label] = field_value;
+            }
+
+            var body = {
+                    "@@context": contexts,
+                    "@(resType)_id": "@id",
+                    "content_ld": content
+            };
+
+            if (!error) {
+                var request = jsRoutes.api.Metadata.addUserMetadata().ajax({
+                    data: JSON.stringify(body),
+                    type: 'POST',
+                    contentType: "application/json"
+                });
+
+                request.done(function (response, textStatus, jqXHR) {
+                    // reset submission value
+                    $("#@id  #selected_field").empty();
+                    $("#@id #add-metadata-select").val('').trigger("chosen:updated");
+                    
+                    
+                    if($('#'+'@contentDiv'+' .panel').length == 0) {
+                        $('#' + "@contentDiv").empty();
+                    }
+                    addEntries(response);
+                    notify("Metadata successfully added.", "success", false, 2000);
+                });
+
+                request.fail(function (jqXHR, textStatus, errorThrown){
+                    console.error("The following error occured: " + textStatus, errorThrown);
+                    var errMsg = "You must be logged in to add metadata";
+                    if (!checkErrorAndRedirect(jqXHR, errMsg)) {
+                      notify("Metadata was not added due to : " + errorThrown, "error");
+                    }
+                });
+            }
+
+        }
+    }
+    
+    
+    // update(edit) metadata entry to server
+    function update_@id
+    (event){
+        event.preventDefault();
+        var field_label = $("#@id  #field-value").data("label");
+        var field_id = $("#@id  #field-value").data("id");
+        var entry_id = $("#@id  #field-value").data("entry-id");
+        var field_type = $("#@id  #add-metadata-select option[value='" + field_id+ "']").data("type");
+        
         var field_value = "";
         var field_types_with_simple_values = {"string": 1, "listjquery": 1, "listgeocode": 1, "scientific_variable": 1,
             "datetime": 1, "wkt": 1};
@@ -132,11 +172,13 @@ line-height: 1.5;
                 var lat_lng = parts[1].trim().split(",");
                 content["Latitude"] = lat_lng[0].trim();
                 content["Longitude"] = lat_lng[1].trim();
+                //Todo: add lat/lon to context
             } else if (field_type === "scientific_variable") {
                 content[field_label] = field_value;
                 var unit_val = $("#@id #unit-value").val();
                 if (unit_val) {
                     content["Unit"] = unit_val;
+                    //Todo: add unit to context
                 }
             } else if (field_type === "wkt") {
                 try {
@@ -152,18 +194,33 @@ line-height: 1.5;
 
             var body = {
                     "@@context": contexts,
-                    "@(resType)_id": "@id",
                     "content": content
             };
 
             if (!error) {
-                var request = jsRoutes.api.Metadata.addUserMetadata().ajax({
+                var request = jsRoutes.api.Metadata.updateMetadata('@resType', '@id', entry_id).ajax({
                     data: JSON.stringify(body),
-                    type: 'POST',
+                    type: 'PUT',
                     contentType: "application/json"
                 });
 
                 request.done(function (response, textStatus, jqXHR) {
+                	//update changed value
+                	if (field_value != "") {
+                	  $("#"+entry_id).replaceWith($("<div/>").addClass("metadataentry").attr("id",response.id).append($("<span/>").text(response.value)));
+			          addIcons($('#'+response.id));
+                	} else {
+                	//Todo: display update for non-simple type
+                	alert("Refresh page to see updated value");
+                	}
+                	//Update modified date
+                	var today = new Date();
+        			var mon =m_names[today.getMonth()];
+        			var day = today.getDate();
+        			var year = today.getFullYear();
+                	//modify date/person
+  		   			$("#"+entry_id).closest('.mdblock').find('.metaprov').text('last modified ' + mon + ' ' + day + ', ' + year + ' by ').append($('<a/>').attr('href','@routes.Profile.viewProfileUUID(user.get.getMiniUser.id)').text('@user.get.getMiniUser.fullName'));
+                	
                     // reset submission value
                     $("#@id  #selected_field").empty();
                     $("#@id #add-metadata-select").val('').trigger("chosen:updated");
@@ -172,9 +229,11 @@ line-height: 1.5;
                     if($('#'+'@contentDiv'+' .panel').length == 0) {
                         $('#' + "@contentDiv").empty();
                     }
-                    addEntries(response);
-                  //  $('#'+"@contentDiv").prepend(response);
-                    notify("Metadata successfully added.", "success", false, 2000);
+                    $('html, body').animate({
+        			  scrollTop: $("#" + response.id).closest('.mdblock').offset().top-50
+	      			}, 1000);
+	    
+                    notify("Metadata successfully updated.", "success", false, 2000);
                 });
 
                 request.fail(function (jqXHR, textStatus, errorThrown){
@@ -188,6 +247,8 @@ line-height: 1.5;
 
         }
     }
+    
+    var fields = null;
     var url = jsRoutes.api.Metadata.getDefinitions();
     var showSpaceInfo = false;
     if("@resType" == "dataset") {
@@ -217,7 +278,7 @@ line-height: 1.5;
     });
 
     request.done(function (response, textStatus, jqXHR) {
-        var fields = response;
+        fields = response;
         for (var i = 0; i < fields.length; i++) {
             var elem = $("<option></option>");
             elem.attr("data-type", fields[i].json.type);
@@ -234,12 +295,65 @@ line-height: 1.5;
             placeholder_text_single: "Select field"});
         // register selection listener
         $("#@id  #add-metadata-select").change(function () {
-            $("#@id  #add-metadata-select option:selected").each(function() {
+            $("#@id  #add-metadata-select option:selected").each(function() {displayAddEditForm(this, null);});
+        });
+
+
+        request.fail(function (jqXHR, textStatus, errorThrown){
+            console.error("The following error occured: " + textStatus, errorThrown);
+            var errMsg = "You must be logged in to retrieve metadata definitions";
+            if (!checkErrorAndRedirect(jqXHR, errMsg)) {
+              notify("Metadata was not added due to : " + errorThrown, "error");
+            }
+        });
+    });
+    
+      function editMDEntry(md_id) {
+        //Use id to find uri for term, then use the <option> entry for that term to invoke an edit
+        var uri = $("#" + md_id).closest(".mdblock").find(".pred").attr("title");
+      
+        displayAddEditForm($("#@id  #add-metadata-select option[value='" + uri+ "'] "), md_id);
+        
+        $('html, body').animate({
+          scrollTop: $("#@id").offset().top-50
+	      }, 1000);
+	    
+      }
+      
+      
+     function displayAddEditForm(elem, md_id) {
+                var space_id = $(elem).attr("space_id");
+                var field_id = $(elem).val();
+                var footerHtml = "";
+                if(typeof space_id !== 'undefined' && showSpaceInfo) {
+                    var request2 = jsRoutes.api.Spaces.get(space_id).ajax({
+                        type: 'GET',
+                        contentType: "application/json"
+                    });
+                    request2.done(function (response, textStatus, jqXHR) {
+                        var footerTemplate = Handlebars.getTemplate("@routes.Assets.at("templates/metadata/footer")");
+                        var spaceName= response.name;
+                        footerHtml = footerTemplate({'space_name': spaceName, 'space_url': jsRoutes.controllers.Spaces.getSpace(space_id).url, 'uri':field_id });
+                        //Call after new html has been added to DOM tree
+						setupField(elem, md_id, footerHtml);
+                    });
+                    request2.fail(function (jqXHR, textStatus, errorThrown){
+                        setupField(elem, md_id, footerHtml);
+                    });
+                } else {
+                    setupField(elem, md_id, footerHtml);
+                }
+            }
+            
+     function setupField(elem, md_id, footerHtml) {
+            
                 // create html form
-                var field_label = $(this).text();
-                var field_id = $(this).val();
-                var field_type = $(this).data("type");
-                var space_id = $(this).attr("space_id");
+                var field_label = $(elem).text();
+                var field_id = $(elem).val();
+                var field_type = $(elem).data("type");
+                var space_id = $(elem).attr("space_id");
+                var field_value =$("#" + md_id + " span").text();
+                
                 // Create the template and HTML content.
                 var template_map =
                     {"string": "add_metadata_string",
@@ -251,33 +365,17 @@ line-height: 1.5;
                      "wkt": "add_metadata_wktlocation"
                     };
                 var modalTemplate = Handlebars.getTemplate("@routes.Assets.at("templates/metadata/")" + template_map[field_type]);
-                var html = modalTemplate({'field_label': field_label, 'field_id': field_id, 'field_type': field_type});
-                var footerHtml = "";
-                if(typeof space_id !== 'undefined' && showSpaceInfo) {
-                    var request2 = jsRoutes.api.Spaces.get(space_id).ajax({
-                        type: 'GET',
-                        contentType: "application/json"
-                    });
-                    request2.done(function (response, textStatus, jqXHR) {
-                        var footerTemplate = Handlebars.getTemplate("@routes.Assets.at("templates/metadata/footer")");
-                        var spaceName= response.name;
-                        footerHtml = footerTemplate({'space_name': spaceName, 'space_url': jsRoutes.controllers.Spaces.getSpace(space_id).url, 'uri':field_id });
-                        $('#@id  #selected_field').html(html + footerHtml);
-                        // register submit listener
-                        $("#@id  #add-metadata-button").click(submit_@id);
-                    });
-                    request2.fail(function (jqXHR, textStatus, errorThrown){
-                        $('#@id  #selected_field').html(html);
-                        // register submit listener
-                        $("#@id  #add-metadata-button").click(submit_@id);
-                    });
+                var html = modalTemplate({'field_label': field_label, 'field_id': field_id, 'field_type': field_type, 'entry_id': md_id, 'field_value':field_value});
+            
+                $('#@id  #selected_field').html(html + footerHtml);
+                // register submit listener
+                if(md_id != null) {
+                  $("#@id  #add-metadata-button").click(update_@id);
                 } else {
-                    $('#@id  #selected_field').html(html);
-                    // register submit listener
-                    $("#@id  #add-metadata-button").click(submit_@id);
+                  $("#@id  #add-metadata-button").click(submit_@id);
                 }
-
-
+                
+                //Do type-specific setup:
                 if (field_type === "scientific_variable") {
                     // Find the field with the specific uri.
                     var field = $.grep(fields, function(e){ return e.json.uri == field_id; });
@@ -410,7 +508,11 @@ line-height: 1.5;
                             width: "100%",
                             placeholder_text_single: "Select field"});
                         // register submit listener
-                        $("#@id  #add-metadata-button").click(submit_@id);
+                        if(md_id != null) {
+                          $("#@id  #add-metadata-button").click(update_@id);
+                        } else {
+                          $("#@id  #add-metadata-button").click(submit_@id);
+                        }
                       });
 
                     request.fail(function (jqXHR, textStatus, errorThrown){
@@ -418,16 +520,6 @@ line-height: 1.5;
                         notify("Could not retrieve external vocabulary: " + errorThrown, "error");
                     });
                 }
-            });
-        });
-
-        request.fail(function (jqXHR, textStatus, errorThrown){
-            console.error("The following error occured: " + textStatus, errorThrown);
-            var errMsg = "You must be logged in to retrieve metadata definitions";
-            if (!checkErrorAndRedirect(jqXHR, errMsg)) {
-              notify("Metadata was not added due to : " + errorThrown, "error");
-            }
-        });
-    });
+              }
 </script>
 }

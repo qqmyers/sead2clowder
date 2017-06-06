@@ -147,8 +147,8 @@
         }
 	}
 
-    @printHeader(agent: Agent, date: java.util.Date) = {
-        @agent.operation by
+    @printHeader(id: UUID, agent: Agent, date: java.util.Date) = {
+        <span>Metadata from: 
         @if(agent.displayName.length > 0) {
             @if(agent.typeOfAgent.toLowerCase().indexOf("user") >= 0) {
                 @if(user.isDefined) {
@@ -170,7 +170,13 @@
                 unknown
             }
         }
-        on @dateFormatter(date)
+        </span>                
+                @if(toDelete && Permission.checkPermission(Permission.DeleteMetadata, ResourceRef(ResourceRef.metadata, id))) {
+                  <a id="@id" title="Delete this metadata" class="btn btn-link delete-by-id-icon">
+                            <span class="panel-icon glyphicon glyphicon-trash"></span>
+                        </a>
+                        }
+         <span class='metaprov'>@agent.operation on @dateFormatter(date)</span>
     }
 
    @getProfile(userid: String) = {
@@ -323,6 +329,7 @@ There is probably more history than just the latest agent/date once editing is a
 			}
 		
 		</div>
+		@*
 		<div>
 		@for((label, pred) <- rdfMetadata.defs) {
             
@@ -330,16 +337,24 @@ There is probably more history than just the latest agent/date once editing is a
 			
 		}
 		</div>
+		*@
 		<div>
 		@for((label, list) <- rdfMetadata.history) {
-			<div>
+			<div><span>@label</span>
 			@for((item) <- list) {
-			<div>
-			<div>@label</div>
-			<div>@item.uri</div>
-			<div>@item.value.toString()</div>
-			<div>@item.agent.toString()</div>
-			<div>@item.action</div>
+			<div id = 'hist_@item.id.toString()'>
+			<span>@item.value.toString()</span>
+			<span>@item.agent.toString()</span>
+			@item.itemActedOn match {
+				case Some(s) => {
+					<a href = '#hist_@item.itemActedOn.get'>@item.action</a>
+			}
+			case _ => {
+				<span>@item.action</span>
+				
+			}
+			}
+			
 			<div>@item.date.toString()</div>
 			</div>
 		}
@@ -347,26 +362,22 @@ There is probably more history than just the latest agent/date once editing is a
 		}
 		</div>
 	}
-	 
+	<div><h4>Managed Metadata</h4> 
     @if(metadata.size == 0) {
         <p class="text-center">No metadata available for this resource</p>
     }
     @for((m, i) <- metadata.zipWithIndex) {
         <div class="panel panel-default">
             <div class="panel-heading" role="tab" id="heading_@m.id">
-                <a data-toggle="collapse" href="#collapse_@m.id" class="collapse-icon">
-                    <span class="panel-icon glyphicon glyphicon-minus"></span>
+                <a data-toggle="collapse" href="#collapse_@m.id" class="collapse-icon collapsed" >
+                    <span class="panel-icon glyphicon glyphicon-plus"></span>
                 </a>
-                <span>
-                    @printHeader(m.creator, m.createdAt)
-                </span>
-                @if(toDelete && Permission.checkPermission(Permission.DeleteMetadata, ResourceRef(ResourceRef.metadata, m.id))) {
-                        <a id="@m.id" title="Delete this metadata" class="btn btn-link delete-icon">
-                            <span class="panel-icon glyphicon glyphicon-trash"></span>
-                        </a>
-                }
+                
+                    @printHeader(m.id, m.creator, m.createdAt)
+
+                
             </div>
-            <div id="collapse_@m.id" class="panel-collapse collapse in" role="tabpanel" aria-labelledby="heading_@m.id">
+            <div id="collapse_@m.id" class="panel-collapse collapse" role="tabpanel" aria-labelledby="heading_@m.id">
                 <div class="panel-body">
                     <div class="tree">
                         @printContent(m.creator, m.content, m.contextId, m.contextURL, m.attachedTo.id)
@@ -375,7 +386,7 @@ There is probably more history than just the latest agent/date once editing is a
             </div>
         </div>
     }
-
+	</div>
     <script src="@routes.Assets.at("javascripts/errorRedirect.js")" type="text/javascript"></script>
     @if(play.api.Play.current.plugin[services.StagingAreaPlugin].isDefined) {
     <script src="@routes.Assets.at("javascripts/people.js")" type="text/javascript"></script>
@@ -432,8 +443,38 @@ There is probably more history than just the latest agent/date once editing is a
             
         })
 
-        $(function () {
-            $('.edit-icon').unbind().on('click', function(){
+      $(function () {
+        $('.edit-icon').each(function(index) {
+          addEditHandler($(this));
+        });
+        $('.delete-icon').each(function(index) {
+          addDeleteHandler($(this));
+        });
+        
+        $('.delete-by-id-icon').unbind().on('click', function(){
+            var delete_by_id_icon = $(this);
+
+            var request = jsRoutes.api.Metadata.removeMetadataById(this.id).ajax({
+                type: 'DELETE'
+            });
+
+            request.done(function (response, textStatus, jqXHR) {
+                delete_by_id_icon.closest(".panel").remove();
+                 notify("Metadata successfully deleted.", "success", false, 2000);
+            });
+
+            request.fail(function (jqXHR, textStatus, errorThrown){
+                console.error("The following error occured: " + textStatus, errorThrown);
+                var errMsg = "You must be logged in to add metadata";
+                if (!checkErrorAndRedirect(jqXHR, errMsg)) {
+                  notify("Metadata was not removed due to : " + errorThrown, "error");
+                }
+            });
+        });
+      })
+        
+        function addEditHandler(item) {
+            item.unbind().on('click', function(){
                 var edit_icon = $(this);
 
                 var request = jsRoutes.api.Metadata.updateMetadata(this.id).ajax({
@@ -453,11 +494,9 @@ There is probably more history than just the latest agent/date once editing is a
                     }
                 });
             });
-        })
-        
-        
-        $(function () {
-            $('.delete-icon').unbind().on('click', function(){
+            }
+        function addDeleteHandler(item) {            
+		    item.unbind().on('click', function(){
                 var delete_icon = $(this);
 				var header = $(this).parents('.mdblock');
 				var pred = header.find('.pred').attr('title');
@@ -469,7 +508,15 @@ There is probably more history than just the latest agent/date once editing is a
                     if(delete_icon.closest(".tree").children().length == 1) {
                       delete_icon.closest(".mdblock").remove(); } 
                     else {
-                      delete_icon.closest(".metadataentry").remove();
+                      //Update last mod date/person
+                      var today = new Date();
+			          var mon =m_names[today.getMonth()];
+           			  var day = today.getDate();
+           			  var year = today.getFullYear();
+                      
+           			  delete_icon.closest('.mdblock').find('.metaprov').text('last modified ' + mon + ' ' + day + ', ' + year + ' by ').append($('<a/>').attr('href','@routes.Profile.viewProfileUUID(user.get.getMiniUser.id)').text('@user.get.getMiniUser.fullName'));
+					  // Remove entry           			  
+                      delete_icon.closest(".metadataentry").remove();                      
                     }
                     notify("Metadata successfully deleted.", "success", false, 2000);
                 });
@@ -482,7 +529,10 @@ There is probably more history than just the latest agent/date once editing is a
                     }
                 });
             });
-        })
+             $('.edit-icon').unbind().on('click', function(){
+             editMDEntry($(this).parent().attr('id'));
+             });
+        }
 
         $(document).on('mouseenter', '.context-key', function(){
             var contextId = this.id.split("-",1)[0];
@@ -542,6 +592,9 @@ There is probably more history than just the latest agent/date once editing is a
         	defs["@label"] = "@value";
         }
         
+           var m_names = new Array("Jan", "Feb", "Mar", 
+			"Apr", "May", "Jun", "Jul", "Aug", "Sep", 
+			"Oct", "Nov", "Dec");
         
       function addEntries(update) {
       
@@ -552,22 +605,24 @@ There is probably more history than just the latest agent/date once editing is a
         }
         var newdefs = update.defs;
 
+        var today = new Date();
+        var mon =m_names[today.getMonth()];
+        var day = today.getDate();
+        var year = today.getFullYear();
+
         for(var key in items) {
+        
          if(!$("#heading_" + safe(key)).length) {
          //Add header block
            var blockid = 'heading_' + safe(key);
-           var m_names = new Array("Jan", "Feb", "Mar", 
-			"Apr", "May", "Jun", "Jul", "Aug", "Sep", 
-			"Oct", "Nov", "Dec");
-           var today = new Date();
-           var mon =m_names[today.getMonth()];
-           var day = today.getDate();
-           var year = today.getFullYear();
            $('#metadata-content > div:first-child').prepend($('<div/>').addClass('mdblock panel panel-default').append($('<div/>').addClass('panel-heading').attr('role','tab').attr('id',blockid)));
            $('#'+blockid).append($('<a/>').attr('data-toggle','collapse').attr('href','#collapse_' + safe(key)).addClass('collapse-icon').append($('<span/>').addClass('panel-icon glyphicon glyphicon-minus')));
            $('#'+blockid).append($('<span/>').append($('<span/>').addClass('pred').attr('title',defs[key]).text(key)));
            $('#'+blockid).append($('<span/>').addClass('metaprov').text('added ' + mon + ' ' + day + ', ' + year + ' by ').append($('<a/>').attr('href','@routes.Profile.viewProfileUUID(user.get.getMiniUser.id)').text('@user.get.getMiniUser.fullName')));
            $('#'+blockid).parent().append($('<div/>').attr('id','collapse_'+safe(key)).addClass('panel-collapse collapse in').attr('role','tabpanel').attr('aria-labelledby',blockid).append($('<div/>').addClass('panel-body').append($('<div/>').addClass('tree')))); 
+         } else {
+           //modify date/person
+  		   $('#'+blockid).find('.metaprov').text('last modified ' + mon + ' ' + day + ', ' + year + ' by ').append($('<a/>').attr('href','@routes.Profile.viewProfileUUID(user.get.getMiniUser.id)').text('@user.get.getMiniUser.fullName'));
          }
          //Now add new entries
          for(mEntry in items[key]) {
@@ -581,6 +636,8 @@ There is probably more history than just the latest agent/date once editing is a
         	@if(toDelete && Permission.checkPermission(Permission.DeleteMetadata, rdfMetadata.attachedTo)) {
 	        	entry.append($("<a/>").attr("title","Delete this metadata").addClass("btn-link delete-icon hidden").append($("<span/>").addClass("panel-icon glyphicon glyphicon-trash")));
 		        entry.append($("<a/>").attr("title","Edit metadata").addClass("btn-link edit-icon hidden").append($("<span/>").addClass("glyphicon glyphicon-edit")));
+		        addEditHandler(entry.find('.edit-icon'));
+		        addDeleteHandler(entry.find('.delete-icon'));
         	}
         }
         

@@ -31,8 +31,29 @@ import api.{ UserRequest, Permission }
 @Singleton
 class MongoDBMetadataService @Inject() (contextService: ContextLDService, datasets: DatasetService, files: FileService, folders: FolderService, curations: CurationService) extends MetadataService {
 
+	  /**
+	   * Add metadata to the metadata collection and attach to a section /file/dataset/collection
+	   */
+	  def addMetadata(metadata: Metadata): UUID = {
+	    // TODO: Update context
+	    val mid = MetadataDAO.insert(metadata, WriteConcern.Safe)
+	    current.plugin[MongoSalatPlugin] match {
+	      case None => throw new RuntimeException("No MongoSalatPlugin")
+	      case Some(x) => x.collection(metadata.attachedTo) match {
+	        case Some(c) => {
+	          c.update(MongoDBObject("_id" -> new ObjectId(metadata.attachedTo.id.stringify)), $inc("metadataCount" -> +1))
+	        }
+	        case None => {
+	          Logger.error(s"Could not increase counter for ${metadata.attachedTo}")
+	        }
+	      }
+	    }
+	    UUID(mid.get.toString())
+	  }
+
+	  
   /** Add metadata to the metadata collection and attach to a section /file/dataset/collection */
-  def addMetadata(content: JsValue, context: JsValue, attachedTo: ResourceRef, createdAt: Date, creator: Agent, spaceId: Option[UUID]): JsObject = {
+  def addMetadata(content_ld: JsValue, context: JsValue, attachedTo: ResourceRef, createdAt: Date, creator: Agent, spaceId: Option[UUID]): JsObject = {
     //Update metadata summary doc attached to the right item, update history list with new MetadataEntry(ies)
     /*Using Salat for now - retrieve summary, update its parts and update via Salat
      * expand Metadata content using submitted context,
@@ -42,7 +63,7 @@ class MongoDBMetadataService @Inject() (contextService: ContextLDService, datase
      * add an entry
      * create a metadataentry, add it to the relevant map entry in the history
      */
-    val json = new JsObject(Seq(("@context", context), ("content", content)))
+    val json = new JsObject(Seq(("@context", context), ("content_ld", content_ld)))
 
     val metadoc = JsonUtils.fromInputStream(new java.io.ByteArrayInputStream(Json.stringify(json).getBytes("UTF-8")))
     val ctxt = new Context().parse(metadoc.asInstanceOf[LinkedHashMap[String, Object]].getOrDefault("@context", ""))
@@ -70,7 +91,7 @@ class MongoDBMetadataService @Inject() (contextService: ContextLDService, datase
     val expanded = JsonLdProcessor.compact(JsonLdProcessor.expand(metadoc), null, new JsonLdOptions())
 
     val exjson = Json.parse(JsonUtils.toString(expanded))
-    val excontent = exjson \\ "https://clowder.ncsa.illinois.edu/metadata#content"
+    val excontent = exjson \\ "https://clowder.ncsa.illinois.edu/metadata#content_ld"
     Logger.info(excontent.apply(0).toString())
     excontent.apply(0).as[JsObject].keys.foreach { uri =>
       { //Add new label defs if they don't currently exist - could reject new terms this way if desired
@@ -82,7 +103,11 @@ class MongoDBMetadataService @Inject() (contextService: ContextLDService, datase
         Logger.info("There: " + Json.toJson(creator).as[JsObject])
         //Now create an entry and add it to the list
         Logger.info(uri + " : " + (excontent.apply(0).as[JsObject] \ uri).toString()) // + (x \ y \\ "@value").as[String]) }}
-        val me = MetadataEntry(UUID.generate(), uri, (excontent.apply(0).as[JsObject] \ uri).as[String], Json.toJson(creator).as[JsObject].toString(), MDAction.Added.toString(), None, createdAt)
+        val valueToStore = excontent.apply(0).as[JsObject] \ uri match {
+          case s:JsString => s.as[String] //String without quotes
+          case v:JsValue => v.toString()  //string representation of object/array/etc.
+        }
+        val me = MetadataEntry(UUID.generate(), uri, valueToStore, Json.toJson(creator).as[JsObject].toString(), MDAction.Added.toString(), None, createdAt)
         Logger.info("ME: " + me.toString())
         newMDEntries += me
 
@@ -103,7 +128,7 @@ class MongoDBMetadataService @Inject() (contextService: ContextLDService, datase
         case x: JsObject => x.keys.size
         case _ => 0
       }
-      
+
       val newEntries = Json.toJson(filteredList.map { item => { (item.id.stringify) -> item.value } }.toMap)
       Logger.info("New entries: " + newEntries.toString())
       newMetadataEntryJson = newMetadataEntryJson ++ Map(label -> newEntries)
@@ -118,7 +143,7 @@ class MongoDBMetadataService @Inject() (contextService: ContextLDService, datase
     Logger.info("Done processing")
     //Now - update the metadatasummary with new info (entries, possibly defs, and history...
     val rdf = RdfMetadata(summary.id, summary.attachedTo, metadataEntryJson.toMap, defs.toMap, metadataHistoryMap.toMap)
-    Logger.info("Created RdfMetadata: " + rdf.toString())
+    //Logger.info("Created RdfMetadata: " + rdf.toString())
     MetadataSummaryDAO.update(MongoDBObject("_id" -> new ObjectId(summary.id.stringify)), rdf, false, false, WriteConcern.Safe)
     Logger.info("Updated")
     //Then return the new entries and any new def(s) to the client...
@@ -128,25 +153,6 @@ class MongoDBMetadataService @Inject() (contextService: ContextLDService, datase
 
     //val test = expanded.get(0).asInstanceOf[LinkedHashMap[String, Object]].get("https://clowder.ncsa.illinois.edu/metadata#content").asInstanceOf[List[Object]]..get(0)
 
-  }
-
-  /** Add metadata to the metadata collection and attach to a section /file/dataset/collection */
-  def addMetadata(metadata: Metadata) = {
-
-    // TODO: Update context
-    val mid = MetadataDAO.insert(metadata, WriteConcern.Safe)
-    current.plugin[MongoSalatPlugin] match {
-      case None => throw new RuntimeException("No MongoSalatPlugin")
-      case Some(x) => x.collection(metadata.attachedTo) match {
-        case Some(c) => {
-          c.update(MongoDBObject("_id" -> new ObjectId(metadata.attachedTo.id.stringify)), $inc("metadataCount" -> +1))
-        }
-        case None => {
-          Logger.error(s"Could not increase counter for ${metadata.attachedTo}")
-        }
-      }
-    }
-    UUID(mid.get.toString())
   }
 
   def getMetadataById(id: UUID): Option[Metadata] = {
@@ -195,7 +201,91 @@ class MongoDBMetadataService @Inject() (contextService: ContextLDService, datase
    * @param metadataId
    * @param json
    */
-  def updateMetadata(itemId: UUID, metadataId: UUID, json: JsValue) = {}
+
+  def updateMetadata(content: JsValue, context: JsValue, attachedTo: ResourceRef, itemId: String, updatedAt: Date, updator: Agent, spaceId: Option[UUID]) = {
+
+    val json = new JsObject(Seq(("@context", context), ("content", content)))
+
+    val metadoc = JsonUtils.fromInputStream(new java.io.ByteArrayInputStream(Json.stringify(json).getBytes("UTF-8")))
+
+    //compact after expand removes original context
+    val toCompact = JsonLdProcessor.expand(metadoc)
+
+    val expanded = JsonLdProcessor.compact(toCompact, null, new JsonLdOptions())
+    val exjson = Json.parse(JsonUtils.toString(expanded))
+    val excontent = (exjson \\ "https://clowder.ncsa.illinois.edu/metadata#content").head.as[JsObject]
+    //Todo: support complex types
+    //For simple types, content should have one key/value
+    val term = excontent.keys.head
+    val updatedVal = excontent \ term
+
+    val summary = getMetadataSummary(attachedTo, spaceId)
+    //Find the right entry to remove (it may not exists if already deleted/edited)
+    var metadataEntryJson = scala.collection.mutable.Map() ++ summary.entries
+    val inverseDefs = summary.defs map { _.swap }
+    val existingValues = metadataEntryJson.apply(inverseDefs.get(term).get).as[JsObject]
+    (existingValues \ itemId) match {
+      case v: JsUndefined => {
+        //Return JsUndefined to indicate entry not found
+        v
+      }
+      case _ => {
+        //Update the entry
+        val uuid = UUID.generate()
+        metadataEntryJson(inverseDefs.get(term).get) = (existingValues - itemId) + (uuid.stringify, updatedVal)
+
+        //Add a history entry for the delete
+        var metadataHistoryMap = collection.mutable.Map() ++ summary.history
+        val me = MetadataEntry(uuid, term, updatedVal.as[String], Json.toJson(updator).as[JsObject].toString(), MDAction.Edited.toString(), Some(itemId), updatedAt)
+        metadataHistoryMap(inverseDefs.get(term).get) = List(me) ++ metadataHistoryMap.applyOrElse(inverseDefs.get(term).get, { label: String => List[MetadataEntry]() })
+        //Store update
+        //Now - update the metadatasummary with new info (entries, possibly defs, and history...
+        val rdf = RdfMetadata(summary.id, summary.attachedTo, metadataEntryJson.toMap, summary.defs.toMap, metadataHistoryMap.toMap)
+        Logger.info("Created RdfMetadata: " + rdf.toString())
+        MetadataSummaryDAO.update(MongoDBObject("_id" -> new ObjectId(summary.id.stringify)), rdf, false, false, WriteConcern.Safe)
+        Logger.info("Updated")
+
+        //Return the updated entry to the caller as part of success (to support event about update)
+        JsObject(Seq("id" -> JsString(uuid.stringify), "value" -> updatedVal))
+
+      }
+    }
+
+  }
+	  
+	  /** Remove metadata, if this metadata does not exist, nothing is executed. Return removed metadata */
+	  def removeMetadataById(id: UUID) = {
+	    getMetadataById(id) match {
+	      case Some(md) => {
+	        md.contextId.foreach { cid =>
+	          if (getMetadataBycontextId(cid).length == 1) {
+	            contextService.removeContext(cid)
+	          }
+	        }
+	        MetadataDAO.remove(md, WriteConcern.Safe)
+
+	        // send extractor message after removed from resource
+	        val mdMap = Map("metadata" -> md.content,
+	          "resourceType" -> md.attachedTo.resourceType.name,
+	          "resourceId" -> md.attachedTo.id.toString)
+
+	        //update metadata count for resource
+	        current.plugin[MongoSalatPlugin] match {
+	          case None => throw new RuntimeException("No MongoSalatPlugin")
+	          case Some(x) => x.collection(md.attachedTo) match {
+	            case Some(c) => {
+	              c.update(MongoDBObject("_id" -> new ObjectId(md.attachedTo.id.stringify)), $inc("metadataCount" -> -1))
+	            }
+	            case None => {
+	              Logger.error(s"Could not decrease counter for ${md.attachedTo}")
+	            }
+	          }
+	        }
+	      }
+	      case None => Logger.debug("No metadata found to remove with UUID "+id.toString)
+	    }
+	  }
+
 
   /** Remove metadata, if this metadata does not exist, nothing is executed. Return removed metadata */
   def removeMetadata(attachedTo: ResourceRef, term: String, itemId: String, deletedAt: Date, deletor: Agent, spaceId: Option[UUID]) = {
@@ -204,28 +294,36 @@ class MongoDBMetadataService @Inject() (contextService: ContextLDService, datase
     var metadataEntryJson = scala.collection.mutable.Map() ++ summary.entries
     val inverseDefs = summary.defs map { _.swap }
     val existingValues = metadataEntryJson.apply(inverseDefs.get(term).get)
-    //Remove it from entries
-    val delVal = (existingValues.as[JsObject] \ itemId).as[String]
-    val updatedValues = existingValues.as[JsObject] - itemId
-    updatedValues.keys.size match {
-      case 0 => metadataEntryJson.remove(inverseDefs.get(term).get)
-      case _ => metadataEntryJson(inverseDefs.get(term).get) = updatedValues 
+    (existingValues \ itemId) match {
+      case v: JsUndefined => {
+        //Return JsUndefined to indicate entry not found
+        v
+      }
+      case _ => {
+
+        //Remove it from entries
+        val delVal = (existingValues.as[JsObject] \ itemId).as[String]
+        val updatedValues = existingValues.as[JsObject] - itemId
+        updatedValues.keys.size match {
+          case 0 => metadataEntryJson.remove(inverseDefs.get(term).get)
+          case _ => metadataEntryJson(inverseDefs.get(term).get) = updatedValues
+        }
+
+        //Add a history entry for the delete
+        var metadataHistoryMap = collection.mutable.Map() ++ summary.history
+        val me = MetadataEntry(UUID.generate(), term, delVal, Json.toJson(deletor).as[JsObject].toString(), MDAction.Deleted.toString(), Some(itemId), deletedAt)
+        metadataHistoryMap(inverseDefs.get(term).get) = List(me) ++ metadataHistoryMap.applyOrElse(inverseDefs.get(term).get, { label: String => List[MetadataEntry]() })
+        //Store update
+        //Now - update the metadatasummary with new info (entries, possibly defs, and history...
+        val rdf = RdfMetadata(summary.id, summary.attachedTo, metadataEntryJson.toMap, summary.defs.toMap, metadataHistoryMap.toMap)
+        Logger.info("Created RdfMetadata: " + rdf.toString())
+        MetadataSummaryDAO.update(MongoDBObject("_id" -> new ObjectId(summary.id.stringify)), rdf, false, false, WriteConcern.Safe)
+        Logger.info("Updated")
+
+        //Return the deleted entry to the caller as part of success (to support event about delete)
+        JsObject(Seq(term -> JsString(delVal)))
+      }
     }
-    
-
-    //Add a history entry for the delete
-    var metadataHistoryMap = collection.mutable.Map() ++ summary.history
-    val me = MetadataEntry(UUID.generate(), term, delVal, Json.toJson(deletor).as[JsObject].toString(), MDAction.Deleted.toString(), Some(itemId), deletedAt)
-    metadataHistoryMap(inverseDefs.get(term).get) = List(me) ++ metadataHistoryMap.applyOrElse(inverseDefs.get(term).get, { label: String => List[MetadataEntry]() })
-    //Store update
-    //Now - update the metadatasummary with new info (entries, possibly defs, and history...
-    val rdf = RdfMetadata(summary.id, summary.attachedTo, metadataEntryJson.toMap, summary.defs.toMap, metadataHistoryMap.toMap)
-    Logger.info("Created RdfMetadata: " + rdf.toString())
-    MetadataSummaryDAO.update(MongoDBObject("_id" -> new ObjectId(summary.id.stringify)), rdf, false, false, WriteConcern.Safe)
-    Logger.info("Updated")
-
-    //Return the deleted entry to the caller as part of success (to support event about delete)
-    JsObject(Seq(term -> JsString(delVal)))
   }
 
   def getMetadataBycontextId(contextId: UUID): List[Metadata] = {
@@ -245,6 +343,7 @@ class MongoDBMetadataService @Inject() (contextService: ContextLDService, datase
       case _ => Logger.error(s"Could not decrease metadata counter for ${resourceRef}")
     }
 
+    //FixMe - move out of service...
     // send extractor message after attached to resource
     current.plugin[RabbitmqPlugin].foreach { p =>
       val dtkey = s"${p.exchange}.metadata.removed"
@@ -401,7 +500,7 @@ class MongoDBMetadataService @Inject() (contextService: ContextLDService, datase
         val metadataEntryJson = scala.collection.mutable.Map.empty[String, JsValue]
         for (pred <- metadataEntryPreds) {
           val filteredList = metadataEntryList.filter(_.uri == pred)
-          metadataEntryJson(metadataDefsMap.apply(pred)) = Json.toJson(filteredList.map { item => {  (item.id.stringify) -> item.value } }toMap)
+          metadataEntryJson(metadataDefsMap.apply(pred)) = Json.toJson(filteredList.map { item => { (item.id.stringify) -> item.value } }toMap)
 
           metadataHistoryMap = metadataHistoryMap ++ Map((metadataDefsMap.apply(pred)).toString -> filteredList.toList)
         }
@@ -483,11 +582,7 @@ class MongoDBMetadataService @Inject() (contextService: ContextLDService, datase
     MetadataDefinitionDAO.findOne(MongoDBObject("_id" -> new ObjectId(id.stringify)))
   }
 
-  def getDefinitionByUri(uri: String): Option[MetadataDefinition] = {
-    MetadataDefinitionDAO.findOne(MongoDBObject("json.uri" -> uri))
-  }
-
-  def getDefinitionByUriAndSpace(uri: String, spaceId: Option[String]): Option[MetadataDefinition] = {
+  def getDefinitionByUriAndSpace(uri: String, spaceId: Option[String] = None): Option[MetadataDefinition] = {
     spaceId match {
       case Some(s) => MetadataDefinitionDAO.findOne(MongoDBObject("json.uri" -> uri, "spaceId" -> new ObjectId(s)))
       case None => MetadataDefinitionDAO.findOne(MongoDBObject("json.uri" -> uri, "spaceId" -> null))
@@ -499,28 +594,16 @@ class MongoDBMetadataService @Inject() (contextService: ContextLDService, datase
   }
 
   /** Add vocabulary definitions, leaving it unchanged if the update argument is set to false **/
-  def addDefinition(definition: MetadataDefinition, update: Boolean = true): Unit = {
+  def addDefinition(definition: MetadataDefinition): Unit = {
     val uri = (definition.json \ "uri").as[String]
-    MetadataDefinitionDAO.findOne(MongoDBObject("json.uri" -> uri)) match {
-      case Some(md) => {
-        if (update) {
-          if (md.spaceId == definition.spaceId) {
-            Logger.debug("Updating existing vocabulary definition: " + definition)
-            // make sure to use the same id as the old value
-            val writeResult = MetadataDefinitionDAO.update(MongoDBObject("json.uri" -> uri), definition.copy(id = md.id),
-              false, false, WriteConcern.Normal)
-          } else {
-            Logger.debug("Adding existing vocabulary definition to a different space" + definition)
-            MetadataDefinitionDAO.save(definition)
-          }
-
-        } else {
-          Logger.debug("Leaving existing vocabulary definition unchanged: " + definition)
-        }
-      }
+    val result = definition.spaceId match {
+      case Some(s) => MetadataDefinitionDAO.findOne(MongoDBObject("json.uri" -> uri, "spaceId" -> new ObjectId(s.stringify)))
+      case None => MetadataDefinitionDAO.findOne(MongoDBObject("json.uri" -> uri, "spaceId" -> null))
+    }
+    result match {
+      case Some(md) => Logger.debug("Leaving existing vocabulary definition unchanged: " + definition)
       case None => {
-        Logger.debug("Adding new vocabulary definition " + definition)
-        MetadataDefinitionDAO.save(definition)
+            MetadataDefinitionDAO.save(definition)
       }
     }
   }

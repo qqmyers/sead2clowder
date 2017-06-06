@@ -7078,7 +7078,7 @@ fieldset[disabled] .btn-default.active {
 	background: #f5f5f5
 }
 
-.edit-icon , .delete-icon {
+.edit-icon , .delete-icon, .delete-by-id-icon {
 
 	float:right;
 	padding: 0px 0px 0px 0px;

@@ -14,7 +14,7 @@ import java.util.Date
 trait MetadataService {
 
     /** Add metadata to the metadata collection and attach to a section /file/dataset/collection */
-  def addMetadata(content: JsValue, context: JsValue, attachedTo: ResourceRef, createdAt: Date, creator: Agent, spaceId:Option[UUID]): JsObject
+  def addMetadata(content_ld: JsValue, context: JsValue, attachedTo: ResourceRef, createdAt: Date, creator: Agent, spaceId:Option[UUID]): JsObject
   
   /** Add metadata to the metadata collection and attach to a section /file/dataset/collection */
   def addMetadata(metadata: Metadata) : UUID
@@ -32,8 +32,14 @@ trait MetadataService {
   def getMetadataByCreator(resourceRef: ResourceRef, typeofAgent:String): List[Metadata]
 
   /** Remove metadata */
-  def removeMetadata(attachedTo: ResourceRef, term: String, itemId: String, deletedAt: Date, deletor:Agent, spaceId:Option[UUID])
+  def removeMetadataById(metadataId: UUID)
+  
+  /** Remove metadata */
+  def removeMetadata(attachedTo: ResourceRef, term: String, itemId: String, deletedAt: Date, deletor:Agent, spaceId:Option[UUID]):JsValue
 
+  /** Update metadata value*/
+  def updateMetadata(content: JsValue, context: JsValue, attachedTo: ResourceRef, itemId: String, updatedAt: Date, updator:Agent, spaceId:Option[UUID]):JsValue
+  
   /** Remove metadata by attachTo*/
   def removeMetadataByAttachTo(resourceRef: ResourceRef): Long
 
@@ -46,9 +52,6 @@ trait MetadataService {
   /** Get metadata context if available */
   def getMetadataContext(metadataId: UUID): Option[JsValue]
 
-  /** Update Metadata */
-  def updateMetadata(itemId: UUID, metadataId: UUID, json: JsValue)
-
   /** Vocabulary definitions for user fields **/
   def getDefinitions(spaceId: Option[UUID] = None): List[MetadataDefinition]
 
@@ -58,17 +61,14 @@ trait MetadataService {
   /** Get vocabulary based on id **/
   def getDefinition(id: UUID): Option[MetadataDefinition]
 
-  /** Get vocabulary based on uri **/
-  def getDefinitionByUri(uri:String):Option[MetadataDefinition]
-
   /** Get vocabulary based on uri and space **/
-  def getDefinitionByUriAndSpace(uri: String, spaceId: Option[String]): Option[MetadataDefinition]
+  def getDefinitionByUriAndSpace(uri: String, spaceId: Option[String] = None): Option[MetadataDefinition]
 
   /** Remove all metadata definitions related to a space**/
   def removeDefinitionsBySpace(spaceId: UUID)
 
   /** Add vocabulary definitions, leaving it unchanged if the update argument is set to false, defaults to update **/
-  def addDefinition(definition: MetadataDefinition, update: Boolean = true)
+  def addDefinition(definition: MetadataDefinition)
 
   /** Edit vocabulary definitions**/
   def editDefinition(id:UUID, json: JsValue)

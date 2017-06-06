@@ -304,51 +304,120 @@ class Metadata @Inject() (
               (Some(ResourceRef(ResourceRef.curationFile, UUID((json \ "curationFile_id").as[String]))), None)
             } else (None, None)
 
-          //parse the rest of the request to create a new models.Metadata object
           val content = (json \ "content")
+          val content_ld = (json \ "content_ld")
 
           if (attachedTo.isDefined) {
 
-            //add metadata to mongo
-            val newInfo = metadataService.addMetadata(content, context, attachedTo.get, createdAt, creator, space)
-            Logger.info("new stuff is: " + newInfo.toString())
-            val mdMap = Map("metadata" -> content,
-              "resourceType" -> attachedTo.get.resourceType.name,
-              "resourceId" -> attachedTo.get.id.toString)
+            content match {
+              case c: JsObject => {
 
-            attachedTo match {
-              case Some(resource) => {
-                resource.resourceType match {
-                  case ResourceRef.dataset => {
-                    datasets.index(resource.id)
-                    //send RabbitMQ message
-                    current.plugin[RabbitmqPlugin].foreach { p =>
-                      val dtkey = s"${p.exchange}.metadata.added"
-                      p.extract(ExtractorMessage(UUID(""), UUID(""), controllers.Utils.baseUrl(request),
-                        dtkey, mdMap, "", attachedTo.get.id, ""))
+                //parse the rest of the request to create a new models.Metadata object
+
+                // check if the context is a URL to external endpoint
+                val contextURL: Option[URL] = context.asOpt[String].map(new URL(_))
+
+                // check if context is a JSON-LD document
+                val contextID: Option[UUID] =
+                  if (context.isInstanceOf[JsObject]) {
+                    context.asOpt[JsObject].map(contextService.addContext(new JsString("context name"), _))
+                  } else if (context.isInstanceOf[JsArray]) {
+                    context.asOpt[JsArray].map(contextService.addContext(new JsString("context name"), _))
+                  } else None
+
+                val version = None
+                val metadata = models.Metadata(UUID.generate, attachedTo.get, contextID, contextURL, createdAt, creator,
+                  content, version)
+
+                //add metadata to mongo
+                metadataService.addMetadata(metadata)
+                val mdMap = metadata.getExtractionSummary
+
+                attachedTo match {
+                  case Some(resource) => {
+                    resource.resourceType match {
+                      case ResourceRef.dataset => {
+                        datasets.index(resource.id)
+                        //send RabbitMQ message
+                        current.plugin[RabbitmqPlugin].foreach { p =>
+                          val dtkey = s"${p.exchange}.metadata.added"
+                          p.extract(ExtractorMessage(UUID(""), UUID(""), controllers.Utils.baseUrl(request),
+                            dtkey, mdMap, "", metadata.attachedTo.id, ""))
+                        }
+                      }
+                      case ResourceRef.file => {
+                        files.index(resource.id)
+                        //send RabbitMQ message
+                        current.plugin[RabbitmqPlugin].foreach { p =>
+                          val dtkey = s"${p.exchange}.metadata.added"
+                          p.extract(ExtractorMessage(metadata.attachedTo.id, UUID(""), controllers.Utils.baseUrl(request),
+                            dtkey, mdMap, "", UUID(""), ""))
+                        }
+                      }
+                      case _ => {}
                     }
                   }
-                  case ResourceRef.file => {
-                    files.index(resource.id)
-                    //send RabbitMQ message
-                    current.plugin[RabbitmqPlugin].foreach { p =>
-                      val dtkey = s"${p.exchange}.metadata.added"
-                      p.extract(ExtractorMessage(attachedTo.get.id, UUID(""), controllers.Utils.baseUrl(request),
-                        dtkey, mdMap, "", UUID(""), ""))
-                    }
-                  }
-                  case _ => {}
+
                 }
               }
-              case None => {}
+              case u: JsUndefined => {
+                if (content_ld.isInstanceOf[JsUndefined]) {
+                  BadRequest(toJson("No metadata entries"))
+                }
+              }
             }
+
+            content_ld match {
+              case c: JsObject => {
+
+                //add metadata to mongo
+                val newInfo = metadataService.addMetadata(content_ld, context, attachedTo.get, createdAt, creator, space)
+                Logger.info("new stuff is: " + newInfo.toString())
+                val mdMap = Map("metadata" -> content,
+                  "resourceType" -> attachedTo.get.resourceType.name,
+                  "resourceId" -> attachedTo.get.id.toString)
+
+                attachedTo match {
+                  case Some(resource) => {
+                    resource.resourceType match {
+                      case ResourceRef.dataset => {
+                        datasets.index(resource.id)
+                        //send RabbitMQ message
+                        current.plugin[RabbitmqPlugin].foreach { p =>
+                          val dtkey = s"${p.exchange}.metadata.added"
+                          p.extract(ExtractorMessage(UUID(""), UUID(""), controllers.Utils.baseUrl(request),
+                            dtkey, mdMap, "", attachedTo.get.id, ""))
+                        }
+                      }
+                      case ResourceRef.file => {
+                        files.index(resource.id)
+                        //send RabbitMQ message
+                        current.plugin[RabbitmqPlugin].foreach { p =>
+                          val dtkey = s"${p.exchange}.metadata.added"
+                          p.extract(ExtractorMessage(attachedTo.get.id, UUID(""), controllers.Utils.baseUrl(request),
+                            dtkey, mdMap, "", UUID(""), ""))
+                        }
+                      }
+                      case _ => {}
+                    }
+                  }
+                  case None => {}
+                }
+
+                Ok(JsObject(Seq("status" -> JsString("ok"))) ++ newInfo)
+              }
+              case _ => {
+                Ok(JsObject(Seq("status" -> JsString("ok"))))
+              }
+            }
+
             /*           
 val metadata = models.Metadata(UUID.generate, attachedTo.get, None, Some(new URL("http://noteal.com")), createdAt, creator,
                   content, None)
             Ok(views.html.metadatald.view(List(metadata), null, true)(request.user))
             * 
             */
-            Ok(newInfo)
+
           } else {
             BadRequest(toJson("Invalid resource type"))
           }
@@ -359,11 +428,130 @@ val metadata = models.Metadata(UUID.generate, attachedTo.get, None, Some(new URL
 
   @ApiOperation(value = "Update a metadata entry",
     responseClass = "None", httpMethod = "PUT")
-  def updateMetadata(id: UUID, entryId: String) = PermissionAction(Permission.DeleteMetadata, Some(ResourceRef(ResourceRef.metadata, id))) { implicit request =>
+  def updateMetadata(attachedtype: String, attachedid: UUID, entryId: String) = PermissionAction(Permission.DeleteMetadata, Some(ResourceRef(Symbol(attachedtype), attachedid)))(parse.json) { implicit request =>
     request.user match {
       case Some(user) => {
-        BadRequest("Not implemented")
+        if (attachedtype == ResourceRef.curationObject.name && curations.get(attachedid).map(_.status != "In Preparation").getOrElse(false)
+          || attachedtype == ResourceRef.curationFile.name && curations.getCurationByCurationFile(attachedid).map(_.status != "In Preparation").getOrElse(false)) {
+          BadRequest("Publication Request has already been submitted")
+        } else {
+
+          val updatedAt = new Date()
+
+          // build creator uri
+          // TODO switch to internal id and then build url when returning?
+          val userURI = controllers.routes.Application.index().absoluteURL() + "api/users/" + user.id
+          val updator = UserAgent(user.id, "cat:user", MiniUser(user.id, user.fullName, user.avatarUrl.getOrElse(""), user.email), Some(new URL(userURI)))
+          val space = attachedtype match {
+            case ResourceRef.file.name => {
+              files.get(attachedid) match {
+                case Some(file) => {
+                  None
+                }
+              }
+            }
+            case ResourceRef.dataset.name => {
+              datasets.get(attachedid) match {
+                case Some(dataset) => {
+                  Some(dataset.spaces.apply(0))
+                }
+              }
+            }
+            case ResourceRef.curationObject.name => { None }
+            case ResourceRef.curationFile.name => { None }
+            case _ => None
+          }
+
+          val content = (request.body \ "content")
+          val context = (request.body \ "@context")
+
+          metadataService.updateMetadata(content, context, ResourceRef(Symbol(attachedtype), attachedid), entryId, updatedAt, updator, space) match {
+            case u: JsUndefined => {
+              BadRequest("Entry to update not found.")
+            }
+            case result: JsObject => {
+
+              val mdMap = Map("metadata" -> content,
+                "resourceType" -> attachedtype,
+                "resourceId" -> attachedid)
+
+              current.plugin[RabbitmqPlugin].foreach { p =>
+                val dtkey = s"${p.exchange}.metadata.updated"
+                p.extract(ExtractorMessage(UUID(""), UUID(""), request.host, dtkey, mdMap, "", attachedid, ""))
+              }
+
+              Logger.debug("re-indexing after metadata update")
+              current.plugin[ElasticsearchPlugin].foreach { p =>
+                // Delete existing index entry and re-index
+                Symbol(attachedtype) match {
+                  case ResourceRef.file => {
+                    p.delete("data", "file", attachedid.stringify)
+                    files.index(attachedid)
+                  }
+                  case ResourceRef.dataset => {
+                    p.delete("data", "dataset", attachedid.stringify)
+                    datasets.index(attachedid)
+                  }
+                  case _ => {
+                    Logger.error("unknown attached resource type for metadata - not reindexing")
+                  }
+                }
+              }
+
+              Ok(JsObject(Seq("status" -> JsString("ok"))) ++ result)
+            }
+
+          }
+        }
       }
+      case None => BadRequest("Not authorized.")
+    }
+  }
+
+  @ApiOperation(value = "Delete the metadata represented in Json-ld format",
+    responseClass = "None", httpMethod = "DELETE")
+  def removeMetadataById(id: UUID) = PermissionAction(Permission.DeleteMetadata, Some(ResourceRef(ResourceRef.metadata, id))) { implicit request =>
+    request.user match {
+      case Some(user) => {
+        metadataService.getMetadataById(id) match {
+          case Some(m) => {
+            if (m.attachedTo.resourceType == ResourceRef.curationObject && curations.get(m.attachedTo.id).map(_.status != "In Preparation").getOrElse(false)
+              || m.attachedTo.resourceType == ResourceRef.curationFile && curations.getCurationByCurationFile(m.attachedTo.id).map(_.status != "In Preparation").getOrElse(false)) {
+              BadRequest("Publication Request has already been submitted")
+            } else {
+              metadataService.removeMetadataById(id)
+              val mdMap = m.getExtractionSummary
+
+              current.plugin[RabbitmqPlugin].foreach { p =>
+                val dtkey = s"${p.exchange}.metadata.removed"
+                p.extract(ExtractorMessage(UUID(""), UUID(""), request.host, dtkey, mdMap, "", id, ""))
+              }
+
+              Logger.debug("re-indexing after metadata removal")
+              current.plugin[ElasticsearchPlugin].foreach { p =>
+                // Delete existing index entry and re-index
+                m.attachedTo.resourceType match {
+                  case ResourceRef.file => {
+                    p.delete("data", "file", m.attachedTo.id.stringify)
+                    files.index(m.attachedTo.id)
+                  }
+                  case ResourceRef.dataset => {
+                    p.delete("data", "dataset", m.attachedTo.id.stringify)
+                    datasets.index(m.attachedTo.id)
+                  }
+                  case _ => {
+                    Logger.error("unknown attached resource type for metadata - not reindexing")
+                  }
+                }
+              }
+
+              Ok(JsObject(Seq("status" -> JsString("ok"))))
+            }
+          }
+          case None => BadRequest(toJson("Invalid Metadata"))
+        }
+      }
+      case None => BadRequest("Not authorized.")
     }
   }
 
@@ -373,7 +561,7 @@ val metadata = models.Metadata(UUID.generate, attachedTo.get, None, Some(new URL
     val attachedUuid = UUID(attachedid)
     request.user match {
       case Some(user) => {
-        
+
         if (attachedtype == ResourceRef.curationObject.name && curations.get(attachedUuid).map(_.status != "In Preparation").getOrElse(false)
           || attachedtype == ResourceRef.curationFile.name && curations.getCurationByCurationFile(attachedUuid).map(_.status != "In Preparation").getOrElse(false)) {
           BadRequest("Publication Request has already been submitted")
@@ -405,38 +593,43 @@ val metadata = models.Metadata(UUID.generate, attachedTo.get, None, Some(new URL
             case _ => None
           }
 
-          val content = metadataService.removeMetadata(ResourceRef(Symbol(attachedtype), attachedUuid), term, itemid, deletedAt, deletor, space)
+          metadataService.removeMetadata(ResourceRef(Symbol(attachedtype), attachedUuid), term, itemid, deletedAt, deletor, space) match {
+            case content: JsObject => {
 
-          val mdMap = Map("metadata" -> content,
-            "resourceType" -> attachedtype,
-            "resourceId" -> attachedUuid)
+              val mdMap = Map("metadata" -> content,
+                "resourceType" -> attachedtype,
+                "resourceId" -> attachedUuid)
 
-          current.plugin[RabbitmqPlugin].foreach { p =>
-            val dtkey = s"${p.exchange}.metadata.removed"
-            p.extract(ExtractorMessage(UUID(""), UUID(""), request.host, dtkey, mdMap, "", attachedUuid, ""))
-          }
+              current.plugin[RabbitmqPlugin].foreach { p =>
+                val dtkey = s"${p.exchange}.metadata.removed"
+                p.extract(ExtractorMessage(UUID(""), UUID(""), request.host, dtkey, mdMap, "", attachedUuid, ""))
+              }
 
-          Logger.debug("re-indexing after metadata removal")
-          current.plugin[ElasticsearchPlugin].foreach { p =>
-            // Delete existing index entry and re-index
-            Symbol(attachedtype) match {
-              case ResourceRef.file => {
-                p.delete("data", "file", attachedUuid.stringify)
-                files.index(attachedUuid)
+              Logger.debug("re-indexing after metadata removal")
+              current.plugin[ElasticsearchPlugin].foreach { p =>
+                // Delete existing index entry and re-index
+                Symbol(attachedtype) match {
+                  case ResourceRef.file => {
+                    p.delete("data", "file", attachedUuid.stringify)
+                    files.index(attachedUuid)
+                  }
+                  case ResourceRef.dataset => {
+                    p.delete("data", "dataset", attachedUuid.stringify)
+                    datasets.index(attachedUuid)
+                  }
+                  case _ => {
+                    Logger.error("unknown attached resource type for metadata - not reindexing")
+                  }
+                }
               }
-              case ResourceRef.dataset => {
-                p.delete("data", "dataset", attachedUuid.stringify)
-                datasets.index(attachedUuid)
-              }
-              case _ => {
-                Logger.error("unknown attached resource type for metadata - not reindexing")
-              }
+
+              Ok(JsObject(Seq("status" -> JsString("ok"))))
+            }
+            case u: JsUndefined => {
+              BadRequest("Entry to delete not found.")
             }
           }
-
-          Ok(JsObject(Seq("status" -> JsString("ok"))))
         }
-
       }
       case None => BadRequest("Not authorized.")
     }
