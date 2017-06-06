@@ -125,8 +125,8 @@ class MongoSalatPlugin(app: Application) extends Plugin {
     collection("datasets").ensureIndex(MongoDBObject("author._id" -> 1))
     collection("datasets").ensureIndex(MongoDBObject("public" -> 1, "spaces" -> 1, "author._id" -> 1))
     collection("datasets").ensureIndex(MongoDBObject("created" -> -1, "name" -> 1))
-    collection("datasets").ensureIndex(MongoDBObject("created" -> -1, "name" -> 1))
     collection("datasets").ensureIndex(MongoDBObject("files" -> 1))
+    collection("datasets").ensureIndex(MongoDBObject("status" -> 1))
 
     collection("dtsrequests").ensureIndex(MongoDBObject("fileid" -> 1))
 
