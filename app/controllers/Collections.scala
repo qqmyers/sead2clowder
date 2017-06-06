@@ -505,17 +505,16 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
           Logger.debug("Num previewers " + filteredPreviewers.size)
           filteredPreviewers.map(p => Logger.debug(s"Filtered previewers for collection $id $p.id"))
 
+
           //Decode the datasets so that their free text will display correctly in the view
           val datasetsInside = if(play.Play.application().configuration().getBoolean("sortInMemory")) {
-            SortingUtils.sortDatasets(datasets.listCollection(id.stringify, user), sortOrder)
+            SortingUtils.sortDatasets(datasets.iteratorCollection(id.stringify, user), sortOrder)
           } else {
-            datasets.listCollection(id.stringify, user)
+            datasets.iteratorCollection(id.stringify, user)
           }
-          val datasetIdsToUse = datasetsInside.slice(0, limit)
           val decodedDatasetsInside = ListBuffer.empty[models.Dataset]
-          for (aDataset <- datasetIdsToUse) {
-            val dDataset = Utils.decodeDatasetElements(aDataset)
-            decodedDatasetsInside += dDataset
+          while (datasetsInside.hasNext) {
+            decodedDatasetsInside += Utils.decodeDatasetElements(datasetsInside.next())
           }
 
           val commentMap = datasetsInside.map { dataset =>

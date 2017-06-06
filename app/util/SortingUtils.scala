@@ -26,6 +26,19 @@ object SortingUtils {
     }
   }
 
+  def sortDatasets(dIter: Iterator[Dataset], sortOrder: String): Iterator[Dataset] = {
+    var dList = dIter.toList
+    sortOrder match {
+      case "dateN" => dList.sortWith((left, right) => left.created.compareTo(right.created) > 0)
+      case "dateO" => dList.sortWith((left, right) => left.created.compareTo(right.created) > 0).reverse
+      case "titleA" => dList.sortBy(_.name)
+      case "titleZ" => dList.sortBy(_.name).reverse
+      case "sizeL" => dList.sortBy(d => { d.files.length + d.folders.length }).reverse
+      case "sizeS" => dList.sortBy(d => { d.files.length + d.folders.length })
+    }
+    dList.toIterator
+  }
+
   def sortFolders(fList: List[Folder], sortOrder: String): List[Folder] = {
     sortOrder match {
       case "dateN" => fList.sortWith((left, right) => left.created.compareTo(right.created) > 0)

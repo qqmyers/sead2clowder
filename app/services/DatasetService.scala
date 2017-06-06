@@ -79,6 +79,11 @@ trait DatasetService {
   def listCollection(collection: String, user:Option[User]): List[Dataset]
 
   /**
+    * Return an iterator of datasets in a collection
+    */
+  def iteratorCollection(collection: String, user:Option[User]): Iterator[Dataset]
+
+  /**
     * Return a list of datasets in a collection
     */
   def listCollection(limit: Integer, collection: String, user:Option[User]): List[Dataset]

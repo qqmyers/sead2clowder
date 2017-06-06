@@ -148,6 +148,13 @@ class MongoDBDatasetService @Inject() (
   }
 
   /**
+    * Return an iterator of datasets in a collection
+    */
+  def iteratorCollection(collection: String, user:Option[User]): Iterator[Dataset] = {
+    iterator(None, false, 0, None, Some(collection), None, Set[Permission](Permission.ViewDataset), user, status=None, showAll=false, owner=None)
+  }
+
+  /**
     * Return a list of datasets in a collection
     */
   def listCollection(limit: Integer, collection: String, user:Option[User]): List[Dataset] = {
@@ -273,14 +280,29 @@ class MongoDBDatasetService @Inject() (
 
 
   /**
-   * return list based on input
-   */
+    * return list based on input
+    */
   private def list(date: Option[String], nextPage: Boolean, limit: Integer, title: Option[String], collection: Option[String], space: Option[String], permissions: Set[Permission], user: Option[User], status: Option[String], showAll: Boolean, owner: Option[User], showPublic: Boolean = true, showOnlyShared : Boolean = false): List[Dataset] = {
     val (filter, sort) = filteredQuery(date, nextPage, title, collection, space, permissions, user, status, showAll, owner, showPublic, showOnlyShared)
     if (date.isEmpty || nextPage) {
       Dataset.find(filter).sort(sort).limit(limit).toList
     } else {
       Dataset.find(filter).sort(sort).limit(limit).toList.reverse
+    }
+  }
+
+  /**
+    * return iterator based on input
+    */
+  private def iterator(date: Option[String], nextPage: Boolean, limit: Integer, title: Option[String], collection: Option[String], space: Option[String], permissions: Set[Permission], user: Option[User], status: Option[String], showAll: Boolean, owner: Option[User], showPublic: Boolean = true, showOnlyShared : Boolean = false): Iterator[Dataset] = {
+    val (filter, sort) = filteredQuery(date, nextPage, title, collection, space, permissions, user, status, showAll, owner, showPublic, showOnlyShared)
+    Logger.debug(filter.toString)
+    if (date.isEmpty || nextPage) {
+      Logger.debug("a")
+      Dataset.find(filter).sort(sort).limit(limit)
+    } else {
+      Logger.debug("b")
+      Dataset.find(filter).sort(sort).limit(limit).toList.reverse.toIterator
     }
   }
 
