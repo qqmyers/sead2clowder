@@ -47,7 +47,7 @@ trait MetadataService {
   def removeMetadataByAttachToAndExtractor(resourceRef: ResourceRef, extractorName: String): Long
   
   /** Get the current summary of all metadata actions for this resource */
-  def getMetadataSummary(resourceRef: ResourceRef, SpaceId:Option[UUID]): models.RdfMetadata
+  def getMetadataSummary(resourceRef: ResourceRef, spaceId:Option[UUID]): models.RdfMetadata
   
   /** Get metadata context if available */
   def getMetadataContext(metadataId: UUID): Option[JsValue]

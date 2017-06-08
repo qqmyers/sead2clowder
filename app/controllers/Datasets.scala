@@ -503,8 +503,18 @@ class Datasets @Inject() (
         val m = metadata.getMetadataByAttachTo(ResourceRef(ResourceRef.dataset, dataset.id))
 
         //RDF MD
+        val spaceId:Option[models.UUID] =  currentSpace match {
+		       case Some(s) => {
+		         if(dataset.spaces.contains(UUID(s))) {
+		           Some(UUID(s))
+		         } else {
+		           Some(dataset.spaces.head)
+		         }
+		       }
+		       case None => Some(dataset.spaces.head)
+		     }
         
-        val metadataSummary = metadata.getMetadataSummary(ResourceRef(ResourceRef.dataset, dataset.id), Some(dataset.spaces.apply(0)))
+        val metadataSummary = metadata.getMetadataSummary(ResourceRef(ResourceRef.dataset, dataset.id), spaceId)
         
         val collectionsInside = collections.listInsideDataset(id, request.user, request.user.fold(false)(_.superAdminMode)).sortBy(_.name)
         var decodedCollectionsInside = new ListBuffer[models.Collection]()

@@ -383,7 +383,7 @@ class MongoDBMetadataService @Inject() (contextService: ContextLDService, datase
     return num_removed
   }
 
-  def getMetadataSummary(resourceRef: ResourceRef, spaceId: Option[UUID]): RdfMetadata = {
+  def getMetadataSummary(resourceRef: ResourceRef, space: Option[UUID]): RdfMetadata = {
     //RDF MD
 
     //Try to get a cached copy
@@ -421,26 +421,23 @@ class MongoDBMetadataService @Inject() (contextService: ContextLDService, datase
         */
         //replace the history entry and return the updated summary
         val rdf = RdfMetadata(x.id, x.attachedTo, x.entries, x.defs, metadataHistoryMap.toMap)
-        Logger.info(rdf.toString())
         rdf
       }
       case None => {
         //Otherwise calculate and store a new summary
-
         val metadataDefsMap = scala.collection.mutable.Map.empty[String, String]
-        // val inverseMetadataDefsMap = scala.collection.mutable.Map.empty[String, String] //needed to convert current metadata
         var newDefs = scala.collection.mutable.Map.empty[String, String]
         var metadataHistoryMap = scala.collection.mutable.Map.empty[String, List[MetadataEntry]]
-
         var metadataEntryList = scala.collection.mutable.ListBuffer.empty[MetadataEntry]
         var metadataEntryPreds = Set.empty[String]
+
         getMetadataByAttachTo(resourceRef).map {
           item =>
             {
               val ldItem = JSONLD.jsonMetadataWithContext(item)
               val json = JsonUtils.fromInputStream(new java.io.ByteArrayInputStream(Json.stringify(ldItem).getBytes("UTF-8")))
               val ctxt = new Context().parse(json.asInstanceOf[LinkedHashMap[String, Object]].getOrDefault("@context", ""))
-              //Logger.info("Context" + ctxt.getPrefixes(false).toString())
+              Logger.debug("Context" + ctxt.getPrefixes(false).toString())
               val prefixes = ctxt.getPrefixes(false)
               val entryIter = prefixes.entrySet().iterator()
 
@@ -448,9 +445,8 @@ class MongoDBMetadataService @Inject() (contextService: ContextLDService, datase
                 val entry = entryIter.next()
                 metadataDefsMap(entry.getValue()) = entry.getKey()
               }
-              Logger.info("json: " + json.toString())
+              Logger.debug("json: " + json.toString())
               val fullItem = Json.parse(JsonUtils.toString(JsonLdProcessor.compact(JsonLdProcessor.expand(json), null, new JsonLdOptions())))
-              Logger.info("fullItem: " + fullItem.toString())
               var excontent = fullItem \\ "https://clowder.ncsa.illinois.edu/metadata#content"
               if (excontent.size == 0) {
                 //Kludge - some entries may not have a valid jsonld context mapping the content to the term above. In this case, we can just parse the json 
@@ -463,14 +459,13 @@ class MongoDBMetadataService @Inject() (contextService: ContextLDService, datase
                 }
                 Logger.warn("Invalid JSON-LD for Metadata Entry - parsing as mixed Json/ld: " + ldItem.toString())
               } else {
-                Logger.info(excontent.apply(0).toString())
                 excontent.apply(0).as[JsObject].keys.foreach { uri =>
                   { //Add new label defs if they don't currently exist - could reject new terms this way if desired
-                    Logger.info("Here: " + uri)
+
                     val label = metadataDefsMap.apply(uri)
                     newDefs(metadataDefsMap.apply(uri)) = uri
                     //Now create an entry and add it to the list
-                    Logger.info(uri + " : " + (excontent.apply(0).as[JsObject] \ uri).toString()) // + (x \ y \\ "@value").as[String]) }}
+                    Logger.debug(uri + " : " + (excontent.apply(0).as[JsObject] \ uri).toString()) // + (x \ y \\ "@value").as[String]) }}
                     metadataEntryList += MetadataEntry(UUID.generate(), uri, (excontent.apply(0).as[JsObject] \ uri).as[String], Json.toJson((ldItem).validate[Agent].get).toString, MDAction.Added.toString(), None, new SimpleDateFormat("EEE MMM dd hh:mm:ss zzz yyyy").parse((ldItem \ "created_at").toString().replace("\"", "")))
 
                     metadataEntryPreds += uri
@@ -489,8 +484,9 @@ class MongoDBMetadataService @Inject() (contextService: ContextLDService, datase
 		     * with labels restricted to being Mongo-safe
 		     * 
 		     */
-
-        for (md <- getDefinitions(spaceId)) {
+        Logger.info("Space: " + space)
+        for (md <- getDefinitions(space)) {
+          
           metadataDefsMap((md.json \ "uri").asOpt[String].getOrElse("").toString()) = (md.json \ "label").asOpt[String].getOrElse("").toString()
 
         }
@@ -516,17 +512,6 @@ class MongoDBMetadataService @Inject() (contextService: ContextLDService, datase
 
         val rdf = RdfMetadata(UUID.generate(), resourceRef, metadataEntryJson.toMap, inverseMetadataDefsMap.toMap, metadataHistoryMap.toMap)
         val mid = MetadataSummaryDAO.insert(rdf, WriteConcern.Safe)
-        /*   val me = metadataEntryList.head
-    val med = MetadataEntryDAO
-    Logger.info("haveDao: " + me.toString())
-   val mid = med.insert(me, WriteConcern.Safe)
-   */
-        current.plugin[MongoSalatPlugin] match {
-          case None => throw new RuntimeException("No MongoSalatPlugin")
-          case Some(x) =>
-            Logger.info(s"Looking good ${mid.toString}")
-
-        }
 
         rdf
       }
