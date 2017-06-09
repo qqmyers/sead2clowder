@@ -8,7 +8,6 @@ import play.api.Play.current
 import javax.inject.Inject
 import models._
 import services._
-import com.wordnik.swagger.annotations.ApiOperation
 import play.api.i18n.Messages
 
 
@@ -17,7 +16,7 @@ import play.api.i18n.Messages
  * Comments on datasets.
  *
  */
-class Comments @Inject()(datasets: DatasetService, comments: CommentService, events: EventService) extends ApiController {
+class Comments @Inject()(datasets: DatasetService, comments: CommentService, events: EventService, users: UserService) extends ApiController {
 
   def comment(id: UUID) = PermissionAction(Permission.AddComment, Some(ResourceRef(ResourceRef.comment, id)))(parse.json) { implicit request =>
       Logger.trace("Adding comment")
@@ -73,9 +72,6 @@ class Comments @Inject()(datasets: DatasetService, comments: CommentService, eve
    *  Only the owner of a comment will be allowed to delete it. Any other request will fail.
    *  
    */
-  @ApiOperation(value = "Remove a specific comment associated with this file",
-		  notes = "Method takes the comment id as a UUID. No arguments necessary in the request body.",
-		  responseClass = "None", httpMethod = "DELETE")
   def removeComment(id: UUID) = PermissionAction(Permission.DeleteComment, Some(ResourceRef(ResourceRef.comment, id)))(parse.json) { implicit request =>
 	  request.user match {
 		  case Some(identity) => {
@@ -132,9 +128,6 @@ class Comments @Inject()(datasets: DatasetService, comments: CommentService, eve
    *  Only the owner of the comment will be allowed to edit it. Other requests will fail.
    *  
    */
-  @ApiOperation(value = "Edit a specific comment associated with this file",
-      notes = "Method takes the comment id as a UUID. commentText key-value pair necessary in the request body.",
-      responseClass = "None", httpMethod = "POST")
   def editComment(id: UUID) = PermissionAction(Permission.EditComment, Some(ResourceRef(ResourceRef.comment, id)))(parse.json) { implicit request =>
 	  request.user match {
 	       case Some(identity) => {
@@ -192,5 +185,23 @@ class Comments @Inject()(datasets: DatasetService, comments: CommentService, eve
 	  }
   }
   //End, remove comment code
-  
+
+	/**
+		* This will create an event in the specified user's feed indicating they were mentioned in a comment
+		* on the specified resource.
+    */
+	def mentionInComment(userid: UUID, resourceID: UUID, resourceName: String, resourceType: String, commenterId: UUID) =
+		PermissionAction(Permission.AddComment, Some(ResourceRef(Symbol(resourceType), resourceID))) {
+			users.get(commenterId) match {
+				case Some(u) => {
+					events.addRequestEvent(users.get(userid), u, resourceID, resourceName, "mention_"+resourceType+"_comment")
+					Ok(s"Mention event added to user id $userid's feed")
+				}
+				case None => {
+					events.addObjectEvent(users.get(userid), resourceID, resourceName, "mention_"+resourceType+"_comment")
+					Ok(s"Mention event added to user id $userid's feed")
+				}
+			}
+
+	}
 }

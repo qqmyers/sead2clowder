@@ -227,6 +227,60 @@ code {
 #geostreams_map { 
 	height: 600px; 
 }
+.tile {
+	display: inline-block;
+	background: #FEFEFE;
+	border: 2px solid #FAFAFA;
+	box-shadow: 0 1px 2px rgba(34, 25, 25, 0.4);
+	margin: 0 2px 15px;
+	-webkit-column-break-inside: avoid;
+	-moz-column-break-inside: avoid;
+	column-break-inside: avoid;
+	padding: 15px;
+	padding-bottom: 5px;
+	background: -webkit-linear-gradient(45deg, #FFF, #F9F9F9);
+	opacity: 1;
+	
+	-webkit-transition: all .2s ease;
+	-moz-transition: all .2s ease;
+	-o-transition: all .2s ease;
+	transition: all .2s ease;
+}
+
+.tile img {
+	width: 100%;
+	border-bottom: 1px solid #ccc;
+	padding-bottom: 15px;
+	margin-bottom: 5px;
+}
+
+.tile p {
+	margin: 0;
+}
+
+.draggable { 
+	background: #FEFEFE;
+	border: 2px solid #FAFAFA;
+	box-shadow: 0 1px 2px rgba(34, 25, 25, 0.4);
+	margin: 0 2px 15px;
+	width: 100px; height: 100px; padding: 0.5em; float: left; margin: 10px 10px 10px 0; }
+
+.droppable { 
+	border: 2px solid black;
+	width: 150px; height: 150px; padding: 0.5em; float: left; margin: 10px; }
+	
+.removeButtonWrapper {
+	position: absolute;
+	top: 2px;
+	right: 2px;
+	z-index: 101;
+}
+
+.removeButtonWrapper button {
+	background-color: rgba(255, 255, 255, 0.5);
+}
+  
+
 
 .wrapped {
 	padding: 15px 5px;
@@ -248,13 +302,11 @@ code {
 	left:20px;
 }
 
-#nameDescrFieldSet .control-group .controls .buttonset label
-{
+#nameDescrFieldSet .control-group .controls .buttonset label {
     margin-right: 10%;
 }
 
-#nameDescrFieldSet .homePages .external-link-delete
-{
+#nameDescrFieldSet .homePages .external-link-delete {
     display: inline-block;
     margin-left:10px;
 }
@@ -264,14 +316,12 @@ code {
     margin-left: 10px;
 }
 
-#nameDescrFieldSet .homePages .control-group
-{
+#nameDescrFieldSet .homePages .control-group {
     display:inline-block;
     width: 85%;
 }
 
-#nameDescrFieldSet .homePages .control-label
-{
+#nameDescrFieldSet .homePages .control-label {
     display: none;
 }
 
@@ -300,8 +350,7 @@ code {
 	height:30px;
 }
 
-.checkbox
-{
+.checkbox {
     font-weight: normal;
 }
 
@@ -337,6 +386,7 @@ code {
 
 .post-box {
     margin: 15px 0 15px 0;
+    max-width:100%;
 }
 
 .file-type {
@@ -364,6 +414,11 @@ code {
    white-space: -o-pre-wrap;   /* Opera 7 */
    word-wrap: break-word;      /* IE */
    /* line-height: 200px; */
+}
+
+.panel .select {
+    padding-right: 5px;
+    padding-top: 5px;
 }
 
 .panel .bookmark {
@@ -552,6 +607,13 @@ table#sensorsListTable > thead > tr > th.headerSortDown {
     height: 25px;
 }
 
+#number-displayed-dropdown{
+	display:inline;
+	float:left;
+	margin-top:3px;
+	margin-right:5px;
+}
+
 .bottom-padding {
     padding-bottom: 15px;
 }
@@ -629,8 +691,8 @@ table#sensorsListTable > thead > tr > th.headerSortDown {
     display: block;
     visibility: hidden;
     clear: both;
-
 }
+
 #scrollTableGalleria tbody{
 	overflow-y: auto;
 }
@@ -1015,8 +1077,51 @@ table.borderless tbody tr td, table.borderless tbody tr th {
 	width:90%!important;
 }
 
+.published {
+	max-height: 250px;
+	overflow-y: auto;
+	display: inline-flex;
+	width: 90%;
+	margin-bottom: 10px;
+	padding: 5px;
+}
+
+.abstract {
+	display: inline-block;
+	max-height: 250px;
+	max-width: 100%;
+	overflow-y: auto;
+	overflow-wrap: break-word;
+	margin-bottom: -5px;
+	margin-block-end: -5px;
+	margin-block-start: 1px;
+	margin-bottom: -5px;
+}
+
+.abstractsummary {
+	display: inline-block;
+	max-height: 250px;
+	max-width: 100%;
+	overflow-y: auto;
+	overflow-wrap: break-word;
+	margin-bottom: -5px;
+	margin-block-end: -5px;
+	margin-block-start: 1px;
+	margin-bottom: -5px;
+}
+
+.abstract-panel {
+	padding: 6px 12px 6px 0px;
+	min-width: 100%;
+	margin-bottom: 0px !important;
+	border: 1px solid transparent;
+	border-radius: 4px;
+	-webkit-box-shadow: 0 1px 1px rgba(0, 0, 0, 0.05);
+	box-shadow: 0 1px 1px rgba(0, 0, 0, 0.05);
+}
+
 .metaprov {
 	float:right;
 	font-size: 12px;
 }
-
+}

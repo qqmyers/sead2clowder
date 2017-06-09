@@ -4,7 +4,6 @@ import java.net.{ URL, URLEncoder }
 import java.util.Date
 import javax.inject.{ Inject, Singleton }
 
-import com.wordnik.swagger.annotations.ApiOperation
 import models.{ ResourceRef, UUID, UserAgent, _ }
 import org.elasticsearch.action.search.SearchResponse
 import org.apache.commons.lang.WordUtils
@@ -426,8 +425,6 @@ val metadata = models.Metadata(UUID.generate, attachedTo.get, None, Some(new URL
       }
   }
 
-  @ApiOperation(value = "Update a metadata entry",
-    responseClass = "None", httpMethod = "PUT")
   def updateMetadata(attachedtype: String, attachedid: UUID, entryId: String) = PermissionAction(Permission.DeleteMetadata, Some(ResourceRef(Symbol(attachedtype), attachedid)))(parse.json) { implicit request =>
     request.user match {
       case Some(user) => {
@@ -508,8 +505,6 @@ val metadata = models.Metadata(UUID.generate, attachedTo.get, None, Some(new URL
     }
   }
 
-  @ApiOperation(value = "Delete the metadata represented in Json-ld format",
-    responseClass = "None", httpMethod = "DELETE")
   def removeMetadataById(id: UUID) = PermissionAction(Permission.DeleteMetadata, Some(ResourceRef(ResourceRef.metadata, id))) { implicit request =>
     request.user match {
       case Some(user) => {
@@ -555,8 +550,6 @@ val metadata = models.Metadata(UUID.generate, attachedTo.get, None, Some(new URL
     }
   }
 
-  @ApiOperation(value = "Delete the metadata represented in Json-ld format",
-    responseClass = "None", httpMethod = "DELETE")
   def removeMetadata(attachedtype: String, attachedid: String, term: String, itemid: String) = PermissionAction(Permission.DeleteMetadata, Some(ResourceRef(Symbol(attachedtype), UUID(attachedid)))) { implicit request =>
     val attachedUuid = UUID(attachedid)
     request.user match {
@@ -635,7 +628,6 @@ val metadata = models.Metadata(UUID.generate, attachedTo.get, None, Some(new URL
     }
   }
 
-  @ApiOperation(value = "Get information about a person from SEAD PDT given an person ID", httpMethod = "GET")
   def getPerson(pid: String) = PermissionAction(Permission.ViewMetadata).async { implicit request =>
 
     implicit val context = scala.concurrent.ExecutionContext.Implicits.global
@@ -666,7 +658,6 @@ val metadata = models.Metadata(UUID.generate, attachedTo.get, None, Some(new URL
     }
   }
 
-  @ApiOperation(value = "Get list of known people from SEAD PDT, eventually using term and limit to constrain the response ", httpMethod = "GET")
   def listPeople(term: String, limit: Int) = PermissionAction(Permission.ViewMetadata).async { implicit request =>
 
     implicit val context = scala.concurrent.ExecutionContext.Implicits.global

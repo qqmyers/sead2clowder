@@ -2,6 +2,7 @@
 
 @import services.AppConfiguration
 @import play.api.i18n.Messages
+@import play.api.Play.current
 <!DOCTYPE html>
 
 <html lang="en">
@@ -30,6 +31,12 @@
     <script type="text/javascript" src="@routes.Application.javascriptRoutes"></script>
 
     <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+@* Turn console.log off when in production mode *@
+@JSConsole()
+
+<!--@helper.requireJs(core = routes.Assets.at("javascripts/require.js").url, module = routes.Assets.at("javascripts/main").url)-->
+
+<!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
     <!--[if lt IE 9]>
       <script src="../../assets/js/html5shiv.js"></script>
       <script src="../../assets/js/respond.min.js"></script>
@@ -81,9 +88,7 @@
                                 <li><a href="@routes.Spaces.list(owner=Some(user.get.id.stringify))"><span class="glyphicon glyphicon-hdd"></span> @Messages("spaces.title")</a></li>
                                 <li><a href="@routes.Datasets.list(owner=Some(user.get.id.stringify))"><span class="glyphicon glyphicon-briefcase"></span> @Messages("datasets.title")</a></li>
                                 <li><a href="@routes.Collections.list(owner=Some(user.get.id.stringify))"><span class="glyphicon glyphicon-th-large"></span> @Messages("collections.title")</a></li>
-
                             }
-
                         </ul>
                     </li>
                 }
@@ -96,20 +101,27 @@
                             @user match {
                                 case Some(x) => {
                                     @if(play.Play.application().configuration().getBoolean("verifySpaces") && api.Permission.checkServerAdmin(user)) {
-                                        <li><a href="@routes.Spaces.list(onlyTrial=true)"><span class="glyphicon glyphicon-hdd"> </span> Trial @Messages("spaces.title")</a></li>
+                                        <li><a href="@routes.Spaces.list(onlyTrial=true, showOnlyShared = play.Play.application().configuration().getBoolean("showOnlySharedInExplore"))"><span class="glyphicon glyphicon-hdd"> </span> Trial @Messages("spaces.title")</a></li>
                                     }
                                 }
                                 case None => {
 
                                 }
                             }
-                            <li><a href="@routes.Datasets.list("")"><span class="glyphicon glyphicon-briefcase"> </span> @Messages("datasets.title")</a></li>
-                            <li><a href="@routes.Collections.list("")"><span class="glyphicon glyphicon-th-large"> </span> @Messages("collections.title")</a></li>
+                            <li><a href="@routes.Datasets.list(showOnlyShared = play.Play.application().configuration().getBoolean("showOnlySharedInExplore"))"><span class="glyphicon glyphicon-briefcase"> </span> @Messages("datasets.title")</a></li>
+                            <li><a href="@routes.Collections.list(showOnlyShared = play.Play.application().configuration().getBoolean("showOnlySharedInExplore"))"><span class="glyphicon glyphicon-th-large"> </span> @Messages("collections.title")</a></li>
                             @if(play.api.Play.current.plugin[services.StagingAreaPlugin].isDefined){
                                 <li><a href="@routes.CurationObjects.getPublishedData()"><span class="glyphicon glyphicon-book"></span> Published Data</a></li>
                             }
                             @if(user.isDefined){
                                 <li><a href="@routes.Users.getUsers()"><span class="glyphicon glyphicon-user"></span> Users</a></li>
+                            }
+                            @play.api.Play.current.plugin[services.PostgresPlugin] match {
+                                case Some(db) if db.isEnabled => {
+                                    <li><a href="@routes.Geostreams.list"><span class="glyphicon glyphicon-globe"> </span> @(AppConfiguration.getSensorsTitle) List</a></li>
+                                    <li><a href="@routes.Geostreams.map"><span class="glyphicon glyphicon-globe"> </span> @(AppConfiguration.getSensorsTitle) Map</a></li>
+                                }
+                                case _ => {}
                             }
                             <li><a href="@routes.Tags.tagListOrdered"> <span class="glyphicon glyphicon-tags"> </span>  Ordered Tags</a></li>
                             <li><a href="@routes.Tags.tagListWeighted"><span class="glyphicon glyphicon-tags"> </span>  Weighted Tags</a></li>
@@ -129,7 +141,34 @@
                                 @Messages("datasets.title")</a></li>
                             <li><a href="@routes.Collections.newCollection(None)"><span class="glyphicon glyphicon-th-large"> </span>
                                 @Messages("collections.title")</a></li>
+                            @play.api.Play.current.plugin[services.PostgresPlugin] match {
+                                case Some(db) if db.isEnabled => {
+                                    <li><a href="@routes.Geostreams.newSensor"><span class="glyphicon glyphicon-globe"> </span>
+                                        @(AppConfiguration.getSensorsTitle)</a></li>
+                                }
+                                case _ => {}
+                            }
 
+
+                        </ul>
+                    </li>
+
+                    <li class="dropdown">
+                        <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+                            Selections <b class="caret"></b>
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a href="@routes.Selected.get" id="selected-count"><span class="glyphicon glyphicon-ok"> </span>
+                                Manage Selections</a></li>
+                            <li><a href="#" onclick="downloadAllSelections();"><span class="glyphicon glyphicon-download-alt"> </span>
+                                Download All
+                            </a></li>
+                            <li><a href="#" onclick="showTagPopup();"><span class="glyphicon glyphicon-tag"> </span>
+                                Tag All</a></li>
+                            <li><a href="#" onclick="confirmDeleteSelected();"><span class="glyphicon glyphicon-trash"> </span>
+                                Delete All</a></li>
+                            <li><a href="#" onclick="clearSelections();"><span class="glyphicon glyphicon-erase"> </span>
+                                Clear All</a></li>
                         </ul>
                     </li>
                 }
@@ -141,25 +180,14 @@
                             @if(user.isDefined) {
                                 <li><a href="@routes.Application.email("")">Contact server admins</a></li>
                             }
-                            <li><a targe"tos" href="@routes.Application.tos(None)">Terms of Service</a></li>
-                            <li><a href="@routes.Assets.at("docs/api/index.html")" target="_blank">API</a></li>
+                            <li><a href="@routes.Application.tos(None)">Terms of Service</a></li>
+                            <li><a href="@routes.Application.swaggerUI()" target="_blank">API</a></li>
                             @play.Play.application.configuration.getConfigList("helpMenu").map { helpItem =>
                               <li><a href="@helpItem.getString("url")" target="_blank">@helpItem.getString("label")</a></li>
 
                             }
                         </ul>
                     </li>
-                    @if(play.api.Play.current.plugin[services.PostgresPlugin].isDefined) {
-                        <li class="dropdown">
-                            <a href="#" class="dropdown-toggle" data-toggle="dropdown">@(AppConfiguration.getSensorsTitle) <b class="caret"></b></a>
-                            <ul class="dropdown-menu">
-                                <li><a href="@routes.Geostreams.newSensor">Create</a></li>
-                                <li><a href="@routes.Geostreams.list">List</a></li>
-                                <li><a href="@routes.Geostreams.map">Map</a></li>
-                            </ul>
-                        </li>
-                    }
-
                 </ul>
 
                 <ul class="nav navbar-nav navbar-right">
@@ -197,10 +225,10 @@
                                         <li><a href="@routes.Admin.viewDumpers">Dumps</a></li>
                                         <li><a href="@routes.Admin.getMetadataDefinitions">Metadata Definitions</a></li>
                                         @play.api.Play.current.plugin[services.PostgresPlugin] match {
-                                            case Some(db) => {
+                                            case Some(db) if db.isEnabled => {
                                                 <li><a href="@routes.Admin.sensors">@(AppConfiguration.getSensorsTitle)</a></li>
                                             }
-                                            case None => {}
+                                            case _ => {}
                                         }
                                         @if(user.exists(_.superAdminMode)) {
                                             <li><a href="javascript:toggelServerAdmin();">Drop SuperAdmin</a></li>
@@ -286,6 +314,18 @@
 
     if (@user.isDefined) {
         var intervalCount = setInterval(function(){checkSession()}, repeatInt*60000);
+
+        // Populate initial selection count on page load
+        var request = jsRoutes.api.Selected.get().ajax({
+            type: 'GET'
+        });
+        request.done(function (response, textStatus, jqXHR) {
+            updateSelectedCount(response.length);
+        });
+        request.fail(function (jqXHR, textStatus, errorThrown){
+            console.error("The following error occured: " + textStatus, errorThrown);
+            notify("Could not get selections: " + errorThrown, "error");
+        });
     }
 
     function checkSession() {
@@ -294,7 +334,6 @@
             type: 'GET'
         });
         request.done(function(response, textStatus, jqXHR) {
-            //console.log(response);
             if (response === "no") {
                 clearInterval(intervalCount);    //stop the timer
                 var modalHTML = '<div class="modal" role="dialog">';
@@ -317,6 +356,101 @@
         request.fail(function(jqXHR, textStatus, errorThrown) {
             console.error("The following error occurred: " + textStatus, errorThrown);
         });
+    }
+
+    function deleteAllSelections() {
+        var request = jsRoutes.api.Selected.deleteAll().ajax({
+            type: 'DELETE'
+        });
+        request.done(function (response, textStatus, jqXHR) {
+            location.reload()
+        });
+        request.fail(function (jqXHR, textStatus, errorThrown){
+            console.error("The following error occured: " + textStatus, errorThrown);
+            notify("Could not delete selections: " + errorThrown, "error");
+        });
+    }
+
+    function downloadAllSelections() {
+        // Simple check for whether there are 1+ things selected
+        if ($('#selected-count')[0].innerHTML.indexOf("Manage Selections (<b>0</b>)") == -1) {
+            window.open(jsRoutes.api.Selected.downloadAll().url, '_blank');
+        } else {
+            notify("No datasets currently selected", "warning")
+        }
+    }
+
+    function clearSelections() {
+        var request = jsRoutes.api.Selected.clearAll().ajax({
+            type: 'POST'
+        });
+        request.done(function (response, textStatus, jqXHR) {
+            location.reload()
+        });
+        request.fail(function (jqXHR, textStatus, errorThrown){
+            console.error("The following error occured: " + textStatus, errorThrown);
+            notify("Could not clear selections: " + errorThrown, "error");
+        });
+    }
+
+    function showTagPopup() {
+        if ($('#selected-count')[0].innerHTML.indexOf("Manage Selections (<b>0</b>)") == -1) {
+            var modalHTML = `
+            <div id="enter-tag" class="modal fade" role="dialog">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <button type="button" class="close" data-dismiss="modal">&times;</button>
+                            <h4 class="modal-title">Tag All Selections</h4>
+                        </div>
+                        <div class="modal-body">
+                            <p>
+                                Multiple tags may be entered, separated by commas.
+                            </p>
+                            <input maxlength="@play.api.Play.configuration.getInt("clowder.tagLength").getOrElse(100)"
+                                type="text" id="bulk-tag-selector" class="form-control add-resource" placeholder="Enter a tag...">
+
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-link" data-dismiss="modal"><span class="glyphicon glyphicon-remove"></span> Cancel</button>
+                            <a type="button" class="btn btn-primary" id="OKModalButton" href="javascript:tagAllSelections()"><span class="glyphicon glyphicon-ok"></span> OK</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            `;
+
+            var confirmModal = $(modalHTML);
+            confirmModal.modal();
+            confirmModal.modal("show");
+        } else {
+            notify("No datasets currently selected", "warning")
+        }
+    }
+
+    function tagAllSelections() {
+        var tag = $('#bulk-tag-selector')[0].value;
+
+        if (tag.length > 0) {
+            var request = jsRoutes.api.Selected.tagAll(tag.split(",")).ajax({
+                type: 'POST'
+            });
+            request.done(function (response, textStatus, jqXHR) {
+                notify("Tag(s) successfully added.", "success", false, 2000);
+            });
+            request.fail(function (jqXHR, textStatus, errorThrown){
+                console.error("The following error occured: " + textStatus, errorThrown);
+                notify("Could not tag selections: " + errorThrown, "error");
+            });
+
+        } else {
+            console.log("No tag was provided.")
+        }
+        $("#enter-tag").modal("hide")
+    }
+
+    function updateSelectedCount(count) {
+        $('#selected-count')[0].innerHTML = '<span class="glyphicon glyphicon-ok"></span> Manage Selections (<b>'+String(count)+'</b>)';
     }
 </script>
 </body>

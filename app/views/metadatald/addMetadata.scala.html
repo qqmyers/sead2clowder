@@ -35,6 +35,67 @@
 <script src="@routes.Assets.at("javascripts/terraformer/terraformer-1.0.5.min.js")"></script>
 <script src="@routes.Assets.at("javascripts/terraformer/terraformer-wkt-parser-1.1.0.min.js")"></script>
 
+<style>
+.ui-autocomplete-category {
+font-weight: bold;
+padding: .2em .4em;
+margin: .8em 0 .2em;
+line-height: 1.5;
+}
+</style>
+
+<script>
+    // Assumption: the input list contains: <cat_short_name>;<cat_display_name> or <cat_short_name>:<var_name>, where <cat_display_name> contains no ":", and <var_name> contains no ";".
+    $.widget( "custom.catcomplete", $.ui.autocomplete, {
+        _create: function() {
+            this._super();
+            this.widget().menu( "option", "items", "> :not(.ui-autocomplete-category)" );
+        },
+        _renderMenu: function( ul, items ) {
+            var that = this;
+            var currentCategory = "";
+            var category = "";
+            var dispCatMap = new Map();
+            $.each( items, function( index, item ) {
+                //console.log("in renderMenu: item: ", item);
+                var label = item.label;
+                var char_index = label.indexOf(";");
+                if (char_index > -1) {
+                    var shortName = label.slice(0, char_index);
+                    var displName = label.slice(char_index + 1);
+                    //console.log("Setting category name '" + shortName + "' to '" + displName + "'");
+                    dispCatMap.set(shortName, displName);
+                }
+            });
+            $.each( items, function( index, item ) {
+                var li;
+                // Each item from an original array of strings was converted to an object { label: "val1", value: "val1" }.
+                //console.log("item: ", item);
+                var label = item.label;
+                var char_index = label.indexOf(":");
+                if (char_index > -1) {
+                    category = label.slice(0, char_index);
+                    item.label = label.slice(char_index + 1);
+                }
+                if ( category != currentCategory ) {
+                    //console.log("category changed from " + currentCategory + " to: " + category);
+                    var displayed_cat_name = category;
+                    if (dispCatMap.has(category)) {
+                        displayed_cat_name = dispCatMap.get(category);
+                    }
+                    ul.append( "<li class='ui-autocomplete-category'>" + displayed_cat_name + "</li>" );
+                    currentCategory = category;
+                }
+                // Used to be: Display only the items containing ":".
+                // Don't display the items containing ";".
+                if (label.indexOf(";") <= 0) {
+                    li = that._renderItemData( ul, item );
+                }
+            });
+        }
+    });
+</script>
+
 
 <script language="javascript">
     // submit metadata entry to server
@@ -281,6 +342,7 @@
         fields = response;
         for (var i = 0; i < fields.length; i++) {
             var elem = $("<option></option>");
+            elem.attr("data-description", fields[i].json.description);
             elem.attr("data-type", fields[i].json.type);
             elem.attr("data-id", fields[i].id);
             elem.attr("value", fields[i].json.uri);
@@ -350,6 +412,7 @@
                 // create html form
                 var field_label = $(elem).text();
                 var field_id = $(elem).val();
+                var field_description = $(elem).data("description");
                 var field_type = $(elem).data("type");
                 var space_id = $(elem).attr("space_id");
                 var field_value =$("#" + md_id + " span").text();
@@ -365,7 +428,7 @@
                      "wkt": "add_metadata_wktlocation"
                     };
                 var modalTemplate = Handlebars.getTemplate("@routes.Assets.at("templates/metadata/")" + template_map[field_type]);
-                var html = modalTemplate({'field_label': field_label, 'field_id': field_id, 'field_type': field_type, 'entry_id': md_id, 'field_value':field_value});
+                var html = modalTemplate({'field_label': field_label, 'field_description': field_description,'field_id': field_id, 'field_type': field_type, 'entry_id': md_id, 'field_value':field_value});
             
                 $('#@id  #selected_field').html(html + footerHtml);
                 // register submit listener
@@ -497,7 +560,7 @@
                     request.done(function (response, textStatus, jqXHR) {
                         var vocabulary = JSON.parse(response);
                         // modalTemplate was assigned above using the map.
-                        var html = modalTemplate({'field_label': field_label, 'field_id': field_id, 'field_type': field_type,
+                        var html = modalTemplate({'field_label': field_label, 'field_description': field_description, 'field_id': field_id, 'field_type': field_type,
                             'options': vocabulary});
                         $("#@id  #selected_field").html(html + footerHtml);
                         // chosen pulldown configuration

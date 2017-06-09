@@ -4,16 +4,58 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/) 
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
-## Unreleased
-
+## [Unreleased]
 ### Added
-- Docker container to add normal/admin users for Clowder. [BD-1167](https://opensource.ncsa.illinois.edu/jira/browse/BD-1167)
-- ORCID/other ID expansion - uses SEAD's PDT service to expand user ids entered as creator/contact metadata so they show as a name, link to profile, and email(if available)[SEAD-1126] (https://opensource.ncsa.illinois.edu/jira/browse/SEAD-1126) 
-- Can add a list of creators to a Dataset and publication request(Staging Area plugin). This addition also supports type-in support for adding a creator by name, email, or ID, and adjusts the layout/labeling of the owner(was creator) field, and creator and descirption fields. [SEAD-1071, SEAD-610] (https://opensource.ncsa.illinois.edu/jira/browse/SEAD-1071) 
+- Only show spaces, collections and datasets that are shared with other users under 'explore' tab. 
+  In application.conf, this is set by the showOnlySharedInExplore whose default value is false. 
+- Ability to download Collection. Download Collection and Dataset both use BagIt by default. [CATS-571] (https://opensource.ncsa.illinois.edu/jira/browse/CATS-571)
+- Ability to mention other users using '@' in a comment on a file or dataset. Mentioned users will receive a notification email 
+  and a notice in their event feed. [SEAD-781](https://opensource.ncsa.illinois.edu/jira/browse/SEAD-781)
+- Description field to metadata definition. [SEAD-1101](https://opensource.ncsa.illinois.edu/jira/browse/SEAD-1101)
 
 ### Changed
-- Updated the POST endpoint `/api/extractors` to accept a list of extractor repositories (git, docker, svn, etc) instead of only one. [BD-1253](https://opensource.ncsa.illinois.edu/jira/browse/BD-1253)
-- Changed default labels in Staging Area plugin, e.g. "Curation Objects" to "Publication Requests" and make them configurable [SEAD-1131] (https://opensource.ncsa.illinois.edu/jira/browse/SEAD-1131)
+- Ability to search datapoints, averages and trends using a start and end time.
+- Ability to change how many items are displayed on the listing pages. [SEAD-1149](https://opensource.ncsa.illinois.edu/jira/browse/SEAD-1149)
+- When downloading datasets there is no folder with the id for each file. [SEAD-1038](https://opensource.ncsa.illinois.edu/jira/browse/SEAD-1038)
+- Datasets can be copied with Download Files and View Dataset permissions instead of just the owner. [SEAD-1162](https://opensource.ncsa.illinois.edu/jira/browse/SEAD-1162)
+- Selections can now be downloaded, tagged or deleted directly from the top menu bar through the new action dropdown.
+- Can assign any GeoJSON geometry to Geostreams entities in the PostGIS database, not just lat/long coordinates. [CATS-643](https://opensource.ncsa.illinois.edu/jira/browse/CATS-643)
+- Attributes filter on datapoint GET endpoint can now include ':' to restrict to datapoints that match a specific value in their attributes. [CATS-762](https://opensource.ncsa.illinois.edu/jira/browse/CATS-762)
+
+### Fixed
+- Binning on geostreaming api for hour and minutes. [GEOD-886](https://opensource.ncsa.illinois.edu/jira/browse/GEOD-886)
+- Returning the last average when semi is not selected and there is no binning by season.
+- Removing space id from collections and datasets when the space is deleted. [CATS-752](https://opensource.ncsa.illinois.edu/jira/browse/CATS-752)
+- Miscelaneous bug fixes.
+- Copy of dataset. When a dataset is copied, the newly created dataset will have the system generated metadata, previews, and thumbnails for the dataset and the files.[CATS-729](https://opensource.ncsa.illinois.edu/jira/browse/CATS-729) 
+- Return 409 Conflict when submitting file for manual extraction and file is not "PROCESSED". 
+  [CATS-754](https://opensource.ncsa.illinois.edu/jira/browse/CATS-754)
+- Listing of files in dataset breaks when user permissions in a space are set to View. 
+  [CATS-767](https://opensource.ncsa.illinois.edu/jira/browse/CATS-767)
+
+## 1.2.0  - 2017-03-24 
+
+### Added
+- Docker container to add normal/admin users for Clowder. [BD-1167](https://opensource.ncsa.illinois.edu/jira/browse/BD-1167) 
+- ORCID/other ID expansion - uses SEAD's PDT service to expand user ids entered as creator/contact metadata so they show 
+  as a name, link to profile, and email(if available)[SEAD-1126](https://opensource.ncsa.illinois.edu/jira/browse/SEAD-1126) 
+- Can add a list of creators to a Dataset and publication request(Staging Area plugin). This addition also supports 
+  type-in support for adding a creator by name, email, or ID, and adjusts the layout/labeling of the owner(was creator) 
+  field, and creator and descirption fields. [SEAD-1071](https://opensource.ncsa.illinois.edu/jira/browse/SEAD-1071), 
+  [SEAD-610](https://opensource.ncsa.illinois.edu/jira/browse/SEAD-610) 
+
+### Changed
+- Clowder now requires Java 8.
+- Updated the POST endpoint `/api/extractors` to accept a list of extractor repositories (git, docker, svn, etc) instead 
+  of only one. [BD-1253](https://opensource.ncsa.illinois.edu/jira/browse/BD-1253)
+- Changed default labels in Staging Area plugin, e.g. "Curation Objects" to "Publication Requests" and make them configurable. 
+  [SEAD-1131](https://opensource.ncsa.illinois.edu/jira/browse/SEAD-1131)
+- Updated docker compose repositories from ncsa/* to clowder/*. [CATS-734](https://opensource.ncsa.illinois.edu/jira/browse/CATS-734])
+- Improved handling of special characters and long descriptions for datasets and Staging Area publication requests [SEAD-1143](https://opensource.ncsa.illinois.edu/jira/browse/SEAD-1143), [CAT-692](https://opensource.ncsa.illinois.edu/jira/browse/CATS-692)
+- Default for clowder.diskStorage.path changed from /tmp/clowder to /home/clowder/data [CATS-748](https://opensource.ncsa.illinois.edu/jira/browse/SEAD-1143)
+
+### Fixed
+- Fixed email newsfeed template for new events, so that instances with malfunctioning email digest subscriptions can correctly generate digest emails. [SEAD-1108](https://opensource.ncsa.illinois.edu/jira/browse/SEAD-1108)
 
 
 ## 1.1.0
@@ -26,7 +68,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Moved additional entries to conf/messages.xxx for internationalization and customization of labels by instance.
 - *(Experimental)* Support for geostreams datapoints with parameters values organized by type.
   [GLM-54](https://opensource.ncsa.illinois.edu/jira/browse/GLM-54)
-- Extraction messages are now sent with the RabbitMQ persistent flag turned on. [CATS-714](https://opensource.ncsa.illinois.edu/jira/browse/CATS-714)
+- Extraction messages are now sent with the RabbitMQ persistent flag turned on. 
+  [CATS-714](https://opensource.ncsa.illinois.edu/jira/browse/CATS-714)
 - Pagination to listing of curation objects.
 - Pagination to listing of public datasets.
 
