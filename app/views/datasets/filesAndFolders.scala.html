@@ -20,8 +20,8 @@ $(document).ready(function() {
   $(".js-sort-single").on('select2:select', function (evt) {   
   $.cookie('sort-order', $(".js-sort-single").val(), { path: '/' }); 
   @currentFolder match {
-        case None => { updatePageAndFolder(@filepage,'', $(".js-sort-single").val()); console.log("UpdatePageNone Called"); }
-        case Some(s) => { updatePageAndFolder(@filepage,'@s', $(".js-sort-single").val()); console.log("UpdatePageSome Called");}
+        case None => { updatePageAndFolder(@filepage,'', $(".js-sort-single").val());}
+        case Some(s) => { updatePageAndFolder(@filepage,'@s', $(".js-sort-single").val());}
     }
 	});
 });
