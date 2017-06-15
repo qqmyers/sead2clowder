@@ -18,8 +18,8 @@
     <ol class="breadcrumb">
         @(owner, ownerName) match {
             case (Some(o), Some(n)) => {
-        	@if(dataset.isPublic) {
-                  <li> <span class="glyphicon glyphicon-user"></span> <a href="@routes.Profile.viewProfileUUID(UUID(o))"> @n</a></li>
+        	    @if(dataset.isPublic) {
+                     <li> <span class="glyphicon glyphicon-user"></span> <a href="@routes.Profile.viewProfileUUID(UUID(o))"> @n</a></li>
 		} else {
                   <li> <span class="glyphicon glyphicon-user"></span> <a href="#"> Home</a></li>
 		}
