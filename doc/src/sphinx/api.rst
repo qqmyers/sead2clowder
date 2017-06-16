@@ -117,3 +117,12 @@ on the command prompt. If you are on windows, you can download a build at http:/
 If you want a more rich GUI experience most web browsers have extensions that can be used instead.
 For example for Chrome you can try
 `cREST client <https://chrome.google.com/webstore/detail/dev-http-client/aejoelaoggembcahagimdiliamlcdmfm>`_.
+
+pyClowder2 API wrapper in Python
+--------------------------------
+
+If you are writing Python scripts or extractors against the Clowder API, the `pyClowder2 library <https://opensource.ncsa.illinois.edu/bitbucket/projects/CATS/repos/pyclowder2/browse>`_ provides some of the
+API functionality with simplified wrapper functions. After using ``python setup.py install`` to install the library,
+you can use it to get and post data to Clowder.
+
+For details about pyClowder2 functions and how they can be used, please see the `library documentation <https://opensource.ncsa.illinois.edu/bitbucket/projects/CATS/repos/pyclowder2/browse/docs>`_.

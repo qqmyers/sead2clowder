@@ -26,6 +26,7 @@ User's Guide
 
     overview
     installation
+    interface
     license
     thankyou
 
