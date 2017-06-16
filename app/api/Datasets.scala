@@ -600,7 +600,7 @@ class  Datasets @Inject()(
         //send RabbitMQ message
         current.plugin[RabbitmqPlugin].foreach { p =>
           val dtkey = s"${p.exchange}.metadata.added"
-          p.extract(ExtractorMessage(UUID(""), UUID(""), controllers.Utils.baseUrl(request), dtkey, mdMap, "", metadata.attachedTo.id, ""))
+          p.extract(ExtractorMessage(UUID(""), UUID(""), controllers.Utils.baseEventUrl(request), dtkey, mdMap, "", metadata.attachedTo.id, ""))
         }
 
 
@@ -660,7 +660,7 @@ class  Datasets @Inject()(
                     //send RabbitMQ message
                     current.plugin[RabbitmqPlugin].foreach { p =>
                       val dtkey = s"${p.exchange}.metadata.added"
-                      p.extract(ExtractorMessage(UUID(""), UUID(""), controllers.Utils.baseUrl(request), dtkey, mdMap, "", metadata.attachedTo.id, ""))
+                      p.extract(ExtractorMessage(UUID(""), UUID(""), controllers.Utils.baseEventUrl(request), dtkey, mdMap, "", metadata.attachedTo.id, ""))
                     }
 
                     datasets.index(id)

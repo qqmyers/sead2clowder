@@ -286,7 +286,7 @@ class Files @Inject()(
             //send RabbitMQ message
             current.plugin[RabbitmqPlugin].foreach { p =>
               val dtkey = s"${p.exchange}.metadata.added"
-              p.extract(ExtractorMessage(metadata.attachedTo.id, UUID(""), controllers.Utils.baseUrl(request), dtkey, mdMap, "", UUID(""), ""))
+              p.extract(ExtractorMessage(metadata.attachedTo.id, UUID(""), controllers.Utils.baseEventUrl(request), dtkey, mdMap, "", UUID(""), ""))
             }
 
             files.index(id)
@@ -353,7 +353,7 @@ class Files @Inject()(
                   //send RabbitMQ message
                   current.plugin[RabbitmqPlugin].foreach { p =>
                     val dtkey = s"${p.exchange}.metadata.added"
-                    p.extract(ExtractorMessage(metadata.attachedTo.id, UUID(""), controllers.Utils.baseUrl(request), dtkey, mdMap, "", UUID(""), ""))
+                    p.extract(ExtractorMessage(metadata.attachedTo.id, UUID(""), controllers.Utils.baseEventUrl(request), dtkey, mdMap, "", UUID(""), ""))
                   }
                   
                   files.index(id)
@@ -525,7 +525,7 @@ class Files @Inject()(
 
         val key = "unknown." + "file." + fileType.replace("__", ".")
 
-        val host = Utils.baseUrl(request)
+        val host = Utils.baseEventUrl(request)
         val extra = Map("filename" -> theFile.filename)
 
         // TODO replace null with None
@@ -1378,7 +1378,7 @@ class Files @Inject()(
           events.addObjectEvent(request.user, file.id, file.filename, "delete_file")
           // notify rabbitmq
           current.plugin[RabbitmqPlugin].foreach { p =>
-            val clowderurl = Utils.baseUrl(request)
+            val clowderurl = Utils.baseEventUrl(request)
             datasets.findByFileId(file.id).foreach{ds =>
               val dtkey = s"${p.exchange}.dataset.file.removed"
               p.extract(ExtractorMessage(file.id, file.id, clowderurl, dtkey, Map.empty, file.length.toString, ds.id, ""))

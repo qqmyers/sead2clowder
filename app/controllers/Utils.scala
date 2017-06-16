@@ -3,13 +3,27 @@ package controllers
 import java.net.URL
 import models._
 import play.api.data.format.Formatter
-import play.api.data.{Mapping, Forms, FormError}
-import play.api.mvc.{RequestHeader, Request}
+import play.api.data.{ Mapping, Forms, FormError }
+import play.api.mvc.{ RequestHeader, Request }
 import org.apache.commons.lang.StringEscapeUtils
 
 import scala.collection.mutable.ListBuffer
 
 object Utils {
+
+  /**
+   * Return a container-based URL consistent with standard docker-compose.yml so that extractors running with clowder can reach it
+   *
+   */
+  def baseEventUrl(request: Request[Any]) = {
+	val containerName = play.Play.application().configuration().getString("clowderContainerNameForExtractors")
+    if ((containerName != null) &&(containerName.length()>0)) {
+      "http://" + containerName + ":9000"
+    } else {
+      baseUrl(request)
+    }
+  }
+
   /**
    * Return base url given a request. This will add http or https to the front, for example
    * https://localhost:9443 will be returned if it is using https.
@@ -19,8 +33,8 @@ object Utils {
   }
 
   /**
-    * Returns true if protocol is https
-    */
+   * Returns true if protocol is https
+   */
   def https(request: RequestHeader): Boolean = {
     request.headers.get("x-forwarded-proto") match {
       case Some(p) => (p == "https")
@@ -40,7 +54,7 @@ object Utils {
    * description
    *
    */
-  def decodeDatasetElements(dataset: Dataset) : Dataset = {
+  def decodeDatasetElements(dataset: Dataset): Dataset = {
     val updatedName = updateEncodedTextNewlines(dataset.name)
     val updatedDesc = updateEncodedTextNewlines(dataset.description)
     dataset.copy(name = updatedName, description = updatedDesc)
@@ -52,7 +66,7 @@ object Utils {
     space.copy(name = decodedName, description = decodedDesc)
   }
 
-  def decodeVocabularyTermElements(vocabularyTerm : VocabularyTerm) = {
+  def decodeVocabularyTermElements(vocabularyTerm: VocabularyTerm) = {
     val decodedKey = StringEscapeUtils.unescapeHtml(vocabularyTerm.key)
     val decodedDefaultValue = StringEscapeUtils.unescapeHtml(vocabularyTerm.default_value)
     val decodedUnits = StringEscapeUtils.unescapeHtml(vocabularyTerm.units)
@@ -60,8 +74,8 @@ object Utils {
     vocabularyTerm.copy(key = decodedKey, default_value = decodedDefaultValue)
   }
 
-  def decodeString(string : String) : String ={
-    val decodedString = StringEscapeUtils.unescapeHtml(string).replace("\n"," ")
+  def decodeString(string: String): String = {
+    val decodedString = StringEscapeUtils.unescapeHtml(string).replace("\n", " ")
 
     return decodedString
   }
@@ -106,17 +120,17 @@ object Utils {
   /**
    * Utility method to modify the elements in a collection that are encoded when submitted and stored. These elements
    * are decoded when a view requests the objects, so that they can be human readable.
-   * 
+   *
    * Currently, the following collection elements are encoded:
-   * 
+   *
    * name
    * description
-   *  
+   *
    */
-  def decodeCollectionElements(collection: Collection) : Collection  = {
-      val updatedName = updateEncodedTextNewlines(collection.name)
-      val updatedDesc = updateEncodedTextNewlines(collection.description)
-      collection.copy(name = updatedName, description = updatedDesc)
+  def decodeCollectionElements(collection: Collection): Collection = {
+    val updatedName = updateEncodedTextNewlines(collection.name)
+    val updatedDesc = updateEncodedTextNewlines(collection.description)
+    collection.copy(name = updatedName, description = updatedDesc)
   }
 
   /**
@@ -143,7 +157,7 @@ object Utils {
    * @param comment The comment to be HTML decoded
    * @return A copy of the original comment, with the specified elements decoded
    */
-  def decodeCommentElements(comment: Comment) : Comment = {
+  def decodeCommentElements(comment: Comment): Comment = {
     val updatedText = updateEncodedTextNewlines(comment.text)
     comment.copy(text = updatedText, replies = decodeCommentReplies(comment))
   }
@@ -159,8 +173,7 @@ object Utils {
     var decodedReplies = ListBuffer.empty[Comment]
     if (comment.replies.isEmpty) {
       decodedReplies.toList
-    }
-    else {
+    } else {
       for (aReply <- comment.replies) {
         decodedReplies += decodeCommentElements(aReply)
       }

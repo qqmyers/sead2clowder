@@ -101,7 +101,7 @@ object FileUtils {
     val creator = UserAgent(id = UUID.generate(), user = user, userId = Some(new URL(creator_url)))
 
     // Extract path information from requests for later
-    val clowderurl = Utils.baseUrl(request)
+    val clowderurl = Utils.baseEventUrl(request)
     val clientIP = request.remoteAddress
     val serverIP = request.host
 
@@ -300,7 +300,7 @@ object FileUtils {
     val creator = UserAgent(id = UUID.generate(), user=user.getMiniUser, userId = Some(new URL(creator_url)))
 
     // Extract path information from requests for later
-    val clowderurl = Utils.baseUrl(request)
+    val clowderurl = Utils.baseEventUrl(request)
     val clientIP = request.remoteAddress
     val serverIP = request.host
 

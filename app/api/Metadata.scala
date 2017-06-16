@@ -340,7 +340,7 @@ class Metadata @Inject() (
                         //send RabbitMQ message
                         current.plugin[RabbitmqPlugin].foreach { p =>
                           val dtkey = s"${p.exchange}.metadata.added"
-                          p.extract(ExtractorMessage(UUID(""), UUID(""), controllers.Utils.baseUrl(request),
+                          p.extract(ExtractorMessage(UUID(""), UUID(""), controllers.Utils.baseEventUrl(request),
                             dtkey, mdMap, "", metadata.attachedTo.id, ""))
                         }
                       }
@@ -349,7 +349,7 @@ class Metadata @Inject() (
                         //send RabbitMQ message
                         current.plugin[RabbitmqPlugin].foreach { p =>
                           val dtkey = s"${p.exchange}.metadata.added"
-                          p.extract(ExtractorMessage(metadata.attachedTo.id, UUID(""), controllers.Utils.baseUrl(request),
+                          p.extract(ExtractorMessage(metadata.attachedTo.id, UUID(""), controllers.Utils.baseEventUrl(request),
                             dtkey, mdMap, "", UUID(""), ""))
                         }
                       }
@@ -384,7 +384,7 @@ class Metadata @Inject() (
                         //send RabbitMQ message
                         current.plugin[RabbitmqPlugin].foreach { p =>
                           val dtkey = s"${p.exchange}.metadata.added"
-                          p.extract(ExtractorMessage(UUID(""), UUID(""), controllers.Utils.baseUrl(request),
+                          p.extract(ExtractorMessage(UUID(""), UUID(""), controllers.Utils.baseEventUrl(request),
                             dtkey, mdMap, "", attachedTo.get.id, ""))
                         }
                       }
@@ -393,7 +393,7 @@ class Metadata @Inject() (
                         //send RabbitMQ message
                         current.plugin[RabbitmqPlugin].foreach { p =>
                           val dtkey = s"${p.exchange}.metadata.added"
-                          p.extract(ExtractorMessage(attachedTo.get.id, UUID(""), controllers.Utils.baseUrl(request),
+                          p.extract(ExtractorMessage(attachedTo.get.id, UUID(""), controllers.Utils.baseEventUrl(request),
                             dtkey, mdMap, "", UUID(""), ""))
                         }
                       }

@@ -174,7 +174,7 @@ class CurationObjects @Inject()(
                       //send RabbitMQ message
                       current.plugin[RabbitmqPlugin].foreach { p =>
                         val dtkey = s"${p.exchange}.metadata.added"
-                        p.extract(ExtractorMessage(cf.id, UUID(""), controllers.Utils.baseUrl(request), dtkey, mdMap, "", UUID(""), ""))
+                        p.extract(ExtractorMessage(cf.id, UUID(""), controllers.Utils.baseEventUrl(request), dtkey, mdMap, "", UUID(""), ""))
                       }
                     })
                   }
@@ -211,7 +211,7 @@ class CurationObjects @Inject()(
                     //send RabbitMQ message
                     current.plugin[RabbitmqPlugin].foreach { p =>
                       val dtkey = s"${p.exchange}.metadata.added"
-                      p.extract(ExtractorMessage(newCuration.id, UUID(""), controllers.Utils.baseUrl(request), dtkey, mdMap, "", UUID(""), ""))
+                      p.extract(ExtractorMessage(newCuration.id, UUID(""), controllers.Utils.baseEventUrl(request), dtkey, mdMap, "", UUID(""), ""))
                     }
                   }
                 })

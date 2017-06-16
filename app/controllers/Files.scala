@@ -446,7 +446,7 @@ class Files @Inject() (
                 // TODO RK need to replace unknown with the server name
                 val key = "unknown." + "file." + fileType.replace(".", "_").replace("/", ".")
 
-                val host = Utils.baseUrl(request)
+                val host = Utils.baseEventUrl(request)
                 val id = f.id
                 val extra = Map("filename" -> f.filename)
                 current.plugin[RabbitmqPlugin].foreach {
@@ -931,7 +931,7 @@ class Files @Inject() (
             //key needs to contain 'query' when uploading a query
             //since the thumbnail extractor during processing will need to upload to correct mongo collection.
             val key = "unknown." + "query." + fileType.replace("/", ".")
-            val host = Utils.baseUrl(request)
+            val host = Utils.baseEventUrl(request)
             val id = f.id
 
             // TODO replace null with None
@@ -1017,7 +1017,7 @@ class Files @Inject() (
             // TODO RK need to replace unknown with the server name
             val key = "unknown." + "file." + fileType.replace(".", "_").replace("/", ".")
 
-            val host = Utils.baseUrl(request)
+            val host = Utils.baseEventUrl(request)
             val id = f.id
             val extra = Map("filename" -> f.filename, "action" -> "upload")
 
@@ -1118,7 +1118,7 @@ class Files @Inject() (
                     // TODO RK need to replace unknown with the server name
                     val key = "unknown." + "file." + fileType.replace(".", "_").replace("/", ".")
 
-                    val host = Utils.baseUrl(request)
+                    val host = Utils.baseEventUrl(request)
                     val id = f.id
 
                     /** *** Inserting DTS Requests   **/
