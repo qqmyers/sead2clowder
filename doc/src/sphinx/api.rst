@@ -125,4 +125,14 @@ If you are writing Python scripts or extractors against the Clowder API, the `py
 API functionality with simplified wrapper functions. After using ``python setup.py install`` to install the library,
 you can use it to get and post data to Clowder.
 
+**When to use**
+
+pyClowder 2 provides straightforward submodules for various Clowder API endpoints. Python scripts that interact with
+Clowder can usually be simplified by replacing custom implementations with calls to the appropriate pyClowder 2 methods.
+
+- **files** (e.g. upload/download/get metadata/update/submit for extraction)
+- **datasets** (e.g. create/download/get metadata & contents/submit for extraction)
+- **collections** (e.g. create/get datasets)
+- Additional functionality (geostreams) in development.
+
 For details about pyClowder2 functions and how they can be used, please see the `library documentation <https://opensource.ncsa.illinois.edu/bitbucket/projects/CATS/repos/pyclowder2/browse/docs>`_.
