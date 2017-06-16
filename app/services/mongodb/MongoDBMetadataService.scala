@@ -31,27 +31,26 @@ import api.{ UserRequest, Permission }
 @Singleton
 class MongoDBMetadataService @Inject() (contextService: ContextLDService, datasets: DatasetService, files: FileService, folders: FolderService, curations: CurationService) extends MetadataService {
 
-	  /**
-	   * Add metadata to the metadata collection and attach to a section /file/dataset/collection
-	   */
-	  def addMetadata(metadata: Metadata): UUID = {
-	    // TODO: Update context
-	    val mid = MetadataDAO.insert(metadata, WriteConcern.Safe)
-	    current.plugin[MongoSalatPlugin] match {
-	      case None => throw new RuntimeException("No MongoSalatPlugin")
-	      case Some(x) => x.collection(metadata.attachedTo) match {
-	        case Some(c) => {
-	          c.update(MongoDBObject("_id" -> new ObjectId(metadata.attachedTo.id.stringify)), $inc("metadataCount" -> +1))
-	        }
-	        case None => {
-	          Logger.error(s"Could not increase counter for ${metadata.attachedTo}")
-	        }
-	      }
-	    }
-	    UUID(mid.get.toString())
-	  }
+  /**
+   * Add metadata to the metadata collection and attach to a section /file/dataset/collection
+   */
+  def addMetadata(metadata: Metadata): UUID = {
+    // TODO: Update context
+    val mid = MetadataDAO.insert(metadata, WriteConcern.Safe)
+    current.plugin[MongoSalatPlugin] match {
+      case None => throw new RuntimeException("No MongoSalatPlugin")
+      case Some(x) => x.collection(metadata.attachedTo) match {
+        case Some(c) => {
+          c.update(MongoDBObject("_id" -> new ObjectId(metadata.attachedTo.id.stringify)), $inc("metadataCount" -> +1))
+        }
+        case None => {
+          Logger.error(s"Could not increase counter for ${metadata.attachedTo}")
+        }
+      }
+    }
+    UUID(mid.get.toString())
+  }
 
-	  
   /** Add metadata to the metadata collection and attach to a section /file/dataset/collection */
   def addMetadata(content_ld: JsValue, context: JsValue, attachedTo: ResourceRef, createdAt: Date, creator: Agent, spaceId: Option[UUID]): JsObject = {
     //Update metadata summary doc attached to the right item, update history list with new MetadataEntry(ies)
@@ -104,8 +103,8 @@ class MongoDBMetadataService @Inject() (contextService: ContextLDService, datase
         //Now create an entry and add it to the list
         Logger.info(uri + " : " + (excontent.apply(0).as[JsObject] \ uri).toString()) // + (x \ y \\ "@value").as[String]) }}
         val valueToStore = excontent.apply(0).as[JsObject] \ uri match {
-          case s:JsString => s.as[String] //String without quotes
-          case v:JsValue => v.toString()  //string representation of object/array/etc.
+          case s: JsString => s.as[String] //String without quotes
+          case v: JsValue => v.toString() //string representation of object/array/etc.
         }
         val me = MetadataEntry(UUID.generate(), uri, valueToStore, Json.toJson(creator).as[JsObject].toString(), MDAction.Added.toString(), None, createdAt)
         Logger.info("ME: " + me.toString())
@@ -252,40 +251,39 @@ class MongoDBMetadataService @Inject() (contextService: ContextLDService, datase
     }
 
   }
-	  
-	  /** Remove metadata, if this metadata does not exist, nothing is executed. Return removed metadata */
-	  def removeMetadataById(id: UUID) = {
-	    getMetadataById(id) match {
-	      case Some(md) => {
-	        md.contextId.foreach { cid =>
-	          if (getMetadataBycontextId(cid).length == 1) {
-	            contextService.removeContext(cid)
-	          }
-	        }
-	        MetadataDAO.remove(md, WriteConcern.Safe)
 
-	        // send extractor message after removed from resource
-	        val mdMap = Map("metadata" -> md.content,
-	          "resourceType" -> md.attachedTo.resourceType.name,
-	          "resourceId" -> md.attachedTo.id.toString)
+  /** Remove metadata, if this metadata does not exist, nothing is executed. Return removed metadata */
+  def removeMetadataById(id: UUID) = {
+    getMetadataById(id) match {
+      case Some(md) => {
+        md.contextId.foreach { cid =>
+          if (getMetadataBycontextId(cid).length == 1) {
+            contextService.removeContext(cid)
+          }
+        }
+        MetadataDAO.remove(md, WriteConcern.Safe)
 
-	        //update metadata count for resource
-	        current.plugin[MongoSalatPlugin] match {
-	          case None => throw new RuntimeException("No MongoSalatPlugin")
-	          case Some(x) => x.collection(md.attachedTo) match {
-	            case Some(c) => {
-	              c.update(MongoDBObject("_id" -> new ObjectId(md.attachedTo.id.stringify)), $inc("metadataCount" -> -1))
-	            }
-	            case None => {
-	              Logger.error(s"Could not decrease counter for ${md.attachedTo}")
-	            }
-	          }
-	        }
-	      }
-	      case None => Logger.debug("No metadata found to remove with UUID "+id.toString)
-	    }
-	  }
+        // send extractor message after removed from resource
+        val mdMap = Map("metadata" -> md.content,
+          "resourceType" -> md.attachedTo.resourceType.name,
+          "resourceId" -> md.attachedTo.id.toString)
 
+        //update metadata count for resource
+        current.plugin[MongoSalatPlugin] match {
+          case None => throw new RuntimeException("No MongoSalatPlugin")
+          case Some(x) => x.collection(md.attachedTo) match {
+            case Some(c) => {
+              c.update(MongoDBObject("_id" -> new ObjectId(md.attachedTo.id.stringify)), $inc("metadataCount" -> -1))
+            }
+            case None => {
+              Logger.error(s"Could not decrease counter for ${md.attachedTo}")
+            }
+          }
+        }
+      }
+      case None => Logger.debug("No metadata found to remove with UUID " + id.toString)
+    }
+  }
 
   /** Remove metadata, if this metadata does not exist, nothing is executed. Return removed metadata */
   def removeMetadata(attachedTo: ResourceRef, term: String, itemId: String, deletedAt: Date, deletor: Agent, spaceId: Option[UUID]) = {
@@ -431,47 +429,72 @@ class MongoDBMetadataService @Inject() (contextService: ContextLDService, datase
         var metadataEntryList = scala.collection.mutable.ListBuffer.empty[MetadataEntry]
         var metadataEntryPreds = Set.empty[String]
 
+        //FixMe - skip existing extractor entries
+
         getMetadataByAttachTo(resourceRef).map {
           item =>
             {
-              val ldItem = JSONLD.jsonMetadataWithContext(item)
-              val json = JsonUtils.fromInputStream(new java.io.ByteArrayInputStream(Json.stringify(ldItem).getBytes("UTF-8")))
-              val ctxt = new Context().parse(json.asInstanceOf[LinkedHashMap[String, Object]].getOrDefault("@context", ""))
-              Logger.debug("Context" + ctxt.getPrefixes(false).toString())
-              val prefixes = ctxt.getPrefixes(false)
-              val entryIter = prefixes.entrySet().iterator()
+              item.creator.typeOfAgent match {
+                case "cat:user" => {
+                  val ldItem = JSONLD.jsonMetadataWithContext(item)
+                  val json = JsonUtils.fromInputStream(new java.io.ByteArrayInputStream(Json.stringify(ldItem).getBytes("UTF-8")))
+                  val ctxt = new Context().parse(json.asInstanceOf[LinkedHashMap[String, Object]].getOrDefault("@context", ""))
+                  Logger.debug("Context" + ctxt.getPrefixes(false).toString())
+                  val prefixes = ctxt.getPrefixes(false)
+                  val entryIter = prefixes.entrySet().iterator()
 
-              while (entryIter.hasNext()) {
-                val entry = entryIter.next()
-                metadataDefsMap(entry.getValue()) = entry.getKey()
-              }
-              Logger.debug("json: " + json.toString())
-              val fullItem = Json.parse(JsonUtils.toString(JsonLdProcessor.compact(JsonLdProcessor.expand(json), null, new JsonLdOptions())))
-              var excontent = fullItem \\ "https://clowder.ncsa.illinois.edu/metadata#content"
-              if (excontent.size == 0) {
-                //Kludge - some entries may not have a valid jsonld context mapping the content to the term above. In this case, we can just parse the json 
-                for ((label, value) <- JSONLD.buildMetadataMap(item.content)) {
+                  while (entryIter.hasNext()) {
+                    val entry = entryIter.next()
+                    metadataDefsMap(entry.getValue()) = entry.getKey()
+                  }
+                  Logger.debug("json: " + json.toString())
+                  val fullItem = Json.parse(JsonUtils.toString(JsonLdProcessor.compact(JsonLdProcessor.expand(json), null, new JsonLdOptions())))
+                  var excontent = fullItem \\ "https://clowder.ncsa.illinois.edu/metadata#content"
 
-                  metadataEntryList += MetadataEntry(item.id, prefixes.get(label), value.as[String], Json.toJson((ldItem).validate[Agent].get).toString, MDAction.Added.toString, None, new SimpleDateFormat("EEE MMM dd hh:mm:ss zzz yyyy").parse((ldItem \ "created_at").toString().replace("\"", "")))
-                  //metadataEntryList += MetadataEntry(item.id, inverseMetadataDefsMap.apply(label), value.as[String], (ldItem).validate[Agent].get, MDAction.Added.toString, new SimpleDateFormat("EEE MMM dd hh:mm:ss zzz yyyy").parse((ldItem \ "created_at").toString().replace("\"", "")))
+                  //Do a best-effort to assess whether the entry has non json-ld parts
+                  val jsonContent = JSONLD.buildMetadataMap(item.content)
+                  val parseAsJson = excontent.size match {
+                    case 0 => true
+                    case _ => {
+                      if (excontent.apply(0).as[JsObject].keys.size != jsonContent.size) {
+                        true
+                      } else {
+                        false
+                      }
+                    }
+                  }
+                  if (parseAsJson) {
+                    //Kludge - some entries may not have a valid jsonld context mapping the content to the term above. In this case, we can just parse the json 
+                    for ((label, value) <- jsonContent) {
 
-                  metadataEntryPreds += prefixes.get(label)
-                }
-                Logger.warn("Invalid JSON-LD for Metadata Entry - parsing as mixed Json/ld: " + ldItem.toString())
-              } else {
-                excontent.apply(0).as[JsObject].keys.foreach { uri =>
-                  { //Add new label defs if they don't currently exist - could reject new terms this way if desired
+                      //is prefixes(label) always defined? If not what?
+                      val prefix = prefixes.get(label) match {
+                        case null => "https://clowder.ncsa.illinois.edu/metadata/undefined#" + label
+                        case s: String => s 
+                      }
+                      metadataEntryList += MetadataEntry(item.id, prefix, value.as[String], Json.toJson((ldItem).validate[Agent].get).toString, MDAction.Added.toString, None, new SimpleDateFormat("EEE MMM dd hh:mm:ss zzz yyyy").parse((ldItem \ "created_at").toString().replace("\"", "")))
+                      metadataEntryPreds += prefix
+                    }
+                    Logger.warn("Invalid JSON-LD for Metadata Entry - parsing as mixed Json/ld: " + ldItem.toString())
+                  } else {
+                    excontent.apply(0).as[JsObject].keys.foreach { uri =>
+                      { //Add new label defs if they don't currently exist - could reject new terms this way if desired
 
-                    val label = metadataDefsMap.apply(uri)
-                    newDefs(metadataDefsMap.apply(uri)) = uri
-                    //Now create an entry and add it to the list
-                    Logger.debug(uri + " : " + (excontent.apply(0).as[JsObject] \ uri).toString()) // + (x \ y \\ "@value").as[String]) }}
-                    metadataEntryList += MetadataEntry(UUID.generate(), uri, (excontent.apply(0).as[JsObject] \ uri).as[String], Json.toJson((ldItem).validate[Agent].get).toString, MDAction.Added.toString(), None, new SimpleDateFormat("EEE MMM dd hh:mm:ss zzz yyyy").parse((ldItem \ "created_at").toString().replace("\"", "")))
-
-                    metadataEntryPreds += uri
+                        val label = metadataDefsMap.apply(uri)
+                        newDefs(metadataDefsMap.apply(uri)) = uri
+                        //Now create an entry and add it to the list
+                        Logger.debug(uri + " : " + (excontent.apply(0).as[JsObject] \ uri).toString()) // + (x \ y \\ "@value").as[String]) }}
+                        metadataEntryList += MetadataEntry(UUID.generate(), uri, (excontent.apply(0).as[JsObject] \ uri).as[String], Json.toJson((ldItem).validate[Agent].get).toString, MDAction.Added.toString(), None, new SimpleDateFormat("EEE MMM dd hh:mm:ss zzz yyyy").parse((ldItem \ "created_at").toString().replace("\"", "")))
+                        metadataEntryPreds += uri
+                      }
+                    }
                   }
                 }
+                case "cat:extractor" => {
+                  //Leave legacy extractor entries as is
+                }
               }
+
             }
         }
 
@@ -486,7 +509,7 @@ class MongoDBMetadataService @Inject() (contextService: ContextLDService, datase
 		     */
         Logger.info("Space: " + space)
         for (md <- getDefinitions(space)) {
-          
+
           metadataDefsMap((md.json \ "uri").asOpt[String].getOrElse("").toString()) = (md.json \ "label").asOpt[String].getOrElse("").toString()
 
         }
@@ -588,7 +611,7 @@ class MongoDBMetadataService @Inject() (contextService: ContextLDService, datase
     result match {
       case Some(md) => Logger.debug("Leaving existing vocabulary definition unchanged: " + definition)
       case None => {
-            MetadataDefinitionDAO.save(definition)
+        MetadataDefinitionDAO.save(definition)
       }
     }
   }
