@@ -1,3 +1,4 @@
+=======
 License
 =======
 
@@ -7,7 +8,7 @@ Please do not modify the conditions and make the license available in any deriva
 You must not use the names of the authors to promote derivatives of the software without written consent.
 
 Contributors
--------
+------------
 
 .. include:: ../../../CONTRIBUTORS.md
 
