@@ -133,6 +133,8 @@ Clowder can usually be simplified by replacing custom implementations with calls
 - **files** (e.g. upload/download/get metadata/update/submit for extraction)
 - **datasets** (e.g. create/download/get metadata & contents/submit for extraction)
 - **collections** (e.g. create/get datasets)
-- Additional functionality (geostreams) in development.
+- Additional functionality (such as support for geostreams) in development.
 
 For details about pyClowder2 functions and how they can be used, please see the `library documentation <https://opensource.ncsa.illinois.edu/bitbucket/projects/CATS/repos/pyclowder2/browse/docs>`_.
+
+pyClowder 2 is updated as relevant API endpoints in Clowder are added or changed, so by using this library your code is better insulated from breaking changes as well.
