@@ -18,21 +18,32 @@ Useful links:
 
 * Issue tracking, internal documents, continuous build and other information is available on `NCSA Opensource <https://opensource.ncsa.illinois.edu/projects/CATS>`_.
 
+************
 User's Guide
-------------
+************
 
 .. toctree::
     :maxdepth: 2
 
     overview
-    installation
     interface
-    license
-    thankyou
 
 
+*********************
+Administrator's Guide
+*********************
+
+.. toctree::
+    :maxdepth: 2
+
+    administration
+    changelog
+..    installation
+
+
+*****************
 Developer's Guide
------------------
+*****************
 
 .. toctree::
     :maxdepth: 2
@@ -44,3 +55,14 @@ Developer's Guide
     extractors
     previewers
     api
+
+
+****************
+Acknowledgements
+****************
+
+.. toctree::
+    :maxdepth: 2
+
+    license
+    thankyou
