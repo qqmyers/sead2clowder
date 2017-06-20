@@ -1,32 +1,51 @@
 Interface
 ============
 
-Once you have successfully installed Clowder, you can browse and create collections and datasets.
+Once you have successfully installed Clowder, you can browse and create spaces, collections and datasets.
 
 Publishing Data
 ---------------------------
 
-Clowder directly supports submission of datasets to known repositories for publication.
+Clowder directly supports submission of datasets to known repositories for publication. Your Clowder administrator must
+enable services.StagingAreaPlugin in order to access these services.
 
-If you would like to publish a dataset to a known repository, you can launch the Staging Area by navigating to the
+If you would like to publish a dataset to a known repository, you can start the publication process by navigating to the
 dataset and clicking the Publish button.
+
+You can also launch the Staging Area from a space page, which allows you to view, manage and retract submissions.
 
 **Create New Publication Request**
 
-On the first page you can provide a name, description and one or more creators for your publication request. Click
-Create once the required fields are populated.
+On the first page you must provide a name, description and one or more creators for your publication request. Click
+Create once the required fields are filled in.
+
+.. image:: /_static/ug_staging-1.png
 
 **Edit Metadata**
 
-Any existing metadata for the dataset will be shown on this page, but you have the opportunity to add additional metadata
-if desired. Click Select Repository once all metadata is entered.
+Any existing metadata for the dataset will be copied to the Curation Object shown on this page, but you have the opportunity
+to add or delete metadata if desired. Click Select Repository once all metadata is entered.
+
+.. image:: /_static/ug_staging-2.png
 
 **Select Repository**
 
 Depending on the dataset contents and metadata, a list of candidate repositories will be displayed that you can choose
-from. Expand "Matchmaker Details" to see an itemized list of requirements for the repository and indicators whether
+from.
+
+.. image:: /_static/ug_staging-3.png
+
+Expand "Matchmaker Details" to see an itemized list of requirements for the repository and indicators whether
 your dataset meets those requirements.
+
+.. image:: /_static/ug_staging-4.png
+.. image:: /_static/ug_staging-5.png
 
 Once you select **Submit to Repository** will have one last chance to review your information before submitting.
 
-You can use the **Explore > Published Data** link in the header menu to see a list of published datasets.
+.. image:: /_static/ug_staging-6.png
+
+After completing this process successfully, you will get a DOI from the publishing repository.
+
+You can use the **Explore > Published Data** link in the header menu or click the Staging Area button on a space page to
+see a list of published datasets. You can also resume the curation process if you stopped the process at an earlier point.

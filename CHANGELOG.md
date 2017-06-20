@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Ability to mention other users using '@' in a comment on a file or dataset. Mentioned users will receive a notification email 
   and a notice in their event feed. [SEAD-781](https://opensource.ncsa.illinois.edu/jira/browse/SEAD-781)
 - Description field to metadata definition. [SEAD-1101](https://opensource.ncsa.illinois.edu/jira/browse/SEAD-1101)
+- Improved documentation for the user interface.
 
 ### Changed
 - Ability to search datapoints, averages and trends using a start and end time.
