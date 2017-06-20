@@ -36,7 +36,7 @@ from.
 .. image:: /_static/ug_staging-3.png
 
 Expand "Matchmaker Details" to see an itemized list of requirements for the repository and indicators whether
-your dataset meets those requirements.
+your dataset meets those requirements. These requirements are checked using `Indiana's Matchmaker service <https://seadva.d2i.indiana.edu/sead-c3pr/api/researchobjects/matchingrepositories>`_.
 
 .. image:: /_static/ug_staging-4.png
 .. image:: /_static/ug_staging-5.png
