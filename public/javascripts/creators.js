@@ -1,8 +1,9 @@
 function addCreator() {
 
 	$('<div class="add_creator"> </div>').insertAfter($('#ds_creators'));
-	
-	//simple means there is no service to query for people name/email/ids and the input should be a simple text box
+
+	// simple means there is no service to query for people name/email/ids and
+	// the input should be a simple text box
 	if ($('#add-creator').hasClass("simple")) {
 		$('.add_creator')
 				.append(
@@ -22,111 +23,37 @@ function addCreator() {
 	$('#add-creator').css("display", "none");
 	$('#add-creator').addClass("hiddencomplete");
 	if (!$('#add-creator').hasClass("simple")) {
-		$("#creatorAddSelect")
-				.select2(
-						{
-							theme : "bootstrap",
-							tags : true,
-							delay : 500,
-							templateResult : function(item) {
-								// No need to template the searching text
-								if (item.loading) {
-									return item.text;
-								}
-
-								var term = query.term || '';
-								var $result = markMatch(item.text, term);
-
-								return $result;
-							},
-							language : {
-								searching : function(params) {
-									// Intercept the query as it is happening
-									query = params;
-
-									// Change this to be appropriate for your
-									// application
-									return 'Searching…';
-								}
-							},
-							placeholder : "Add a Creator",
-							allowClear : true,
-							ajax : {
-								url : function(params) {
-									var term = params.term;
-									if (!term) {
-										term = "";
-									}
-									return jsRoutes.api.Metadata.listPeople(
-											term, 25).url;
-								},
-								processResults : function(data, page) {
-									return {
-										results : data
-												.filter(
-														function(x) {
-															var names = $(
-																	'.creator')
-																	.map(
-																			function() {
-																				return $(
-																						this)
-																						.children(
-																								'.authname')
-																						.text();
-																			});
-															return $.inArray(
-																	x.name,
-																	names) == -1;
-														})
-												.map(
-														function(x) {
-															return {
-																text : x.name
-																		+ ", "
-																		+ x['@id']
-																		+ ", "
-																		+ x.email,
-																id : x['@id']
-															}
-														})
-									};
-								}
-							}
-						});
-
+		startPersonSelect("#creatorAddSelect");
 		$("#creatorAddSelect").select2('open');
 	} else {
 		$("#creatorAddSelect").focus();
 	}
+}
+function markMatch(text, term) {
+	// Find where the match is
+	var match = text.toUpperCase().indexOf(term.toUpperCase());
 
-	function markMatch(text, term) {
-		// Find where the match is
-		var match = text.toUpperCase().indexOf(term.toUpperCase());
+	var $result = $('<span></span>');
 
-		var $result = $('<span></span>');
-
-		// If there is no match, move on
-		if (match < 0) {
-			return $result.text(text);
-		}
-
-		// Put in whatever text is before the match
-		$result.text(text.substring(0, match));
-
-		// Mark the match
-		var $match = $('<span class="select2-rendered__match"></span>');
-		$match.text(text.substring(match, match + term.length));
-
-		// Append the matching text
-		$result.append($match);
-
-		// Put in whatever is after the match
-		$result.append(text.substring(match + term.length));
-
-		return $result;
+	// If there is no match, move on
+	if (match < 0) {
+		return $result.text(text);
 	}
 
+	// Put in whatever text is before the match
+	$result.text(text.substring(0, match));
+
+	// Mark the match
+	var $match = $('<span class="select2-rendered__match"></span>');
+	$match.text(text.substring(match, match + term.length));
+
+	// Append the matching text
+	$result.append($match);
+
+	// Put in whatever is after the match
+	$result.append(text.substring(match + term.length));
+
+	return $result;
 }
 
 function cancelAddCreator() {
@@ -181,6 +108,65 @@ function saveCreator() {
 	}
 }
 
+function startPersonSelect(selector, pHolder) {
+	if (pHolder ==null) {
+		pHolder="Add a Person(name, email, or id)";
+	}
+	$(selector).select2({
+		theme : "bootstrap",
+		tags : true,
+		delay : 500,
+		templateResult : function(item) {
+			// No need to template the searching text
+			if (item.loading) {
+				return item.text;
+			}
+
+			var term = query.term || '';
+			var $result = markMatch(item.text, term);
+
+			return $result;
+		},
+		language : {
+			searching : function(params) {
+				// Intercept the query as it is happening
+				query = params;
+
+				// Change this to be appropriate for your
+				// application
+				return 'Searching…';
+			}
+		},
+		placeholder : pHolder,
+		allowClear : true,
+		ajax : {
+			url : function(params) {
+				var term = params.term;
+				if (!term) {
+					term = "";
+				}
+				return jsRoutes.api.Metadata.listPeople(term, 25).url;
+			},
+			processResults : function(data, page) {
+				return {
+					results : data.filter(function(x) {
+						var names = $('.creator').map(function() {
+							return $(this).children('.authname').text();
+						});
+						return $.inArray(x.name, names) == -1;
+					}).map(function(x) {
+						return {
+							text : x.name + ", " + x['@id'] + ", " + x.email,
+							id : x['@id']
+						}
+					})
+				};
+			}
+		}
+	});
+
+
+}
 function addCreatorToList(newCreator) {
 
 	// Add new creator to the end of the list

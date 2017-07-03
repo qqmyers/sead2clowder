@@ -105,7 +105,6 @@ class Files @Inject() (
             s.copy(preview = None)
         }
 
-
         // Check if file is currently being processed by extractor(s)
         val extractorsActive = extractions.findIfBeingProcessed(file.id)
 
@@ -181,14 +180,13 @@ class Files @Inject() (
 
         // metadata
         val mds = metadata.getMetadataByAttachTo(ResourceRef(ResourceRef.file, file.id))
-                // TODO use to provide contextual definitions directly in the GUI
+        // TODO use to provide contextual definitions directly in the GUI
         val contexts = (for (
           md <- mds;
           cId <- md.contextId;
           c <- contextLDService.getContextById(cId)
         ) yield cId -> c).toMap
 
-        
         //RDF MD
 
         val spaceId: Option[models.UUID] = space match {
@@ -238,14 +236,14 @@ class Files @Inject() (
             plugin.getOutputFormats(contentTypeEnding).map(outputFormats =>
               Ok(views.html.file(file, id.stringify, commentsByFile, previewsWithPreviewer, sectionsWithPreviews,
                 extractorsActive, decodedDatasetsContaining.toList, foldersContainingFile,
-                mds, metadataSummary, extractionsByFile, outputFormats, space, access, folderHierarchy.reverse.toList, decodedSpacesContaining.toList, allDecodedDatasets.toList)))
+                mds, metadataSummary, metadata.getDefinitions(metadataSummary.contextSpace), extractionsByFile, outputFormats, space, access, folderHierarchy.reverse.toList, decodedSpacesContaining.toList, allDecodedDatasets.toList)))
           }
           case None =>
             Logger.debug("Polyglot plugin not found")
             //passing None as the last parameter (list of output formats)
             Future(Ok(views.html.file(file, id.stringify, commentsByFile, previewsWithPreviewer, sectionsWithPreviews,
               extractorsActive, decodedDatasetsContaining.toList, foldersContainingFile,
-              mds, metadataSummary, extractionsByFile, None, space, access, folderHierarchy.reverse.toList, decodedSpacesContaining.toList, allDecodedDatasets.toList)))
+              mds, metadataSummary, metadata.getDefinitions(metadataSummary.contextSpace), extractionsByFile, None, space, access, folderHierarchy.reverse.toList, decodedSpacesContaining.toList, allDecodedDatasets.toList)))
         }
       }
 

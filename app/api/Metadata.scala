@@ -459,7 +459,7 @@ val metadata = models.Metadata(UUID.generate, attachedTo.get, None, Some(new URL
             case _ => None
           }
 
-          val content = (request.body \ "content")
+          val content = (request.body \ "content_ld")
           val context = (request.body \ "@context")
 
           metadataService.updateMetadata(content, context, ResourceRef(Symbol(attachedtype), attachedid), entryId, updatedAt, updator, space) match {

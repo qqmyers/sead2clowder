@@ -1,4 +1,4 @@
-@(metadata: List[models.Metadata], rdfMetadata: models.RdfMetadata, toDelete: Boolean)(implicit user: Option[models.User])
+@(metadata: List[models.Metadata], rdfMetadata: models.RdfMetadata, mDefs:List[MetadataDefinition], toDelete: Boolean)(implicit user: Option[models.User])
     @import java.net.URL
     @import play.api.libs.json.JsString
     @import play.api.libs.json.JsObject
@@ -15,7 +15,7 @@
     }
     
     @safe(key: String) = @{
-        key.replace("/","_").replace(".","_").replace(":","_").replace(" ","_")
+        key.replace("/","_").replace(".","_").replace(":","_").replace(" ","_").replace(";","_")
     }
 
     @printContent(agent: Agent, content: JsValue, contextId: Option[UUID], contextURL: Option[URL], resourceId: UUID) = {
@@ -191,30 +191,10 @@
         }
      }
    }
-   
-    @printNewHeader(firstEvent: Boolean, agentString: String, date: java.util.Date) = {
-      @defining(Json.parse(agentString)) {agent => 
-        @defining((agent \ "@type").as[String]) {agenttype =>  
-    	  @if(agent != null) {
-    	    @if(firstEvent) {
 
-    		  @agenttype match {
-    		    case "cat:user"  => {
-    			  added
-    			}
-    		    case "cat:extractor" => {
-    			  extracted
-    			}
-    		  }
-    		} else {
-			last modified
-		    }
-
-            @dateFormatter(date)
-            by 
-        		
+   @displayAgent(agent:JsValue) = {
             @if((agent \ "name").as[String].length > 0) {
-        	  @agenttype match  {
+        	  @((agent \ "@type").as[String]) match  {
     		    case "cat:user"  => {
     		      @if((agent \ "user_id").isInstanceOf[JsString]) {
                     <a href= "
@@ -243,6 +223,28 @@
                 }
               }
             }
+		  }   
+    @printNewHeader(firstEvent: Boolean, agentString: String, date: java.util.Date) = {
+      @defining(Json.parse(agentString)) {agent => 
+        @defining((agent \ "@type").as[String]) {agenttype =>  
+    	  @if(agent != null) {
+    	    @if(firstEvent) {
+
+    		  @agenttype match {
+    		    case "cat:user"  => {
+    			  added
+    			}
+    		    case "cat:extractor" => {
+    			  extracted
+    			}
+    		  }
+    		} else {
+			last modified
+		    }
+
+            @dateFormatter(date)
+            by 
+   			@displayAgent(agent)     		
           }
     	}
       }
@@ -256,6 +258,13 @@ There is probably more history than just the latest agent/date once editing is a
  for multivalues - where do deletes get shown?
 *@
 
+   @defining(scala.collection.mutable.Map.empty[String, String]) {defsMap => 
+    @defining(scala.collection.mutable.Map.empty[String, String]) {defsTypes =>
+   	 @mDefs.foreach(md => {
+   	 	defsMap((md.json \ "label").as[String]) = (md.json \"uri").as[String]
+   	 	defsTypes((md.json \ "label").as[String]) = (md.json \"type").as[String]
+   	 	})
+
 
 	@if(rdfMetadata!=null) {
 		<div>
@@ -266,7 +275,7 @@ There is probably more history than just the latest agent/date once editing is a
                     <span class="panel-icon glyphicon glyphicon-minus"></span>
                 </a>
                 <span>
-                    <span class='pred' title='@rdfMetadata.defs.apply(label)'>@label</span>
+                    <span class='pred' title='@defsMap.apply(label)'>@label</span>
                 </span>
                 <span class='metaprov'>
                 @defining(rdfMetadata.history.apply(label)) {list =>  
@@ -282,16 +291,10 @@ There is probably more history than just the latest agent/date once editing is a
 			@value match {
 				case o: JsObject => {
 					@for((k,v) <- o.value) {
-					  <div class="metadataentry" id='@k'>
+					  <div class="metadataentry @defsTypes.apply(label)" id='@k'>
 						@v match {
 							case s: JsString => {
-								<span
-								@if(rdfMetadata.defs.apply(label) == "http://purl.org/dc/terms/contact") {
-								class = 'person'
-								}
-								>@s.value</span>
-				
-							
+								<span>@s.value</span>
 							}
 						}
 					</div>
@@ -300,7 +303,7 @@ There is probably more history than just the latest agent/date once editing is a
 					}
 					
 				case s: JsString => {
-					<div class="metadataentry">
+					<div class="metadataentry @defsTypes.apply(label)">
 					<span>Shouldn't happen! @s.value</span>
 					@if(toDelete && Permission.checkPermission(Permission.DeleteMetadata, ResourceRef(ResourceRef.metadata, list.head.id))) {
                 <a id="@list.head.id" title="Delete this metadata" class="btn-link delete-icon">
@@ -344,7 +347,7 @@ There is probably more history than just the latest agent/date once editing is a
 			@for((item) <- list) {
 			<div id = 'hist_@item.id.toString()'>
 			<span>@item.value.toString()</span>
-			<span>@item.agent.toString()</span>
+			<span>@displayAgent(Json.parse(item.agent))</span>
 			@item.itemActedOn match {
 				case Some(s) => {
 					<a href = '#hist_@item.itemActedOn.get'>@item.action</a>
@@ -362,6 +365,7 @@ There is probably more history than just the latest agent/date once editing is a
 		}
 		</div>
 	}
+	
 	<div><h4>Managed Metadata</h4> 
     @if(metadata.size == 0) {
         <p class="text-center">No metadata available for this resource</p>
@@ -390,6 +394,8 @@ There is probably more history than just the latest agent/date once editing is a
     <script src="@routes.Assets.at("javascripts/errorRedirect.js")" type="text/javascript"></script>
     @if(play.api.Play.current.plugin[services.StagingAreaPlugin].isDefined) {
     <script src="@routes.Assets.at("javascripts/people.js")" type="text/javascript"></script>
+    <script src="@routes.Assets.at("javascripts/listgeocode.js")" type="text/javascript"></script>
+    <script src="@routes.Assets.at("javascripts/scientificvariable.js")" type="text/javascript"></script>
     }
        
     <script>
@@ -586,8 +592,12 @@ There is probably more history than just the latest agent/date once editing is a
         }
         
         var defs = {};
-        @for((label, value) <- rdfMetadata.defs.dropRight(1)) {
-        	defs["@label"] = "@value";
+        var defsTypes = {};
+        @for((label, uri) <- defsMap) {
+        	defs["@label"] = "@uri";
+        }
+        @for((label, mdtype) <- defsTypes) {
+        	defsTypes["@label"] = "@mdtype";
         }
         
            var m_names = new Array("Jan", "Feb", "Mar", 
@@ -620,14 +630,21 @@ There is probably more history than just the latest agent/date once editing is a
            $('#'+blockid).parent().append($('<div/>').attr('id','collapse_'+safe(key)).addClass('panel-collapse collapse in').attr('role','tabpanel').attr('aria-labelledby',blockid).append($('<div/>').addClass('panel-body').append($('<div/>').addClass('tree')))); 
          } else {
            //modify date/person
+           
   		   $('#'+blockid).find('.metaprov').text('last modified ' + mon + ' ' + day + ', ' + year + ' by ').append($('<a/>').attr('href','@routes.Profile.viewProfileUUID(user.get.getMiniUser.id)').text('@user.get.getMiniUser.fullName'));
          }
          //Now add new entries
          for(mEntry in items[key]) {
-           $("<div/>").prependTo($("#collapse_" + safe(key) + " .tree")).addClass("metadataentry").attr("id",mEntry).append($("<span/>").text((items[key])[mEntry]));
+           $("<div/>").prependTo($("#collapse_" + safe(key) + " .tree")).addClass("metadataentry " + defsTypes[key]).attr("id",mEntry).append($("<span/>").text((items[key])[mEntry]));
            addIcons($('#'+mEntry));
          }
-        }
+         var field_type = defsTypes[key];
+         if(field_type === 'listgeocode') {
+     	    expandGeocodes();
+       	 } else if(field_type === 'person') {
+           expandPeople();
+         }
+       }
       }
         
         function addIcons(entry) {
@@ -640,6 +657,8 @@ There is probably more history than just the latest agent/date once editing is a
         }
         
         function safe(name) {
-        	return name.replace(/\//g,"_").replace(/\./g,"_").replace(/\:/g,"_").replace(/ /g,"_")
+        	return name.replace(/\//g,"_").replace(/\./g,"_").replace(/\:/g,"_").replace(/ /g,"_").replace(/;/g,"_")
         }
     </script>
+    }
+  }

@@ -4,6 +4,7 @@
 		sections: List[models.Section], beingProcessed: Boolean, datasets: List[models.Dataset], folders: List[Folder],
 		mds: List[models.Metadata],
 		r: models.RdfMetadata,
+		mDefs: List[MetadataDefinition],
 		extractionsStatus: List[Extraction], outputFormats: Option[List[String]], spaceId: Option[String], access:String,
 		folderHierarchy: List[Folder], spaces:List[ProjectSpace], allDatasets: List[Dataset])(implicit user: Option[models.User], request: RequestHeader)
 
@@ -568,13 +569,13 @@
 			@if(user.isDefined) {
 				<div class="row">
 					<div class="col-md-12">
-					@metadatald.addMetadata("file", file.id.toString, "metadata-content")
+					@metadatald.addMetadata("file", file.id.toString, mDefs, "metadata-content")
 					</div>
 				</div>
 			}
 			<div class="row bottom-padding">
 				<div class="col-md-12" id="metadata-content">
-				@metadatald.view(mds, r, true)
+				@metadatald.view(mds, r, mDefs, true)
 				</div>
 			</div>
 

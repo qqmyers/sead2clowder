@@ -38,13 +38,13 @@
             @if(Permission.checkPermission(Permission.AddMetadata, ResourceRef(ResourceRef.curationObject, curationObject.id))) {
                  <div class="row">
                     <div class="col-md-12">
-                    @metadatald.addMetadata("curationObject", curationObject.id.toString, "metadata-content-ds")
+                    @metadatald.addMetadata("curationObject", curationObject.id.toString, null, "metadata-content-ds")
                     </div>
                  </div>
             }
             <div class="row">
                 <div class="col-md-12" id="metadata-content-ds">
-                @metadatald.view(m.filter(_.attachedTo.resourceType == ResourceRef.curationObject), null, true)
+                @metadatald.view(m.filter(_.attachedTo.resourceType == ResourceRef.curationObject), null, null, true)
                 </div>
             </div>
 

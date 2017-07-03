@@ -60,8 +60,8 @@ case class MetadataEntry(
 case class RdfMetadata(
   id: UUID = UUID.generate,
   attachedTo: ResourceRef,
+  contextSpace: Option[UUID],
   entries: Map[String, JsValue],
-  defs: Map[String, String],
   history: Map[String, List[MetadataEntry]])
 //history: List[MetadataEntry])
 

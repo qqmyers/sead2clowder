@@ -202,7 +202,7 @@ class Datasets @Inject() (
 
         Logger.debug("User selections" + user)
         val userSelections: List[String] =
-          if(user.isDefined) selections.get(user.get.identityId.userId).map(_.id.stringify)
+          if (user.isDefined) selections.get(user.get.identityId.userId).map(_.id.stringify)
           else List.empty[String]
         Logger.debug("User selection " + userSelections)
 
@@ -216,7 +216,7 @@ class Datasets @Inject() (
   /**
    * List datasets.
    */
-  def list(when: String, date: String, limit: Int, space: Option[String], status: Option[String], mode: String, owner: Option[String], showPublic: Boolean, showOnlyShared : Boolean) = UserAction(needActive=false) { implicit request =>
+  def list(when: String, date: String, limit: Int, space: Option[String], status: Option[String], mode: String, owner: Option[String], showPublic: Boolean, showOnlyShared: Boolean) = UserAction(needActive = false) { implicit request =>
     implicit val user = request.user
 
     val nextPage = (when == "a")
@@ -234,7 +234,7 @@ class Datasets @Inject() (
 
     Logger.debug("User selections" + user)
     val userSelections: List[String] =
-      if(user.isDefined) selections.get(user.get.identityId.userId).map(_.id.stringify)
+      if (user.isDefined) selections.get(user.get.identityId.userId).map(_.id.stringify)
       else List.empty[String]
     Logger.debug("User selection " + userSelections)
 
@@ -321,7 +321,7 @@ class Datasets @Inject() (
                 case None => datasets.listSpace(last, nextPage = true, 1, s, user)
               }
             }
-            case None => datasets.listAccess(last, nextPage=true, 1, Set[Permission](Permission.ViewDataset), request.user, request.user.fold(false)(_.superAdminMode), showPublic, showOnlyShared)
+            case None => datasets.listAccess(last, nextPage = true, 1, Set[Permission](Permission.ViewDataset), request.user, request.user.fold(false)(_.superAdminMode), showPublic, showOnlyShared)
           }
         }
       }
@@ -411,9 +411,9 @@ class Datasets @Inject() (
 
   /**
    * Sorted List of datasets within a space
-   * Since this only works within a space right now, it just checks to see if the user has permission to view the space 
-   * (which takes into account the public settings) and, if so, calls the method to list all datasets in the space, regardless 
-   * of status/public view flags, etc. To generalize for sorting of other lists, the permission checks will need to be in 
+   * Since this only works within a space right now, it just checks to see if the user has permission to view the space
+   * (which takes into account the public settings) and, if so, calls the method to list all datasets in the space, regardless
+   * of status/public view flags, etc. To generalize for sorting of other lists, the permission checks will need to be in
    * the dataset query (as in the list method).
    */
   def sortedListInSpace(space: String, offset: Integer, limit: Integer, showPublic: Boolean) = UserAction(needActive = false) { implicit request =>
@@ -427,7 +427,7 @@ class Datasets @Inject() (
     val spaceName = datasetSpace match {
       case Some(s) => Some(s.name)
       case None => None
-    }  
+    }
 
     var title: Option[String] = Some(Messages("resource.in.title", Messages("datasets.title"), spaceTitle, routes.Spaces.getSpace(datasetSpace.get.id), datasetSpace.get.name))
 
@@ -440,13 +440,12 @@ class Datasets @Inject() (
       } else {
 
         val dList = datasets.listSpaceAccess(0, Set[Permission](Permission.ViewDataset), space, user, false, showPublic);
-        
 
         val len = dList.length
 
         Logger.debug("User selections" + user)
         val userSelections: List[String] =
-          if(user.isDefined) selections.get(user.get.identityId.userId).map(_.id.stringify)
+          if (user.isDefined) selections.get(user.get.identityId.userId).map(_.id.stringify)
           else List.empty[String]
         Logger.debug("User selection " + userSelections)
 
@@ -519,19 +518,29 @@ class Datasets @Inject() (
         val m = metadata.getMetadataByAttachTo(ResourceRef(ResourceRef.dataset, dataset.id))
 
         //RDF MD
-        val spaceId:Option[models.UUID] =  currentSpace match {
-		       case Some(s) => {
-		         if(dataset.spaces.contains(UUID(s))) {
-		           Some(UUID(s))
-		         } else {
-		           Some(dataset.spaces.head)
-		         }
-		       }
-		       case None => Some(dataset.spaces.head)
-		     }
-        
+        val spaceId: Option[models.UUID] = currentSpace match {
+          case Some(s) => {
+            if (dataset.spaces.contains(UUID(s))) {
+              Some(UUID(s))
+            } else {
+              if (dataset.spaces.size != 0) {
+                Some(dataset.spaces.head)
+              } else {
+                None
+              }
+            }
+          }
+          case None => {
+            if (dataset.spaces.size != 0) {
+              Some(dataset.spaces.head)
+            } else {
+              None
+            }
+          }
+        }
+
         val metadataSummary = metadata.getMetadataSummary(ResourceRef(ResourceRef.dataset, dataset.id), spaceId)
-        
+
         val collectionsInside = collections.listInsideDataset(id, request.user, request.user.fold(false)(_.superAdminMode)).sortBy(_.name)
         var decodedCollectionsInside = new ListBuffer[models.Collection]()
         var filesTags = TreeSet.empty[String]
@@ -589,7 +598,8 @@ class Datasets @Inject() (
         var decodedSpaces_canRemove: Map[ProjectSpace, Boolean] = Map.empty
         var isInPublicSpace = false
         dataset.spaces.map {
-            sp => spaceService.get(sp) match {
+          sp =>
+            spaceService.get(sp) match {
               case Some(s) => {
                 decodedSpaces_canRemove += (Utils.decodeSpaceElements(s) -> true)
                 datasetSpaces = s :: datasetSpaces
@@ -652,11 +662,10 @@ class Datasets @Inject() (
           datasetSpaces.map(space =>
             if (Permission.checkPermission(Permission.AddResourceToCollection, ResourceRef(ResourceRef.space, space.id))) {
               canAddDatasetToCollection = true
-        }
-          )
+            })
         }
         val stagingAreaDefined = play.api.Play.current.plugin[services.StagingAreaPlugin].isDefined
-        Ok(views.html.dataset(datasetWithFiles, commentsByDataset, filteredPreviewers.toList, m, metadataSummary,
+        Ok(views.html.dataset(datasetWithFiles, commentsByDataset, filteredPreviewers.toList, m, metadataSummary, metadata.getDefinitions(metadataSummary.contextSpace),
           decodedCollectionsInside.toList, sensors, Some(decodedSpaces_canRemove), fileList,
           filesTags, toPublish, curPubObjects, currentSpace, limit, showDownload, accessData, canAddDatasetToCollection, stagingAreaDefined))
       }
@@ -682,12 +691,12 @@ class Datasets @Inject() (
           case Some(fId) => {
             folders.get(UUID(fId)) match {
               case Some(folder) => {
-                val (foldersList: List[Folder], limitFileList: List[File]) = if(play.Play.application().configuration().getBoolean("sortInMemory")) {
+                val (foldersList: List[Folder], limitFileList: List[File]) = if (play.Play.application().configuration().getBoolean("sortInMemory")) {
                   (SortingUtils.sortFolders(folder.folders.flatMap(f => folders.get(f)), sortOrder).slice(limit * filepageUpdate, limit * (filepageUpdate + 1)),
-                   SortingUtils.sortFiles(folder.files.flatMap(f => files.get(f)), sortOrder).slice(limit * filepageUpdate - folder.folders.length, limit * (filepageUpdate + 1) - folder.folders.length))
+                    SortingUtils.sortFiles(folder.files.flatMap(f => files.get(f)), sortOrder).slice(limit * filepageUpdate - folder.folders.length, limit * (filepageUpdate + 1) - folder.folders.length))
                 } else {
-                  (folder.folders.reverse.slice(limit * filepageUpdate, limit * (filepageUpdate+1)).flatMap(f => folders.get(f)),
-                   folder.files.reverse.slice(limit * filepageUpdate - folder.folders.length, limit * (filepageUpdate+1) - folder.folders.length).flatMap(f => files.get(f)))
+                  (folder.folders.reverse.slice(limit * filepageUpdate, limit * (filepageUpdate + 1)).flatMap(f => folders.get(f)),
+                    folder.files.reverse.slice(limit * filepageUpdate - folder.folders.length, limit * (filepageUpdate + 1) - folder.folders.length).flatMap(f => files.get(f)))
                 }
 
                 var folderHierarchy = new ListBuffer[Folder]()
@@ -718,12 +727,12 @@ class Datasets @Inject() (
             }
           }
           case None => {
-            val (foldersList: List[Folder], limitFileList: List[File]) = if(play.Play.application().configuration().getBoolean("sortInMemory")) {
+            val (foldersList: List[Folder], limitFileList: List[File]) = if (play.Play.application().configuration().getBoolean("sortInMemory")) {
               (SortingUtils.sortFolders(dataset.folders.flatMap(f => folders.get(f)), sortOrder).slice(limit * filepageUpdate, limit * (filepageUpdate + 1)),
-               SortingUtils.sortFiles(dataset.files.flatMap(f => files.get(f)), sortOrder).slice(limit * filepageUpdate - dataset.folders.length, limit * (filepageUpdate + 1) - dataset.folders.length))
+                SortingUtils.sortFiles(dataset.files.flatMap(f => files.get(f)), sortOrder).slice(limit * filepageUpdate - dataset.folders.length, limit * (filepageUpdate + 1) - dataset.folders.length))
             } else {
-              (dataset.folders.reverse.slice(limit * filepageUpdate, limit * (filepageUpdate+1)).flatMap(f => folders.get(f)),
-               dataset.files.reverse.slice(limit * filepageUpdate - dataset.folders.length, limit * (filepageUpdate+1) - dataset.folders.length).flatMap(f => files.get(f)))
+              (dataset.folders.reverse.slice(limit * filepageUpdate, limit * (filepageUpdate + 1)).flatMap(f => folders.get(f)),
+                dataset.files.reverse.slice(limit * filepageUpdate - dataset.folders.length, limit * (filepageUpdate + 1) - dataset.folders.length).flatMap(f => files.get(f)))
             }
 
             val fileComments = limitFileList.map { file =>
@@ -780,8 +789,7 @@ class Datasets @Inject() (
               "size" -> toJson(f.length),
               "url" -> toJson(routes.Files.file(f.id).absoluteURL(Utils.https(request))),
               "deleteUrl" -> toJson(api.routes.Files.removeFile(f.id).absoluteURL(Utils.https(request))),
-              "deleteType" -> toJson("POST")
-            ))))
+              "deleteType" -> toJson("POST")))))
           }
           case None => {
             Map("files" ->
@@ -790,11 +798,7 @@ class Datasets @Inject() (
                   Map(
                     "name" -> toJson(Messages("dataset.title") + " ID Invalid."),
                     "size" -> toJson(0),
-                    "error" -> toJson(s"${Messages("dataset.title")} with the specified ID=${ds} was not found. Please try again.")
-                  )
-                )
-              )
-            )
+                    "error" -> toJson(s"${Messages("dataset.title")} with the specified ID=${ds} was not found. Please try again.")))))
           }
         }
       }
@@ -805,11 +809,7 @@ class Datasets @Inject() (
               Map(
                 "name" -> toJson("Missing " + Messages("dataset.title") + "  ID."),
                 "size" -> toJson(0),
-                "error" -> toJson("No "+ Messages("dataset.title")+"id found. Please try again.")
-              )
-            )
-          )
-        )
+                "error" -> toJson("No " + Messages("dataset.title") + "id found. Please try again.")))))
       }
     }
     Ok(toJson(retMap))
@@ -858,8 +858,7 @@ class Datasets @Inject() (
 
         if (userList.nonEmpty) {
           Ok(views.html.datasets.users(dataset, userListSpaceRoleTupleMap, userList))
-      }
-        else Redirect(routes.Datasets.dataset(id)).flashing("error" -> s"Error: No users found for $Messages('dataset.title') $id.")
+        } else Redirect(routes.Datasets.dataset(id)).flashing("error" -> s"Error: No users found for $Messages('dataset.title') $id.")
       }
       case None => Redirect(routes.Datasets.dataset(id)).flashing("error" -> s"Error: $Messages('dataset.title') $id not found.")
     }

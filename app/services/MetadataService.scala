@@ -38,7 +38,7 @@ trait MetadataService {
   def removeMetadata(attachedTo: ResourceRef, term: String, itemId: String, deletedAt: Date, deletor:Agent, spaceId:Option[UUID]):JsValue
 
   /** Update metadata value*/
-  def updateMetadata(content: JsValue, context: JsValue, attachedTo: ResourceRef, itemId: String, updatedAt: Date, updator:Agent, spaceId:Option[UUID]):JsValue
+  def updateMetadata(content_ld: JsValue, context: JsValue, attachedTo: ResourceRef, itemId: String, updatedAt: Date, updator:Agent, spaceId:Option[UUID]):JsValue
   
   /** Remove metadata by attachTo*/
   def removeMetadataByAttachTo(resourceRef: ResourceRef): Long

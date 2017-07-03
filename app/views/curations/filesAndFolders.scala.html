@@ -52,16 +52,16 @@
               @if(curation.status =="In Preparation" && Permission.checkPermission(Permission.AddMetadata, ResourceRef(ResourceRef.curationObject, curation.id))) {
                 <div class="row">
                   <div class="col-md-12">
-                  @metadatald.addMetadata("curationFile", file.id.toString, "metadata-content-"+file.id.stringify)
+                  @metadatald.addMetadata("curationFile", file.id.toString, null, "metadata-content-"+file.id.stringify)
                   </div>
                 </div>
               }
             <div class="row">
               <div class="col-md-12" id="metadata-content-@file.id.stringify">
                 @if(curation.status =="In Preparation") {
-                    @metadatald.view(m.filter(_.attachedTo.id == file.id), null, true)
+                    @metadatald.view(m.filter(_.attachedTo.id == file.id), null, null, true)
                 } else {
-                    @metadatald.view(m.filter(_.attachedTo.id == file.id), null, false)
+                    @metadatald.view(m.filter(_.attachedTo.id == file.id), null, null, false)
                 }
               </div>
             </div>

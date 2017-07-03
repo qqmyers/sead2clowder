@@ -3,6 +3,7 @@
   previewers : List[Previewer],
   m: List[models.Metadata],
   r: models.RdfMetadata,
+  mDefs: List[MetadataDefinition],
   collectionsInside: List[models.Collection],
   relatedSensors: List[(String,String,String)],
   datasetSpaces_canRemove : Option[Map[ProjectSpace,Boolean]],
@@ -271,13 +272,13 @@
                         @if(user.isDefined) {
                             <div class="row">
                                 <div class="col-md-12">
-                                @metadatald.addMetadata("dataset", dataset.id.toString, "metadata-content")
+                                @metadatald.addMetadata("dataset", dataset.id.toString, mDefs, "metadata-content")
                                 </div>
                             </div>
                         }
                         <div class="row">
                             <div class="col-md-12" id="metadata-content">
-                                @metadatald.view(m, r, true)
+                                @metadatald.view(m, r, mDefs, true)
                             </div>
                         </div>
                         @if(Permission.checkPermission(Permission.EditDataset, ResourceRef(ResourceRef.dataset, dataset.id))
