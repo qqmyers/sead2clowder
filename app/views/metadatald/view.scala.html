@@ -199,14 +199,14 @@
     		      @if((agent \ "user_id").isInstanceOf[JsString]) {
                     <a href= "
                     @getProfile(((agent \ "user_id").as[String]))
-        		    ">@((agent \ "name").as[String])</a>
+        		    " target="_blank">@((agent \ "name").as[String])</a>
                   } else {
                     @((agent \ "name").as[String])
                   }
       		    }
     		    case "cat:extractor" => {
     		      @if((agent \ "extractor_id").isInstanceOf[JsString]) {
-                    <a href= "@((agent \ "extractor_id").as[String])">@((agent \ "name").as[String])</a>
+                    <a href= "@((agent \ "extractor_id").as[String])" target="_blank">@((agent \ "name").as[String])</a>
                   } else {
                     @((agent \ "name").as[String])
                   }
@@ -224,7 +224,7 @@
               }
             }
 		  }   
-    @printNewHeader(firstEvent: Boolean, agentString: String, date: java.util.Date) = {
+    @printNewHeader(firstEvent: Boolean, agentString: String, date: java.util.Date, target: String) = {
       @defining(Json.parse(agentString)) {agent => 
         @defining((agent \ "@type").as[String]) {agenttype =>  
     	  @if(agent != null) {
@@ -239,7 +239,7 @@
     			}
     		  }
     		} else {
-			last modified
+			<a data-toggle="modal" data-target="#hist_@target">last modified</a>
 		    }
 
             @dateFormatter(date)
@@ -280,7 +280,7 @@ There is probably more history than just the latest agent/date once editing is a
                 <span class='metaprov'>
                 @defining(rdfMetadata.history.apply(label)) {list =>  
 				
-			@printNewHeader(list.length==1, list.head.agent, list.head.date) 
+			@printNewHeader(list.length==1, list.head.agent, list.head.date, safe(label)) 
 			</span>
 			</div>
 			
@@ -343,24 +343,34 @@ There is probably more history than just the latest agent/date once editing is a
 		*@
 		<div>
 		@for((label, list) <- rdfMetadata.history) {
-			<div><span>@label</span>
+			<div class="modal fade" id="hist_@safe(label)" role="dialog">
+    		<div class="modal-dialog">
+			<div class="modal-content"><div class="modal-header">
+			<button type="button" class="close" data-dismiss="modal">&times;</button>
+			<h4 class = "modal-title">@label</h4></div>
+			<div class="modal-body">
 			@for((item) <- list) {
-			<div id = 'hist_@item.id.toString()'>
-			<span>@item.value.toString()</span>
-			<span>@displayAgent(Json.parse(item.agent))</span>
-			@item.itemActedOn match {
+			<div class='history_entry' id = 'hist_@item.id.toString()'>
+			<div>@item.itemActedOn match {
 				case Some(s) => {
-					<a href = '#hist_@item.itemActedOn.get'>@item.action</a>
+					<a class='hist_prov' href = '#hist_@item.itemActedOn.get'>@item.action</a>
 			}
 			case _ => {
 				<span>@item.action</span>
-				
 			}
 			}
-			
-			<div>@item.date.toString()</div>
+			on <span>@item.date.toString()</span>
+			by <span>@displayAgent(Json.parse(item.agent))</span>
+			</div>
+			<div class="@defsTypes.apply(label)"><span>@item.value</span></div>
 			</div>
 		}
+		</div>
+			<div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+        </div>
+      </div>
+      </div>
 		</div>
 		}
 		</div>
@@ -445,6 +455,8 @@ There is probably more history than just the latest agent/date once editing is a
                     
                  });
                  }
+                 
+                 $(".hist_prov").hover(function() {$($(this).attr("href")).addClass("ancestor");}, function() {$($(this).attr("href")).removeClass("ancestor");});
                  }
             
         })

@@ -1124,4 +1124,16 @@ table.borderless tbody tr td, table.borderless tbody tr th {
 	float:right;
 	font-size: 12px;
 }
+
+.history_entry {
+  padding: 5px 5px 5px 5px;
+}
+
+.history_entry:hover {
+  background-color: aliceblue;
+}
+
+
+.ancestor {
+	background-color: antiquewhite;
 }
