@@ -29,14 +29,10 @@ class Metadata @Inject() (
     implicit val user = request.user
     files.get(file_id) match {
       case Some(file) => {
-        val mds = metadata.getMetadataByAttachTo(ResourceRef(ResourceRef.file, file_id))
-        // TODO use to provide contextual definitions directly in the GUI
-        val contexts = (for (md <- mds;
-                             cId <- md.contextId;
-                             c <- contextLDService.getContextById(cId))
-          yield cId -> c).toMap
-
-        Ok(views.html.metadatald.viewFile(file, null, null, mds))
+        val m = metadata.getMetadataByAttachTo(ResourceRef(ResourceRef.file, file_id))
+        val r = metadata.getMetadataSummary(ResourceRef(ResourceRef.file, file_id),None)
+       
+        Ok(views.html.metadatald.viewFile(file, r, metadata.getDefinitions(r.contextSpace), m))
       }
       case None => NotFound
     }
@@ -47,7 +43,9 @@ class Metadata @Inject() (
     datasets.get(dataset_id) match {
       case Some(dataset) => {
         val m = metadata.getMetadataByAttachTo(ResourceRef(ResourceRef.dataset, dataset_id))
-        Ok(views.html.metadatald.viewDataset(dataset, null, null, m))
+        val r = metadata.getMetadataSummary(ResourceRef(ResourceRef.dataset, dataset_id),None)
+        
+        Ok(views.html.metadatald.viewDataset(dataset, r, metadata.getDefinitions(r.contextSpace), m))
       }
       case None => NotFound
     }
