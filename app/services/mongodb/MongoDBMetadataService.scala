@@ -221,7 +221,7 @@ class MongoDBMetadataService @Inject() (contextService: ContextLDService, datase
     //Todo: support complex types
     //For simple types, content should have one key/value
     val term = excontent.keys.head
-    val updatedVal = excontent \ term 
+    val updatedVal = excontent \ term
     val valToStore = updatedVal match {
       case s: JsString => s.as[String] //String without quotes
       case v: JsValue => v.toString() //string representation of object/array/etc.
@@ -397,10 +397,16 @@ class MongoDBMetadataService @Inject() (contextService: ContextLDService, datase
         datasets.get(resourceRef.id) match {
           case Some(d) => {
             if (d.spaces.size > 0) {
-              if (d.spaces.contains(space)) {
-                space
-              } else {
-                Some(d.spaces.head)
+              space match {
+                case Some(s) => {
+
+                  if (d.spaces.contains(space)) {
+                    space
+                  } else {
+                    Some(d.spaces.head)
+                  }
+                }
+                case None => Some(d.spaces.head)
               }
             } else {
               None
