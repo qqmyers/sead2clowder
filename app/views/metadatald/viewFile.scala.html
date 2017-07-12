@@ -14,11 +14,11 @@
     </div>
     <div class="row">
         <div class="col-md-12">
-            @addMetadata("file", file.id.toString, mDefs, "metadata-content")
+            @addMetadata("file", file.id.toString, mDefs, "metadata-content-"+ file.id.stringify)
         </div>
     </div>
     <div class="row">
-        <div class="col-md-12" id="metadata-content">
+        <div class="col-md-12" id="metadata-content-@file.id.stringify">
             @view(Some(metadata), rdfMetadata, mDefs, true)
         </div>
     </div>

@@ -15,11 +15,11 @@
     </div>
     <div class="row">
         <div class="col-md-12">
-            @addMetadata("dataset", dataset.id.toString, mDefs, "metadata-content")
+            @addMetadata("dataset", dataset.id.toString, mDefs, "metadata-content-"+dataset.id.stringify)
         </div>
     </div>
     <div class="row">
-        <div class="col-md-12" id="metadata-content">
+        <div class="col-md-12" id="metadata-content-@dataset.id.stringify">
             @view(Some(metadata), rdfMetadata, mDefs, true)
         </div>
     </div>
