@@ -1,4 +1,4 @@
-@(metadata: List[models.Metadata], rdfMetadata: models.RdfMetadata, mDefs:List[MetadataDefinition], toDelete: Boolean)(implicit user: Option[models.User])
+@(metadata: Option[List[models.Metadata]], rdfMetadata: models.RdfMetadata, mDefs:List[MetadataDefinition], toDelete: Boolean)(implicit user: Option[models.User])
     @import java.net.URL
     @import play.api.libs.json.JsString
     @import play.api.libs.json.JsObject
@@ -376,11 +376,16 @@ There is probably more history than just the latest agent/date once editing is a
 		</div>
 	}
 	
-	<div><h4>Managed Metadata</h4> 
-    @if(metadata.size == 0) {
-        <p class="text-center">No metadata available for this resource</p>
+	@metadata match {
+	case Some(meta) => {
+	<div><h4>@Messages("metadata.managed")</h4> 
+	@*While the code does not remove user entries that have been transferred to user metadata, 
+	the no metadata display may not show when it should (when there's no extracted md) *@
+    @if(meta.size == 0) {
+        <p class="text-center">No @Messages("metadata.managed").toLowerCase() for this resource</p>
     }
-    @for((m, i) <- metadata.zipWithIndex) {
+    @for((m, i) <- meta.zipWithIndex) {
+    	@if(m.creator.typeOfAgent.toLowerCase().indexOf("user") < 0) {
         <div class="panel panel-default">
             <div class="panel-heading" role="tab" id="heading_@m.id">
                 <a data-toggle="collapse" href="#collapse_@m.id" class="collapse-icon collapsed" >
@@ -399,15 +404,20 @@ There is probably more history than just the latest agent/date once editing is a
                 </div>
             </div>
         </div>
+        }
     }
-	</div>
+    </div>
+    }
+    case None => {}
+    }
+	
     <script src="@routes.Assets.at("javascripts/errorRedirect.js")" type="text/javascript"></script>
     @if(play.api.Play.current.plugin[services.StagingAreaPlugin].isDefined) {
     <script src="@routes.Assets.at("javascripts/people.js")" type="text/javascript"></script>
-    <script src="@routes.Assets.at("javascripts/listgeocode.js")" type="text/javascript"></script>
-    <script src="@routes.Assets.at("javascripts/scientificvariable.js")" type="text/javascript"></script>
     }
-       
+    <script src="@routes.Assets.at("javascripts/listgeocode.js")" type="text/javascript"></script>
+    <script src="@routes.Assets.at("javascripts/scientificvariable.js")" type="text/javascript"></script>      
+    
     <script>
         $(function () {
             $('[data-toggle="tooltip"]').tooltip();
@@ -436,9 +446,10 @@ There is probably more history than just the latest agent/date once editing is a
 
             @if(rdfMetadata!=null) {
                if(@Permission.checkPermission(Permission.EditMetadata, rdfMetadata.attachedTo)) {
+                       	@if(toDelete && Permission.checkPermission(Permission.DeleteMetadata, rdfMetadata.attachedTo)) {
 
-               $('.metadataentry').each(function(index) {
-               addIcons($(this));
+               $('#metadata-content-@rdfMetadata.attachedTo.id.stringify .metadataentry').each(function(index) {
+               addIcons("@rdfMetadata.attachedTo.id.stringify", $(this));
                });
                  $(document).on('mouseenter', '.metadataentry', function(ev) {
                  
@@ -455,6 +466,7 @@ There is probably more history than just the latest agent/date once editing is a
                     
                  });
                  }
+                 }
                  
                  $(".hist_prov").hover(function() {$($(this).attr("href")).addClass("ancestor");}, function() {$($(this).attr("href")).removeClass("ancestor");});
                  }
@@ -462,10 +474,10 @@ There is probably more history than just the latest agent/date once editing is a
         })
 
       $(function () {
-        $('.edit-icon').each(function(index) {
-          addEditHandler($(this));
+        $('#metadata-content-@rdfMetadata.attachedTo.id.stringify .edit-icon').each(function(index) {
+          addEditHandler("@rdfMetadata.attachedTo.id.stringify", $(this));
         });
-        $('.delete-icon').each(function(index) {
+        $('#metadata-content-@rdfMetadata.attachedTo.id.stringify .delete-icon').each(function(index) {
           addDeleteHandler($(this));
         });
         
@@ -491,28 +503,12 @@ There is probably more history than just the latest agent/date once editing is a
         });
       })
         
-        function addEditHandler(item) {
+        function addEditHandler(id, item) {
             item.unbind().on('click', function(){
-                var edit_icon = $(this);
-
-                var request = jsRoutes.api.Metadata.updateMetadata(this.id).ajax({
-                    type: 'PUT'
-                });
-
-                request.done(function (response, textStatus, jqXHR) {
-                    edit_icon.closest(".panel").remove();
-                    notify("Metadata successfully edited.", "success", false, 2000);
-                });
-
-                request.fail(function (jqXHR, textStatus, errorThrown){
-                    console.error("The following error occured: " + textStatus, errorThrown);
-                    var errMsg = "You must be logged in to add metadata";
-                    if (!checkErrorAndRedirect(jqXHR, errMsg)) {
-                      notify("Metadata was not edited due to : " + errorThrown, "error");
-                    }
-                });
-            });
+             editMDEntry(id, $(this).parent().attr('id'));
+             });
             }
+            
         function addDeleteHandler(item) {            
 		    item.unbind().on('click', function(){
                 var delete_icon = $(this);
@@ -547,9 +543,7 @@ There is probably more history than just the latest agent/date once editing is a
                     }
                 });
             });
-             $('.edit-icon').unbind().on('click', function(){
-             editMDEntry($(this).parent().attr('id'));
-             });
+
         }
 
         $(document).on('mouseenter', '.context-key', function(){
@@ -616,7 +610,7 @@ There is probably more history than just the latest agent/date once editing is a
 			"Apr", "May", "Jun", "Jul", "Aug", "Sep", 
 			"Oct", "Nov", "Dec");
         
-      function addEntries(update) {
+      function addEntries(id, update) {
       
         var items = update.entries;
         //update overall list
@@ -632,40 +626,42 @@ There is probably more history than just the latest agent/date once editing is a
 
         for(var key in items) {
         
-         if(!$("#heading_" + safe(key)).length) {
+         if(!$("#metadata-content-"+id+" #heading_" + safe(key)).length) {
          //Add header block
            var blockid = 'heading_' + safe(key);
-           $('#metadata-content > div:first-child').prepend($('<div/>').addClass('mdblock panel panel-default').append($('<div/>').addClass('panel-heading').attr('role','tab').attr('id',blockid)));
-           $('#'+blockid).append($('<a/>').attr('data-toggle','collapse').attr('href','#collapse_' + safe(key)).addClass('collapse-icon').append($('<span/>').addClass('panel-icon glyphicon glyphicon-minus')));
-           $('#'+blockid).append($('<span/>').append($('<span/>').addClass('pred').attr('title',defs[key]).text(key)));
-           $('#'+blockid).append($('<span/>').addClass('metaprov').text('added ' + mon + ' ' + day + ', ' + year + ' by ').append($('<a/>').attr('href','@routes.Profile.viewProfileUUID(user.get.getMiniUser.id)').text('@user.get.getMiniUser.fullName')));
-           $('#'+blockid).parent().append($('<div/>').attr('id','collapse_'+safe(key)).addClass('panel-collapse collapse in').attr('role','tabpanel').attr('aria-labelledby',blockid).append($('<div/>').addClass('panel-body').append($('<div/>').addClass('tree')))); 
+           $('#metadata-content-'+id+' > div:first-child').prepend($('<div/>').addClass('mdblock panel panel-default').append($('<div/>').addClass('panel-heading').attr('role','tab').attr('id',blockid)));
+           $('#metadata-content-'+id+' #'+blockid).append($('<a/>').attr('data-toggle','collapse').attr('href','#collapse_' + safe(key)).addClass('collapse-icon').append($('<span/>').addClass('panel-icon glyphicon glyphicon-minus')));
+           $('#metadata-content-'+id+' #'+blockid).append($('<span/>').append($('<span/>').addClass('pred').attr('title',defs[key]).text(key)));
+           $('#metadata-content-'+id+' #'+blockid).append($('<span/>').addClass('metaprov').text('added ' + mon + ' ' + day + ', ' + year + ' by ').append($('<a/>').attr('href','@routes.Profile.viewProfileUUID(user.get.getMiniUser.id)').text('@user.get.getMiniUser.fullName')));
+           $('#metadata-content-'+id+' #'+blockid).parent().append($('<div/>').attr('id','collapse_'+safe(key)).addClass('panel-collapse collapse in').attr('role','tabpanel').attr('aria-labelledby',blockid).append($('<div/>').addClass('panel-body').append($('<div/>').addClass('tree')))); 
          } else {
            //modify date/person
            
-  		   $('#'+blockid).find('.metaprov').text('last modified ' + mon + ' ' + day + ', ' + year + ' by ').append($('<a/>').attr('href','@routes.Profile.viewProfileUUID(user.get.getMiniUser.id)').text('@user.get.getMiniUser.fullName'));
+  		   $('#metadata-content-'+id+' #'+blockid).find('.metaprov').text('last modified ' + mon + ' ' + day + ', ' + year + ' by ').append($('<a/>').attr('href','@routes.Profile.viewProfileUUID(user.get.getMiniUser.id)').text('@user.get.getMiniUser.fullName'));
          }
          //Now add new entries
          for(mEntry in items[key]) {
-           $("<div/>").prependTo($("#collapse_" + safe(key) + " .tree")).addClass("metadataentry " + defsTypes[key]).attr("id",mEntry).append($("<span/>").text((items[key])[mEntry]));
-           addIcons($('#'+mEntry));
+           $("<div/>").prependTo($("#metadata-content-"+id+" #collapse_" + safe(key) + " .tree")).addClass("metadataentry " + defsTypes[key]).attr("id",mEntry).append($("<span/>").text((items[key])[mEntry]));
+           addIcons(id, $('#'+mEntry));
          }
          var field_type = defsTypes[key];
          if(field_type === 'listgeocode') {
      	    expandGeocodes();
        	 } else if(field_type === 'person') {
            expandPeople();
+         } else if(field_type === 'scientific_variable') {
+         expandSciVariables();
          }
        }
       }
         
-        function addIcons(entry) {
-        	@if(toDelete && Permission.checkPermission(Permission.DeleteMetadata, rdfMetadata.attachedTo)) {
+        function addIcons(id, entry) {
+
 	        	entry.append($("<a/>").attr("title","Delete this metadata").addClass("btn-link delete-icon hidden").append($("<span/>").addClass("panel-icon glyphicon glyphicon-trash")));
 		        entry.append($("<a/>").attr("title","Edit metadata").addClass("btn-link edit-icon hidden").append($("<span/>").addClass("glyphicon glyphicon-edit")));
-		        addEditHandler(entry.find('.edit-icon'));
+		        addEditHandler(id,entry.find('.edit-icon'));
 		        addDeleteHandler(entry.find('.delete-icon'));
-        	}
+
         }
         
         function safe(name) {

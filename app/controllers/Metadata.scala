@@ -20,7 +20,7 @@ class Metadata @Inject() (
   def view(id: UUID) = PermissionAction(Permission.ViewMetadata) { implicit request =>
     implicit val user = request.user
     metadata.getMetadataById(id) match {
-      case Some(m) => Ok(views.html.metadatald.view(List(m), null, null, true))
+      case Some(m) => Ok(views.html.metadatald.view(Some(List(m)), null, null, true))
       case None => NotFound
     }
   }

@@ -15,14 +15,14 @@
             <div class="row">
                 <div class="col-md-12">
                     <form class="form-horizontal form-md">
-                        <select id="add-metadata-select">
+                        <select id="add-metadata-select-@id">
                             <option value=""></option>
                         </select>
                     </form>
                 </div>
             </div>
 
-            <div id="selected_field" class="row"></div>
+            <div class="selected_field" class="row"></div>
         </div>
     </div>
 
@@ -106,7 +106,7 @@ line-height: 1.5;
     function submit_@id
     (event){
         event.preventDefault();
-        var entry = getContextAndContent();
+        var entry = getContextAndContent("@id");
          if (!entry.error) {
             var body = {
                     "@@context": entry.contexts,
@@ -123,14 +123,14 @@ line-height: 1.5;
 
                 request.done(function (response, textStatus, jqXHR) {
                     // reset submission value
-                    $("#@id  #selected_field").empty();
-                    $("#@id #add-metadata-select").val('').trigger("chosen:updated");
+                    $("#@id  .selected_field").empty();
+                    $("#@id #add-metadata-select-@id").val('').trigger("chosen:updated");
                     
                     
                     if($('#'+'@contentDiv'+' .panel').length == 0) {
                         $('#' + "@contentDiv").empty();
                     }
-                    addEntries(response);
+                    addEntries("@id", response);
                     notify("Metadata successfully added.", "success", false, 2000);
                 });
 
@@ -153,7 +153,7 @@ line-height: 1.5;
     function update_@id
     (event){
         event.preventDefault();
-		var entry = getContextAndContent();
+		var entry = getContextAndContent("@id");
 		if (!entry.error) {
             var body = {
                     "@@context": entry.contexts,
@@ -163,7 +163,7 @@ line-height: 1.5;
             var entry_id = $("#@id  #field-value").data("entry-id");
             var field_label = $("#@id  #field-value").data("label");
             var field_id = $("#@id  #field-value").data("id");
-            var field_type = $("#@id  #add-metadata-select option[value='" + field_id+ "']").data("type");
+            var field_type = $("#@id  #add-metadata-select-@id option[value='" + field_id+ "']").data("type");
             
                 var request = jsRoutes.api.Metadata.updateMetadata('@resType', '@id', entry_id).ajax({
                     data: JSON.stringify(body),
@@ -181,7 +181,7 @@ line-height: 1.5;
                 	  } else if (field_type = 'scientific_variable') {
                 	    expandSciVariables();
                 	  }
-			          addIcons($('#'+response.id));
+			          addIcons("@id", $('#'+response.id));
                 	//Update modified date
                 	var today = new Date();
         			var mon =m_names[today.getMonth()];
@@ -189,11 +189,11 @@ line-height: 1.5;
         			var year = today.getFullYear();
                 	//modify date/person
 
-  		   		    $("#heading_" + safe(field_label)).find('.metaprov').text('last modified ' + mon + ' ' + day + ', ' + year + ' by ').append($('<a/>').attr('href','@routes.Profile.viewProfileUUID(user.get.getMiniUser.id)').text('@user.get.getMiniUser.fullName'));
+  		   		    $("#heading_" + safe(field_label)).find('.metaprov').html('<a title="Reload to update history">last modified</a> ' + mon + ' ' + day + ', ' + year + ' by ').append($('<a/>').attr('href','@routes.Profile.viewProfileUUID(user.get.getMiniUser.id)').text('@user.get.getMiniUser.fullName'));
                 	
                     // reset submission value
-                    $("#@id  #selected_field").empty();
-                    $("#@id #add-metadata-select").val('').trigger("chosen:updated");
+                    $("#@id  .selected_field").empty();
+                    $("#@id #add-metadata-select-@id").val('').trigger("chosen:updated");
                     $('#actionLabel').text("Add Metadata");
                     
                     
@@ -222,19 +222,20 @@ line-height: 1.5;
     
     
 
-        function getContextAndContent() {
-        var field_label = $("#@id  #field-value").data("label");
-        var field_id = $("#@id  #field-value").data("id");
+        function getContextAndContent(id) {
+        
+        var field_label = $("#" + id + " #field-value").data("label");
+        var field_id = $("#" + id + " #field-value").data("id");
 
-        var field_type = $("#@id  #add-metadata-select option[value='" + field_id+ "']").data("type");
+        var field_type = $("#" + id + " #add-metadata-select-"+id+" option[value='" + field_id+ "']").data("type");
         
         var field_value = "";
         var field_types_with_simple_values = {"string": 1, "listjquery": 1, "listgeocode": 1, "scientific_variable": 1,
             "datetime": 1, "wkt": 1, "person": 1};
         if (field_type in field_types_with_simple_values) {
-            field_value = $("#@id  #field-value").val();
+            field_value = $("#" + id + " #field-value").val();
         } else if (field_type === "list") {
-            field_value = $("#@id  #field-value option:selected").val();
+            field_value = $("#" + id + "  #field-value option:selected").val();
         } else {
             console.log("Wrong field type: " + field_type);
         }
@@ -270,7 +271,7 @@ line-height: 1.5;
             } else if (field_type === "scientific_variable") {
              var scival = {};
                 scival["Label"] = field_value;
-                scival["Unit"] = $("#@id #unit-value").val();
+                scival["Unit"] = $("#" + id + " #unit-value").val();
                 content[field_label] = scival;
                 context["Unit"]= "http://ecgs.ncsa.illinois.edu/gsis/sas/unit/udunits2";
                 context["Label"]= "http://www.w3.org/2000/01/rdf-schema#label";
@@ -297,7 +298,7 @@ line-height: 1.5;
 		      
     
     var fields = null;
-    var showSpaceInfo = (spaceId == "") ? false:true;
+    var showSpaceInfo = true; //(spaceId == "") ? false:true;
     // get metadata definitions
     fields = @Html(Json.stringify(Json.toJson(mDefs.sortWith( _.json.\("label").asOpt[String].getOrElse("") < _.json.\("label").asOpt[String].getOrElse("") ))));
         for (var i = 0; i < fields.length; i++) {
@@ -308,33 +309,35 @@ line-height: 1.5;
             elem.attr("value", fields[i].json.uri);
             elem.attr("space_id", fields[i].spaceId);
             elem.text(fields[i].json.label);
-            $("#@id  #add-metadata-select").append(elem);
+            $("#@id  #add-metadata-select-@id").append(elem);
         }
         // chosen pulldown configuration
-        $("#@id  #add-metadata-select").chosen({
+        $("#@id  #add-metadata-select-@id").chosen({
             search_contains: true,
             width: "100%",
             placeholder_text_single: "Select field"});
         // register selection listener
-        $("#@id  #add-metadata-select").change(function () {
-            $("#@id  #add-metadata-select option:selected").each(function() {displayAddEditForm(this, null);});
+        $("#@id  #add-metadata-select-@id").change(function () {
+            $("#@id  #add-metadata-select-@id option:selected").each(function() {displayAddEditForm("@id", this, null);});
         });
         
     
-      function editMDEntry(md_id) {
+      function editMDEntry(id, md_id) {
+      alert(id);
         //Use id to find uri for term, then use the <option> entry for that term to invoke an edit
         var uri = $("#" + md_id).closest(".mdblock").find(".pred").attr("title");
       
-        displayAddEditForm($("#@id  #add-metadata-select option[value='" + uri+ "'] "), md_id);
+        displayAddEditForm(id, $("#"+id+"  #add-metadata-select-"+id+" option[value='" + uri+ "'] "), md_id);
         
         $('html, body').animate({
-          scrollTop: $("#@id").offset().top-50
+          scrollTop: $("#"+id).offset().top-50
 	      }, 1000);
 	    
       }
       
       
-     function displayAddEditForm(elem, md_id) {
+     function displayAddEditForm(id, elem, md_id) {
+     
                 var space_id = $(elem).attr("space_id");
                 var field_id = $(elem).val();
                 var footerHtml = "";
@@ -353,18 +356,18 @@ line-height: 1.5;
                         var spaceName= response.name;
                         footerHtml = footerTemplate({'space_name': spaceName, 'space_url': jsRoutes.controllers.Spaces.getSpace(space_id).url, 'uri':field_id });
                         //Call after new html has been added to DOM tree
-						setupField(elem, md_id, footerHtml);
+						setupField(id, elem, md_id, footerHtml);
                     });
                     request2.fail(function (jqXHR, textStatus, errorThrown){
-                        setupField(elem, md_id, footerHtml);
+                        setupField(id, elem, md_id, footerHtml);
                     });
                 } else {
-                    setupField(elem, md_id, footerHtml);
+                    setupField(id, elem, md_id, footerHtml);
                 }
             }
             
-     function setupField(elem, md_id, footerHtml) {
-            
+     function setupField(id, elem, md_id, footerHtml) {
+
                 // create html form
                 var field_label = $(elem).text();
                 var field_id = $(elem).val();
@@ -390,13 +393,12 @@ line-height: 1.5;
                     };
                 var modalTemplate = Handlebars.getTemplate("@routes.Assets.at("templates/metadata/")" + template_map[field_type]);
                 var html = modalTemplate({'field_label': field_label, 'field_description': field_description,'field_id': field_id, 'field_type': field_type, 'entry_id': md_id, 'field_value':field_value});
-            
-                $('#@id  #selected_field').html(html + footerHtml);
+                $('#' + id +' .selected_field').html(html + footerHtml);
                 // register submit listener
                 if(md_id != null) {
-                  $("#@id  #add-metadata-button").click(update_@id);
+                  $("#" + id +" #add-metadata-button").click(window["update_" + id]);
                 } else {
-                  $("#@id  #add-metadata-button").click(submit_@id);
+                  $("#" + id +" #add-metadata-button").click(window["submit_" + id]);
                 }
                 
                 //Do type-specific setup:
@@ -408,16 +410,16 @@ line-height: 1.5;
                      unit = field_value.substring(index+1, field_value.length -1);
                      field_value = field_value.substring(0,index-1);
                    }
-                   $("#@id #field-value").val(field_value);
-                   $("#@id #unit-value").val(unit);
+                   $("#" + id +" #field-value").val(field_value);
+                   $("#" + id +" #unit-value").val(unit);
                  }
                     // Find the field with the specific uri.
                     var field = $.grep(fields, function(e){ return e.json.uri == field_id; });
-                    $("#@id  #field-value").catcomplete({
+                    $("#" + id +" #field-value").catcomplete({
                         minLength: 3,
                         source: function( request, response ) {
 
-                            var useSyn = $("#@id  #useSynonyms").prop("checked");
+                            var useSyn = $("#" + id + "  #useSynonyms").prop("checked");
                             var query_param = field[0].json.query_parameter;
                             var url = encodeURIComponent(field[0].json.definitions_url + "?" + query_param + "=" + request.term + "&useSynonyms=" + useSyn);
                             $.ajax({
@@ -438,7 +440,7 @@ line-height: 1.5;
                         }
                     });
                    
-                    $("#@id #unit-value").autocomplete({
+                    $("#" + id +" #unit-value").autocomplete({
                         minLength: 1,
                         source: function( request, response ) {
                             var url = encodeURIComponent(field[0].json.definitions_url);
@@ -478,7 +480,7 @@ line-height: 1.5;
                 } else if (field_type === "listjquery") {
                     // Find the field with the specific uri.
                     var field = $.grep(fields, function(e){ return e.json.uri == field_id; });
-                    $("#@id #field-value").autocomplete({
+                    $("#" + id +" #field-value").autocomplete({
                         minLength: 3,
                         source: function( request, response ) {
                             // Get the query parameter from the saved json, not hardcoded.
@@ -502,7 +504,7 @@ line-height: 1.5;
                     // Find the field with the specific uri.
                     var field = $.grep(fields, function(e){ return e.json.uri == field_id; });
                     
-                    $("#@id  #field-value").autocomplete({
+                    $("#" + id +" #field-value").autocomplete({
                         minLength: 3,
                         source: function( request, response ) {
                             // Sets a variable query parameter in $.ajax.data below.
@@ -523,8 +525,8 @@ line-height: 1.5;
                     if(md_id!=null) {
   					  var curVal=  ($("#"+md_id + " span .placename")).text();
 		              curVal = curVal.substring(0, curVal.length -2);
-                      $("#@id  #field-value").attr("value",curVal.replace(/\s+/g, ''));
-                      $("#@id  #field-value").autocomplete("search");
+                      $("#" + id +" #field-value").attr("value",curVal.replace(/\s+/g, ''));
+                      $("#" + id +" #field-value").autocomplete("search");
                     }
                 } else if (field_type === "list") {
                     // find field with the specific uri
@@ -541,9 +543,9 @@ line-height: 1.5;
                         // modalTemplate was assigned above using the map.
                         var html = modalTemplate({'field_label': field_label, 'field_description': field_description, 'field_id': field_id, 'field_type': field_type,
                             'options': vocabulary, 'entry_id': md_id, 'field_value':field_value});
-                        $("#@id  #selected_field").html(html + footerHtml);
+                        $("#" + id +" .selected_field").html(html + footerHtml);
                         // chosen pulldown configuration
-                        $("#@id  #field-value").chosen({
+                        $("#" + id +" #field-value").chosen({
                             no_results_text: "Not found. Press enter to add ",
                             add_search_option: true,
                             search_contains: true,
@@ -551,10 +553,10 @@ line-height: 1.5;
                             placeholder_text_single: "Select field"});
                         // register submit listener
                         if(md_id != null) {
-                          $("#@id  #field-value").val(field_value).trigger('chosen:updated');
-                          $("#@id  #add-metadata-button").click(update_@id);
+                          $("#" + id +" #field-value").val(field_value).trigger('chosen:updated');
+                          $("#" + id +" #add-metadata-button").click(window["update_"+id]);
                         } else {
-                          $("#@id  #add-metadata-button").click(submit_@id);
+                          $("#" + id +" #add-metadata-button").click(window["submit_" + id]);
                         }
                       });
 

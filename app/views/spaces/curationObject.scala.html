@@ -1,11 +1,14 @@
-@(curationObject: models.CurationObject,m: List[models.Metadata], rdfExported: Boolean, limit: Int)(implicit user: Option[models.User])
+@(curationObject: models.CurationObject, r: models.RdfMetadata, mDefs: List[MetadataDefinition], limit: Int)(implicit user: Option[models.User])
 @import api.Permission
 @import helper._
 @import collection.JavaConverters._
 @import play.api.Play.current
 @implicitFieldConstructor = @{ FieldConstructor(twitterBootstrapInput.f) }
 
+        
+            
 @main(curationObject.name) {
+
     <div class="row">
         <div class="col-md-12">
             <div class="panel panel-default">
@@ -19,12 +22,12 @@
         </div>
     </div>
     <div class="row">
-        <div class="col-md-2">
+        <div class="col-md-3">
         </div>
-        <div class="col-md-8 text-center">
+        <div class="col-md-6 text-center">
             <h1>Edit Metadata</h1>
         </div>
-        <div class="col-md-2">
+        <div class="col-md-3">
             <a class="btn btn-primary pull-right" href="@routes.CurationObjects.findMatchingRepositories(curationObject.id)"> Select Repository <span class="glyphicon glyphicon-chevron-right"></span></a>
         </div>
     </div>
@@ -38,13 +41,13 @@
             @if(Permission.checkPermission(Permission.AddMetadata, ResourceRef(ResourceRef.curationObject, curationObject.id))) {
                  <div class="row">
                     <div class="col-md-12">
-                    @metadatald.addMetadata("curationObject", curationObject.id.toString, null, "metadata-content-ds")
+                    @metadatald.addMetadata("curationObject", curationObject.id.toString, mDefs, "metadata-content-"+curationObject.id.toString)
                     </div>
                  </div>
             }
             <div class="row">
-                <div class="col-md-12" id="metadata-content-ds">
-                @metadatald.view(m.filter(_.attachedTo.resourceType == ResourceRef.curationObject), null, null, true)
+                <div class="col-md-12" id="metadata-content-@curationObject.id.toString">
+                @metadatald.view(None, r, mDefs, true)
                 </div>
             </div>
 
@@ -62,6 +65,7 @@
             var parentType = "dataset";
             var pageIndex = 0;
             var folderId;
+
 
             $(document).ready(function(){
                 getUpdatedFilesAndFolders('@curationObject.id', @limit);

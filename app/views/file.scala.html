@@ -563,7 +563,7 @@
 
 			<div class="row">
 				<div class="col-md-12">
-					<h4>Metadata</h4>
+					<h4>@Messages("metadata.user")</h4>
 				</div>
 			</div>
 			@if(user.isDefined) {
@@ -575,7 +575,7 @@
 			}
 			<div class="row bottom-padding">
 				<div class="col-md-12" id="metadata-content">
-				@metadatald.view(mds, r, mDefs, true)
+				@metadatald.view(Some(mds), r, mDefs, true)
 				</div>
 			</div>
 

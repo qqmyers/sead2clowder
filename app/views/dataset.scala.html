@@ -269,16 +269,21 @@
                         <div class="list-unstyled" id="reply_@dataset.id.toString"> @comment(comments)</div>
                     </div>
                     <div role="tabpanel" class="tab-pane fade" id="tab-metadata">
+                  	<div class="row">
+						<div class="col-md-12">
+							<h4>@Messages("metadata.user")</h4>
+						</div>
+					</div>
                         @if(user.isDefined) {
                             <div class="row">
                                 <div class="col-md-12">
-                                @metadatald.addMetadata("dataset", dataset.id.toString, mDefs, "metadata-content")
+                                @metadatald.addMetadata("dataset", dataset.id.toString, mDefs, "metadata-content-"+ dataset.id.toString)
                                 </div>
                             </div>
                         }
                         <div class="row">
-                            <div class="col-md-12" id="metadata-content">
-                                @metadatald.view(m, r, mDefs, true)
+                            <div class="col-md-12" id="metadata-content-@dataset.id.toString">
+                                @metadatald.view(Some(m), r, mDefs, true)
                             </div>
                         </div>
                         @if(Permission.checkPermission(Permission.EditDataset, ResourceRef(ResourceRef.dataset, dataset.id))
