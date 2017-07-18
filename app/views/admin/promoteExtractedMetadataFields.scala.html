@@ -7,7 +7,7 @@
 
     <div class="page-header">
         <h1>Promote Extracted Metadata Fields</h1>
-        <p>Choose extractor-generated metadata fields that you would like to appear on the
+        <p>Choose the extractor-generated metadata fields that you would like to appear on the
             <a href="@routes.Metadata.search()">Advanced Search</a> page by default.
         </p>
         <p>After making necessary changes, please press the 'Submit changes' button at the bottom.
@@ -18,15 +18,10 @@
         <div class="panel panel-default col-lg-7 col-md-7">
             <div class="panel-body">
                 <form class="form top-padding" id="metadata-promote">
-                @*<div class="top-padding" id="metadata-promote">*@
-                    @*<div id="metadata-saved-container">*@
-                    @*</div>*@
                     <div class="row">
                         <div id="metadata-container">
-                                <!-- METADATA SAVED ROWS (populated by script below) -->
-                            <div id="metadata-saved-rows"></div>
                                 <!-- METADATA FIELD ROWS (populated by script below) -->
-                            <div id="metadata-new-rows"></div>
+                            <div id="metadata-rows"></div>
                         </div>
                     </div>
 
@@ -48,7 +43,6 @@
                             </a>
                         </div>
                     </div>
-                @*</div>*@
                 </form>
             </div>
         </div>
@@ -56,7 +50,7 @@
 
 
     <script>
-        var row_list = [];
+        var rowList = [];
         var $form = $( "form[id='metadata-promote']");
         $("#add-metadata-grouping").select2({
             theme: "bootstrap",
@@ -64,56 +58,57 @@
             width: "100%"
         });
 
+        // TODO: Temporary logic for displaying a few rows. Should be removed once database communication is in place
         for(var i = 0; i < 5; i++){
-            addSavedMetadataFieldRows(i+1);
+            addMetadataFieldRows(i+1, "saved");
         }
-        addNewMetadataFieldRows(1);
+        addMetadataFieldRows(6, "new");
 
         // Add a new row to the set of criteria
-        function addSavedMetadataFieldRows(rowId) {
-
+        function addMetadataFieldRows(rowId, rowType) {
             var rowStr = String(rowId);
 
-            // Basic row definition
-            $("#metadata-saved-rows").append(
-                $(
-                    "<p>" +
-                        "<div id='saved-metadata-clause-" + rowStr + "'>" +
+            rowList.push(rowStr);
+
+            if (rowType === "saved" ) {
+
+                // Basic new row definition
+                $("#metadata-rows").append(
+                    $(
+                        //"<p>" +
+                        "<div id='metadata-clause-" + rowType + "-" + rowStr + "'>" +
                             <!-- FIELD SELECTOR DROPDOWN -->
                             "<div class='form-group col-lg-8 col-md-8'>" +
-                                "<input style='width: 100%;' type='text' class='form-control-static' id='saved-metadata-text-" + rowStr +
-                                "' value='Metadata field " + rowStr + "' disabled='disabled'/>" +
+                                "<input style='width: 100%;' type='text' class='form-control-static' " +
+                                "id='saved-metadata-text-" + rowStr + "' value='Metadata field " + rowStr +
+                                "' disabled='disabled'/>" +
                             "</div>" +
                                 <!-- EDIT ROW BUTTON -->
-                            "<div class='form-group col-lg-1 col-md-1'>" +
+                            "<div title='Edit row' class='form-group col-lg-1 col-md-1'>" +
                                 "<button type='button' class='btn' id='edit-" + rowStr + "' " +
-                                    "onclick='saveRow(" + rowStr + ")'>" +
+                                    "onclick='editRow(" + rowStr + ")'>" +
                                     "<span class='glyphicon glyphicon-edit'></span>" +
                                 "</button>" +
                             "</div>" +
                                 <!-- DELETE ROW BUTTON -->
-                            "<div class='form-group col-lg-1 col-md-1'>" +
+                            "<div title='Delete row' class='form-group col-lg-1 col-md-1'>" +
                                 "<button class='btn' id='remove-saved-" + rowStr + "' " +
-                                    "onclick='removeRow(" + rowStr + ")'>" +
+                                    "onclick='removeRow(" + rowStr + ",\"" + rowType + "\")'>" +
                                     "<span class='glyphicon glyphicon-minus'></span>" +
                                 "</button>" +
                             "</div>" +
                         "</div>"
-                )
+                    )
 
-            );
+                );
+            }
+            else if (rowType === "new" ) {
 
-        }
-
-        // Add a new row to the set of criteria
-        function addNewMetadataFieldRows(rowId) {
-            var rowStr = String(rowId);
-
-            // Basic row definition
-            $("#metadata-new-rows").append(
-                $(
-                    "<p>" +
-                        "<div id='new-metadata-clause-" + rowStr + "'>" +
+                // Basic saved row definition
+                $("#metadata-rows").append(
+                    $(
+                        //"<p>" +
+                        "<div id='metadata-clause-" + rowType + "-" + rowStr + "'>" +
                                 <!-- FIELD SELECTOR DROPDOWN -->
                             "<div class='form-group col-lg-8 col-md-8'>" +
                                 "<select id='add-metadata-select-" + rowStr + "'>" +
@@ -121,58 +116,31 @@
                                 "</select>" +
                             "</div>" +
                             <!-- SAVE ROW BUTTON -->
-                            "<div class='form-group col-lg-1 col-md-1'>" +
+                            "<div title='Save row' class='form-group col-lg-1 col-md-1'>" +
                                 "<button type='button' class='btn' id='save-" + rowStr + "' " +
                                     "onclick='saveRow(" + rowStr + ")'>" +
                                     "<span class='glyphicon glyphicon-save'></span>" +
                                 "</button>" +
                             "</div>" +
                                 <!-- DELETE ROW BUTTON -->
-                            "<div class='form-group col-lg-1 col-md-1'>" +
+                            "<div title='Delete row' class='form-group col-lg-1 col-md-1'>" +
                                 "<button class='btn' id='remove-" + rowStr + "' " +
-                                    "onclick='removeRow(" + rowStr + ")'>" +
+                                    "onclick='removeRow(" + rowStr + ",\"" + rowType + "\")'>" +
                                     "<span class='glyphicon glyphicon-minus'></span>" +
                                 "</button>" +
                             "</div>" +
                         "</div>"
-                )
-            );
-            document.getElementById("add-clause").onclick = function () { addNewMetadataFieldRows(rowId + 1);};
-            row_list.push(rowStr);
+                    )
+                );
 
-//            // Add theme to operator/grouping dropdowns
-//            $("#add-metadata-operator-" + rowStr).select2({
-//                theme: "bootstrap",
-//                allowClear: false,
-//                width: "100%"
-//            });
-//            $("#add-metadata-grouping-" + rowStr).select2({
-//                theme: "bootstrap",
-//                allowClear: false,
-//                width: "100%"
-//            });
+                document.getElementById("add-clause").onclick = function () { addMetadataFieldRows(rowId + 1, "new");};
 
-//                // fetch metadata definitions
-//                var request = jsRoutes.api.Metadata.getDefinitionsDistinctName().ajax({
-//                    type: 'GET',
-//                    contentType: "application/json"
-//                });
-//                request.done(function (response, textStatus, jqXHR) {
-//                    var fields = response;
-                var row_id = "#add-metadata-select-" + rowStr;
+                var addMetadataSelectStr = "#add-metadata-select-" + rowStr;
 
-                $(row_id).empty();
-//                    for (var i = 0; i < fields.length; i++) {
-//                        var elem = $("<option></option>");
-//                        elem.attr("data-type", fields[i].json.type);
-//                        elem.attr("data-id", fields[i].json.label);
-//                        elem.attr("value", "metadata."+fields[i].json.label);
-//                        elem.text(fields[i].json.label);
-//                        $("#add-metadata-select-"+String(rowId)).append(elem);
-//                    }
+                $(addMetadataSelectStr).empty();
 
                 // Select box will populate as user types, with metadata field autocomplete suggestions
-                $(row_id).select2({
+                $(addMetadataSelectStr).select2({
                     theme: "bootstrap",
                     placeholder: "Start typing metadata field here...",
                     allowClear: true,
@@ -180,13 +148,7 @@
                     ajax: {
                         url: function(filter) {
                             // Get autocomplete results if typing; otherwise return standard set of definitions
-//                                if (filter.term == null || filter.term == "") {
-//                                    // TODO: Add call to default
-//                                    return jsRoutes.api.Metadata.getDefinitionsDistinctName().url
-//                                }
-//                                else {
                                 return jsRoutes.api.Metadata.getAutocompleteName(filter.term).url;
-//                                }
                         },
                         // Populate autocomplete as user types
                         processResults: function(data, page) {
@@ -196,14 +158,6 @@
 
                             for (var rez=0; rez<data.length; rez++) {
                                 var entry = data[rez];
-
-//                                    // Metadata Definitions
-//                                    if (typeof(entry) == 'object') {
-//                                        console.log("object found");
-//                                        entryGroup = "Metadata Definitions";
-//                                        entryData = {text: entry.json.label, id: "metadata."+entry.json.label};
-//                                        // suggestions from elasticsearch
-//                                    } else {
 
                                 if (entry.indexOf('.') > -1) {
                                     if (entry.indexOf('/extractors/') > -1) {
@@ -231,7 +185,6 @@
                                     entryGroup = "";
                                     entryData = {text: entry, id: entry}
                                 }
-//                                    }
                                 if (!outMap.hasOwnProperty(entryGroup))
                                     outMap[entryGroup] = [];
                                 outMap[entryGroup].push(entryData)
@@ -253,25 +206,21 @@
                         }
                     }
                 });
-//                });
-
-//                request.fail(function (jqXHR, textStatus, errorThrown){
-//                    console.error("The following error occured: " + textStatus, errorThrown);
-//                    var errMsg = "You must be logged in to retrieve metadata definitions";
-//                    if (!checkErrorAndRedirect(jqXHR, errMsg)) {
-//                        notify("Metadata was not added due to : " + errorThrown, "error");
-//                    }
-//                });
+            }
         }
 
         function saveRow(rowId) {
             console.log("saved");
         }
 
-        function removeRow(rowId) {
+        function editRow(rowId) {
+            console.log("edit");
+        }
+
+        function removeRow(rowId, rowType) {
             var rowStr = String(rowId);
-            $("#new-metadata-clause-" + rowStr).remove();
-            row_list.splice(row_list.indexOf(rowStr), 1);
+            $("#metadata-clause-" + rowType + "-" + rowStr).remove();
+            rowList.splice(rowList.indexOf(rowStr), 1);
         }
 
         // form submission
