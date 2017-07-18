@@ -159,35 +159,21 @@
                             for (var rez=0; rez<data.length; rez++) {
                                 var entry = data[rez];
 
-                                if (entry.indexOf('.') > -1) {
-                                    if (entry.indexOf('/extractors/') > -1) {
-                                        // Group extractor-specific fields together under extractor
-                                        entryGroup = entry.substring(
-                                                        entry.indexOf('/extractors/') + 12,
-                                                        entry.lastIndexOf('.')) + " (Extractor)";
-                                    }
-                                    else if (entry.split('.').length > 2 ){
-                                        // Group user-submitted metadata under user's name
-                                        entryGroup = entry.substring(
-                                                        entry.indexOf('.') + 1,
-                                                        entry.lastIndexOf('.')) + " (User)";
-                                    }
-                                    else {
-                                        // This should be metadata definitions otherwise
-                                        entryGroup = "Metadata Definitions";
-                                    }
+                                // Get extractor-generated metadata field names
+                                if (entry.indexOf('metadata.') > -1 && entry.indexOf('/extractors/') > -1) {
+                                    // Group extractor-specific fields together under extractor
+                                    entryGroup = entry.substring(
+                                                    entry.indexOf('/extractors/') + 12,
+                                                    entry.lastIndexOf('.')) + " (Extractor)";
                                     entryData = {
                                         id: entry,
                                         text: entry.substring(entry.lastIndexOf('.') + 1, entry.length)
-                                    }
-                                } else {
-                                    // Simple entry
-                                    entryGroup = "";
-                                    entryData = {text: entry, id: entry}
+                                    };
+
+                                    if (!outMap.hasOwnProperty(entryGroup))
+                                        outMap[entryGroup] = [];
+                                    outMap[entryGroup].push(entryData)
                                 }
-                                if (!outMap.hasOwnProperty(entryGroup))
-                                    outMap[entryGroup] = [];
-                                outMap[entryGroup].push(entryData)
                             }
 
                             var outList = [];
@@ -199,7 +185,7 @@
                                     outList.push({"text":group, "children": outMap[group]})
                             }
 
-                            console.log(outList);
+                            //console.log(outList);
                             return {
                                 results: outList
                             };
