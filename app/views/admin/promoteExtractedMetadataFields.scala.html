@@ -52,36 +52,41 @@
     <script>
         var rowList = [];
         var $form = $( "form[id='metadata-promote']");
+        var rowCount = 0;
         $("#add-metadata-grouping").select2({
             theme: "bootstrap",
             allowClear: false,
             width: "100%"
         });
 
-        // TODO: Temporary logic for displaying a few rows. Should be removed once database communication is in place
-        for(var i = 0; i < 5; i++){
-            addMetadataFieldRows(i+1, "saved");
-        }
-        addMetadataFieldRows(6, "new");
+        // TODO: Display any metadata fields already present in the database
+
+        // Add a new row for the user to get started with
+        addMetadataFieldRows(++rowCount, "new");
 
         // Add a new row to the set of criteria
-        function addMetadataFieldRows(rowId, rowType) {
+        function addMetadataFieldRows(rowId, rowType, rowData) {
             var rowStr = String(rowId);
 
             rowList.push(rowStr);
 
-            if (rowType === "saved" ) {
+            if (rowType === "saved" || rowType === "submitted") {
+
+                var dataId = rowData.id;
+                var dataText = rowData.text;
+                var dataGroup = dataId.substring(dataId.indexOf('/extractors/') + 12, dataId.lastIndexOf('.'));
+                var dataGroupText = dataGroup + " (Extractor)";
 
                 // Basic new row definition
                 $("#metadata-rows").append(
                     $(
-                        //"<p>" +
                         "<div id='metadata-clause-" + rowType + "-" + rowStr + "'>" +
                             <!-- FIELD SELECTOR DROPDOWN -->
                             "<div class='form-group col-lg-8 col-md-8'>" +
-                                "<input style='width: 100%;' type='text' class='form-control-static' " +
-                                "id='saved-metadata-text-" + rowStr + "' value='Metadata field " + rowStr +
-                                "' disabled='disabled'/>" +
+                                "<select id='" + rowType + "-metadata-select-" + rowStr + "'>" +
+                                    "<option title='" + dataGroupText + "' selected value='" + dataId +"'>" + dataText +
+                                    "</option>" +
+                                "</select>" +
                             "</div>" +
                                 <!-- EDIT ROW BUTTON -->
                             "<div title='Edit row' class='form-group col-lg-1 col-md-1'>" +
@@ -99,8 +104,15 @@
                             "</div>" +
                         "</div>"
                     )
-
                 );
+
+                var metadataSelectStr = "#" + rowType + "-metadata-select-" + rowStr;
+                $(metadataSelectStr).select2({
+                    theme: "bootstrap",
+                    width: "100%",
+                    allowClear: true
+                }).prop("disabled", true);
+
             }
             else if (rowType === "new" ) {
 
@@ -118,7 +130,7 @@
                             <!-- SAVE ROW BUTTON -->
                             "<div title='Save row' class='form-group col-lg-1 col-md-1'>" +
                                 "<button type='button' class='btn' id='save-" + rowStr + "' " +
-                                    "onclick='saveRow(" + rowStr + ")'>" +
+                                    "onclick='saveRow(" + rowStr + ",\"saved\")'>" +
                                     "<span class='glyphicon glyphicon-save'></span>" +
                                 "</button>" +
                             "</div>" +
@@ -133,7 +145,8 @@
                     )
                 );
 
-                document.getElementById("add-clause").onclick = function () { addMetadataFieldRows(rowId + 1, "new");};
+                document.getElementById("add-clause").onclick = function () { ++rowCount;
+                    addMetadataFieldRows(rowId + 1, "new");};
 
                 var addMetadataSelectStr = "#add-metadata-select-" + rowStr;
 
@@ -185,7 +198,7 @@
                                     outList.push({"text":group, "children": outMap[group]})
                             }
 
-                            //console.log(outList);
+                            console.log(outList);
                             return {
                                 results: outList
                             };
@@ -195,7 +208,58 @@
             }
         }
 
-        function saveRow(rowId) {
+        function saveRow(rowId, newRowType) {
+            var rowStr = String(rowId);
+            var currentRowType = "new";
+            var $select = $("#add-metadata-select-" + rowStr);
+            var dataId = $select.val();
+            var dataText = $select.text();
+
+            if (newRowType == null) {
+                newRowType = "saved";
+            }
+
+            if (dataId != null && dataId != undefined && dataText != null && dataText != undefined) {
+
+                var dataGroup = dataId.substring(dataId.indexOf('/extractors/') + 12, dataId.lastIndexOf('.'));
+                var dataGroupText = dataGroup + " (Extractor)";
+                var $metadataClause = $("#metadata-clause-" + currentRowType + "-" + rowStr);
+
+                $metadataClause.replaceWith(
+                    "<div id='metadata-clause-" + newRowType + "-" + rowStr + "'>" +
+                        <!-- FIELD SELECTOR DROPDOWN -->
+                        "<div class='form-group col-lg-8 col-md-8'>" +
+                            "<select id='" + newRowType + "-metadata-select-" + rowStr + "'>" +
+                                "<option title='" + dataGroupText + "' selected value='" + dataId +"'>" + dataText +
+                                "</option>" +
+                            "</select>" +
+                        "</div>" +
+                            <!-- EDIT ROW BUTTON -->
+                        "<div title='Edit row' class='form-group col-lg-1 col-md-1'>" +
+                            "<button type='button' class='btn' id='edit-" + rowStr + "' " +
+                                "onclick='editRow(" + rowStr + ")'>" +
+                                "<span class='glyphicon glyphicon-edit'></span>" +
+                            "</button>" +
+                        "</div>" +
+                            <!-- DELETE ROW BUTTON -->
+                        "<div title='Delete row' class='form-group col-lg-1 col-md-1'>" +
+                            "<button class='btn' id='remove-saved-" + rowStr + "' " +
+                                "onclick='removeRow(" + rowStr + ",\"" + newRowType + "\")'>" +
+                                "<span class='glyphicon glyphicon-minus'></span>" +
+                            "</button>" +
+                        "</div>" +
+                    "</div>"
+                );
+
+                var metadataSelectStr = "#" + newRowType + "-metadata-select-" + rowStr;
+                $(metadataSelectStr).select2({
+                    theme: "bootstrap",
+                    width: "100%",
+                    allowClear: true
+                }).prop("disabled", true);
+            } else {
+                removeRow(rowId, currentRowType);
+            }
             console.log("saved");
         }
 
@@ -213,6 +277,35 @@
         $form.submit(function( event ) {
             event.preventDefault();
             //
+            var dataMap = [];
+            var dataList = [];
+            var i;
+
+            // Generate data map
+            for (i = 1; i <= rowCount; i++) {
+                var $newSelect = $("#add-metadata-select-" + i);
+                var $savedSelect = $("#saved-metadata-select-" + i);
+
+                if ($newSelect.val() != null) {
+                    dataMap[$newSelect.val()] = $newSelect.text();
+                }
+
+                if ($savedSelect.val() != null) {
+                    dataMap[$savedSelect.val()] = $savedSelect.text();
+                }
+            }
+
+            // Generate data list from map
+            for (var key in dataMap) {
+                dataList.push({id: key, text: dataMap[key]})
+            }
+
+            // Display the results
+            for (var row=1; row <= rowCount; row++) {
+                saveRow(row, "submitted");
+            }
+
+            console.log(dataList);
             console.log("Submitted changes");
         });
 
