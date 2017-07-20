@@ -64,6 +64,9 @@ trait MetadataService {
   /** Get vocabulary based on uri and space **/
   def getDefinitionByUriAndSpace(uri: String, spaceId: Option[String] = None): Option[MetadataDefinition]
 
+  /** Get vocabulary based on uri and space **/
+  def getDefinitionByLabelAndSpace(label: String, spaceId: Option[String] = None): Option[MetadataDefinition]
+  
   /** Remove all metadata definitions related to a space**/
   def removeDefinitionsBySpace(spaceId: UUID)
 

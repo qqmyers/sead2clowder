@@ -129,30 +129,25 @@
              $('.delete-definition').unbind().on('click', function(){
              var item=this;
              noty({
-  text: 'CAUTION: POTENTIAL INFORMATION LOSS<br/><br/>Deleting a definition will remove all annotations using it on datasets, files, and publication requests in this space. <br/><br/>(Un-checking "Allow New Entries" will remove this definition from the list for adding new annotations without removing existing annotations.) <br/><br/>Do you want to continue?',
-  layout: 'center',
-  type: 'warning',
-  theme: 'relax',
-  modal: true,
-  buttons: [
-    {addClass: 'btn btn-success', text: 'DELETE',onClick: function($noty) {
-    
- 		deleteDef(item);
- 		$noty.close();
- 		notify("Metadata definition was removed." , "success", false, 2000);
-    }},
-
-    {addClass: 'btn btn-error', text: 'CANCEL', onClick: function ($noty) {
-        $noty.close();
-    }
-    }
-  ]
-}).show();
+  				text: 'CAUTION: POTENTIAL INFORMATION LOSS<br/><br/>Deleting a definition will remove all annotations using it on datasets, files, and publication requests in this space. <br/><br/>(Un-checking "Allow New Entries" will remove this definition from the list for adding new annotations without removing existing annotations.) <br/><br/>Do you want to continue?',
+				layout: 'center',
+				type: 'warning',
+				theme: 'relax',
+				modal: true,
+				buttons: [
+			    {addClass: 'btn btn-success', text: 'DELETE',onClick: function($noty) {
+					deleteDef(item);
+			 		$noty.close();
+ 					notify("Metadata definition was removed." , "success", false, 2000);
+			    }},
+			    {addClass: 'btn btn-error', text: 'CANCEL', onClick: function ($noty) {
+        			$noty.close();
+			    }
+    			}
+				]
+			}).show();
         });
-        });
-
-
-
+    });
     </script>
 
 	<div class="page-header">
@@ -199,7 +194,7 @@
                     <li>WKTLocation: A location defined by Well Known Text (WKT)</li>
                     <li>Scientific Variable: A name/unit pair. A type of queriable list.</li>
                     </ul>"><span class="glyphicon glyphicon-info-sign"></span></a></th>
-                    <th class='col-md-2'>Allow New Entries <a tabindex="0" role="button" data-toggle="popover" title="Allow New Entries"  data-content="A checked box means that the term will be shown as one of the choices in 'Add Metadata' menues. Unchecking this box is an alternative to deleting the term - existing annotations using the term will not be removed." aria-hidden="true" ><span class="glyphicon glyphicon-info-sign"></span></a></th>
+                    <th class='col-md-2'>Allow New Entries <a tabindex="0" role="button" data-toggle="popover" title="Allow New Entries"  data-content="A checked box means that the term will be shown as one of the choices in 'Add Metadata' menus. Unchecking this box is an alternative to deleting the term - existing annotations using the term will not be removed." aria-hidden="true" ><span class="glyphicon glyphicon-info-sign"></span></a></th>
                     <th class='col-md-1' data-sorter="false">Actions</th>
                 </tr>
             </thead>

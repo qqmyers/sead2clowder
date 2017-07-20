@@ -695,6 +695,13 @@ class MongoDBMetadataService @Inject() (contextService: ContextLDService, datase
       case None => MetadataDefinitionDAO.findOne(MongoDBObject("json.uri" -> uri, "spaceId" -> null))
     }
   }
+  
+  def getDefinitionByLabelAndSpace(label: String, spaceId: Option[String] = None): Option[MetadataDefinition] = {
+    spaceId match {
+      case Some(s) => MetadataDefinitionDAO.findOne(MongoDBObject("json.label" -> label, "spaceId" -> new ObjectId(s)))
+      case None => MetadataDefinitionDAO.findOne(MongoDBObject("json.label" -> label, "spaceId" -> null))
+    }
+  }
 
   def removeDefinitionsBySpace(spaceId: UUID) = {
     MetadataDefinitionDAO.remove(MongoDBObject("spaceId" -> new ObjectId(spaceId.stringify)))

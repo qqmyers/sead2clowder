@@ -145,7 +145,7 @@ class Metadata @Inject() (
                 uri = play.Play.application().configuration().getString("metadata.uri.prefix") + "/" + space.id.stringify + "#" + WordUtils.capitalize((body \ "label").as[String]).replaceAll("\\s", "")
                 body = body.as[JsObject] + ("uri" -> Json.toJson(uri))
               }
-              addDefinitionHelper(uri, body, Some(space.id), u, Some(space))
+              addDefinitionHelper(uri, (body \ "label").as[String], body, Some(space.id), u, Some(space))
             }
             case None => BadRequest("The space does not exist")
           }
@@ -170,7 +170,7 @@ class Metadata @Inject() (
               uri = play.Play.application().configuration().getString("metadata.uri.prefix") + "#" + WordUtils.capitalize((body \ "label").as[String]).replaceAll("\\s", "")
               body = body.as[JsObject] + ("uri" -> Json.toJson(uri))
             }
-            addDefinitionHelper(uri, body, None, user, None)
+            addDefinitionHelper(uri, (body \ "label").as[String], body, None, user, None)
           } else {
             BadRequest(toJson("Invalid Resource type"))
           }
@@ -180,21 +180,27 @@ class Metadata @Inject() (
   }
 
   //On GUI, URI is not required, however URI is required in DB. a default one will be generated when needed.
-  private def addDefinitionHelper(uri: String, body: JsValue, spaceId: Option[UUID], user: User, space: Option[ProjectSpace]): Result = {
+  private def addDefinitionHelper(uri: String, label: String, body: JsValue, spaceId: Option[UUID], user: User, space: Option[ProjectSpace]): Result = {
     metadataService.getDefinitionByUriAndSpace(uri, space map { _.id.toString() }) match {
       case Some(metadata) => BadRequest(toJson("Metadata definition with same uri exists."))
       case None => {
-        val definition = MetadataDefinition(json = body, spaceId = spaceId)
-        metadataService.addDefinition(definition)
-        space match {
-          case Some(s) => {
-            events.addObjectEvent(Some(user), s.id, s.name, "added_metadata_space")
-          }
+        metadataService.getDefinitionByLabelAndSpace(label, space map { _.id.toString() }) match {
+          case Some(metadata) => BadRequest(toJson("Metadata definition with same label exists."))
           case None => {
-            events.addEvent(new Event(user.getMiniUser, None, None, None, None, None, "added_metadata_instance", new Date()))
+
+            val definition = MetadataDefinition(json = body, spaceId = spaceId)
+            metadataService.addDefinition(definition)
+            space match {
+              case Some(s) => {
+                events.addObjectEvent(Some(user), s.id, s.name, "added_metadata_space")
+              }
+              case None => {
+                events.addEvent(new Event(user.getMiniUser, None, None, None, None, None, "added_metadata_instance", new Date()))
+              }
+            }
+            Ok(JsObject(Seq("status" -> JsString("ok"))))
           }
         }
-        Ok(JsObject(Seq("status" -> JsString("ok"))))
       }
     }
   }
@@ -266,7 +272,7 @@ class Metadata @Inject() (
       case None => BadRequest(toJson("Invalid user"))
     }
   }
-  
+
   def makeDefinitionAddable(id: UUID, addable: Boolean) = ServerAdminAction { implicit request =>
     implicit val user = request.user
     user match {
