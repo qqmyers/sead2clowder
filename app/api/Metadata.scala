@@ -266,6 +266,35 @@ class Metadata @Inject() (
       case None => BadRequest(toJson("Invalid user"))
     }
   }
+  
+  def makeDefinitionAddable(id: UUID, addable: Boolean) = ServerAdminAction { implicit request =>
+    implicit val user = request.user
+    user match {
+      case Some(user) => {
+        metadataService.getDefinition(id) match {
+          case Some(md) => {
+            metadataService.makeDefinitionAddable(id, addable)
+
+            md.spaceId match {
+              case Some(spaceId) => {
+                spaceService.get(spaceId) match {
+                  case Some(s) => events.addObjectEvent(Some(user), s.id, s.name, "toggle_metadata_space")
+                  case None =>
+                }
+              }
+              case None => {
+                events.addEvent(new Event(user.getMiniUser, None, None, None, None, None, "toggle_metadata_instance", new Date()))
+              }
+            }
+            Ok(JsObject(Seq("status" -> JsString("ok"))))
+          }
+          case None => BadRequest(toJson("Invalid metadata definition"))
+        }
+
+      }
+      case None => BadRequest(toJson("Invalid user"))
+    }
+  }
 
   def addUserMetadata() = PermissionAction(Permission.AddMetadata)(parse.json) {
     implicit request =>

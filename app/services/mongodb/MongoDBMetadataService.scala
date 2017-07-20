@@ -700,7 +700,7 @@ class MongoDBMetadataService @Inject() (contextService: ContextLDService, datase
     MetadataDefinitionDAO.remove(MongoDBObject("spaceId" -> new ObjectId(spaceId.stringify)))
   }
 
-  /** Add vocabulary definitions, leaving it unchanged if the update argument is set to false **/
+  /** Add vocabulary definitions, leaving it unchanged if one with a matching label or formal uri exists **/
   def addDefinition(definition: MetadataDefinition): Unit = {
     val uri = (definition.json \ "uri").as[String]
     val result = definition.spaceId match {
@@ -710,7 +710,18 @@ class MongoDBMetadataService @Inject() (contextService: ContextLDService, datase
     result match {
       case Some(md) => Logger.debug("Leaving existing vocabulary definition unchanged: " + definition)
       case None => {
-        MetadataDefinitionDAO.save(definition)
+        val label = (definition.json \ "label").as[String]
+
+        val finalresult = definition.spaceId match {
+          case Some(s) => MetadataDefinitionDAO.findOne(MongoDBObject("json.label" -> label, "spaceId" -> new ObjectId(s.stringify)))
+          case None => MetadataDefinitionDAO.findOne(MongoDBObject("json.label" -> label, "spaceId" -> null))
+        }
+        finalresult match {
+          case Some(md) => Logger.debug("Leaving existing vocabulary definition unchanged: " + definition)
+          case None => {
+            MetadataDefinitionDAO.save(definition)
+          }
+        }
       }
     }
   }
@@ -720,8 +731,43 @@ class MongoDBMetadataService @Inject() (contextService: ContextLDService, datase
       $set("json" -> JSON.parse(json.toString()).asInstanceOf[DBObject]), false, false, WriteConcern.Safe)
   }
 
+  def makeDefinitionAddable(id: UUID, addable: Boolean) {
+    MetadataDefinitionDAO.update(MongoDBObject("_id" -> new ObjectId(id.stringify)),
+      $set("json.addable" -> addable), false, false, WriteConcern.Safe)
+  }
+
   def deleteDefinition(id: UUID): Unit = {
-    MetadataDefinitionDAO.remove(MongoDBObject("_id" -> new ObjectId(id.stringify)))
+    MetadataDefinitionDAO.findOne(MongoDBObject("_id" -> new ObjectId(id.stringify))) match {
+      case Some(mdDef) => {
+        //Remove metadata entries using this definition (within a space or in no space)
+        mdDef.spaceId match {
+          case Some(s) => {
+            Logger.info("Finding mData: " + s.stringify + " + " + ("entries." + (mdDef.json \ "label").as[String]));
+            MetadataSummaryDAO.update(MongoDBObject("contextSpace" -> new ObjectId(s.stringify)) ++ (("entries." + (mdDef.json \ "label").as[String]) $exists true),
+              $unset("entries." + (mdDef.json \ "label").as[String]), false, true, WriteConcern.Safe)
+              Logger.info("Removed mData: " + s.stringify + " + " + ("entries." + (mdDef.json \ "label").as[String]));
+            MetadataSummaryDAO.update(MongoDBObject("contextSpace" -> new ObjectId(s.stringify)) ++ (("history." + (mdDef.json \ "label").as[String]) $exists true),
+              $unset("history." + (mdDef.json \ "label").as[String]), false, true, WriteConcern.Safe)
+Logger.info("Removed mData: " + s.stringify + " + " + ("history." + (mdDef.json \ "label").as[String]));
+          }
+          case None => {
+            MetadataSummaryDAO.update(MongoDBObject("contextSpace" -> null) ++ (("entries." + (mdDef.json \ "label").as[String]) $exists true),
+              $unset("entries." + (mdDef.json \ "label").as[String]), false, true, WriteConcern.Safe)
+            MetadataSummaryDAO.update(MongoDBObject("contextSpace" -> null) ++ (("history." + (mdDef.json \ "label").as[String]) $exists true),
+              $unset("history." + (mdDef.json \ "label").as[String]), false, true, WriteConcern.Safe)
+
+          }
+
+        }
+
+        //Then remove the definition itself
+        MetadataDefinitionDAO.remove(MongoDBObject("_id" -> new ObjectId(id.stringify)))
+      }
+      case None => {
+        Logger.warn(s"No metadata definition with id= ${id.stringify} found in call to deleteDefinition.")
+      }
+    }
+
   }
 
   def searchbyKeyInDataset(key: String, datasetId: UUID): List[Metadata] = {

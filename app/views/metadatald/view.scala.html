@@ -267,8 +267,10 @@ There is probably more history than just the latest agent/date once editing is a
 
 
 	@if(rdfMetadata!=null) {
+		
 		<div>
 		@for((label, value) <- rdfMetadata.entries) {
+			
 		  <div class="mdblock panel panel-default">
             <div class="panel-heading" role="tab" id="heading_@safe(label)">
                 <a data-toggle="collapse" href="#collapse_@safe(label)" class="collapse-icon">
@@ -287,7 +289,6 @@ There is probably more history than just the latest agent/date once editing is a
 						<div id="collapse_@safe(label)" class="panel-collapse collapse in" role="tabpanel" aria-labelledby="heading_@safe(label)">
                 <div class="panel-body">
                     <div class="tree">
-			
 			@value match {
 				case o: JsObject => {
 					@for((k,v) <- o.value) {
@@ -320,6 +321,7 @@ There is probably more history than just the latest agent/date once editing is a
                 </div>
                 
 					}
+					
               }
 					
 			</div>
@@ -629,12 +631,16 @@ There is probably more history than just the latest agent/date once editing is a
          if(!$("#metadata-content-"+id+" #heading_" + safe(key)).length) {
          //Add header block
            var blockid = 'heading_' + safe(key);
+        
+           //Prepend the new block
            $('#metadata-content-'+id+' > div:first-child').prepend($('<div/>').addClass('mdblock panel panel-default').append($('<div/>').addClass('panel-heading').attr('role','tab').attr('id',blockid)));
+        
            $('#metadata-content-'+id+' #'+blockid).append($('<a/>').attr('data-toggle','collapse').attr('href','#collapse_' + safe(key)).addClass('collapse-icon').append($('<span/>').addClass('panel-icon glyphicon glyphicon-minus')));
            $('#metadata-content-'+id+' #'+blockid).append($('<span/>').append($('<span/>').addClass('pred').attr('title',defs[key]).text(key)));
            $('#metadata-content-'+id+' #'+blockid).append($('<span/>').addClass('metaprov').text('added ' + mon + ' ' + day + ', ' + year + ' by ').append($('<a/>').attr('href','@routes.Profile.viewProfileUUID(user.get.getMiniUser.id)').text('@user.get.getMiniUser.fullName')));
            $('#metadata-content-'+id+' #'+blockid).parent().append($('<div/>').attr('id','collapse_'+safe(key)).addClass('panel-collapse collapse in').attr('role','tabpanel').attr('aria-labelledby',blockid).append($('<div/>').addClass('panel-body').append($('<div/>').addClass('tree')))); 
          } else {
+         alert("nonew header");
            //modify date/person
            
   		   $('#metadata-content-'+id+' #'+blockid).find('.metaprov').text('last modified ' + mon + ' ' + day + ', ' + year + ' by ').append($('<a/>').attr('href','@routes.Profile.viewProfileUUID(user.get.getMiniUser.id)').text('@user.get.getMiniUser.fullName'));

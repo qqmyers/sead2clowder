@@ -3,6 +3,8 @@
 @import play.api.i18n.Messages
 @import play.Logger
 @linkForObject(obj_type: String, obj_id: Option[UUID], obj_name: Option[String]) = {
+
+	
   @obj_type match {
     case "file" => {
       file: <a href="@routes.Files.file(obj_id.get)">@obj_name.get</a>
@@ -38,6 +40,8 @@
     }
   }
 }
+
+
 
 @actionTextForEvent(event_type_prefix: String) = @{
   event_type_prefix match {
@@ -152,6 +156,13 @@
   case "delete_metadata_instance" => {
     deleted a metadata definition from @(AppConfiguration.getDisplayName)
   }
+  case "toggle_metadata_space" => {
+    changed metadata choices in @linkForObject("space", event.object_id, event.object_name)
+  }
+  case "toggle_metadata_instance" => {
+    changed metadata choices in @(AppConfiguration.getDisplayName)
+  }
+  
   case "mention_file_comment" => {
     @event.targetuser match {
       case Some(u) => {

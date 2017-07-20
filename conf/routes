@@ -313,6 +313,7 @@ GET       /api/metadata/autocompletenames                                     @a
 GET       /api/metadata/definitions/:id                                       @api.Metadata.getDefinition(id: UUID)
 GET       /api/metadata/url/*in_url                                           @api.Metadata.getUrl(in_url: String)
 PUT       /api/metadata/definitions/:id                                       @api.Metadata.editDefinition(id:UUID, spaceId: Option[String] ?= None)
+PUT       /api/metadata/definitions/:id/addable/:addable                      @api.Metadata.makeDefinitionAddable(id:UUID, addable: Boolean)
 POST      /api/metadata/definitions                                           @api.Metadata.addDefinition()
 DELETE    /admin/metadata/definitions/:id                                     @api.Metadata.deleteDefinition(id: UUID)
 

@@ -569,12 +569,12 @@
 			@if(user.isDefined) {
 				<div class="row">
 					<div class="col-md-12">
-					@metadatald.addMetadata("file", file.id.toString, mDefs, "metadata-content")
+					@metadatald.addMetadata("file", file.id.toString, mDefs, "metadata-content-" + id)
 					</div>
 				</div>
 			}
 			<div class="row bottom-padding">
-				<div class="col-md-12" id="metadata-content">
+				<div class="col-md-12" id="metadata-content-@id">
 				@metadatald.view(Some(mds), r, mDefs, true)
 				</div>
 			</div>

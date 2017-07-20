@@ -128,7 +128,7 @@ line-height: 1.5;
                     
                     
                     if($('#'+'@contentDiv'+' .panel').length == 0) {
-                        $('#' + "@contentDiv").empty();
+                        $('#@contentDiv > div:first-child').empty();
                     }
                     addEntries("@id", response);
                     notify("Metadata successfully added.", "success", false, 2000);
@@ -198,7 +198,7 @@ line-height: 1.5;
                     
                     
                     if($('#'+'@contentDiv'+' .panel').length == 0) {
-                        $('#' + "@contentDiv").empty();
+                        $('#@contentDiv > div:first-child').empty();
                     }
                     $('html, body').animate({
         			  scrollTop: $("#" + response.id).closest('.mdblock').offset().top-50
@@ -302,6 +302,8 @@ line-height: 1.5;
     // get metadata definitions
     fields = @Html(Json.stringify(Json.toJson(mDefs.sortWith( _.json.\("label").asOpt[String].getOrElse("") < _.json.\("label").asOpt[String].getOrElse("") ))));
         for (var i = 0; i < fields.length; i++) {
+        
+          if( fields[i].json.addable!=false) {
             var elem = $("<option></option>");
             elem.attr("data-description", fields[i].json.description);
             elem.attr("data-type", fields[i].json.type);
@@ -310,6 +312,7 @@ line-height: 1.5;
             elem.attr("space_id", fields[i].spaceId);
             elem.text(fields[i].json.label);
             $("#@id  #add-metadata-select-@id").append(elem);
+          }
         }
         // chosen pulldown configuration
         $("#@id  #add-metadata-select-@id").chosen({
@@ -323,7 +326,7 @@ line-height: 1.5;
         
     
       function editMDEntry(id, md_id) {
-      alert(id);
+
         //Use id to find uri for term, then use the <option> entry for that term to invoke an edit
         var uri = $("#" + md_id).closest(".mdblock").find(".pred").attr("title");
       

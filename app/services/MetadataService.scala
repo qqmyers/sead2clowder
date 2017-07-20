@@ -76,6 +76,9 @@ trait MetadataService {
   /** Delete vocabulary definitions**/
   def deleteDefinition(id: UUID)
 
+  /** Make vocabulary definition appear in "Add Metadata" menu (or not)**/
+  def makeDefinitionAddable(id: UUID, addable:Boolean)
+  
   /** Search for metadata that have a key in a dataset **/
   def searchbyKeyInDataset(key: String, datasetId: UUID): List[Metadata]
 

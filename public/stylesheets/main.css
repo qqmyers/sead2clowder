@@ -1137,3 +1137,8 @@ table.borderless tbody tr td, table.borderless tbody tr th {
 .ancestor {
 	background-color: antiquewhite;
 }
+
+#definitions th,td {
+	word-break: break-word;
+	word-wrap: break-word;
+}
