@@ -120,7 +120,6 @@
                 // Basic saved row definition
                 $("#metadata-rows").append(
                     $(
-                        //"<p>" +
                         "<div id='metadata-clause-" + rowType + "-" + rowStr + "'>" +
                                 <!-- FIELD SELECTOR DROPDOWN -->
                             "<div class='form-group col-lg-8 col-md-8'>" +
@@ -149,12 +148,12 @@
                 document.getElementById("add-clause").onclick = function () { ++rowCount;
                     addMetadataFieldRows(rowId + 1, "new");};
 
-                var addMetadataSelectStr = "#add-metadata-select-" + rowStr;
+                var $addMetadataSelect = $("#add-metadata-select-" + rowStr);
 
-                $(addMetadataSelectStr).empty();
+                $addMetadataSelect.empty();
 
                 // Select box will populate as user types, with metadata field autocomplete suggestions
-                $(addMetadataSelectStr).select2({
+                $addMetadataSelect.select2({
                     theme: "bootstrap",
                     placeholder: "Start typing metadata field here...",
                     allowClear: true,
@@ -211,12 +210,12 @@
                 });
 
                 // Add metadata field name to selected list when selected
-                $(addMetadataSelectStr).on('select2:select', function (event) {
+                $addMetadataSelect.on('select2:select', function (event) {
                     selectedMetadataList.push($(this).val());
                 });
 
                 // Remove metadata field name from selected list when unselected
-                $(addMetadataSelectStr).on('select2:unselect', function (event) {
+                $addMetadataSelect.on('select2:unselect', function (event) {
                     selectedMetadataList.splice(selectedMetadataList.indexOf($(this).val()), 1);
                 });
             }
@@ -251,7 +250,7 @@
                             <!-- EDIT ROW BUTTON -->
                         "<div title='Edit row' class='form-group col-lg-1 col-md-1'>" +
                             "<button type='button' class='btn' id='edit-" + rowStr + "' " +
-                                "onclick='editRow(" + rowStr + ")'>" +
+                                "onclick='editRow(" + rowStr + ",\"" + newRowType + "\")'>" +
                                 "<span class='glyphicon glyphicon-edit'></span>" +
                             "</button>" +
                         "</div>" +
@@ -271,13 +270,118 @@
                     width: "100%",
                     allowClear: true
                 }).prop("disabled", true);
+
+                // Hide dropdown arrow in save mode
+                $("#" + "metadata-clause-" + newRowType + "-" + rowStr).find("b[role='presentation']").hide();
             } else {
                 removeRow(rowId, currentRowType);
             }
             console.log("saved");
         }
 
-        function editRow(rowId) {
+        function editRow(rowId, currentRowType) {
+            var rowStr = String(rowId);
+            var rowType = "new";
+            var $metadataSelect = $("#" + currentRowType + "-metadata-select-" + rowStr);
+            var dataId = $metadataSelect.val();
+            var dataText = $metadataSelect.text();
+            var dataGroup = dataId.substring(dataId.indexOf('/extractors/') + 12, dataId.lastIndexOf('.'));
+            var dataGroupText = dataGroup + " (Extractor)";
+            var $metadataClause = $("#metadata-clause-" + currentRowType + "-" + rowStr);
+
+            $metadataClause.replaceWith(
+                "<div id='metadata-clause-" + rowType + "-" + rowStr + "'>" +
+                        <!-- FIELD SELECTOR DROPDOWN -->
+                    "<div class='form-group col-lg-8 col-md-8'>" +
+                        "<select id='add-metadata-select-" + rowStr + "'>" +
+                            "<option selected value='" + dataId + "'>" + dataText + "</option>" +
+                        "</select>" +
+                    "</div>" +
+                        <!-- SAVE ROW BUTTON -->
+                    "<div title='Save row' class='form-group col-lg-1 col-md-1'>" +
+                        "<button type='button' class='btn' id='save-" + rowStr + "' " +
+                            "onclick='saveRow(" + rowStr + ",\"saved\")'>" +
+                            "<span class='glyphicon glyphicon-save'></span>" +
+                        "</button>" +
+                    "</div>" +
+                        <!-- DELETE ROW BUTTON -->
+                    "<div title='Delete row' class='form-group col-lg-1 col-md-1'>" +
+                        "<button class='btn' id='remove-" + rowStr + "' " +
+                            "onclick='removeRow(" + rowStr + ",\"" + rowType + "\")'>" +
+                            "<span class='glyphicon glyphicon-minus'></span>" +
+                        "</button>" +
+                    "</div>" +
+                "</div>"
+            );
+
+            var $addMetadataSelect = $("#add-metadata-select-" + rowStr);
+
+            // Select box will populate as user types, with metadata field autocomplete suggestions
+            $addMetadataSelect.select2({
+                theme: "bootstrap",
+                placeholder: "Start typing metadata field here...",
+                allowClear: true,
+                width: "100%",
+                ajax: {
+                    url: function(filter) {
+                        // Get autocomplete results if typing; otherwise return standard set of definitions
+                        return jsRoutes.api.Metadata.getAutocompleteName(filter.term).url;
+                    },
+                    // Populate autocomplete as user types
+                    processResults: function(data, page) {
+                        var outMap = {};
+                        var entryGroup = {};
+                        var entryData = {};
+
+                        for (var rez=0; rez<data.length; rez++) {
+                            var entry = data[rez];
+
+                            // Get extractor-generated metadata field names
+                            // Filter out metadata field names that have already been selected in any of the other
+                            // new select HTML elements
+                            if (entry.indexOf('metadata.') > -1 && entry.indexOf('/extractors/') > -1 &&
+                                    selectedMetadataList.indexOf(entry) == -1) {
+                                // Group extractor-specific fields together under extractor
+                                entryGroup = entry.substring(
+                                                entry.indexOf('/extractors/') + 12,
+                                                entry.lastIndexOf('.')) + " (Extractor)";
+                                entryData = {
+                                    id: entry,
+                                    text: entry.substring(entry.lastIndexOf('.') + 1, entry.length)
+                                };
+
+                                if (!outMap.hasOwnProperty(entryGroup))
+                                    outMap[entryGroup] = [];
+                                outMap[entryGroup].push(entryData)
+                            }
+                        }
+
+                        var outList = [];
+                        for (var group in outMap) {
+                            if (group == "") {
+                                for (var ungrouped=0; ungrouped<outMap[group].length; ungrouped++)
+                                    outList.push(outMap[group][ungrouped])
+                            } else
+                                outList.push({"text":group, "children": outMap[group]})
+                        }
+
+                        console.log(outList);
+                        return {
+                            results: outList
+                        };
+                    }
+                }
+            });
+
+            // Add metadata field name to selected list when selected
+            $addMetadataSelect.on('select2:select', function (event) {
+                selectedMetadataList.push($(this).val());
+            });
+
+            // Remove metadata field name from selected list when unselected
+            $addMetadataSelect.on('select2:unselect', function (event) {
+                selectedMetadataList.splice(selectedMetadataList.indexOf($(this).val()), 1);
+            });
             console.log("edit");
         }
 
