@@ -224,9 +224,9 @@
         function saveRow(rowId, newRowType) {
             var rowStr = String(rowId);
             var currentRowType = "new";
-            var $select = $("#add-metadata-select-" + rowStr);
-            var dataId = $select.val();
-            var dataText = $select.text();
+            var selectStr = "#add-metadata-select-" + rowStr;
+            var dataId = $(selectStr).val();
+            var dataText = $(selectStr + " :selected").text();
 
             if (newRowType == null) {
                 newRowType = "saved";
@@ -282,9 +282,9 @@
         function editRow(rowId, currentRowType) {
             var rowStr = String(rowId);
             var rowType = "new";
-            var $metadataSelect = $("#" + currentRowType + "-metadata-select-" + rowStr);
-            var dataId = $metadataSelect.val();
-            var dataText = $metadataSelect.text();
+            var metadataSelectStr = "#" + currentRowType + "-metadata-select-" + rowStr;
+            var dataId = $(metadataSelectStr).val();
+            var dataText = $(metadataSelectStr + " :selected").text();
             var dataGroup = dataId.substring(dataId.indexOf('/extractors/') + 12, dataId.lastIndexOf('.'));
             var dataGroupText = dataGroup + " (Extractor)";
             var $metadataClause = $("#metadata-clause-" + currentRowType + "-" + rowStr);
