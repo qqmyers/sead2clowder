@@ -695,7 +695,7 @@ class MongoDBMetadataService @Inject() (contextService: ContextLDService, datase
       case None => MetadataDefinitionDAO.findOne(MongoDBObject("json.uri" -> uri, "spaceId" -> null))
     }
   }
-  
+
   def getDefinitionByLabelAndSpace(label: String, spaceId: Option[String] = None): Option[MetadataDefinition] = {
     spaceId match {
       case Some(s) => MetadataDefinitionDAO.findOne(MongoDBObject("json.label" -> label, "spaceId" -> new ObjectId(s)))
@@ -734,6 +734,34 @@ class MongoDBMetadataService @Inject() (contextService: ContextLDService, datase
   }
 
   def editDefinition(id: UUID, json: JsValue) = {
+ 
+    MetadataDefinitionDAO.findOne(MongoDBObject("_id" -> new ObjectId(id.stringify))) match {
+      case Some(orig) => {
+        val origLabel = (orig.json \ "label").as[String]
+        val newLabel = (json \ "label").as[String]
+        if (origLabel != newLabel) {
+          //Need to change all metadata entries and history for affected resource
+
+          orig.spaceId match {
+            case Some(s) => {
+
+              MetadataSummaryDAO.update(MongoDBObject("contextSpace" -> new ObjectId(s.stringify)) ++ (("entries." + origLabel) $exists true),
+                $rename(("entries." + origLabel) -> ("entries." + newLabel)), false, true, WriteConcern.Safe)
+              MetadataSummaryDAO.update(MongoDBObject("contextSpace" -> new ObjectId(s.stringify)) ++ (("history." + origLabel) $exists true),
+                $rename(("history." + origLabel) -> ("history." + newLabel)), false, true, WriteConcern.Safe)
+            }
+            case None => {
+              MetadataSummaryDAO.update(MongoDBObject("contextSpace" -> null) ++ (("entries." + origLabel) $exists true),
+                $rename(("entries." + origLabel) -> ("entries." + newLabel)), false, true, WriteConcern.Safe)
+              MetadataSummaryDAO.update(MongoDBObject("contextSpace" -> null) ++ (("history." + origLabel) $exists true),
+                $rename(("history." + origLabel) -> ("history." + newLabel)), false, true, WriteConcern.Safe)
+
+            }
+          }
+        }
+      }
+    }
+
     MetadataDefinitionDAO.update(MongoDBObject("_id" -> new ObjectId(id.stringify)),
       $set("json" -> JSON.parse(json.toString()).asInstanceOf[DBObject]), false, false, WriteConcern.Safe)
   }
@@ -749,13 +777,10 @@ class MongoDBMetadataService @Inject() (contextService: ContextLDService, datase
         //Remove metadata entries using this definition (within a space or in no space)
         mdDef.spaceId match {
           case Some(s) => {
-            Logger.info("Finding mData: " + s.stringify + " + " + ("entries." + (mdDef.json \ "label").as[String]));
             MetadataSummaryDAO.update(MongoDBObject("contextSpace" -> new ObjectId(s.stringify)) ++ (("entries." + (mdDef.json \ "label").as[String]) $exists true),
               $unset("entries." + (mdDef.json \ "label").as[String]), false, true, WriteConcern.Safe)
-              Logger.info("Removed mData: " + s.stringify + " + " + ("entries." + (mdDef.json \ "label").as[String]));
             MetadataSummaryDAO.update(MongoDBObject("contextSpace" -> new ObjectId(s.stringify)) ++ (("history." + (mdDef.json \ "label").as[String]) $exists true),
               $unset("history." + (mdDef.json \ "label").as[String]), false, true, WriteConcern.Safe)
-Logger.info("Removed mData: " + s.stringify + " + " + ("history." + (mdDef.json \ "label").as[String]));
           }
           case None => {
             MetadataSummaryDAO.update(MongoDBObject("contextSpace" -> null) ++ (("entries." + (mdDef.json \ "label").as[String]) $exists true),

@@ -212,29 +212,40 @@ class Metadata @Inject() (
           val body = request.body
           if ((body \ "label").asOpt[String].isDefined && (body \ "type").asOpt[String].isDefined && (body \ "uri").asOpt[String].isDefined) {
             val uri = (body \ "uri").as[String]
+            //Don't allow a change that would give two defs with the same formal uri
             metadataService.getDefinitionByUriAndSpace(uri, spaceId) match {
-              case Some(metadata) => if (metadata.id != id) {
-                BadRequest(toJson("Metadata definition with same uri exists."))
-              } else {
-                metadataService.editDefinition(id, body)
-                metadata.spaceId match {
-                  case Some(spaceId) => {
-                    spaceService.get(spaceId) match {
-                      case Some(s) => events.addObjectEvent(Some(user), s.id, s.name, "edit_metadata_space")
-                      case None =>
-                    }
-                  }
-                  case None => {
-                    events.addEvent(new Event(user.getMiniUser, None, None, None, None, None, "edit_metadata_instance", new Date()))
-                  }
+              case Some(metadata) => {
+                if (metadata.id != id) {
+                  BadRequest(toJson("Metadata definition with same uri exists."))
                 }
-                Ok(JsObject(Seq("status" -> JsString("ok"))))
+                //If metadata was found, we know the spaceId parameter is correct
               }
               case None => {
-                metadataService.editDefinition(id, body)
-                Ok(JsObject(Seq("status" -> JsString("ok"))))
+                //If it wasn't found - the id or spaceId are incorrect
+                BadRequest(toJson("Definition not found in the space specified for this definition."))
               }
             }
+            //Don't allow change that would allow two defs with the same label
+            metadataService.getDefinitionByLabelAndSpace((body \ "label").as[String], spaceId) match {
+              case Some(metadata) => if (metadata.id != id) {
+                BadRequest(toJson("Metadata definition with same uri exists."))
+              }
+              case None =>
+            }
+            //Otherwise, go ahead with the edit
+            metadataService.editDefinition(id, body)
+            spaceId match {
+              case Some(sId) => {
+                spaceService.get(UUID(sId)) match {
+                  case Some(s) => events.addObjectEvent(Some(user), s.id, s.name, "edit_metadata_space")
+                  case None =>
+                }
+              }
+              case None => {
+                events.addEvent(new Event(user.getMiniUser, None, None, None, None, None, "edit_metadata_instance", new Date()))
+              }
+            }
+            Ok(JsObject(Seq("status" -> JsString("ok"))))
           } else {
             BadRequest(toJson("Invalid resource type"))
           }
