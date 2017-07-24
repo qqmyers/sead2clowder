@@ -577,6 +577,10 @@ class MongoDBMetadataService @Inject() (contextService: ContextLDService, datase
                 case "cat:extractor" => {
                   //Leave legacy extractor entries as is
                 }
+                case s:String => {
+                   //Leave entries as is and report the agent type
+                  Logger.debug("Found agent of type \""+ s + "\" when summarizing metadata");
+                }
               }
 
             }
