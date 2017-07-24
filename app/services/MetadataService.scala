@@ -46,6 +46,9 @@ trait MetadataService {
   /** Remove metadata by attachTo from a specific extractor */
   def removeMetadataByAttachToAndExtractor(resourceRef: ResourceRef, extractorName: String): Long
   
+  /** Get the space (or None) holding the metadata definitions used for this resource */
+  def getContextSpace(resourceRef: ResourceRef, space: Option[UUID]): Option[UUID]
+  
   /** Get the current summary of all metadata actions for this resource */
   def getMetadataSummary(resourceRef: ResourceRef, spaceId:Option[UUID]): models.RdfMetadata
   

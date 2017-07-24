@@ -329,31 +329,35 @@ class Metadata @Inject() (
           val context: JsValue = (json \ "@context")
 
           // figure out what resource this is attached to
-          val (attachedTo, space) =
+          val attachedTo =
             if ((json \ "file_id").asOpt[String].isDefined) {
               files.get(UUID((json \ "file_id").as[String])) match {
                 case Some(file) => {
-
-                  (Some(ResourceRef(ResourceRef.file, UUID((json \ "file_id").as[String]))), None)
+                  Some(ResourceRef(ResourceRef.file, UUID((json \ "file_id").as[String])))
                 }
               }
             } else if ((json \ "dataset_id").asOpt[String].isDefined) {
               datasets.get(UUID((json \ "dataset_id").as[String])) match {
                 case Some(dataset) => {
-                  (Some(ResourceRef(ResourceRef.dataset, UUID((json \ "dataset_id").as[String]))), Some(dataset.spaces.apply(0)))
+                  Some(ResourceRef(ResourceRef.dataset, UUID((json \ "dataset_id").as[String])))
                 }
               }
             } else if ((json \ "curationObject_id").asOpt[String].isDefined) {
-              (Some(ResourceRef(ResourceRef.curationObject, UUID((json \ "curationObject_id").as[String]))), None)
+              curations.get(UUID((json \ "curationObject_id").as[String])) match {
+                case Some(curationObject) => {
+                  Some(ResourceRef(ResourceRef.curationObject, UUID((json \ "curationObject_id").as[String])))
+                }
+              }
             } else if ((json \ "curationFile_id").asOpt[String].isDefined) {
-              (Some(ResourceRef(ResourceRef.curationFile, UUID((json \ "curationFile_id").as[String]))), None)
-            } else (None, None)
+              val file_id = UUID((json \ "curationFile_id").as[String])
+              Some(ResourceRef(ResourceRef.curationFile, file_id))
+            } else (None)
 
           val content = (json \ "content")
           val content_ld = (json \ "content_ld")
 
           if (attachedTo.isDefined) {
-
+            val space = metadataService.getContextSpace(attachedTo.get, None)
             content match {
               case c: JsObject => {
 
@@ -485,30 +489,13 @@ val metadata = models.Metadata(UUID.generate, attachedTo.get, None, Some(new URL
           // TODO switch to internal id and then build url when returning?
           val userURI = controllers.routes.Application.index().absoluteURL() + "api/users/" + user.id
           val updator = UserAgent(user.id, "cat:user", MiniUser(user.id, user.fullName, user.avatarUrl.getOrElse(""), user.email), Some(new URL(userURI)))
-          val space = attachedtype match {
-            case ResourceRef.file.name => {
-              files.get(attachedid) match {
-                case Some(file) => {
-                  None
-                }
-              }
-            }
-            case ResourceRef.dataset.name => {
-              datasets.get(attachedid) match {
-                case Some(dataset) => {
-                  Some(dataset.spaces.apply(0))
-                }
-              }
-            }
-            case ResourceRef.curationObject.name => { None }
-            case ResourceRef.curationFile.name => { None }
-            case _ => None
-          }
+          val resource = ResourceRef(Symbol(attachedtype), attachedid)
+          val space = metadataService.getContextSpace(resource, None)
 
           val content = (request.body \ "content_ld")
           val context = (request.body \ "@context")
 
-          metadataService.updateMetadata(content, context, ResourceRef(Symbol(attachedtype), attachedid), entryId, updatedAt, updator, space) match {
+          metadataService.updateMetadata(content, context, resource, entryId, updatedAt, updator, space) match {
             case u: JsUndefined => {
               BadRequest("Entry to update not found.")
             }
@@ -612,27 +599,10 @@ val metadata = models.Metadata(UUID.generate, attachedTo.get, None, Some(new URL
           // TODO switch to internal id and then build url when returning?
           val userURI = controllers.routes.Application.index().absoluteURL() + "api/users/" + user.id
           val deletor = UserAgent(user.id, "cat:user", MiniUser(user.id, user.fullName, user.avatarUrl.getOrElse(""), user.email), Some(new URL(userURI)))
-          val space = attachedtype match {
-            case ResourceRef.file.name => {
-              files.get(attachedUuid) match {
-                case Some(file) => {
-                  None
-                }
-              }
-            }
-            case ResourceRef.dataset.name => {
-              datasets.get(attachedUuid) match {
-                case Some(dataset) => {
-                  Some(dataset.spaces.apply(0))
-                }
-              }
-            }
-            case ResourceRef.curationObject.name => { None }
-            case ResourceRef.curationFile.name => { None }
-            case _ => None
-          }
-
-          metadataService.removeMetadata(ResourceRef(Symbol(attachedtype), attachedUuid), term, itemid, deletedAt, deletor, space) match {
+          val resource = ResourceRef(Symbol(attachedtype), attachedUuid)
+          val space = metadataService.getContextSpace(resource, None)
+          
+          metadataService.removeMetadata(resource, term, itemid, deletedAt, deletor, space) match {
             case content: JsObject => {
 
               val mdMap = Map("metadata" -> content,
