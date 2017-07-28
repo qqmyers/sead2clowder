@@ -640,9 +640,7 @@ There is probably more history than just the latest agent/date once editing is a
            $('#metadata-content-'+id+' #'+blockid).append($('<span/>').addClass('metaprov').text('added ' + mon + ' ' + day + ', ' + year + ' by ').append($('<a/>').attr('href','@routes.Profile.viewProfileUUID(user.get.getMiniUser.id)').text('@user.get.getMiniUser.fullName')));
            $('#metadata-content-'+id+' #'+blockid).parent().append($('<div/>').attr('id','collapse_'+safe(key)).addClass('panel-collapse collapse in').attr('role','tabpanel').attr('aria-labelledby',blockid).append($('<div/>').addClass('panel-body').append($('<div/>').addClass('tree')))); 
          } else {
-         alert("nonew header");
            //modify date/person
-           
   		   $('#metadata-content-'+id+' #'+blockid).find('.metaprov').text('last modified ' + mon + ' ' + day + ', ' + year + ' by ').append($('<a/>').attr('href','@routes.Profile.viewProfileUUID(user.get.getMiniUser.id)').text('@user.get.getMiniUser.fullName'));
          }
          //Now add new entries
