@@ -307,9 +307,10 @@ PUT       /api/metadata.jsonld/:attachedtype/:attachedid/:entryId             @a
 
 #GET            /api/metadata.jsonld                                                     @api.Metadata.getUserMetadata()
 
-GET       /api/metadata/definitions                                           @api.Metadata.getDefinitions()
+GET       /api/metadata/definitions                                           @api.Metadata.getDefinitions(spaceId: Option[String] ?= None)
 GET       /api/metadata/distinctdefinitions                                   @api.Metadata.getDefinitionsDistinctName()
-GET       /api/metadata/autocompletenames                                     @api.Metadata.getAutocompleteName(filter: String)
+GET       /api/metadata/autocompletedefinitions                               @api.Metadata.getDefinitionsAutocompleteName(filter: String, spaceId: Option[String] ?= None)
+GET       /api/metadata/autocompletenames                                     @api.Metadata.getManagedTermsAutocompleteName(filter: String)
 GET       /api/metadata/definitions/:id                                       @api.Metadata.getDefinition(id: UUID)
 GET       /api/metadata/url/*in_url                                           @api.Metadata.getUrl(in_url: String)
 PUT       /api/metadata/definitions/:id                                       @api.Metadata.editDefinition(id:UUID, spaceId: Option[String] ?= None)

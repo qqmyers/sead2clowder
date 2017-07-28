@@ -38,9 +38,12 @@ class Metadata @Inject() (
     events: EventService,
     spaceService: SpaceService) extends ApiController {
 
-  def getDefinitions() = PermissionAction(Permission.ViewDataset) {
+  def getDefinitions(spaceId: Option[String]) = PermissionAction(Permission.ViewDataset) {
     implicit request =>
-      val vocabularies = metadataService.getDefinitions()
+      val vocabularies = spaceId match {
+        case Some(s: String) => metadataService.getDefinitions(Some(UUID(s)))
+        case None => metadataService.getDefinitions()
+      }
       Ok(toJson(vocabularies))
   }
 
@@ -51,22 +54,31 @@ class Metadata @Inject() (
       Ok(toJson(vocabularies))
   }
 
+  def getDefinitionsAutocompleteName(query: String, spaceId: Option[String]) = PermissionAction(Permission.ViewDataset) {
+    implicit request =>
+      implicit val user = request.user
+      var listOfDefs = ListBuffer.empty[MetadataDefinition]
+      val definitions = spaceId match {
+        case Some(id) => metadataService.getDefinitions(Some(UUID(id)))
+        case None => metadataService.getDefinitions()
+      }
+      for (md_def <- definitions) {
+        val currVal = (md_def.json \ "label").as[String]
+        if (currVal.toLowerCase startsWith query.toLowerCase) {
+          
+          listOfDefs.append(md_def)
+        }
+      }
+      Ok(toJson(listOfDefs.distinct))
+  }
+
   /** Get set of metadata fields containing filter substring for autocomplete */
-  def getAutocompleteName(query: String) = PermissionAction(Permission.ViewDataset) { implicit request =>
+  def getManagedTermsAutocompleteName(query: String) = PermissionAction(Permission.ViewDataset) { implicit request =>
     implicit val user = request.user
 
     var listOfTerms = ListBuffer.empty[String]
 
-    // First, get regular vocabulary matches
-    val definitions = metadataService.getDefinitionsDistinctName(user)
-    for (md_def <- definitions) {
-      val currVal = (md_def.json \ "label").as[String]
-      if (currVal.toLowerCase startsWith query.toLowerCase) {
-        listOfTerms.append("metadata." + currVal)
-      }
-    }
-
-    // Next get Elasticsearch metadata fields if plugin available
+    // Get Elasticsearch metadata fields if plugin available
     current.plugin[ElasticsearchPlugin] match {
       case Some(plugin) => {
         val mdTerms = plugin.getAutocompleteMetadataFields(query)
@@ -601,7 +613,7 @@ val metadata = models.Metadata(UUID.generate, attachedTo.get, None, Some(new URL
           val deletor = UserAgent(user.id, "cat:user", MiniUser(user.id, user.fullName, user.avatarUrl.getOrElse(""), user.email), Some(new URL(userURI)))
           val resource = ResourceRef(Symbol(attachedtype), attachedUuid)
           val space = metadataService.getContextSpace(resource, None)
-          
+
           metadataService.removeMetadata(resource, term, itemid, deletedAt, deletor, space) match {
             case content: JsObject => {
 

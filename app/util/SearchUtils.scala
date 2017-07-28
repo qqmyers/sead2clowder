@@ -30,7 +30,7 @@ object SearchUtils {
     }
 
     // Get metadata for File
-    val metadata = getMetadataFor(ResourceRef(ResourceRef.file, id)) 
+    val metadata = getMetadataFor(ResourceRef(ResourceRef.file, id))
 
     Some(new ElasticsearchObject(
       ResourceRef(ResourceRef.file, id),
@@ -130,6 +130,16 @@ object SearchUtils {
 
   def getMetadataFor(resource: ResourceRef): Map[String, JsValue] = {
     var metadata = Map[String, JsValue]()
+    val rdfMD = metadatas.getMetadataSummary(resource, None)
+    val defs = metadatas.getDefinitions(rdfMD.contextSpace)
+    val defsMap = defs.foldLeft(Map[String, String]()) { (m, s) => m + ((s.json \ "label").as[String] -> (s.json \ "uri").as[String]) }
+
+    rdfMD.entries.keys.foreach(subkey => {
+      //Need an array of values
+      
+      metadata += (safe(defsMap(subkey)) -> Json.toJson(rdfMD.entries(subkey).as[JsObject].values))
+    })
+
     for (md <- metadatas.getMetadataByAttachTo(resource)) {
       val creator = md.creator.displayName
 
@@ -160,5 +170,9 @@ object SearchUtils {
       }
     }
     metadata
+  }
+  
+  def safe(key: String) = {
+    key.replace("/", "_").replace(".", "_").replace(":", "_").replace(" ", "_").replace(";", "_")
   }
 }
