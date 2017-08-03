@@ -11,13 +11,17 @@ import com.mongodb.casbah.WriteConcern
 import models._
 import com.mongodb.casbah.commons.MongoDBObject
 import java.text.SimpleDateFormat
+import java.util.Date
+
 import org.bson.types.ObjectId
 import play.api.Logger
 import util.{Formatters, SearchUtils}
+
 import scala.collection.mutable.ListBuffer
 import scala.util.Try
 import services._
-import javax.inject.{Singleton, Inject}
+import javax.inject.{Inject, Singleton}
+
 import scala.util.Failure
 import scala.util.Success
 import MongoContext.context
@@ -818,6 +822,11 @@ class MongoDBCollectionService @Inject() (
   def updateThumbnail(collectionId: UUID, thumbnailId: UUID) {
     Collection.dao.collection.update(MongoDBObject("_id" -> new ObjectId(collectionId.stringify)),
       $set("thumbnail_id" -> thumbnailId.stringify), false, false, WriteConcern.Safe)
+  }
+
+  def updateDateMovedToTrash(collectionId : UUID, dateMovedToTrash : Option[Date]) {
+    Collection.dao.collection.update(MongoDBObject("_id" -> new ObjectId(collectionId.stringify)),
+      $set("dateMovedToTrash" -> dateMovedToTrash), false, false, WriteConcern.Safe)
   }
 
   def createThumbnail(collectionId:UUID){

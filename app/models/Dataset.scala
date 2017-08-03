@@ -25,6 +25,7 @@ case class Dataset(
   licenseData: LicenseData = new LicenseData(),
   spaces: List[UUID] = List.empty,
   lastModifiedDate: Date = new Date(),
+  dateMovedToTrash : Option[Date] = None,
   followers: List[UUID] = List.empty,
   status: String = DatasetStatus.PRIVATE.toString, // dataset has four status: trial, default, private and public. yet editors of the dataset
   // can only see the default, private and public, where trial equals to private. viewers can only see private and
@@ -35,6 +36,14 @@ case class Dataset(
   def isDefault:Boolean = status == DatasetStatus.DEFAULT.toString
   def isTRIAL:Boolean = status == DatasetStatus.TRIAL.toString
   def inSpace:Boolean = spaces.size > 0
+  def isTrash:Boolean = (dateMovedToTrash match {
+    case Some(date) => {
+      true
+    }
+    case None => {
+      false
+    }
+  })
 }
 
 object DatasetStatus extends Enumeration {

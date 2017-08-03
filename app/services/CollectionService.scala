@@ -1,7 +1,10 @@
 package services
 
+import java.util.Date
+
 import api.Permission.Permission
-import models.{User, UUID, Dataset, Collection}
+import models.{Collection, Dataset, UUID, User}
+
 import scala.collection.mutable.ListBuffer
 import scala.util.Try
 
@@ -133,6 +136,8 @@ trait CollectionService {
    * Update description of the dataset
    */
   def updateDescription(id: UUID, description: String)
+
+  def updateDateMovedToTrash(id : UUID, dateMovedToTrash : Option[Date])
 
   /**
    * Delete collection and any reference of it

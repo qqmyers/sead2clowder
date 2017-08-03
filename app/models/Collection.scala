@@ -19,9 +19,16 @@ case class Collection(
   child_collection_ids : List[UUID] = List.empty,
   root_spaces: List[UUID] = List.empty,
   metadataCount: Long = 0,
+  dateMovedToTrash : Option[Date] = None,
   childCollectionsCount: Integer = 0,
   @deprecated("use Metadata","since the use of jsonld") jsonldMetadata : List[Metadata]= List.empty
 )
+{
+  def isTrash:Boolean = (dateMovedToTrash match {
+    case Some(date) => true
+    case None => false
+  })
+}
 
 object Collection {
   implicit val collectionWrites = new Writes[Collection] {

@@ -1721,11 +1721,18 @@ class  Datasets @Inject()(
   def detachAndDeleteDataset(id: UUID) = PermissionAction(Permission.DeleteDataset, Some(ResourceRef(ResourceRef.dataset, id))) { implicit request =>
     datasets.get(id) match{
       case Some(dataset) => {
-        for (f <- dataset.files) {
-          detachFileHelper(dataset.id, f, dataset, request.user)
+        if (dataset.isTrash){
+          for (f <- dataset.files) {
+            detachFileHelper(dataset.id, f, dataset, request.user)
+          }
+          deleteDatasetHelper(dataset.id, request)
+          Ok(toJson(Map("status" -> "success")))
+        } else {
+          datasets.update(dataset.copy(dateMovedToTrash = Some(new Date())))
+          events.addObjectEvent(request.user, id, dataset.name, "move_dataset_trash")
+          Ok(toJson(Map("status"->"success")))
         }
-        deleteDatasetHelper(dataset.id, request)
-        Ok(toJson(Map("status" -> "success")))
+
       }
       case None=> {
         Ok(toJson(Map("status" -> "success")))
@@ -1768,7 +1775,36 @@ class  Datasets @Inject()(
   }
 
   def deleteDataset(id: UUID) = PermissionAction(Permission.DeleteDataset, Some(ResourceRef(ResourceRef.dataset, id))) { implicit request =>
-    deleteDatasetHelper(id, request)
+    datasets.get(id) match {
+      case Some(ds) => {
+        if (ds.isTrash){
+          deleteDatasetHelper(id, request)
+        } else {
+          datasets.update(ds.copy(dateMovedToTrash = Some(new Date())))
+          events.addObjectEvent(request.user, id, ds.name, "move_dataset_trash")
+          Ok(toJson(Map("status"->"success")))
+        }
+      }
+      case None => BadRequest("No dataset found with id " + id)
+    }
+  }
+
+  def restoreDataset(id : UUID) = PermissionAction(Permission.DeleteDataset, Some(ResourceRef(ResourceRef.dataset, id))) {implicit request=>
+    implicit val user = request.user
+    user match {
+      case Some(u) => {
+        datasets.get(id) match {
+          case Some(ds) => {
+            datasets.update(ds.copy(dateMovedToTrash=None))
+            events.addObjectEvent(user, ds.id, ds.name, "restore_dataset_trash")
+
+            Ok(toJson(Map("status" -> "success")))
+          }
+          case None => InternalServerError("Update Access failed")
+        }
+      }
+      case None => BadRequest("No user supplied")
+    }
   }
 
   def getRDFUserMetadata(id: UUID, mappingNumber: String="1") = PermissionAction(Permission.ViewMetadata, Some(ResourceRef(ResourceRef.dataset, id))) { implicit request =>
