@@ -188,6 +188,20 @@ class Collections @Inject() (datasets: DatasetService,
     }
   }
 
+  def emptyTrash() = PrivateServerAction {implicit request =>
+    val user = request.user
+    user match {
+      case Some(u) => {
+        val trashcollections = collections.listUserTrash(request.user,0)
+        for (col <- trashcollections){
+          collections.delete(col.id)
+        }
+      }
+      case None =>
+    }
+    Ok(toJson("Done emptying trash"))
+  }
+
   def list(title: Option[String], date: Option[String], limit: Int) = PrivateServerAction { implicit request =>
     Ok(toJson(listCollections(title, date, limit, Set[Permission](Permission.ViewCollection), false, request.user, request.user.fold(false)(_.superAdminMode))))
   }

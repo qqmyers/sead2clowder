@@ -5,6 +5,7 @@ verify.email.content=Your team now has access to the full suite of Clowder funct
 you.title= My {0}
 home.title=My {0}
 create.title= Create {0}
+cleartrash.title=Clear {0} in trash
 create.header = Create New {0}
 following.title=Following {0}
 trial.title = Trial {0}

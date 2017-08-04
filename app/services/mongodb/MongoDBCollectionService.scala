@@ -25,6 +25,7 @@ import javax.inject.{Inject, Singleton}
 import scala.util.Failure
 import scala.util.Success
 import MongoContext.context
+import com.mongodb.DBObject
 import play.api.Play._
 
 
@@ -151,6 +152,23 @@ class MongoDBCollectionService @Inject() (
     */
   def listUserTrash(date: String, nextPage: Boolean, limit: Integer, user: Option[User], showAll: Boolean, owner: User): List[Collection] = {
     list(Some(date), nextPage, limit, None, None, Set[Permission](Permission.ViewCollection), user, showAll, Some(owner), false, false, true)
+  }
+
+  /**
+    * Return a list of collections the user has created starting at a specific date in the trash.
+    */
+  def listUserTrash(user : Option[User], limit : Integer) : List[Collection] = {
+    val (filter,sort) = trashFilterQuery(user)
+    Collection.find(filter).sort(sort).limit(limit).toList.reverse
+  }
+
+  private def trashFilterQuery( user: Option[User]) : (DBObject, DBObject) = {
+    val trashFilter = MongoDBObject("dateMovedToTrash" -> MongoDBObject("$ne" -> None))
+    val author = MongoDBObject("author._id" -> new ObjectId(user.get.id.stringify))
+    val sort = {
+      MongoDBObject("created" -> 1) ++ MongoDBObject("name" -> 1)
+    }
+    (trashFilter ++ author,sort)
   }
 
   /**

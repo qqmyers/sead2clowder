@@ -95,6 +95,11 @@ trait CollectionService {
 
 
   /**
+    * Return a number of collections the user has created in trash.
+    */
+  def listUserTrash(user : Option[User],limit : Integer ) : List[Collection]
+
+  /**
    * Return a list of collections the user has access to starting at a specific date with matching title.
    */
   def listUser(date: String, nextPage: Boolean, limit: Integer, title: String, user: Option[User], showAll: Boolean, owner: User): List[Collection]
