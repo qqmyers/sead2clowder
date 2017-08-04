@@ -21,6 +21,7 @@ dataset.title=Dataset
 dataset.description=Description
 publicationrequest.description=Abstract
 collections.title=Collections
+collections.trashtitle=Collections in trash
 collection.title=Collection
 collection.parent.title=Parent Collection
 collection.child.title = Child Collection

@@ -178,7 +178,7 @@
                         </a>
                         <ul class="dropdown-menu">
                             <li><a href="@routes.Datasets.list(owner=Some(user.get.id.stringify), showTrash = true)"><span class="glyphicon glyphicon-briefcase"></span> @Messages("datasets.title") in trash</a></li>
-                            <li><a href="@routes.Collections.list(owner=Some(user.get.id.stringify))"><span class="glyphicon glyphicon-th-large"></span> @Messages("collections.title") in trash</a></li>
+                            <li><a href="@routes.Collections.list(owner=Some(user.get.id.stringify), showTrash = true)"><span class="glyphicon glyphicon-th-large"></span> @Messages("collections.title") in trash</a></li>
                         </ul>
                     </li>
                 }

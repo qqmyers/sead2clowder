@@ -195,6 +195,9 @@
                             Download All Files
                         </a>
                     }
+                    @if(dataset.isTrash){
+                        @datasets.restoreButton(dataset)
+                    }
                     @datasets.deleteButton(dataset)
                     @datasets.follow(dataset)
                     @if(user.isDefined) {
