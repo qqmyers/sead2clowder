@@ -108,7 +108,12 @@
 				<div class="row">
 					<div class="col-xs-12">
 						<hr/>
-                        <!-- If user can delete, the button is enabled, otherwise the button is present but disabled to provide consistent UE. -->
+						@if(collection.isTrash){
+							<button id="restoreButton" onclick="restoreCollection('@(collection.id)', true, '@(routes.Collections.list("",owner=Some(user.get.id.stringify),showTrash=true))')"
+							class="btn btn-link" title="Restore Collection but not Enclosed Datasets">
+								<span class="glyphicon glyphicon-exclamation-sign"></span> Restore</button>
+						}
+							<!-- If user can delete, the button is enabled, otherwise the button is present but disabled to provide consistent UE. -->
                         @if(Permission.checkPermission(Permission.DeleteCollection, ResourceRef(ResourceRef.collection, collection.id))){
                             <button id="deleteButton" onclick="confirmDeleteResource('collection','collection','@(collection.id)','@(collection.name.replace("'","&#39;"))', true, '@(routes.Collections.list(""))')"
                                 class="btn btn-link" title="Delete Collection but not Enclosed Datasets">

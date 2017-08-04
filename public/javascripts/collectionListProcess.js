@@ -75,3 +75,24 @@ function removeChildCollectionFromParent(parentId, childId, url) {
 		}
 	});
 }
+
+function restoreCollection(id,isreload,newurl){
+    var url = jsRoutes.api.Collections.restoreCollection(id)
+    var request = url.ajax({
+        type: 'PUT'
+    });
+    request.done(function (response, textStatus, jqXHR){
+        console.log('success');
+        console.log('response',response)
+        console.log(newurl);
+        window.location.href=newurl;
+
+    });
+    request.fail(function (jqXHR, textStatus, errorThrown){
+        console.error("The following error occured: "+textStatus, errorThrown);
+        var errMsg = "You must be logged in to remove a collection from the system.";
+        if (!checkErrorAndRedirect(jqXHR, errMsg)) {
+            notify("The collection was not restored due to : " + errorThrown, "error");
+        }
+    });
+}

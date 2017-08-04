@@ -463,6 +463,7 @@ GET            /api/collections/rootCollections                                 
 GET            /api/collections/topLevelCollections                                     @api.Collections.getTopLevelCollections
 GET            /api/collections/allCollections                                          @api.Collections.getAllCollections(limit : Int ?= 0, showAll: Boolean ?=false)
 GET            /api/collections/:id/download                                            @api.Collections.download(id: UUID, compression: Int ?= -1)
+PUT            /api/collections/restore/:collectionId                                   @api.Collections.restoreCollection(collectionId : UUID)
 # deprecrated
 GET            /api/collections/list                                                    @api.Collections.list(title: Option[String] ?= None, date: Option[String] ?= None, limit: Int ?= 12)
 POST           /api/collections/:id/follow                                              @api.Collections.follow(id: UUID)
