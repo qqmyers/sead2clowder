@@ -144,9 +144,20 @@ trait DatasetService {
   def listUser(limit: Integer, user: Option[User], showAll: Boolean, owner: User): List[Dataset]
 
   /**
+    * Return a list of datasets the user has created in trash.
+    */
+  def listUserTrash(limit: Integer, user: Option[User], showAll: Boolean, owner: User): List[Dataset]
+
+  /**
    * Return a list of datasets the user has created starting at a specific date.
    */
   def listUser(date: String, nextPage: Boolean, limit: Integer, user: Option[User], showAll: Boolean, owner: User): List[Dataset]
+
+  /**
+    * Return a list of datasets the user has created starting at a specific date.
+    */
+  def listUserTrash(date: String, nextPage: Boolean, limit: Integer, user: Option[User], showAll: Boolean, owner: User): List[Dataset]
+
 
   /**
     * Return a list of all the datasets the user can view or has created.

@@ -309,7 +309,7 @@ class MongoSalatPlugin(app: Application) extends Plugin {
   // CODE TO UPDATE THE DATABASE
   // ----------------------------------------------------------------------
   def updateDatabase() {
-    
+
     //add trash field dataset
     updateMongo("add-trash-dataset", addDateMovedToTrashDatasets)
 

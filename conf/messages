@@ -16,6 +16,7 @@ list.title= {0}
 users.title=Users
 user.title=User
 datasets.title=Datasets
+datasets.trashtitle=Datasets in trash
 dataset.title=Dataset
 dataset.description=Description
 publicationrequest.description=Abstract

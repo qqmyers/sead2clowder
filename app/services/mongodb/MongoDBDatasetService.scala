@@ -239,10 +239,25 @@ class MongoDBDatasetService @Inject() (
   }
 
   /**
+    * Return a list of datasets the user has created.
+    */
+  def listUserTrash(limit: Integer, user: Option[User], showAll: Boolean, owner: User): List[Dataset] = {
+    list(None, false, limit, None, None, None, Set[Permission](Permission.ViewDataset), user, None, showAll, Some(owner), false, false, true)
+  }
+
+
+  /**
    * Return a list of datasets the user has created starting at a specific date.
    */
   def listUser(date: String, nextPage: Boolean, limit: Integer, user: Option[User], showAll: Boolean, owner: User): List[Dataset] = {
     list(Some(date), nextPage, limit, None, None, None, Set[Permission](Permission.ViewDataset), user, None, showAll, Some(owner))
+  }
+
+  /**
+    * Return a list of datasets the user has created starting at a specific date.
+    */
+  def listUserTrash(date: String, nextPage: Boolean, limit: Integer, user: Option[User], showAll: Boolean, owner: User): List[Dataset] = {
+    list(Some(date), nextPage, limit, None, None, None, Set[Permission](Permission.ViewDataset), user, None, showAll, Some(owner), false, false, true)
   }
 
   /**
