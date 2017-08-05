@@ -158,17 +158,27 @@ class Collections @Inject() (datasets: DatasetService,
   def removeCollection(collectionId: UUID) = PermissionAction(Permission.DeleteCollection, Some(ResourceRef(ResourceRef.collection, collectionId))) { implicit request =>
     collections.get(collectionId) match {
       case Some(collection) => {
-        if (collection.isTrash){
+        val useTrash = play.api.Play.configuration.getBoolean("useTrash").getOrElse(false)
+        if (useTrash){
+          if (collection.isTrash){
+            events.addObjectEvent(request.user , collection.id, collection.name, "delete_collection")
+            collections.delete(collectionId)
+            appConfig.incrementCount('collections, -1)
+            current.plugin[AdminsNotifierPlugin].foreach {
+              _.sendAdminsNotification(Utils.baseUrl(request),"Collection","removed",collection.id.stringify, collection.name)
+            }
+          } else {
+            collections.updateDateMovedToTrash(collectionId, Some(new Date()))
+            events.addObjectEvent(request.user, collectionId, collection.name, "move_collection_trash")
+            Ok(toJson(Map("status" -> "success")))
+          }
+        } else {
           events.addObjectEvent(request.user , collection.id, collection.name, "delete_collection")
           collections.delete(collectionId)
           appConfig.incrementCount('collections, -1)
           current.plugin[AdminsNotifierPlugin].foreach {
             _.sendAdminsNotification(Utils.baseUrl(request),"Collection","removed",collection.id.stringify, collection.name)
           }
-        } else {
-          collections.updateDateMovedToTrash(collectionId, Some(new Date()))
-          events.addObjectEvent(request.user, collectionId, collection.name, "move_collection_trash")
-          Ok(toJson(Map("status" -> "success")))
         }
       }
     }

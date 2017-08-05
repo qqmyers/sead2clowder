@@ -1721,18 +1721,26 @@ class  Datasets @Inject()(
   def detachAndDeleteDataset(id: UUID) = PermissionAction(Permission.DeleteDataset, Some(ResourceRef(ResourceRef.dataset, id))) { implicit request =>
     datasets.get(id) match{
       case Some(dataset) => {
-        if (dataset.isTrash){
+        val useTrash = play.api.Play.configuration.getBoolean("useTrash").getOrElse(false)
+        if (useTrash){
+          if (dataset.isTrash){
+            for (f <- dataset.files) {
+              detachFileHelper(dataset.id, f, dataset, request.user)
+            }
+            deleteDatasetHelper(dataset.id, request)
+            Ok(toJson(Map("status" -> "success")))
+          } else {
+            datasets.update(dataset.copy(dateMovedToTrash = Some(new Date())))
+            events.addObjectEvent(request.user, id, dataset.name, "move_dataset_trash")
+            Ok(toJson(Map("status"->"success")))
+          }
+        } else {
           for (f <- dataset.files) {
             detachFileHelper(dataset.id, f, dataset, request.user)
           }
           deleteDatasetHelper(dataset.id, request)
           Ok(toJson(Map("status" -> "success")))
-        } else {
-          datasets.update(dataset.copy(dateMovedToTrash = Some(new Date())))
-          events.addObjectEvent(request.user, id, dataset.name, "move_dataset_trash")
-          Ok(toJson(Map("status"->"success")))
         }
-
       }
       case None=> {
         Ok(toJson(Map("status" -> "success")))
@@ -1777,12 +1785,17 @@ class  Datasets @Inject()(
   def deleteDataset(id: UUID) = PermissionAction(Permission.DeleteDataset, Some(ResourceRef(ResourceRef.dataset, id))) { implicit request =>
     datasets.get(id) match {
       case Some(ds) => {
-        if (ds.isTrash){
-          deleteDatasetHelper(id, request)
+        val useTrash = play.api.Play.configuration.getBoolean("useTrash").getOrElse(false)
+        if (useTrash){
+          if (ds.isTrash){
+            deleteDatasetHelper(id, request)
+          } else {
+            datasets.update(ds.copy(dateMovedToTrash = Some(new Date())))
+            events.addObjectEvent(request.user, id, ds.name, "move_dataset_trash")
+            Ok(toJson(Map("status"->"success")))
+          }
         } else {
-          datasets.update(ds.copy(dateMovedToTrash = Some(new Date())))
-          events.addObjectEvent(request.user, id, ds.name, "move_dataset_trash")
-          Ok(toJson(Map("status"->"success")))
+          deleteDatasetHelper(id, request)
         }
       }
       case None => BadRequest("No dataset found with id " + id)
