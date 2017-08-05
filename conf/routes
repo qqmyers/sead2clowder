@@ -509,6 +509,7 @@ POST           /api/datasets/searchusermetadata                                 
 POST           /api/datasets/searchmetadata                                             @api.Datasets.searchDatasetsGeneralMetadata
 GET            /api/datasets/listOutsideCollection/:coll_id                             @api.Datasets.listOutsideCollection(coll_id: UUID)
 PUT            /api/datasets/restore/:id                                                @api.Datasets.restoreDataset(id : UUID)
+DELETE         /api/datasets/emptyTrash                                                 @api.Datasets.emptyTrash()
 POST           /api/datasets/:ds_id/filesRemove/:file_id/:ignoreNotFound                @api.Datasets.detachFile(ds_id: UUID,file_id: UUID, ignoreNotFound)
 POST           /api/datasets/:datasetId/moveFile/:toFolder/:fileId                      @api.Folders.moveFileBetweenFolders( datasetId: UUID, toFolder: UUID, fileId: UUID)
 POST           /api/datasets/:datasetId/moveBetweenDatasets/:toDataset/:fileId          @api.Datasets.moveFileBetweenDatasets(datasetId: UUID, toDataset: UUID, fileId: UUID)

@@ -144,7 +144,12 @@
                     }
                     case (_, Some(o)) => {
                         @if(o.equalsIgnoreCase(u.id.stringify)) {
-                            <a id="create-dataset" class="btn btn-primary btn-sm pull-right" href="@routes.Datasets.newDataset(space, None)" title="@Messages("create.title", Messages("dataset.title"))"><span class="glyphicon glyphicon-ok"></span> @Messages("create.title", "")</a>
+                            @if(showTrash){
+                                <a id="clear-trash" onclick="confirmClearTrash('dataset', '@(routes.Datasets.list("",owner=Some(user.get.id.stringify),showTrash=true))')"
+                                class="btn btn-primary btn-sm pull-right" href="#"> <span class="glyphicon glyphicon-trash"></span>  @Messages("cleartrash.title", Messages("dataset.title"))</a>
+                            } else {
+                                <a id="create-dataset" class="btn btn-primary btn-sm pull-right" href="@routes.Datasets.newDataset(space, None)" title="@Messages("create.title", Messages("dataset.title"))"><span class="glyphicon glyphicon-ok"></span> @Messages("create.title", "")</a>
+                            }
                         }
                     }
 

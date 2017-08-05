@@ -163,6 +163,9 @@ trait DatasetService {
     * Return a list of all the datasets the user can view or has created.
     */
   def listUser( user: User): List[Dataset]
+
+  def listUserTrash(user : Option[User],limit : Integer ) : List[Dataset]
+
   /**
    * Get dataset.
    */

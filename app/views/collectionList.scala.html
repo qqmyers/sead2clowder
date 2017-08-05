@@ -129,7 +129,7 @@
                         @if(o.equalsIgnoreCase(u.id.stringify)) {
                             @if(showTrash){
                                 <a id="clear-trash" onclick="confirmClearTrash('collection', '@(routes.Collections.list("",owner=Some(user.get.id.stringify),showTrash=true))')"
-                                class="btn btn-primary btn-sm pull-right" href="#"> <span class="glyphicon glyphicon-trash"></span>  @Messages("cleartrash.title", "collections")</a>
+                                class="btn btn-primary btn-sm pull-right" href="#"> <span class="glyphicon glyphicon-trash"></span>  @Messages("cleartrash.title", Messages("collection.title"))</a>
                                 
                             } else {
                                 <a id="create-collection" href="@routes.Collections.newCollection(space)" class="btn btn-primary btn-sm pull-right" title="@Messages("create.title", Messages("collection.title"))">

@@ -6,9 +6,10 @@ import java.util.{ArrayList, Date}
 import javax.inject.{Inject, Singleton}
 
 import Transformation.LidoToCidocConvertion
-import util.{Parsers, Formatters}
+import util.{Formatters, Parsers}
 import api.Permission
 import api.Permission.Permission
+import com.mongodb.DBObject
 import com.mongodb.casbah.Imports._
 import com.mongodb.casbah.WriteConcern
 import com.mongodb.casbah.commons.MongoDBList
@@ -23,7 +24,7 @@ import org.json.JSONObject
 import play.api.Logger
 import play.api.Play._
 import play.api.libs.json.Json._
-import play.api.libs.json.{Json, JsValue, JsArray}
+import play.api.libs.json.{JsArray, JsValue, Json}
 import services._
 import services.mongodb.MongoContext.context
 
@@ -276,6 +277,20 @@ class MongoDBDatasetService @Inject() (
       orlist += MongoDBObject("doesnotexist" -> true)
     }
     Dataset.find($or(orlist.map(_.asDBObject))).toList
+  }
+
+  def listUserTrash(user : Option[User], limit : Integer) : List[Dataset] = {
+    val (filter,sort) = trashFilterQuery(user)
+    Dataset.find(filter).sort(sort).limit(limit).toList.reverse
+  }
+
+  private def trashFilterQuery( user: Option[User]) : (DBObject, DBObject) = {
+    val trashFilter = MongoDBObject("dateMovedToTrash" -> MongoDBObject("$ne" -> None))
+    val author = MongoDBObject("author._id" -> new ObjectId(user.get.id.stringify))
+    val sort = {
+      MongoDBObject("created" -> 1) ++ MongoDBObject("name" -> 1)
+    }
+    (trashFilter ++ author,sort)
   }
 
   /**
