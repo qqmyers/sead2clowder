@@ -228,6 +228,16 @@ class Collections @Inject() (datasets: DatasetService,
     Ok(toJson("Done emptying trash"))
   }
 
+  def clearAllTrash(days : Int) = PrivateServerAction {implicit request =>
+    val today : Date = new Date()
+    val todayInMillis = today.getTime()
+    val newestTrash = todayInMillis - (days*24*60*60*1000)
+    val supermonde = request.user.fold(false)(_.superAdminMode)
+    val allDatasetsInTrash = datasets.listAccess(0,Set[Permission](Permission.ViewDataset),request.user,request.user.fold(false)(_.superAdminMode),true,false).filter( (d : Dataset) => (d.isTrash))
+    val allCollectionsTrash = listCollections(None, None, 0, Set[Permission](Permission.ViewCollection), false, request.user, request.user.fold(false)(_.superAdminMode)).filter( (c : Collection) => (c.isTrash))
+    Ok(toJson("found all trash"))
+  }
+
   def list(title: Option[String], date: Option[String], limit: Int) = PrivateServerAction { implicit request =>
     Ok(toJson(listCollections(title, date, limit, Set[Permission](Permission.ViewCollection), false, request.user, request.user.fold(false)(_.superAdminMode))))
   }

@@ -466,6 +466,7 @@ GET            /api/collections/:id/download                                    
 PUT            /api/collections/restore/:collectionId                                   @api.Collections.restoreCollection(collectionId : UUID)
 GET            /api/collections/listtrash                                               @api.Collections.listCollectionsInTrash(limit : Int ?= 12)
 DELETE         /api/collections/emptyTrash                                              @api.Collections.emptyTrash()
+DELETE         /api/collections/clearAllTrash                                           @api.Collections.clearAllTrash(days : Int ?= 30)
 # deprecrated
 GET            /api/collections/list                                                    @api.Collections.list(title: Option[String] ?= None, date: Option[String] ?= None, limit: Int ?= 12)
 POST           /api/collections/:id/follow                                              @api.Collections.follow(id: UUID)
