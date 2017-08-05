@@ -1821,6 +1821,17 @@ class  Datasets @Inject()(
     Ok(toJson("Done emptying trash"))
   }
 
+  def listDatasetsInTrash(limit : Int) = PrivateServerAction {implicit request =>
+    val user = request.user
+    user match {
+      case Some(u) => {
+        val trashDatasets = datasets.listUserTrash(user,limit)
+        Ok(toJson(trashDatasets))
+      }
+      case None => BadRequest("No user supplied")
+    }
+  }
+
   def getRDFUserMetadata(id: UUID, mappingNumber: String="1") = PermissionAction(Permission.ViewMetadata, Some(ResourceRef(ResourceRef.dataset, id))) { implicit request =>
     current.plugin[RDFExportService].isDefined match{
       case true => {

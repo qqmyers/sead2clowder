@@ -1,9 +1,9 @@
 package api
 
-import java.io.{ByteArrayInputStream, InputStream, ByteArrayOutputStream}
+import java.io.{ByteArrayInputStream, ByteArrayOutputStream, InputStream}
 import java.security.{DigestInputStream, MessageDigest}
 import java.text.SimpleDateFormat
-import java.util.zip.{ZipEntry, ZipOutputStream, Deflater}
+import java.util.zip.{Deflater, ZipEntry, ZipOutputStream}
 
 import Iterators.RootCollectionIterator
 import _root_.util.JSONLD
@@ -17,14 +17,19 @@ import services._
 import play.api.libs.json._
 import play.api.libs.json.{JsObject, JsValue}
 import play.api.libs.json.Json.toJson
-import javax.inject.{ Singleton, Inject}
+import javax.inject.{Inject, Singleton}
+
 import scala.collection.mutable.ListBuffer
-import scala.concurrent.{Future, ExecutionContext}
+import scala.concurrent.{ExecutionContext, Future}
 import play.api.libs.concurrent.Execution.Implicits._
+
 import scala.util.parsing.json.JSONArray
-import scala.util.{Try, Success, Failure}
+import scala.util.{Failure, Success, Try}
 import java.util.{Calendar, Date}
+
 import controllers.Utils
+
+import scala.collection.immutable.List
 
 
 /**
@@ -186,6 +191,17 @@ class Collections @Inject() (datasets: DatasetService,
       }
       case None => BadRequest("No user supplied")
     }
+  }
+
+  def listCollectionsInTrash(limit : Int) = PrivateServerAction {implicit request =>
+    val trash_collections_list = request.user match {
+      case Some(usr) => {
+        for (collection <- collections.listUserTrash(request.user,limit))
+          yield jsonCollection(collection)
+      }
+      case None => List.empty
+    }
+    Ok(toJson(trash_collections_list))
   }
 
   def emptyTrash() = PrivateServerAction {implicit request =>

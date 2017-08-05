@@ -464,6 +464,7 @@ GET            /api/collections/topLevelCollections                             
 GET            /api/collections/allCollections                                          @api.Collections.getAllCollections(limit : Int ?= 0, showAll: Boolean ?=false)
 GET            /api/collections/:id/download                                            @api.Collections.download(id: UUID, compression: Int ?= -1)
 PUT            /api/collections/restore/:collectionId                                   @api.Collections.restoreCollection(collectionId : UUID)
+GET            /api/collections/listtrash                                               @api.Collections.listCollectionsInTrash(limit : Int ?= 12)
 DELETE         /api/collections/emptyTrash                                              @api.Collections.emptyTrash()
 # deprecrated
 GET            /api/collections/list                                                    @api.Collections.list(title: Option[String] ?= None, date: Option[String] ?= None, limit: Int ?= 12)
@@ -509,6 +510,7 @@ POST           /api/datasets/searchusermetadata                                 
 POST           /api/datasets/searchmetadata                                             @api.Datasets.searchDatasetsGeneralMetadata
 GET            /api/datasets/listOutsideCollection/:coll_id                             @api.Datasets.listOutsideCollection(coll_id: UUID)
 PUT            /api/datasets/restore/:id                                                @api.Datasets.restoreDataset(id : UUID)
+GET            /api/datasets/listtrash                                                  @api.Datasets.listDatasetsInTrash(limit : Int ?= 12)
 DELETE         /api/datasets/emptyTrash                                                 @api.Datasets.emptyTrash()
 POST           /api/datasets/:ds_id/filesRemove/:file_id/:ignoreNotFound                @api.Datasets.detachFile(ds_id: UUID,file_id: UUID, ignoreNotFound)
 POST           /api/datasets/:datasetId/moveFile/:toFolder/:fileId                      @api.Folders.moveFileBetweenFolders( datasetId: UUID, toFolder: UUID, fileId: UUID)
