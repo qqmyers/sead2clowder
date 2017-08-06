@@ -285,12 +285,23 @@ class MongoDBDatasetService @Inject() (
   }
 
   private def trashFilterQuery( user: Option[User]) : (DBObject, DBObject) = {
-    val trashFilter = MongoDBObject("dateMovedToTrash" -> MongoDBObject("$ne" -> None))
-    val author = MongoDBObject("author._id" -> new ObjectId(user.get.id.stringify))
-    val sort = {
-      MongoDBObject("created" -> 1) ++ MongoDBObject("name" -> 1)
+    user match {
+      case Some(u) => {
+        val trashFilter = MongoDBObject("dateMovedToTrash" -> MongoDBObject("$ne" -> None))
+        val author = MongoDBObject("author._id" -> new ObjectId(user.get.id.stringify))
+        val sort = {
+          MongoDBObject("created" -> 1) ++ MongoDBObject("name" -> 1)
+        }
+        (trashFilter ++ author,sort)
+      }
+      case None => {
+        val trashFilter = MongoDBObject("dateMovedToTrash" -> MongoDBObject("$ne" -> None))
+        val sort = {
+          MongoDBObject("created" -> 1) ++ MongoDBObject("name" -> 1)
+        }
+        (trashFilter,sort)
+      }
     }
-    (trashFilter ++ author,sort)
   }
 
   /**

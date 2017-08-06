@@ -233,8 +233,24 @@ class Collections @Inject() (datasets: DatasetService,
     val todayInMillis = today.getTime()
     val newestTrash = todayInMillis - (days*24*60*60*1000)
     val supermonde = request.user.fold(false)(_.superAdminMode)
-    val allDatasetsInTrash = datasets.listAccess(0,Set[Permission](Permission.ViewDataset),request.user,request.user.fold(false)(_.superAdminMode),true,false).filter( (d : Dataset) => (d.isTrash))
-    val allCollectionsTrash = listCollections(None, None, 0, Set[Permission](Permission.ViewCollection), false, request.user, request.user.fold(false)(_.superAdminMode)).filter( (c : Collection) => (c.isTrash))
+    val user = request.user
+    val isAdmin = user.get.serverAdmin
+    val allDatasetsInTrash = datasets.listUserTrash(None,0)
+    allDatasetsInTrash.foreach(d => {
+      val dateInTrash = d.dateMovedToTrash.getOrElse(new Date())
+      if (dateInTrash.getTime() < newestTrash){
+        //remove dataset
+        datasets.removeDataset(d.id)
+      }
+    })
+    val allCollectionsTrash = collections.listUserTrash(None,0)
+    allCollectionsTrash.foreach( c => {
+      val dateInTrash = c.dateMovedToTrash.getOrElse(new Date())
+      if (dateInTrash.getTime() < newestTrash) {
+        collections.delete(c.id)
+      }
+
+    })
     Ok(toJson("found all trash"))
   }
 
