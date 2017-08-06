@@ -232,26 +232,29 @@ class Collections @Inject() (datasets: DatasetService,
     val today : Date = new Date()
     val todayInMillis = today.getTime()
     val newestTrash = todayInMillis - (days*24*60*60*1000)
-    val supermonde = request.user.fold(false)(_.superAdminMode)
     val user = request.user
     val isAdmin = user.get.serverAdmin
-    val allDatasetsInTrash = datasets.listUserTrash(None,0)
-    allDatasetsInTrash.foreach(d => {
-      val dateInTrash = d.dateMovedToTrash.getOrElse(new Date())
-      if (dateInTrash.getTime() < newestTrash){
-        //remove dataset
-        datasets.removeDataset(d.id)
-      }
-    })
-    val allCollectionsTrash = collections.listUserTrash(None,0)
-    allCollectionsTrash.foreach( c => {
-      val dateInTrash = c.dateMovedToTrash.getOrElse(new Date())
-      if (dateInTrash.getTime() < newestTrash) {
-        collections.delete(c.id)
-      }
+    if (isAdmin){
+      val allDatasetsInTrash = datasets.listUserTrash(None,0)
+      allDatasetsInTrash.foreach(d => {
+        val dateInTrash = d.dateMovedToTrash.getOrElse(new Date())
+        if (dateInTrash.getTime() < newestTrash){
+          //remove dataset
+          datasets.removeDataset(d.id)
+        }
+      })
+      val allCollectionsTrash = collections.listUserTrash(None,0)
+      allCollectionsTrash.foreach( c => {
+        val dateInTrash = c.dateMovedToTrash.getOrElse(new Date())
+        if (dateInTrash.getTime() < newestTrash) {
+          collections.delete(c.id)
+        }
 
-    })
-    Ok(toJson("found all trash"))
+      })
+      Ok(toJson("found all trash"))
+    } else {
+      BadRequest("user not an admin, cannot clear items from trash")
+    }
   }
 
   def list(title: Option[String], date: Option[String], limit: Int) = PrivateServerAction { implicit request =>
