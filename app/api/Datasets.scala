@@ -1845,6 +1845,28 @@ class  Datasets @Inject()(
     }
   }
 
+  def clearOldDatasetsTrash(days : Int) = PrivateServerAction {implicit request =>
+
+    val deleteBeforeCalendar : Calendar = Calendar.getInstance()
+    deleteBeforeCalendar.add(Calendar.DATE,-days)
+
+    val deleteBeforeDateTime = deleteBeforeCalendar.getTimeInMillis()
+    val user = request.user
+    val isAdmin = user.get.serverAdmin
+    if (isAdmin){
+      val allDatasetsInTrash = datasets.listUserTrash(None,0)
+      allDatasetsInTrash.foreach(d => {
+        val dateInTrash = d.dateMovedToTrash.getOrElse(new Date())
+        if (dateInTrash.getTime() < deleteBeforeDateTime){
+          deleteDatasetHelper(d.id, request)
+        }
+      })
+      Ok(toJson("Deleted all datasets in trash older than " + days + " days"))
+    } else {
+      BadRequest("user not an admin, cannot clear items from trash")
+    }
+  }
+
   def getRDFUserMetadata(id: UUID, mappingNumber: String="1") = PermissionAction(Permission.ViewMetadata, Some(ResourceRef(ResourceRef.dataset, id))) { implicit request =>
     current.plugin[RDFExportService].isDefined match{
       case true => {

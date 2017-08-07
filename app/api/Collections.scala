@@ -25,7 +25,7 @@ import play.api.libs.concurrent.Execution.Implicits._
 
 import scala.util.parsing.json.JSONArray
 import scala.util.{Failure, Success, Try}
-import java.util.{Calendar, Date}
+import java.util.{Calendar, Date, GregorianCalendar}
 
 import controllers.Utils
 
@@ -228,30 +228,28 @@ class Collections @Inject() (datasets: DatasetService,
     Ok(toJson("Done emptying trash"))
   }
 
-  def clearAllTrash(days : Int) = PrivateServerAction {implicit request =>
-    val today : Date = new Date()
-    val todayInMillis = today.getTime()
-    val newestTrash = todayInMillis - (days*24*60*60*1000)
+  def clearOldCollectionsTrash(days : Int) = PrivateServerAction {implicit request =>
+
+    val deleteBeforeCalendar : Calendar = Calendar.getInstance()
+    deleteBeforeCalendar.add(Calendar.DATE,-days)
+
+    val deleteBeforeDateTime = deleteBeforeCalendar.getTimeInMillis()
     val user = request.user
     val isAdmin = user.get.serverAdmin
     if (isAdmin){
-      val allDatasetsInTrash = datasets.listUserTrash(None,0)
-      allDatasetsInTrash.foreach(d => {
-        val dateInTrash = d.dateMovedToTrash.getOrElse(new Date())
-        if (dateInTrash.getTime() < newestTrash){
-          //remove dataset
-          datasets.removeDataset(d.id)
-        }
-      })
       val allCollectionsTrash = collections.listUserTrash(None,0)
       allCollectionsTrash.foreach( c => {
         val dateInTrash = c.dateMovedToTrash.getOrElse(new Date())
-        if (dateInTrash.getTime() < newestTrash) {
+        if (dateInTrash.getTime() < deleteBeforeDateTime) {
+          events.addObjectEvent(request.user , c.id, c.name, "delete_collection")
           collections.delete(c.id)
+          appConfig.incrementCount('collections, -1)
+          current.plugin[AdminsNotifierPlugin].foreach {
+            _.sendAdminsNotification(Utils.baseUrl(request),"Collection","removed",collection.id.stringify, collection.name)
+          }
         }
-
       })
-      Ok(toJson("found all trash"))
+      Ok(toJson("Deleted all collections in trash older than " + days + " days"))
     } else {
       BadRequest("user not an admin, cannot clear items from trash")
     }

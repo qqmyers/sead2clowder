@@ -466,7 +466,7 @@ GET            /api/collections/:id/download                                    
 PUT            /api/collections/restore/:collectionId                                   @api.Collections.restoreCollection(collectionId : UUID)
 GET            /api/collections/listtrash                                               @api.Collections.listCollectionsInTrash(limit : Int ?= 12)
 DELETE         /api/collections/emptyTrash                                              @api.Collections.emptyTrash()
-DELETE         /api/collections/clearAllTrash                                           @api.Collections.clearAllTrash(days : Int ?= 30)
+DELETE         /api/collections/clearOldCollectionsTrash                                @api.Collections.clearOldCollectionsTrash(days : Int ?= 30)
 # deprecrated
 GET            /api/collections/list                                                    @api.Collections.list(title: Option[String] ?= None, date: Option[String] ?= None, limit: Int ?= 12)
 POST           /api/collections/:id/follow                                              @api.Collections.follow(id: UUID)
@@ -513,6 +513,7 @@ GET            /api/datasets/listOutsideCollection/:coll_id                     
 PUT            /api/datasets/restore/:id                                                @api.Datasets.restoreDataset(id : UUID)
 GET            /api/datasets/listtrash                                                  @api.Datasets.listDatasetsInTrash(limit : Int ?= 12)
 DELETE         /api/datasets/emptyTrash                                                 @api.Datasets.emptyTrash()
+DELETE         /api/datasets/clearOldDatasetsTrash                                      @api.Datasets.clearOldDatasetsTrash(days : Int ?= 30)
 POST           /api/datasets/:ds_id/filesRemove/:file_id/:ignoreNotFound                @api.Datasets.detachFile(ds_id: UUID,file_id: UUID, ignoreNotFound)
 POST           /api/datasets/:datasetId/moveFile/:toFolder/:fileId                      @api.Folders.moveFileBetweenFolders( datasetId: UUID, toFolder: UUID, fileId: UUID)
 POST           /api/datasets/:datasetId/moveBetweenDatasets/:toDataset/:fileId          @api.Datasets.moveFileBetweenDatasets(datasetId: UUID, toDataset: UUID, fileId: UUID)
