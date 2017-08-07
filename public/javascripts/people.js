@@ -6,7 +6,7 @@ function expandPeople() {
 			if ($(this).children().length == 0) {
 				findPerson(this);
 			} else {
-				$(this).children().each(function() {findPerson(this);});
+				$(this).children("span").each(function() {findPerson(this);});
 			}
 		}
 	});
