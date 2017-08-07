@@ -52,6 +52,9 @@ trait MetadataService {
   /** Get the current summary of all metadata actions for this resource */
   def getMetadataSummary(resourceRef: ResourceRef, spaceId:Option[UUID]): models.RdfMetadata
   
+  /** Get the current summary of all metadata actions for this resource */
+  def copyMetadataSummary(sourceResourceRef: ResourceRef, targetResourceRef: ResourceRef)
+  
   /** Get metadata context if available */
   def getMetadataContext(metadataId: UUID): Option[JsValue]
 

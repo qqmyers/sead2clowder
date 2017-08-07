@@ -1,7 +1,7 @@
 package api
 
 import java.net.URI
-import javax.inject.{Inject, Singleton}
+import javax.inject.{ Inject, Singleton }
 import models._
 import util.JSONLD
 import org.apache.http.client.methods.HttpDelete
@@ -19,16 +19,15 @@ import play.api.Play.current
  * Manipulates publication requests curation objects.
  */
 @Singleton
-class CurationObjects @Inject()(datasets: DatasetService,
-      curations: CurationService,
-      files: FileService,
-      comments: CommentService,
-      sections: SectionService,
-      spaces: SpaceService,
-      userService: UserService,
-      curationObjectController: controllers.CurationObjects,
-      metadatas: MetadataService
-      ) extends ApiController {
+class CurationObjects @Inject() (datasets: DatasetService,
+    curations: CurationService,
+    files: FileService,
+    comments: CommentService,
+    sections: SectionService,
+    spaces: SpaceService,
+    userService: UserService,
+    curationObjectController: controllers.CurationObjects,
+    metadatas: MetadataService) extends ApiController {
   def getCurationObjectOre(curationId: UUID) = PermissionAction(Permission.EditStagingArea, Some(ResourceRef(ResourceRef.curationObject, curationId))) {
     implicit request =>
       val format = new java.text.SimpleDateFormat("dd-MM-yyyy")
@@ -38,23 +37,25 @@ class CurationObjects @Inject()(datasets: DatasetService,
           val https = controllers.Utils.https(request)
           val key = play.api.Play.configuration.getString("commKey").getOrElse("")
           val filesJson = curations.getCurationFiles(curations.getAllCurationFileIds(c.id)).map { file =>
+            //Get the current md entries
+            val entries = metadatas.getMetadataSummary(ResourceRef(ResourceRef.curationFile, file.id), null).entries.map { case (key, obj) => key -> Json.toJson(obj.as[JsObject].values) }
 
-            var fileMetadata = scala.collection.mutable.Map.empty[String, JsValue]
-            metadatas.getMetadataByAttachTo(ResourceRef(ResourceRef.curationFile, file.id)).filter(_.creator.typeOfAgent == "cat:user").map {
-              item => fileMetadata = fileMetadata ++ JSONLD.buildMetadataMap(item.content)
-            }
+            //Gather the standard info about a file
             val size = files.get(file.fileId) match {
               case Some(f) => f.length
-              case None => 0
+              case None => {
+                Logger.warn("File: " + file.fileId + " not found during publication process")
+                0
+              }
             }
-  
-            var tempMap =  Map(
-              "Identifier" -> Json.toJson("urn:uuid:"+file.id),
-              "@id" -> Json.toJson("urn:uuid:"+file.id),
+
+            var tempMap = Map(
+              "Identifier" -> Json.toJson("urn:uuid:" + file.id),
+              "@id" -> Json.toJson("urn:uuid:" + file.id),
               "Creation Date" -> Json.toJson(format.format(file.uploadDate)),
               "Label" -> Json.toJson(file.filename),
               "Title" -> Json.toJson(file.filename),
-              "Uploaded By" -> Json.toJson(userService.findById(file.author.id).map ( usr => Json.toJson(file.author.fullName + ": " +  api.routes.Users.findById(usr.id).absoluteURL(https)))),
+              "Uploaded By" -> Json.toJson(userService.findById(file.author.id).map(usr => Json.toJson(file.author.fullName + ": " + api.routes.Users.findById(usr.id).absoluteURL(https)))),
               "Size" -> Json.toJson(size),
               "Mimetype" -> Json.toJson(file.contentType),
               "Publication Date" -> Json.toJson(""),
@@ -62,36 +63,32 @@ class CurationObjects @Inject()(datasets: DatasetService,
               "SHA512 Hash" -> Json.toJson(file.sha512),
               "@type" -> Json.toJson(Seq("AggregatedResource", "http://cet.ncsa.uiuc.edu/2015/File")),
               "Is Version Of" -> Json.toJson(controllers.routes.Files.file(file.fileId).absoluteURL(https) + "?key=" + key),
-              "similarTo" -> Json.toJson(api.routes.Files.download(file.fileId).absoluteURL(https)  + "?key=" + key)
-
-            )
-            if(file.tags.size > 0 ) {
+              "similarTo" -> Json.toJson(api.routes.Files.download(file.fileId).absoluteURL(https) + "?key=" + key))
+            //Report tags as Keywords
+            if (file.tags.size > 0) {
               tempMap = tempMap ++ Map("Keyword" -> Json.toJson(file.tags.map(_.name)))
             }
-
-            tempMap ++ fileMetadata
+            //Return added MD + standard info
+            tempMap ++ entries
 
           }
           val foldersJson = curations.getCurationFolders(curations.getAllCurationFolderIds(c.id)).map { folder =>
 
-              val hasPart = folder.files.map(file=>"urn:uuid:"+file) ++ folder.folders.map(fd => "urn:uuid:"+fd)
-              val tempMap = Map(
-                "Creation Date" -> Json.toJson(format.format(folder.created)),
-                "Rights" -> Json.toJson(c.datasets(0).licenseData.m_licenseText),
-                "Identifier" -> Json.toJson("urn:uuid:"+folder.id),
-                "License" -> Json.toJson(c.datasets(0).licenseData.m_licenseText),
-                "Label" -> Json.toJson(folder.name),
-                "Title" -> Json.toJson(folder.displayName),
-                "Uploaded By" -> Json.toJson(folder.author.fullName + ": " +  api.routes.Users.findById(folder.author.id).absoluteURL(https)),
-                "@id" -> Json.toJson("urn:uuid:"+folder.id),
-                "@type" -> Json.toJson(Seq("AggregatedResource", "http://cet.ncsa.uiuc.edu/2016/Folder")),
-                "Is Version Of" -> Json.toJson(controllers.routes.Datasets.dataset(c.datasets(0).id).absoluteURL(https) +"#folderId=" +folder.folderId),
-                "Has Part" -> Json.toJson(hasPart)
-              )
-              tempMap
+            val hasPart = folder.files.map(file => "urn:uuid:" + file) ++ folder.folders.map(fd => "urn:uuid:" + fd)
+            val tempMap = Map(
+              "Creation Date" -> Json.toJson(format.format(folder.created)),
+              "Identifier" -> Json.toJson("urn:uuid:" + folder.id),
+              "Label" -> Json.toJson(folder.name),
+              "Title" -> Json.toJson(folder.displayName),
+              "Uploaded By" -> Json.toJson(folder.author.fullName + ": " + api.routes.Users.findById(folder.author.id).absoluteURL(https)),
+              "@id" -> Json.toJson("urn:uuid:" + folder.id),
+              "@type" -> Json.toJson(Seq("AggregatedResource", "http://cet.ncsa.uiuc.edu/2016/Folder")),
+              "Is Version Of" -> Json.toJson(controllers.routes.Datasets.dataset(c.datasets(0).id).absoluteURL(https) + "#folderId=" + folder.folderId),
+              "Has Part" -> Json.toJson(hasPart))
+            tempMap
 
           }
-          val hasPart = c.files.map(file => "urn:uuid:"+file) ++ c.folders.map(folder => "urn:uuid:"+folder)
+          val hasPart = c.files.map(file => "urn:uuid:" + file) ++ c.folders.map(folder => "urn:uuid:" + folder)
           var commentsByDataset = comments.findCommentsByDatasetId(c.datasets(0).id)
           curations.getCurationFiles(curations.getAllCurationFileIds(c.id)).map {
             file =>
@@ -105,72 +102,85 @@ class CurationObjects @Inject()(datasets: DatasetService,
             Json.toJson(Map(
               "comment_body" -> Json.toJson(comm.text),
               "comment_date" -> Json.toJson(format.format(comm.posted)),
-              "Identifier" -> Json.toJson("urn:uuid:"+comm.id),
-              "comment_author" -> Json.toJson(userService.findById(comm.author.id).map ( usr => Json.toJson(usr.fullName + ": " +  api.routes.Users.findById(usr.id).absoluteURL(https))))
-            ))
+              "Identifier" -> Json.toJson("urn:uuid:" + comm.id),
+              "comment_author" -> Json.toJson(userService.findById(comm.author.id).map(usr => Json.toJson(usr.fullName + ": " + api.routes.Users.findById(usr.id).absoluteURL(https))))))
           }
           var metadataList = scala.collection.mutable.ListBuffer.empty[MetadataPair]
           var metadataKeys = Set.empty[String]
           metadatas.getMetadataByAttachTo(ResourceRef(ResourceRef.curationObject, c.id)).filter(_.creator.typeOfAgent == "cat:user").map {
             item =>
-              for((key, value) <- JSONLD.buildMetadataMap(item.content)) {
+              for ((key, value) <- JSONLD.buildMetadataMap(item.content)) {
                 metadataList += MetadataPair(key, value)
                 metadataKeys += key
               }
           }
-          var metadataJson = scala.collection.mutable.Map.empty[String, JsValue]
-          for(key <- metadataKeys) {
-            metadataJson = metadataJson ++ Map(key -> Json.toJson(metadataList.filter(_.label == key).map{item => item.content}toList))
-          }
+
+          val metadataJson = scala.collection.mutable.Map.empty[String, JsValue] ++ metadatas.getMetadataSummary(ResourceRef(ResourceRef.curationObject, c.id), null).entries.map { case (key, obj) => key -> Json.toJson(obj.as[JsObject].values) }
           val metadataDefsMap = scala.collection.mutable.Map.empty[String, JsValue]
-          for(md <- metadatas.getDefinitions(Some(c.space))) {
-            metadataDefsMap((md.json\ "label").asOpt[String].getOrElse("").toString()) = Json.toJson((md.json \ "uri").asOpt[String].getOrElse(""))
+          val inverseMetadataDefsMap = scala.collection.mutable.Map.empty[String, String]
+          for (md <- metadatas.getDefinitions(Some(c.space))) {
+            metadataDefsMap((md.json \ "label").as[String]) = Json.toJson((md.json \ "uri").as[String])
+            inverseMetadataDefsMap((md.json \ "uri").as[String]) = (md.json \ "label").as[String]
           }
-          if(metadataJson.contains("Creator")) {
-            val value = c.creators ++ metadataList.filter(_.label == "Creator").map{item => item.content.as[String]}.toList
-            metadataJson = metadataJson ++ Map("Creator" -> Json.toJson(value))
-          } else {
-            metadataJson = metadataJson ++ Map("Creator" -> Json.toJson(c.creators))
+          //Legacy - check for any "Creator" metadata and add it in
+          var value = Json.toJson(c.creators).as[JsArray]
+          if (inverseMetadataDefsMap.contains("http://purl.org/dc/terms/creator")) {
+            if (metadataJson.contains(inverseMetadataDefsMap("http://purl.org/dc/terms/creator"))) {
+              value = value ++ metadataJson.apply(inverseMetadataDefsMap("http://purl.org/dc/terms/creator")).as[JsArray]
+            }
+            //if a different label was used for this term, remove it
+            if(!inverseMetadataDefsMap("http://purl.org/dc/terms/creator").equals("Creator")) {
+              metadataDefsMap.remove(inverseMetadataDefsMap("http://purl.org/dc/terms/creator"))
+              metadataJson.remove(inverseMetadataDefsMap("http://purl.org/dc/terms/creator"))
+            }
           }
-          if(!metadataDefsMap.contains("Creator")){
-            metadataDefsMap("Creator") = Json.toJson(Map("@id" -> "http://purl.org/dc/terms/creator", "@container" -> "@list"))
+          metadataJson("Creator") = value
+          
+          //Legacy - check for "Abstract" metadata and add it in
+          value = Json.toJson(List(c.description)).as[JsArray] 
+          if (inverseMetadataDefsMap.contains("http://purl.org/dc/terms/abstract")) {
+            if (metadataJson.contains(inverseMetadataDefsMap("http://purl.org/dc/terms/abstract"))) {
+            value = value ++ metadataJson.apply(inverseMetadataDefsMap("http://purl.org/dc/terms/abstract")).as[JsArray]
+            }
+              //if a different label was used for this term, remove it
+            if(!inverseMetadataDefsMap("http://purl.org/dc/terms/abstract").equals("Abstract")) {
+              metadataDefsMap.remove(inverseMetadataDefsMap("http://purl.org/dc/terms/abstract"))
+              metadataJson.remove(inverseMetadataDefsMap("http://purl.org/dc/terms/abstract"))
+            }
+          
           }
+          metadataJson("Abstract") = value
+           
           val publicationDate = c.publishedDate match {
             case None => ""
             case Some(p) => format.format(c.created)
           }
-          if(metadataJson.contains("Abstract")) {
-            val value  = List(c.description) ++ metadataList.filter(_.label == "Abstract").map{item => item.content.as[String]}
-            metadataJson = metadataJson ++ Map("Abstract" -> Json.toJson(value))
-          } else {
-            metadataJson = metadataJson ++ Map("Abstract" -> Json.toJson(c.description))
-          }
-          if(!metadataDefsMap.contains("Abstract")){
-            metadataDefsMap("Abstract") = Json.toJson("http://purl.org/dc/terms/abstract")
-          }
+          
           var aggregation = metadataJson
-          if(commentsJson.size > 0) {
-            aggregation = metadataJson ++ Map( "Comment" -> Json.toJson(JsArray(commentsJson)))
+          if (commentsJson.size > 0) {
+            aggregation = metadataJson ++ Map("Comment" -> Json.toJson(JsArray(commentsJson)))
           }
-          if(c.datasets(0).tags.size > 0) {
+          if (c.datasets(0).tags.size > 0) {
             aggregation = aggregation ++ Map("Keyword" -> Json.toJson(
-              Json.toJson(c.datasets(0).tags.map(_.name))
-            ))
+              Json.toJson(c.datasets(0).tags.map(_.name))))
           }
+         
           var parsedValue =
             Map(
               "@context" -> Json.toJson(Seq(
                 Json.toJson("https://w3id.org/ore/context"),
-                Json.toJson(
-                  metadataDefsMap.toMap ++ Map(
+                Json.toJson((metadataDefsMap ++ Map(
+                    "Abstract" -> Json.toJson("http://purl.org/dc/terms/abstract"),
+                    //Explicitly note that Creator is an ordered list
+                    "Creator" -> Json.toJson(Map("@id" -> "http://purl.org/dc/terms/creator", "@container" -> "@list")),
                     "Identifier" -> Json.toJson("http://purl.org/dc/elements/1.1/identifier"),
                     "Rights" -> Json.toJson("http://purl.org/dc/terms/rights"),
                     "Date" -> Json.toJson("http://purl.org/dc/elements/1.1/date"),
                     "Creation Date" -> Json.toJson("http://purl.org/dc/terms/created"),
                     "Label" -> Json.toJson("http://www.w3.org/2000/01/rdf-schema#label"),
-                    "Location" -> Json.toJson( "http://sead-data.net/terms/generatedAt"),
+                    "Location" -> Json.toJson("http://sead-data.net/terms/generatedAt"),
                     "Description" -> Json.toJson("http://purl.org/dc/elements/1.1/description"),
-                    "Keyword"-> Json.toJson("http://www.holygoat.co.uk/owl/redwood/0.1/tags/taggedWithTag"),
+                    "Keyword" -> Json.toJson("http://www.holygoat.co.uk/owl/redwood/0.1/tags/taggedWithTag"),
                     "Title" -> Json.toJson("http://purl.org/dc/elements/1.1/title"),
                     "Uploaded By" -> Json.toJson("http://purl.org/dc/elements/1.1/creator"),
                     "Contact" -> Json.toJson("http://sead-data.net/terms/contact"),
@@ -184,42 +194,36 @@ class CurationObjects @Inject()(datasets: DatasetService,
                           "@id" -> Json.toJson("tag:tupeloproject.org,2006:/2.0/gis/hasGeoPoint"),
                           "Longitude" -> Json.toJson("http://www.w3.org/2003/01/geo/wgs84_pos#long"),
                           "Latitude" -> Json.toJson("http://www.w3.org/2003/01/geo/wgs84_pos#lat"),
-                          "Altitude" -> Json.toJson("http://www.w3.org/2003/01/geo/wgs84_pos#alt")
-
-                    )),
+                          "Altitude" -> Json.toJson("http://www.w3.org/2003/01/geo/wgs84_pos#alt"))),
                     "Comment" -> Json.toJson(Map(
                       "comment_body" -> Json.toJson("http://purl.org/dc/elements/1.1/description"),
                       "comment_date" -> Json.toJson("http://purl.org/dc/elements/1.1/date"),
                       "@id" -> Json.toJson("http://cet.ncsa.uiuc.edu/2007/annotation/hasAnnotation"),
-                      "comment_author" -> Json.toJson("http://purl.org/dc/elements/1.1/creator")
-                    )),
+                      "comment_author" -> Json.toJson("http://purl.org/dc/elements/1.1/creator"))),
                     "Has Description" -> Json.toJson("http://purl.org/dc/terms/description"),
                     "Bibliographic citation" -> Json.toJson("http://purl.org/dc/terms/bibliographicCitation"),
                     "Published In" -> Json.toJson("http://purl.org/dc/terms/isPartOf"),
                     "Publisher" -> Json.toJson("http://purl.org/dc/terms/publisher"),
                     "External Identifier" -> Json.toJson("http://purl.org/dc/terms/identifier"),
-                    "references" -> Json.toJson("http://purl.org/dc/terms/references"),
                     "Is Version Of" -> Json.toJson("http://purl.org/dc/terms/isVersionOf"),
                     "Has Part" -> Json.toJson("http://purl.org/dc/terms/hasPart"),
                     "Size" -> Json.toJson("tag:tupeloproject.org,2006:/2.0/files/length"),
                     "Mimetype" -> Json.toJson("http://purl.org/dc/elements/1.1/format"),
                     "SHA512 Hash" -> Json.toJson("http://sead-data.net/terms/hasSHA512Digest"),
-                    "Dataset Description" -> Json.toJson("http://sead-data.net/terms/datasetdescription"),
                     "Publishing Project" -> Json.toJson("http://sead-data.net/terms/publishingProject"),
-                    "License" -> Json.toJson("http://purl.org/dc/terms/license")
-                  )
-                )
+                    "Publishing Project Name" -> Json.toJson("http://sead-data.net/terms/publishingProjectName"),
 
-              )),
-              "Rights" -> Json.toJson("CC0"),
+                    "License" -> Json.toJson("http://purl.org/dc/terms/license"))).toMap))),
+                    
+              "Rights" -> Json.toJson("CC0"),  // Rights to the ORE map itself - always public
               "describes" ->
-                 Json.toJson( aggregation.toMap ++ Map(
+                Json.toJson((aggregation ++ Map(
                   "Identifier" -> Json.toJson("urn:uuid:" + c.id),
                   "Creation Date" -> Json.toJson(format.format(c.created)),
                   "Label" -> Json.toJson(c.name),
                   "Title" -> Json.toJson(c.name),
                   "Dataset Description" -> Json.toJson(c.description),
-                  "Uploaded By" -> Json.toJson(userService.findById(c.author.id).map ( usr => Json.toJson(usr.fullName + ": " + api.routes.Users.findById(usr.id).absoluteURL(https)))),
+                  "Uploaded By" -> Json.toJson(userService.findById(c.author.id).map(usr => Json.toJson(usr.fullName + ": " + api.routes.Users.findById(usr.id).absoluteURL(https)))),
                   "Publication Date" -> Json.toJson(publicationDate),
                   "Published In" -> Json.toJson(""),
                   "External Identifier" -> Json.toJson(""),
@@ -228,15 +232,15 @@ class CurationObjects @Inject()(datasets: DatasetService,
                   "@type" -> Json.toJson(Seq("Aggregation", "http://cet.ncsa.uiuc.edu/2015/Dataset")),
                   "Is Version Of" -> Json.toJson(controllers.routes.Datasets.dataset(c.datasets(0).id).absoluteURL(https)),
                   "similarTo" -> Json.toJson(controllers.routes.Datasets.dataset(c.datasets(0).id).absoluteURL(https)),
-                  "aggregates" -> Json.toJson(filesJson ++ foldersJson.toList),
+                  "aggregates" -> Json.toJson(filesJson.toList ++ foldersJson.toList),
                   "Has Part" -> Json.toJson(hasPart),
-                  "Publishing Project"-> Json.toJson(controllers.routes.Spaces.getSpace(c.space).absoluteURL(https))
-                )),
+                  "Publishing Project" -> Json.toJson(controllers.routes.Spaces.getSpace(c.space).absoluteURL(https)),
+                  "Publishing Project Name" -> Json.toJson(spaces.get(c.space).get.name),
+                  "License" -> Json.toJson(c.datasets(0).licenseData.m_licenseText))).toMap),
               "Creation Date" -> Json.toJson(format.format(c.created)),
-              "Uploaded By" -> Json.toJson(userService.findById(c.author.id).map ( usr => Json.toJson(usr.fullName + ": " +  api.routes.Users.findById(usr.id).absoluteURL(https)))),
+              "Uploaded By" -> Json.toJson(userService.findById(c.author.id).map(usr => Json.toJson(usr.fullName + ": " + api.routes.Users.findById(usr.id).absoluteURL(https)))),
               "@type" -> Json.toJson("ResourceMap"),
-              "@id" -> Json.toJson(api.routes.CurationObjects.getCurationObjectOre(curationId).absoluteURL(https))
-            )
+              "@id" -> Json.toJson(api.routes.CurationObjects.getCurationObjectOre(curationId).absoluteURL(https)))
 
           Ok(Json.toJson(parsedValue))
         }
@@ -257,7 +261,7 @@ class CurationObjects @Inject()(datasets: DatasetService,
                 val userPreferences: Map[String, String] = aMap.get
                 userService.updateRepositoryPreferences(usr.id, userPreferences)
                 val mmResp = curationObjectController.callMatchmaker(c, user)
-                if ( mmResp.size > 0) {
+                if (mmResp.size > 0) {
                   Ok(toJson(mmResp))
                 } else {
                   InternalServerError("No response from matchmaker")
@@ -282,17 +286,17 @@ class CurationObjects @Inject()(datasets: DatasetService,
       implicit val user = request.user
       curations.get(curationId) match {
         case Some(c) => {
-          val endpoint =play.Play.application().configuration().getString("stagingarea.uri").replaceAll("/$","")
+          val endpoint = play.Play.application().configuration().getString("stagingarea.uri").replaceAll("/$", "")
           val httpDelete = new HttpDelete(endpoint + "/urn:uuid:" + curationId.toString())
           val client = new DefaultHttpClient
           val response = client.execute(httpDelete)
           val responseStatus = response.getStatusLine().getStatusCode()
 
-          if(responseStatus >= 200 && responseStatus < 300 || responseStatus == 304 ) {
+          if (responseStatus >= 200 && responseStatus < 300 || responseStatus == 304) {
             curations.updateStatus(curationId, "In Preparation")
-            Ok(toJson(Map("status"->"success", "message"-> "Publication Request successfully retracted")))
+            Ok(toJson(Map("status" -> "success", "message" -> "Publication Request successfully retracted")))
           } else if (responseStatus == 404 && EntityUtils.toString(response.getEntity, "UTF-8") == s"Publication Request with ID urn:uuid:$curationId does not exist") {
-            BadRequest(toJson(Map("status" -> "error", "message" ->"Publication Request not found in external server")))
+            BadRequest(toJson(Map("status" -> "error", "message" -> "Publication Request not found in external server")))
           } else {
             InternalServerError("Unknown error")
           }
@@ -312,17 +316,17 @@ class CurationObjects @Inject()(datasets: DatasetService,
       }
   }
 
-  def deleteCurationFile(curationId:UUID, parentId: UUID, curationFileId: UUID) = PermissionAction(Permission.EditStagingArea, Some(ResourceRef(ResourceRef.curationObject, curationId))) {
+  def deleteCurationFile(curationId: UUID, parentId: UUID, curationFileId: UUID) = PermissionAction(Permission.EditStagingArea, Some(ResourceRef(ResourceRef.curationObject, curationId))) {
     implicit request =>
       curations.get(curationId) match {
         case Some(c) => c.status match {
           case "In Preparation" => {
-            if(curationId == parentId){
+            if (curationId == parentId) {
               curations.removeCurationFile("dataset", parentId, curationFileId)
             } else {
               curations.removeCurationFile("folder", parentId, curationFileId)
             }
-            curations.deleteCurationFile( curationFileId)
+            curations.deleteCurationFile(curationFileId)
             Ok(toJson("Success"))
           }
           case _ => InternalServerError("Cannot modify Publication Request")
@@ -332,17 +336,17 @@ class CurationObjects @Inject()(datasets: DatasetService,
 
   }
 
-  def deleteCurationFolder(curationId:UUID, parentId: UUID, curationFolderId: UUID) = PermissionAction(Permission.EditStagingArea, Some(ResourceRef(ResourceRef.curationObject, curationId))) {
+  def deleteCurationFolder(curationId: UUID, parentId: UUID, curationFolderId: UUID) = PermissionAction(Permission.EditStagingArea, Some(ResourceRef(ResourceRef.curationObject, curationId))) {
     implicit request =>
       curations.get(curationId) match {
         case Some(c) => c.status match {
           case "In Preparation" => {
-            if(curationId == parentId){
+            if (curationId == parentId) {
               curations.removeCurationFolder("dataset", parentId, curationFolderId)
             } else {
               curations.removeCurationFolder("folder", parentId, curationFolderId)
             }
-            curations.deleteCurationFolder( curationFolderId)
+            curations.deleteCurationFolder(curationFolderId)
             Ok(toJson("Success"))
           }
           case _ => InternalServerError("Cannot modify Publication Request")
@@ -352,9 +356,9 @@ class CurationObjects @Inject()(datasets: DatasetService,
   }
 
   /**
-    * Endpoint for receiving publication success+PID message from publication services.
-    */
-  def savePublishedObject(id: UUID) = AuthenticatedAction (parse.json) {
+   * Endpoint for receiving publication success+PID message from publication services.
+   */
+  def savePublishedObject(id: UUID) = AuthenticatedAction(parse.json) {
     implicit request =>
       Logger.debug("get infomation from SEAD services")
 
@@ -376,16 +380,17 @@ class CurationObjects @Inject()(datasets: DatasetService,
                     BadRequest(toJson(Map("status" -> "ERROR", "message" -> "Receive empty request.")))
                   } else {
                     (request.body \ "uri").asOpt[String].map {
-                      externalIdentifier => {
-                        //set published when uri is provided
-                        curations.setPublished(id)
-                        if (externalIdentifier.startsWith("doi:") || externalIdentifier.startsWith("10.")) {
-                          val DOI_PREFIX = "http://doi.org/"
-                          curations.updateExternalIdentifier(id, new URI(DOI_PREFIX + externalIdentifier.replaceAll("^doi:", "")))
-                        } else {
-                          curations.updateExternalIdentifier(id, new URI(externalIdentifier))
+                      externalIdentifier =>
+                        {
+                          //set published when uri is provided
+                          curations.setPublished(id)
+                          if (externalIdentifier.startsWith("doi:") || externalIdentifier.startsWith("10.")) {
+                            val DOI_PREFIX = "http://doi.org/"
+                            curations.updateExternalIdentifier(id, new URI(DOI_PREFIX + externalIdentifier.replaceAll("^doi:", "")))
+                          } else {
+                            curations.updateExternalIdentifier(id, new URI(externalIdentifier))
+                          }
                         }
-                      }
                     }
                     Ok(toJson(Map("status" -> "OK")))
                   }
@@ -402,14 +407,15 @@ class CurationObjects @Inject()(datasets: DatasetService,
                   }
 
                   (request.body \ "uri").asOpt[String].map {
-                    externalIdentifier => {
-                      if (externalIdentifier.startsWith("doi:") || externalIdentifier.startsWith("10.")) {
-                        val DOI_PREFIX = "http://doi.org/"
-                        curations.updateExternalIdentifier(id, new URI(DOI_PREFIX + externalIdentifier.replaceAll("^doi:", "")))
-                      } else {
-                        curations.updateExternalIdentifier(id, new URI(externalIdentifier))
+                    externalIdentifier =>
+                      {
+                        if (externalIdentifier.startsWith("doi:") || externalIdentifier.startsWith("10.")) {
+                          val DOI_PREFIX = "http://doi.org/"
+                          curations.updateExternalIdentifier(id, new URI(DOI_PREFIX + externalIdentifier.replaceAll("^doi:", "")))
+                        } else {
+                          curations.updateExternalIdentifier(id, new URI(externalIdentifier))
+                        }
                       }
-                    }
                   }
                   Ok(toJson(Map("status" -> "OK")))
                 }
@@ -428,7 +434,7 @@ class CurationObjects @Inject()(datasets: DatasetService,
     implicit val user = request.user
     curations.get(id) match {
       case Some(curationObject) => {
-        val metadataDefinitions  = metadatas.getDefinitions(Some(curationObject.space))
+        val metadataDefinitions = metadatas.getDefinitions(Some(curationObject.space))
         Ok(toJson(metadataDefinitions.toList))
       }
       case None => BadRequest(toJson("The publication request does not exist"))

@@ -434,7 +434,7 @@ class Metadata @Inject() (
                 //add metadata to mongo
                 val newInfo = metadataService.addMetadata(content_ld, context, attachedTo.get, createdAt, creator, space)
                 Logger.info("new stuff is: " + newInfo.toString())
-                val mdMap = Map("metadata" -> content,
+                val mdMap = Map("metadata" -> content_ld,
                   "resourceType" -> attachedTo.get.resourceType.name,
                   "resourceId" -> attachedTo.get.id.toString)
 

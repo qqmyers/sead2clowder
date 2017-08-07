@@ -94,52 +94,40 @@ class MongoDBMetadataService @Inject() (contextService: ContextLDService, datase
     Logger.info(excontent.apply(0).toString())
     excontent.apply(0).as[JsObject].keys.foreach { uri =>
       { //Add new label defs if they don't currently exist - could reject new terms this way if desired
-        Logger.info("Here: " + uri)
+
         val label = inverseMap.apply(uri)
         if (!(defs.contains(inverseMap.apply(uri)))) {
           newDefs(inverseMap.apply(uri)) = uri
         }
-        Logger.info("There: " + Json.toJson(creator).as[JsObject])
+
         //Now create an entry and add it to the list
-        Logger.info(uri + " : " + (excontent.apply(0).as[JsObject] \ uri).toString()) // + (x \ y \\ "@value").as[String]) }}
         val valueToStore = excontent.apply(0).as[JsObject] \ uri match {
           case s: JsString => s.as[String] //String without quotes
           case v: JsValue => v.toString() //string representation of object/array/etc.
         }
         val me = MetadataEntry(UUID.generate(), uri, valueToStore, Json.toJson(creator).as[JsObject].toString(), MDAction.Added.toString(), None, createdAt)
-        Logger.info("ME: " + me.toString())
         newMDEntries += me
 
         newTerms.add(label)
 
       }
     }
-    Logger.info("All keys")
     defs = defs ++ newDefs
 
     for (label <- newTerms) {
-      Logger.info("Pred: " + defs.apply(label))
       val filteredList = newMDEntries.filter(_.uri == defs.apply(label))
-      Logger.info("Filtered: " + filteredList.toString())
-      //val label = defs.apply(pred)
-      //Logger.info("Labelval: " + summary.entries.apply(label).toString())
       val existingSize = summary.entries.applyOrElse(label, { label: String => None }) match {
         case x: JsObject => x.keys.size
         case _ => 0
       }
 
       val newEntries = Json.toJson(filteredList.map { item => { (item.id.stringify) -> item.value } }.toMap)
-      Logger.info("New entries: " + newEntries.toString())
       newMetadataEntryJson = newMetadataEntryJson ++ Map(label -> newEntries)
-      Logger.info("new entrymap updated for " + label)
       metadataEntryJson(label) = metadataEntryJson.applyOrElse(label, { label: String => JsObject(Seq.empty) }).as[JsObject] ++ newEntries.as[JsObject]
-      Logger.info("entrymap updated for " + label)
       //Add history entry
 
       metadataHistoryMap(label) = filteredList.toList ++ metadataHistoryMap.applyOrElse(label, { label: String => List[MetadataEntry]() })
-      Logger.info("History udpated")
     }
-    Logger.info("Done processing")
     //Now - update the metadatasummary with new info (entries, possibly defs, and history...
     val rdf = RdfMetadata(summary.id, summary.attachedTo, summary.contextSpace, metadataEntryJson.toMap, metadataHistoryMap.toMap)
     //Logger.info("Created RdfMetadata: " + rdf.toString())
@@ -416,6 +404,7 @@ class MongoDBMetadataService @Inject() (contextService: ContextLDService, datase
         }
       }
       case 'file => {
+        //Checks first dataset/folder parent
         datasets.findOneByFileId(resourceRef.id) match {
           case Some(d) => {
             if (d.spaces.size > 0) {
@@ -428,7 +417,28 @@ class MongoDBMetadataService @Inject() (contextService: ContextLDService, datase
               None
             }
           }
-          case None => None
+          case None => {
+            //Files can only be in one
+            folders.findByFileId(resourceRef.id).headOption match {
+              case Some(f) => {
+                datasets.get(f.parentDatasetId) match {
+                  case Some(d) => {
+                    if (d.spaces.size > 0) {
+                      if (d.spaces.contains(space)) {
+                        space
+                      } else {
+                        Some(d.spaces.head)
+                      }
+                    } else {
+                      None
+                    }
+                  }
+                  case None => None
+                }
+              }
+              case None => None
+            }
+          }
         }
       }
       case 'curationObject => {
@@ -577,9 +587,9 @@ class MongoDBMetadataService @Inject() (contextService: ContextLDService, datase
                 case "cat:extractor" => {
                   //Leave legacy extractor entries as is
                 }
-                case s:String => {
-                   //Leave entries as is and report the agent type
-                  Logger.debug("Found agent of type \""+ s + "\" when summarizing metadata");
+                case s: String => {
+                  //Leave entries as is and report the agent type
+                  Logger.debug("Found agent of type \"" + s + "\" when summarizing metadata");
                 }
               }
 
@@ -635,6 +645,23 @@ class MongoDBMetadataService @Inject() (contextService: ContextLDService, datase
 
         rdf
       }
+    }
+  }
+
+  def copyMetadataSummary(sourceResourceRef: ResourceRef, targetResourceRef: ResourceRef) {
+
+    val sourceContextSpace = getContextSpace(sourceResourceRef, None)
+    val targetContextSpace = getContextSpace(targetResourceRef, None)
+    (sourceContextSpace, targetContextSpace) match {
+      case (Some(s), Some(t)) if (s == t) => {
+        val md = getMetadataSummary(sourceResourceRef, Some(s))
+
+        val rdf = RdfMetadata(UUID.generate(), targetResourceRef, Some(t), md.entries, md.history)
+
+        MetadataSummaryDAO.insert(rdf, WriteConcern.Safe)
+
+      }
+      case _ => Logger.error("copyMetadataSummary only defined for resources with the same contextspace: " + sourceContextSpace.getOrElse(UUID("0")).stringify + " versus " + targetContextSpace.getOrElse(UUID("0")).stringify)
     }
   }
 
@@ -738,7 +765,7 @@ class MongoDBMetadataService @Inject() (contextService: ContextLDService, datase
   }
 
   def editDefinition(id: UUID, json: JsValue) = {
- 
+
     MetadataDefinitionDAO.findOne(MongoDBObject("_id" -> new ObjectId(id.stringify))) match {
       case Some(orig) => {
         val origLabel = (orig.json \ "label").as[String]

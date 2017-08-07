@@ -149,10 +149,12 @@ class CurationObjects @Inject() (
 
               //copy file list from FileDAO. and save curation file metadata. metadataCount is 0 since
               // metadatas.getMetadataByAttachTo will increase metadataCount
+              val fileCFileMap = scala.collection.mutable.Map.empty[UUID, UUID]
               var newFiles: List[UUID] = List.empty
               for (fileId <- dataset.files) {
                 files.get(fileId) match {
                   case Some(f) => {
+                    //Fixme: should make extractor write content_ld directly, or calculate the hash during upload
                     // Pull sha512 from metadata of file rather than file object itself
                     var sha512 = ""
                     metadatas.getMetadataByAttachTo(ResourceRef(ResourceRef.file, f.id)).map { md =>
@@ -166,16 +168,9 @@ class CurationObjects @Inject() (
                       thumbnail_id = f.thumbnail_id, metadataCount = 0, licenseData = f.licenseData, sha512 = sha512)
                     curations.insertFile(cf)
                     newFiles = cf.id :: newFiles
-                    metadatas.getMetadataByAttachTo(ResourceRef(ResourceRef.file, f.id)).map(m => {
-                      metadatas.addMetadata(m.copy(id = UUID.generate(), attachedTo = ResourceRef(ResourceRef.curationFile, cf.id)))
-                      val mdMap = m.getExtractionSummary
 
-                      //send RabbitMQ message
-                      current.plugin[RabbitmqPlugin].foreach { p =>
-                        val dtkey = s"${p.exchange}.metadata.added"
-                        p.extract(ExtractorMessage(cf.id, UUID(""), controllers.Utils.baseEventUrl(request), dtkey, mdMap, "", UUID(""), ""))
-                      }
-                    })
+                    fileCFileMap(f.id) = cf.id
+
                   }
                 }
               }
@@ -200,20 +195,33 @@ class CurationObjects @Inject() (
               Logger.debug("create curation object: " + newCuration.id)
               curations.insert(newCuration)
 
-              dataset.folders.map(f => copyFolders(f, newCuration.id, "dataset", newCuration.id, request.host))
-              metadatas.getMetadataByAttachTo(ResourceRef(ResourceRef.dataset, dataset.id))
-                .map(m => {
-                  if ((m.content \ "Creator").isInstanceOf[JsUndefined]) {
-                    metadatas.addMetadata(m.copy(id = UUID.generate(), attachedTo = ResourceRef(ResourceRef.curationObject, newCuration.id)))
-                    val mdMap = m.getExtractionSummary
+              for (fileId <- fileCFileMap.keySet) {
+                val cfid = fileCFileMap.apply(fileId)
+                metadatas.copyMetadataSummary(ResourceRef(ResourceRef.file, fileId), ResourceRef(ResourceRef.curationFile, cfid))
+                val summary = metadatas.getMetadataSummary(ResourceRef(ResourceRef.curationFile, cfid), Some(spaceId))
+                val mdMap = Map("metadata" -> summary.entries,
+                  "resourceType" -> summary.attachedTo.resourceType.name,
+                  "resourceId" -> summary.attachedTo.id.toString)
 
-                    //send RabbitMQ message
-                    current.plugin[RabbitmqPlugin].foreach { p =>
-                      val dtkey = s"${p.exchange}.metadata.added"
-                      p.extract(ExtractorMessage(newCuration.id, UUID(""), controllers.Utils.baseEventUrl(request), dtkey, mdMap, "", UUID(""), ""))
-                    }
-                  }
-                })
+                //send RabbitMQ message
+                current.plugin[RabbitmqPlugin].foreach { p =>
+                  val dtkey = s"${p.exchange}.metadata.added"
+                  p.extract(ExtractorMessage(cfid, UUID(""), controllers.Utils.baseEventUrl(request), dtkey, mdMap, "", UUID(""), ""))
+                }
+
+              }
+              dataset.folders.map(f => copyFolders(f, newCuration.id, "dataset", newCuration.id, controllers.Utils.baseEventUrl(request)))
+              metadatas.copyMetadataSummary(ResourceRef(ResourceRef.dataset, datasetId), ResourceRef(ResourceRef.curationObject, newCuration.id))
+              val summary = metadatas.getMetadataSummary(ResourceRef(ResourceRef.curationObject, newCuration.id), Some(spaceId))
+              val mdMap = Map("metadata" -> summary.entries,
+                "resourceType" -> summary.attachedTo.resourceType.name,
+                "resourceId" -> summary.attachedTo.id.toString)
+
+              //send RabbitMQ message
+              current.plugin[RabbitmqPlugin].foreach { p =>
+                val dtkey = s"${p.exchange}.metadata.added"
+                p.extract(ExtractorMessage(newCuration.id, UUID(""), controllers.Utils.baseEventUrl(request), dtkey, mdMap, "", UUID(""), ""))
+              }
               Redirect(routes.CurationObjects.getCurationObject(newCuration.id))
             } else {
               InternalServerError(spaceTitle + " not found")
@@ -230,6 +238,8 @@ class CurationObjects @Inject() (
     folders.get(id) match {
       case Some(folder) => {
         var newFiles: List[UUID] = List.empty
+        val fileCFileMap = scala.collection.mutable.Map.empty[UUID, UUID]
+
         for (fileId <- folder.files) {
           files.get(fileId) match {
             case Some(f) => {
@@ -246,17 +256,7 @@ class CurationObjects @Inject() (
                 thumbnail_id = f.thumbnail_id, metadataCount = 0, licenseData = f.licenseData, sha512 = sha512)
               curations.insertFile(cf)
               newFiles = cf.id :: newFiles
-              metadatas.getMetadataByAttachTo(ResourceRef(ResourceRef.file, f.id))
-                .map(m => {
-                  metadatas.addMetadata(m.copy(id = UUID.generate(), attachedTo = ResourceRef(ResourceRef.curationFile, cf.id)))
-                  val mdMap = m.getExtractionSummary
-
-                  //send RabbitMQ message
-                  current.plugin[RabbitmqPlugin].foreach { p =>
-                    val dtkey = s"${p.exchange}.metadata.added"
-                    p.extract(ExtractorMessage(cf.id, UUID(""), requestHost, dtkey, mdMap, "", UUID(""), ""))
-                  }
-                })
+              fileCFileMap(f.id) = cf.id
             }
           }
         }
@@ -274,6 +274,22 @@ class CurationObjects @Inject() (
           parentCurationObjectId = parentCurationObjectId)
         curations.insertFolder(newCurationFolder)
         curations.addCurationFolder(parentType, parentId, newCurationFolder.id)
+
+        for (fileId <- fileCFileMap.keySet) {
+          val cfid = fileCFileMap.apply(fileId)
+          metadatas.copyMetadataSummary(ResourceRef(ResourceRef.file, fileId), ResourceRef(ResourceRef.curationFile, cfid))
+          val summary = metadatas.getMetadataSummary(ResourceRef(ResourceRef.curationFile, cfid), None)
+          val mdMap = Map("metadata" -> summary.entries,
+            "resourceType" -> summary.attachedTo.resourceType.name,
+            "resourceId" -> summary.attachedTo.id.toString)
+
+          //send RabbitMQ message
+          current.plugin[RabbitmqPlugin].foreach { p =>
+            val dtkey = s"${p.exchange}.metadata.added"
+            p.extract(ExtractorMessage(cfid, UUID(""), requestHost, dtkey, mdMap, "", UUID(""), ""))
+          }
+
+        }
 
         folder.folders.map(f => copyFolders(f, newCurationFolder.id, "folder", parentCurationObjectId, requestHost))
       }
@@ -386,12 +402,13 @@ class CurationObjects @Inject() (
             //val mCurationFile = c.files.map(f => metadatas.getMetadataByAttachTo(ResourceRef(ResourceRef.curationFile, f))).flatten
             val rdfMap = scala.collection.mutable.Map.empty[String, RdfMetadata]
             c.files.map(f => { rdfMap(f.stringify) = metadatas.getMetadataSummary(ResourceRef(ResourceRef.curationFile, f), None) })
+
             val mDefs = metadatas.getDefinitions(rdfMap.head._2.contextSpace)
 
             val folderHierarchy = new ListBuffer[CurationFolder]()
             val next = c.files.length + c.folders.length > limit * (filepageUpdate + 1)
 
-            Ok(views.html.curations.filesAndFolders(c, None, foldersList, folderHierarchy.reverse.toList, pageIndex, next, limitFileList.toList,rdfMap.toMap, mDefs))
+            Ok(views.html.curations.filesAndFolders(c, None, foldersList, folderHierarchy.reverse.toList, pageIndex, next, limitFileList.toList, rdfMap.toMap, mDefs))
           }
           // Otherwise it is on a curation folder's page
           case _ => {
