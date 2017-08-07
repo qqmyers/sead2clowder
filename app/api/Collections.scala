@@ -245,7 +245,7 @@ class Collections @Inject() (datasets: DatasetService,
           collections.delete(c.id)
           appConfig.incrementCount('collections, -1)
           current.plugin[AdminsNotifierPlugin].foreach {
-            _.sendAdminsNotification(Utils.baseUrl(request),"Collection","removed",collection.id.stringify, collection.name)
+            _.sendAdminsNotification(Utils.baseUrl(request),"Collection","removed",c.id.stringify, c.name)
           }
         }
       })
