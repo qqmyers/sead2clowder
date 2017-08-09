@@ -138,6 +138,19 @@ class MongoDBMetadataService @Inject() (contextService: ContextLDService, datase
     for ((label, uri) <- newDefs) {
       addDefinition(MetadataDefinition(spaceId = summary.contextSpace, json = new JsObject(Seq("label" -> JsString(label), "uri" -> JsString(uri), "type" -> JsString("string"), "gui" -> JsBoolean(false)))))
     }
+    
+    //update metadata count for resource
+    current.plugin[MongoSalatPlugin] match {
+      case None => throw new RuntimeException("No MongoSalatPlugin")
+      case Some(x) => x.collection(attachedTo) match {
+        case Some(c) => {
+          c.update(MongoDBObject("_id" -> new ObjectId(attachedTo.id.stringify)), $inc("metadataCount" -> newMetadataEntryJson.size))
+        }
+        case None => {
+          Logger.error(s"Could not increase counter for ${attachedTo}")
+        }
+      }
+    }
 
     //Then return the new entries and any new def(s) to the client...
     val defsjson = Json.toJson(newDefs.toMap)
@@ -313,10 +326,20 @@ class MongoDBMetadataService @Inject() (contextService: ContextLDService, datase
         //Store update
         //Now - update the metadatasummary with new info (entries, possibly defs, and history...
         val rdf = RdfMetadata(summary.id, summary.attachedTo, summary.contextSpace, metadataEntryJson.toMap, metadataHistoryMap.toMap)
-        Logger.info("Created RdfMetadata: " + rdf.toString())
         MetadataSummaryDAO.update(MongoDBObject("_id" -> new ObjectId(summary.id.stringify)), rdf, false, false, WriteConcern.Safe)
-        Logger.info("Updated")
 
+        //update metadata count for resource
+        current.plugin[MongoSalatPlugin] match {
+          case None => throw new RuntimeException("No MongoSalatPlugin")
+          case Some(x) => x.collection(attachedTo) match {
+            case Some(c) => {
+              c.update(MongoDBObject("_id" -> new ObjectId(attachedTo.id.stringify)), $inc("metadataCount" -> -1))
+            }
+            case None => {
+              Logger.error(s"Could not decrease counter for ${attachedTo}")
+            }
+          }
+        }
         //Return the deleted entry to the caller as part of success (to support event about delete)
         JsObject(Seq(term -> JsString(delVal)))
       }
@@ -813,26 +836,7 @@ class MongoDBMetadataService @Inject() (contextService: ContextLDService, datase
               }
             }
 
-            curations.getCurationObjectByDatasetId(d.id).foreach(cObject => {
-              /*Update any curationObjects (and their curationFiles) that are:
-               * associated with this dataset,
-               * published through the current context space (COs can be published through a space different from the dataset's context space when sharing datasets across multiple spaces is allowed),
-               * and not yet submitted (in prep)
-               */
-              cObject.status match {
-                case "In Preparation" => {
-                  if (cObject.space.equals(currentSpace)) {
-                    affectedResources += ResourceRef(ResourceRef.curationObject, cObject.id)
-                    //getAllCurationFileIds recursed through subfolders
-                    curations.getAllCurationFileIds(cObject.id).foreach { cFile =>
-                      {
-                        affectedResources += ResourceRef(ResourceRef.curationFile, cFile)
-                      }
-                    }
-                  }
-                }
-              }
-            })
+            //Leave curations in the space they were created in (or deal with case when dataset is moved to None)
 
           }
           case None => Logger.warn("dataset with id: " + resourceRef.id + " not found")
