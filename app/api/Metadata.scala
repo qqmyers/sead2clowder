@@ -449,65 +449,54 @@ class Metadata @Inject() (
                   }
 
                 }
-              }
-              case u: JsUndefined => {
-                if (content_ld.isInstanceOf[JsUndefined]) {
-                  BadRequest(toJson("No metadata entries"))
-                }
-              }
-            }
-
-            content_ld match {
-              case c: JsObject => {
-
-                //add metadata to mongo
-                val newInfo = metadataService.addMetadata(content_ld, context, attachedTo.get, createdAt, creator, space)
-                Logger.info("new stuff is: " + newInfo.toString())
-                val mdMap = Map("metadata" -> content_ld,
-                  "resourceType" -> attachedTo.get.resourceType.name,
-                  "resourceId" -> attachedTo.get.id.toString)
-
-                attachedTo match {
-                  case Some(resource) => {
-                    resource.resourceType match {
-                      case ResourceRef.dataset => {
-                        datasets.index(resource.id)
-                        //send RabbitMQ message
-                        current.plugin[RabbitmqPlugin].foreach { p =>
-                          val dtkey = s"${p.exchange}.metadata.added"
-                          p.extract(ExtractorMessage(UUID(""), UUID(""), controllers.Utils.baseEventUrl(request),
-                            dtkey, mdMap, "", attachedTo.get.id, ""))
-                        }
-                      }
-                      case ResourceRef.file => {
-                        files.index(resource.id)
-                        //send RabbitMQ message
-                        current.plugin[RabbitmqPlugin].foreach { p =>
-                          val dtkey = s"${p.exchange}.metadata.added"
-                          p.extract(ExtractorMessage(attachedTo.get.id, UUID(""), controllers.Utils.baseEventUrl(request),
-                            dtkey, mdMap, "", UUID(""), ""))
-                        }
-                      }
-                      case _ => {}
-                    }
-                  }
-                  case None => {}
-                }
-
-                Ok(JsObject(Seq("status" -> JsString("ok"))) ++ newInfo)
-              }
-              case _ => {
                 Ok(JsObject(Seq("status" -> JsString("ok"))))
               }
+              case u: JsUndefined => {
+                content_ld match {
+                  case c: JsObject => {
+
+                    //add metadata to mongo
+                    val newInfo = metadataService.addMetadata(content_ld, context, attachedTo.get, createdAt, creator, space)
+                    Logger.info("new stuff is: " + newInfo.toString())
+                    val mdMap = Map("metadata" -> content_ld,
+                      "resourceType" -> attachedTo.get.resourceType.name,
+                      "resourceId" -> attachedTo.get.id.toString)
+
+                    attachedTo match {
+                      case Some(resource) => {
+                        resource.resourceType match {
+                          case ResourceRef.dataset => {
+                            datasets.index(resource.id)
+                            //send RabbitMQ message
+                            current.plugin[RabbitmqPlugin].foreach { p =>
+                              val dtkey = s"${p.exchange}.metadata.added"
+                              p.extract(ExtractorMessage(UUID(""), UUID(""), controllers.Utils.baseEventUrl(request),
+                                dtkey, mdMap, "", attachedTo.get.id, ""))
+                            }
+                          }
+                          case ResourceRef.file => {
+                            files.index(resource.id)
+                            //send RabbitMQ message
+                            current.plugin[RabbitmqPlugin].foreach { p =>
+                              val dtkey = s"${p.exchange}.metadata.added"
+                              p.extract(ExtractorMessage(attachedTo.get.id, UUID(""), controllers.Utils.baseEventUrl(request),
+                                dtkey, mdMap, "", UUID(""), ""))
+                            }
+                          }
+                          case _ => {}
+                        }
+                      }
+                      case None => {}
+                    }
+
+                    Ok(JsObject(Seq("status" -> JsString("ok"))) ++ newInfo)
+                  }
+                  case u: JsUndefined => {
+                    BadRequest(toJson("No metadata entries"))
+                  }
+                }
+              }
             }
-
-            /*           
-val metadata = models.Metadata(UUID.generate, attachedTo.get, None, Some(new URL("http://noteal.com")), createdAt, creator,
-                  content, None)
-            Ok(views.html.metadatald.view(List(metadata), null, true)(request.user))
-            * 
-            */
-
           } else {
             BadRequest(toJson("Invalid resource type"))
           }
