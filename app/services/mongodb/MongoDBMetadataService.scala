@@ -21,6 +21,7 @@ import java.util.Date
 import com.github.jsonldjava.core._
 import com.github.jsonldjava.utils._
 import java.util.LinkedHashMap
+import scala.collection.mutable.ListBuffer
 
 import services.{ ContextLDService, DatasetService, FileService, FolderService, ExtractorMessage, RabbitmqPlugin, MetadataService, ElasticsearchPlugin, CurationService }
 import api.{ UserRequest, Permission }
@@ -206,7 +207,7 @@ class MongoDBMetadataService @Inject() (contextService: ContextLDService, datase
     val expanded = JsonLdProcessor.compact(toCompact, null, new JsonLdOptions())
     val exjson = Json.parse(JsonUtils.toString(expanded))
     val excontent = (exjson \\ "https://clowder.ncsa.illinois.edu/metadata#content_ld").head.as[JsObject]
-    //Todo: support complex types
+    //Todo: support complex types - for now all types are serialized to a string
     //For simple types, content should have one key/value
     val term = excontent.keys.head
     val updatedVal = excontent \ term
@@ -661,8 +662,166 @@ class MongoDBMetadataService @Inject() (contextService: ContextLDService, datase
         MetadataSummaryDAO.insert(rdf, WriteConcern.Safe)
 
       }
-      case _ => Logger.error("copyMetadataSummary only defined for resources with the same contextspace: " + sourceContextSpace.getOrElse(UUID("0")).stringify + " versus " + targetContextSpace.getOrElse(UUID("0")).stringify)
+      case (Some(s), Some(t)) if (s != t) => { //different spaces
+        val md = getMetadataSummary(sourceResourceRef, Some(s))
+        //Write the summary using the source space since the entries have that context
+        val rdf = RdfMetadata(UUID.generate(), targetResourceRef, Some(s), md.entries, md.history)
+
+        MetadataSummaryDAO.insert(rdf, WriteConcern.Safe)
+
+        //Then synch the metadata to the new context space 
+        synchMetadataContext(targetResourceRef)
+      }
     }
+  }
+
+  /**
+   * Updates metadata to match a new contextSpace (derived from the resourceRef and, for Datasets
+   *  (which can be in more than one space with some plugins), the requested space.
+   */
+  def synchMetadataContext(resourceRef: ResourceRef) {
+    val newContextSpace = getContextSpace(resourceRef, None)
+    //Retrieve existing metadata
+    val md = getMetadataSummary(resourceRef, None)
+
+    //Get existing context Space
+    val curContextSpace = md.contextSpace
+
+    //If different from new context space
+    if (newContextSpace != curContextSpace) {
+
+      //Read existing context (mDefs from the metadata's current context space)
+      val curDefs = getDefinitions(curContextSpace)
+      val curDefMap = getDefinitionsMap(curDefs)
+
+      //Read new Context
+
+      val newDefMap = getDefinitionsMap(getDefinitions(newContextSpace))
+      val inverseNewMap = newDefMap.map(_.swap)
+
+      //Map labels in  current context to new labels
+      //Identify any defs in current context that don't exist in new one
+      //For any new defs where the label would conflict with an existing one, munge the label
+      //Add those defs as view-only in new context
+      //Update label to label mapping for any munged labels
+      val possibleNewDefsMap = scala.collection.mutable.Map[String, MetadataDefinition]()
+      val labelMap = curDefMap.keySet.map(key => {
+        if (inverseNewMap.contains(curDefMap(key))) {
+          //There is a def for this URI in the new context (with the same or different label)
+          (key, inverseNewMap(curDefMap(key)))
+        } else {
+          //There is no def for this uri
+          if (newDefMap.contains(key)) {
+            //but the same label is in use, so create a unique new label
+            var newKey = key
+            var i = 1
+            while (newDefMap.contains(newKey)) {
+              newKey = key + "_" + i
+            }
+            //add a def
+            val mddef = curDefs.filter(d => (d.json \ "label").as[String].equals(key)).head
+            possibleNewDefsMap(newKey) = MetadataDefinition(spaceId = newContextSpace, json = new JsObject(Seq("label" -> JsString(newKey), "uri" -> mddef.json \ "uri", "type" -> mddef.json \ "type", "gui" -> JsBoolean(false))))
+
+            (key, newKey)
+          } else {
+            //The uri and label are not in use
+            //Add the def
+            val mddef = curDefs.filter(d => (d.json \ "label").equals(key)).head
+            possibleNewDefsMap(key) = MetadataDefinition(spaceId = newContextSpace, json = new JsObject(Seq("label" -> mddef.json \ "label", "uri" -> mddef.json \ "uri", "type" -> mddef.json \ "type", "gui" -> JsBoolean(false))))
+            (key, key)
+          }
+        }
+
+      })
+
+      //Identify all affected resources (if dataset, handle files and COs/CFiles not yet submitted)
+      val affectedResources = getAffectedResources(resourceRef, curContextSpace)
+      affectedResources.foreach { ref =>
+        {
+          val md = getMetadataSummary(resourceRef, None)
+          //Update labels in metadata summary (entries and history)
+          var metadataEntryJson = scala.collection.mutable.Map[String, JsValue]()
+
+          //Add a history entry for the update/edit
+          var metadataHistoryMap = collection.mutable.Map[String, List[MetadataEntry]]()
+          labelMap.foreach({
+            case (label, newLabel) => {
+              metadataEntryJson(newLabel) = md.entries.apply(label)
+              metadataHistoryMap(newLabel) = md.history.apply(label)
+              if (possibleNewDefsMap.contains(newLabel)) {
+                addDefinition(possibleNewDefsMap(newLabel));
+                possibleNewDefsMap.remove(newLabel)
+              }
+            }
+          })
+          //Store update
+          //Now - update the metadatasummary with new info (entries, possibly defs, and history...
+          val rdf = RdfMetadata(md.id, md.attachedTo, newContextSpace, metadataEntryJson.toMap, metadataHistoryMap.toMap)
+          Logger.info("Created RdfMetadata: " + rdf.toString())
+          MetadataSummaryDAO.update(MongoDBObject("_id" -> new ObjectId(md.id.stringify)), rdf, false, false, WriteConcern.Safe)
+        }
+      }
+
+    } else {
+      Logger.debug("synchMetadata called for : " + resourceRef.id + " with no context change")
+    }
+  }
+
+  def getAffectedResources(resourceRef: ResourceRef, currentSpace: Option[UUID]): ListBuffer[ResourceRef] = {
+    val affectedResources = ListBuffer[ResourceRef]()
+
+    affectedResources += resourceRef
+    resourceRef.resourceType match {
+      case 'dataset => {
+        datasets.get(resourceRef.id) match {
+          case Some(d) => {
+            d.files.foreach { id => { affectedResources += ResourceRef(ResourceRef.file, id) } }
+            d.folders.foreach { id =>
+              {
+                affectedResources ++= getAffectedResources(ResourceRef(ResourceRef.folder, id), currentSpace)
+              }
+            }
+
+            curations.getCurationObjectByDatasetId(d.id).foreach(cObject => {
+              /*Update any curationObjects (and their curationFiles) that are:
+               * associated with this dataset,
+               * published through the current context space (COs can be published through a space different from the dataset's context space when sharing datasets across multiple spaces is allowed),
+               * and not yet submitted (in prep)
+               */
+              cObject.status match {
+                case "In Preparation" => {
+                  if (cObject.space.equals(currentSpace)) {
+                    affectedResources += ResourceRef(ResourceRef.curationObject, cObject.id)
+                    //getAllCurationFileIds recursed through subfolders
+                    curations.getAllCurationFileIds(cObject.id).foreach { cFile =>
+                      {
+                        affectedResources += ResourceRef(ResourceRef.curationFile, cFile)
+                      }
+                    }
+                  }
+                }
+              }
+            })
+
+          }
+          case None => Logger.warn("dataset with id: " + resourceRef.id + " not found")
+        }
+
+      }
+      case 'folder => {
+        folders.get(resourceRef.id) match {
+          case Some(f) => {
+            f.files.foreach { id => { affectedResources += ResourceRef(ResourceRef.file, id) } }
+            f.folders.foreach { id =>
+              {
+                affectedResources ++= getAffectedResources(ResourceRef(ResourceRef.folder, id), currentSpace)
+              }
+            }
+          }
+        }
+      }
+    }
+    affectedResources
   }
 
   /** Get metadata context if available  **/

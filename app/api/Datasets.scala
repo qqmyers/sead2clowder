@@ -511,7 +511,8 @@ class  Datasets @Inject()(
               }
             }
           }
-
+          //Possible context space change
+          metadataService.synchMetadataContext(ResourceRef(ResourceRef.file, fileId))
           //remove link between dataset and file from RDF triple store if triple store is used
           if (file.filename.endsWith(".xml")) {
             configuration.getString("userdfSPARQLStore").getOrElse("no") match {

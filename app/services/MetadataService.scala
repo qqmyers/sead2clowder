@@ -4,7 +4,7 @@ import api.UserRequest
 import play.api.libs.Files
 import play.api.libs.json.JsValue
 import play.api.libs.json.JsObject
-import models.{MetadataDefinition, ResourceRef, UUID, Metadata, User, Agent}
+import models.{ MetadataDefinition, ResourceRef, UUID, Metadata, User, Agent }
 import play.api.mvc.MultipartFormData
 import java.util.Date
 
@@ -13,15 +13,15 @@ import java.util.Date
  */
 trait MetadataService {
 
-    /** Add metadata to the metadata collection and attach to a section /file/dataset/collection */
-  def addMetadata(content_ld: JsValue, context: JsValue, attachedTo: ResourceRef, createdAt: Date, creator: Agent, spaceId:Option[UUID]): JsObject
-  
   /** Add metadata to the metadata collection and attach to a section /file/dataset/collection */
-  def addMetadata(metadata: Metadata) : UUID
-  
+  def addMetadata(content_ld: JsValue, context: JsValue, attachedTo: ResourceRef, createdAt: Date, creator: Agent, spaceId: Option[UUID]): JsObject
+
+  /** Add metadata to the metadata collection and attach to a section /file/dataset/collection */
+  def addMetadata(metadata: Metadata): UUID
+
   /** Get Metadata By Id*/
-  def getMetadataById(id : UUID) : Option[Metadata]
-  
+  def getMetadataById(id: UUID): Option[Metadata]
+
   /** Get Metadata based on Id of an element (section/file/dataset/collection) */
   def getMetadataByAttachTo(resourceRef: ResourceRef): List[Metadata]
 
@@ -29,32 +29,37 @@ trait MetadataService {
   def getExtractedMetadataByAttachTo(resourceRef: ResourceRef, extractor: String): List[Metadata]
 
   /** Get metadata based on type i.e. user generated metadata or technical metadata  */
-  def getMetadataByCreator(resourceRef: ResourceRef, typeofAgent:String): List[Metadata]
+  def getMetadataByCreator(resourceRef: ResourceRef, typeofAgent: String): List[Metadata]
 
   /** Remove metadata */
   def removeMetadataById(metadataId: UUID)
-  
+
   /** Remove metadata */
-  def removeMetadata(attachedTo: ResourceRef, term: String, itemId: String, deletedAt: Date, deletor:Agent, spaceId:Option[UUID]):JsValue
+  def removeMetadata(attachedTo: ResourceRef, term: String, itemId: String, deletedAt: Date, deletor: Agent, spaceId: Option[UUID]): JsValue
 
   /** Update metadata value*/
-  def updateMetadata(content_ld: JsValue, context: JsValue, attachedTo: ResourceRef, itemId: String, updatedAt: Date, updator:Agent, spaceId:Option[UUID]):JsValue
-  
+  def updateMetadata(content_ld: JsValue, context: JsValue, attachedTo: ResourceRef, itemId: String, updatedAt: Date, updator: Agent, spaceId: Option[UUID]): JsValue
+
   /** Remove metadata by attachTo*/
   def removeMetadataByAttachTo(resourceRef: ResourceRef): Long
 
   /** Remove metadata by attachTo from a specific extractor */
   def removeMetadataByAttachToAndExtractor(resourceRef: ResourceRef, extractorName: String): Long
-  
+
   /** Get the space (or None) holding the metadata definitions used for this resource */
   def getContextSpace(resourceRef: ResourceRef, space: Option[UUID]): Option[UUID]
-  
+
   /** Get the current summary of all metadata actions for this resource */
-  def getMetadataSummary(resourceRef: ResourceRef, spaceId:Option[UUID]): models.RdfMetadata
-  
+  def getMetadataSummary(resourceRef: ResourceRef, spaceId: Option[UUID]): models.RdfMetadata
+
   /** Get the current summary of all metadata actions for this resource */
   def copyMetadataSummary(sourceResourceRef: ResourceRef, targetResourceRef: ResourceRef)
-  
+
+  /** Updates metadata to match a new contextSpace (derived from the resourceRef and, for Datasets
+   *  (which can be in more than one space with some plugins), the requested space.
+   */
+  def synchMetadataContext(resourceRef: ResourceRef)
+
   /** Get metadata context if available */
   def getMetadataContext(metadataId: UUID): Option[JsValue]
 
@@ -72,7 +77,7 @@ trait MetadataService {
 
   /** Get vocabulary based on uri and space **/
   def getDefinitionByLabelAndSpace(label: String, spaceId: Option[String] = None): Option[MetadataDefinition]
-  
+
   /** Remove all metadata definitions related to a space**/
   def removeDefinitionsBySpace(spaceId: UUID)
 
@@ -80,14 +85,14 @@ trait MetadataService {
   def addDefinition(definition: MetadataDefinition)
 
   /** Edit vocabulary definitions**/
-  def editDefinition(id:UUID, json: JsValue)
+  def editDefinition(id: UUID, json: JsValue)
 
   /** Delete vocabulary definitions**/
   def deleteDefinition(id: UUID)
 
   /** Make vocabulary definition appear in "Add Metadata" menu (or not)**/
-  def makeDefinitionAddable(id: UUID, addable:Boolean)
-  
+  def makeDefinitionAddable(id: UUID, addable: Boolean)
+
   /** Search for metadata that have a key in a dataset **/
   def searchbyKeyInDataset(key: String, datasetId: UUID): List[Metadata]
 

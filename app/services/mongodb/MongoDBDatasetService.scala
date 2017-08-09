@@ -30,7 +30,6 @@ import services.mongodb.MongoContext.context
 import scala.collection.JavaConversions._
 import scala.collection.JavaConverters._
 import scala.collection.mutable.ListBuffer
-import scala.util.parsing.json.JSONArray
 
 /**
  * Use Mongodb to store datasets.
@@ -1067,6 +1066,11 @@ class MongoDBDatasetService @Inject() (
         $set("status" -> DatasetStatus.DEFAULT.toString),
         false, false)
     }
+    //If moving into first space (from None), adopt the space as the context and synch metadata
+    val spaceList = Dataset.primitiveProjections[UUID](MongoDBObject("_id" -> new ObjectId(datasetId.stringify)), "spaces")
+    if (spaceList.size == 1) {
+      metadatas.synchMetadataContext(ResourceRef(ResourceRef.dataset, datasetId))
+    }
   }
 
   def removeFromSpace(datasetId: UUID, spaceId: UUID): Unit = {
@@ -1085,6 +1089,7 @@ class MongoDBDatasetService @Inject() (
         case _ =>
       }
     }
+    metadatas.synchMetadataContext(ResourceRef(ResourceRef.dataset, datasetId))
   }
 
   def dumpAllDatasetGroupings(): List[String] = {
