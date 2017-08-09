@@ -597,10 +597,6 @@ class MongoDBMetadataService @Inject() (contextService: ContextLDService, datase
             }
         }
 
-        //Fix me - for now, initialize with label/uri pairs from existing metadata. Going forward,
-        //these should added to the space as viewable metadata instead and picked up that way.
-        //For now, the last def wins (whether from an entry or because its in the space defs) 
-
         /* Since preds with '.' (such as URLs!) can't be stored as keys in Mongo docs, we can normalize 
      		 * all labels and then store the label/predicate definition maps and the label/values entries
 		     * with labels restricted to being Mongo-safe
@@ -631,8 +627,6 @@ class MongoDBMetadataService @Inject() (contextService: ContextLDService, datase
 
           metadataHistoryMap = metadataHistoryMap ++ Map((metadataDefsMap.apply(pred)).toString -> filteredList.toList)
         }
-        Logger.info(metadataEntryJson.toString)
-        Logger.info(metadataEntryList.toString)
 
         //For storage, we now need a canonical (1:1) inverseMetadataDefsMap
         val inverseMetadataDefsMap = scala.collection.mutable.Map.empty[String, String] //needed to convert current metadata
@@ -644,6 +638,22 @@ class MongoDBMetadataService @Inject() (contextService: ContextLDService, datase
         val rdf = RdfMetadata(UUID.generate(), resourceRef, contextSpace, metadataEntryJson.toMap, metadataHistoryMap.toMap)
         val mid = MetadataSummaryDAO.insert(rdf, WriteConcern.Safe)
 
+        //re-index datasets or files
+        resourceRef.resourceType match {
+          case 'dataset => {
+            current.plugin[ElasticsearchPlugin].foreach { p =>
+              p.delete("data", "dataset", resourceRef.id.stringify)
+              p.index(datasets.get(resourceRef.id).get, false)
+            }
+          }
+          case 'file => {
+            current.plugin[ElasticsearchPlugin].foreach { p =>
+              p.delete("data", "file", resourceRef.id.stringify)
+              p.index(files.get(resourceRef.id).get)
+            }
+
+          }
+        }
         rdf
       }
     }
@@ -761,7 +771,23 @@ class MongoDBMetadataService @Inject() (contextService: ContextLDService, datase
           Logger.info("Created RdfMetadata: " + rdf.toString())
           MetadataSummaryDAO.update(MongoDBObject("_id" -> new ObjectId(md.id.stringify)), rdf, false, false, WriteConcern.Safe)
         }
-        //Now update index if serarch plugin
+        //Now update index if search plugin - only datasets and files are currently indexed
+        ref.resourceType match {
+          case 'dataset => {
+            current.plugin[ElasticsearchPlugin].foreach { p =>
+              p.delete("data", "dataset", ref.id.stringify)
+              p.index(datasets.get(ref.id).get, false)
+            }
+          }
+          case 'file => {
+            current.plugin[ElasticsearchPlugin].foreach { p =>
+              p.delete("data", "file", ref.id.stringify)
+              p.index(files.get(ref.id).get)
+            }
+
+          }
+        }
+
       }
 
     } else {
