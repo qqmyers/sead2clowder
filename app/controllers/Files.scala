@@ -188,16 +188,19 @@ class Files @Inject() (
         ) yield cId -> c).toMap
 
         //RDF MD
-
-        val spaceId: Option[models.UUID] = space match {
-          case Some(s) => {
-            if (decodedSpacesContaining.map(sp => sp.id).contains(UUID(s))) {
-              Some(UUID(s))
-            } else {
-              Some(decodedSpacesContaining.head.id)
+        
+        val spaceId: Option[models.UUID] = decodedSpacesContaining.size match {
+          case 0 => None
+          case _ => space match {
+            case Some(s) => {
+              if (decodedSpacesContaining.map(sp => sp.id).contains(UUID(s))) {
+                Some(UUID(s))
+              } else {
+                Some(decodedSpacesContaining.head.id)
+              }
             }
+            case None => Some(decodedSpacesContaining.head.id)
           }
-          case None => Some(decodedSpacesContaining.head.id)
         }
 
         val metadataSummary = metadata.getMetadataSummary(ResourceRef(ResourceRef.file, file.id), spaceId)

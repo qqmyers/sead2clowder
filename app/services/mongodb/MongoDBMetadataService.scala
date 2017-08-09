@@ -731,14 +731,14 @@ class MongoDBMetadataService @Inject() (contextService: ContextLDService, datase
             }
             //add a def
             val mddef = curDefs.filter(d => (d.json \ "label").as[String].equals(key)).head
-            possibleNewDefsMap(newKey) = MetadataDefinition(spaceId = newContextSpace, json = new JsObject(Seq("label" -> JsString(newKey), "uri" -> mddef.json \ "uri", "type" -> mddef.json \ "type", "gui" -> JsBoolean(false))))
+            possibleNewDefsMap(newKey) = MetadataDefinition(spaceId = newContextSpace, json = new JsObject(Seq("label" -> JsString(newKey), "uri" -> mddef.json \ "uri", "type" -> mddef.json \ "type", "addable" -> JsBoolean(false))))
 
             (key, newKey)
           } else {
             //The uri and label are not in use
             //Add the def
-            val mddef = curDefs.filter(d => (d.json \ "label").equals(key)).head
-            possibleNewDefsMap(key) = MetadataDefinition(spaceId = newContextSpace, json = new JsObject(Seq("label" -> mddef.json \ "label", "uri" -> mddef.json \ "uri", "type" -> mddef.json \ "type", "gui" -> JsBoolean(false))))
+            val mddef = curDefs.filter(d => (d.json \ "label").as[String].equals(key)).head
+            possibleNewDefsMap(key) = MetadataDefinition(spaceId = newContextSpace, json = new JsObject(Seq("label" -> mddef.json \ "label", "uri" -> mddef.json \ "uri", "type" -> mddef.json \ "type", "addable" -> JsBoolean(false))))
             (key, key)
           }
         }
@@ -757,8 +757,12 @@ class MongoDBMetadataService @Inject() (contextService: ContextLDService, datase
           var metadataHistoryMap = collection.mutable.Map[String, List[MetadataEntry]]()
           labelMap.foreach({
             case (label, newLabel) => {
-              metadataEntryJson(newLabel) = md.entries.apply(label)
-              metadataHistoryMap(newLabel) = md.history.apply(label)
+              if (md.entries.contains(label)) {
+                metadataEntryJson(newLabel) = md.entries.apply(label)
+              }
+              if (md.history.contains(label)) {
+                metadataHistoryMap(newLabel) = md.history.apply(label)
+              }
               if (possibleNewDefsMap.contains(newLabel)) {
                 addDefinition(possibleNewDefsMap(newLabel));
                 possibleNewDefsMap.remove(newLabel)
@@ -797,10 +801,9 @@ class MongoDBMetadataService @Inject() (contextService: ContextLDService, datase
 
   def getAffectedResources(resourceRef: ResourceRef, currentSpace: Option[UUID]): ListBuffer[ResourceRef] = {
     val affectedResources = ListBuffer[ResourceRef]()
-
-    affectedResources += resourceRef
     resourceRef.resourceType match {
       case 'dataset => {
+        affectedResources += resourceRef
         datasets.get(resourceRef.id) match {
           case Some(d) => {
             d.files.foreach { id => { affectedResources += ResourceRef(ResourceRef.file, id) } }
