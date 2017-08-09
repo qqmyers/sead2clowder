@@ -672,6 +672,7 @@ class MongoDBMetadataService @Inject() (contextService: ContextLDService, datase
         //Then synch the metadata to the new context space 
         synchMetadataContext(targetResourceRef)
       }
+      //case _ => // one or both are in no space (None) - we don't support md copy in these cases (since we don't support publishing without being in a space)
     }
   }
 
@@ -738,7 +739,7 @@ class MongoDBMetadataService @Inject() (contextService: ContextLDService, datase
       val affectedResources = getAffectedResources(resourceRef, curContextSpace)
       affectedResources.foreach { ref =>
         {
-          val md = getMetadataSummary(resourceRef, None)
+          val md = getMetadataSummary(ref, None)
           //Update labels in metadata summary (entries and history)
           var metadataEntryJson = scala.collection.mutable.Map[String, JsValue]()
 
@@ -760,6 +761,7 @@ class MongoDBMetadataService @Inject() (contextService: ContextLDService, datase
           Logger.info("Created RdfMetadata: " + rdf.toString())
           MetadataSummaryDAO.update(MongoDBObject("_id" -> new ObjectId(md.id.stringify)), rdf, false, false, WriteConcern.Safe)
         }
+        //Now update index if serarch plugin
       }
 
     } else {
