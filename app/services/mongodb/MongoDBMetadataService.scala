@@ -138,7 +138,7 @@ class MongoDBMetadataService @Inject() (contextService: ContextLDService, datase
     for ((label, uri) <- newDefs) {
       addDefinition(MetadataDefinition(spaceId = summary.contextSpace, json = new JsObject(Seq("label" -> JsString(label), "uri" -> JsString(uri), "type" -> JsString("string"), "addable" -> JsBoolean(false)))))
     }
-    
+
     //update metadata count for resource
     current.plugin[MongoSalatPlugin] match {
       case None => throw new RuntimeException("No MongoSalatPlugin")
@@ -538,175 +538,178 @@ class MongoDBMetadataService @Inject() (contextService: ContextLDService, datase
         rdf
       }
       case None => {
+        generateMetadataSummary(resourceRef, space)
 
-        //Otherwise calculate and store a new summary
-        val metadataDefsMap = scala.collection.mutable.Map.empty[String, String]
-        val contextSpace = getContextSpace(resourceRef, space)
+      }
+    }
+  }
 
-        var metadataHistoryMap = scala.collection.mutable.Map.empty[String, List[MetadataEntry]]
-        var metadataEntryList = scala.collection.mutable.ListBuffer.empty[MetadataEntry]
-        var metadataEntryPreds = Set.empty[String]
+  /**
+   * First time creation of a metadatasummary doc for this resource - right now this is called dynamically when needed, but could also be called
+   *  from a database update mechanism for any annotatable resource with cat:user entries.
+   */
+  def generateMetadataSummary(resourceRef: ResourceRef, space: Option[UUID]): RdfMetadata = {
+    //Otherwise calculate and store a new summary
+    val metadataDefsMap = scala.collection.mutable.Map.empty[String, String]
+    val contextSpace = getContextSpace(resourceRef, space)
 
-        //FixMe - skip existing extractor entries
-        val currentMDEntries = getMetadataByAttachTo(resourceRef)
-        /* Count metadata - the old code counts each md document as 1, regardless of how many terms are in each one. The new count 
+    var metadataHistoryMap = scala.collection.mutable.Map.empty[String, List[MetadataEntry]]
+    var metadataEntryList = scala.collection.mutable.ListBuffer.empty[MetadataEntry]
+    var metadataEntryPreds = Set.empty[String]
+
+    //FixMe - skip existing extractor entries
+    val currentMDEntries = getMetadataByAttachTo(resourceRef)
+    /* Count metadata - the old code counts each md document as 1, regardless of how many terms are in each one. The new count 
          * keeps tracking extractor metadata this way but now counts how many separate values exist. 
          * To start we calculate that by taking the total # of docs, subtracting 1 for each user doc, and then adding the 
          * number of values contained in all of the user docs
          */
-        var mdCount = currentMDEntries.size
-        currentMDEntries.map {
-          item =>
-            {
-              item.creator.typeOfAgent match {
-                case "cat:user" => {
-                  //Decrement count since we're processing this one
-                  mdCount= mdCount -1
-                  val ldItem = JSONLD.jsonMetadataWithContext(item)
-                  val json = JsonUtils.fromInputStream(new java.io.ByteArrayInputStream(Json.stringify(ldItem).getBytes("UTF-8")))
-                  val ctxt = new Context().parse(json.asInstanceOf[LinkedHashMap[String, Object]].getOrDefault("@context", ""))
-                  Logger.debug("Context" + ctxt.getPrefixes(false).toString())
-                  val prefixes = ctxt.getPrefixes(false)
-                  val entryIter = prefixes.entrySet().iterator()
+    var mdCount = currentMDEntries.size
+    currentMDEntries.map {
+      item =>
+        {
+          item.creator.typeOfAgent match {
+            case "cat:user" => {
+              //Decrement count since we're processing this one
+              mdCount = mdCount - 1
+              val ldItem = JSONLD.jsonMetadataWithContext(item)
+              val json = JsonUtils.fromInputStream(new java.io.ByteArrayInputStream(Json.stringify(ldItem).getBytes("UTF-8")))
+              val ctxt = new Context().parse(json.asInstanceOf[LinkedHashMap[String, Object]].getOrDefault("@context", ""))
+              Logger.debug("Context" + ctxt.getPrefixes(false).toString())
+              val prefixes = ctxt.getPrefixes(false)
+              val entryIter = prefixes.entrySet().iterator()
 
-                  while (entryIter.hasNext()) {
-                    val entry = entryIter.next()
-                    metadataDefsMap(entry.getValue()) = entry.getKey()
-                  }
-                  Logger.debug("json: " + json.toString())
-                  val fullItem = Json.parse(JsonUtils.toString(JsonLdProcessor.compact(JsonLdProcessor.expand(json), null, new JsonLdOptions())))
-                  var excontent = fullItem \\ "https://clowder.ncsa.illinois.edu/metadata#content"
+              while (entryIter.hasNext()) {
+                val entry = entryIter.next()
+                metadataDefsMap(entry.getValue()) = entry.getKey()
+              }
+              Logger.debug("json: " + json.toString())
+              val fullItem = Json.parse(JsonUtils.toString(JsonLdProcessor.compact(JsonLdProcessor.expand(json), null, new JsonLdOptions())))
+              var excontent = fullItem \\ "https://clowder.ncsa.illinois.edu/metadata#content"
 
-                  //Do a best-effort to assess whether the entry has non json-ld parts
-                  val jsonContent = JSONLD.buildMetadataMap(item.content)
-                  val parseAsJson = excontent.size match {
-                    case 0 => true
-                    case _ => {
-                      if (excontent.apply(0).as[JsObject].keys.size != jsonContent.size) {
-                        true
-                      } else {
-                        false
-                      }
-                    }
-                  }
-                  if (parseAsJson) {
-                    //Kludge - some entries may not have a valid jsonld context mapping the content to the term above. In this case, we can just parse the json 
-                    for ((label, value) <- jsonContent) {
-
-                      //is prefixes(label) always defined? If not what?
-                      val prefix = prefixes.get(label) match {
-                        case null => "https://clowder.ncsa.illinois.edu/metadata/undefined#" + label
-                        case s: String => s
-                      }
-                      metadataEntryList += MetadataEntry(item.id, prefix, value.as[String], Json.toJson((ldItem).validate[Agent].get).toString, MDAction.Added.toString, None, new SimpleDateFormat("EEE MMM dd hh:mm:ss zzz yyyy").parse((ldItem \ "created_at").toString().replace("\"", "")))
-                      metadataEntryPreds += prefix
-                      //Add new label defs if they don't currently exist - could reject new terms this way if desired
-
-                      metadataDefsMap(value.as[String]) = prefix
-                    }
-                    Logger.warn("Invalid JSON-LD for Metadata Entry - parsing as mixed Json/ld: " + ldItem.toString())
+              //Do a best-effort to assess whether the entry has non json-ld parts
+              val jsonContent = JSONLD.buildMetadataMap(item.content)
+              val parseAsJson = excontent.size match {
+                case 0 => true
+                case _ => {
+                  if (excontent.apply(0).as[JsObject].keys.size != jsonContent.size) {
+                    true
                   } else {
-                    excontent.apply(0).as[JsObject].keys.foreach { uri =>
-                      {
-                        //Create an entry and add it to the list
-                        Logger.debug(uri + " : " + (excontent.apply(0).as[JsObject] \ uri).toString()) // + (x \ y \\ "@value").as[String]) }}
-                        metadataEntryList += MetadataEntry(UUID.generate(), uri, (excontent.apply(0).as[JsObject] \ uri).as[String], Json.toJson((ldItem).validate[Agent].get).toString, MDAction.Added.toString(), None, new SimpleDateFormat("EEE MMM dd hh:mm:ss zzz yyyy").parse((ldItem \ "created_at").toString().replace("\"", "")))
-                        metadataEntryPreds += uri
-                      }
-                    }
+                    false
                   }
-                }
-                case "cat:extractor" => {
-                  //Leave legacy extractor entries as is
-                }
-                case s: String => {
-                  //Leave entries as is and report the agent type
-                  Logger.debug("Found agent of type \"" + s + "\" when summarizing metadata");
                 }
               }
+              if (parseAsJson) {
+                //Kludge - some entries may not have a valid jsonld context mapping the content to the term above. In this case, we can just parse the json 
+                for ((label, value) <- jsonContent) {
 
+                  //is prefixes(label) always defined? If not what?
+                  val prefix = prefixes.get(label) match {
+                    case null => "https://clowder.ncsa.illinois.edu/metadata/undefined#" + label
+                    case s: String => s
+                  }
+                  metadataEntryList += MetadataEntry(item.id, prefix, value.as[String], Json.toJson((ldItem).validate[Agent].get).toString, MDAction.Added.toString, None, new SimpleDateFormat("EEE MMM dd hh:mm:ss zzz yyyy").parse((ldItem \ "created_at").toString().replace("\"", "")))
+                  metadataEntryPreds += prefix
+                  //Add new label defs if they don't currently exist - could reject new terms this way if desired
+
+                  metadataDefsMap(value.as[String]) = prefix
+                }
+                Logger.warn("Invalid JSON-LD for Metadata Entry - parsing as mixed Json/ld: " + ldItem.toString())
+              } else {
+                excontent.apply(0).as[JsObject].keys.foreach { uri =>
+                  {
+                    //Create an entry and add it to the list
+                    Logger.debug(uri + " : " + (excontent.apply(0).as[JsObject] \ uri).toString()) // + (x \ y \\ "@value").as[String]) }}
+                    metadataEntryList += MetadataEntry(UUID.generate(), uri, (excontent.apply(0).as[JsObject] \ uri).as[String], Json.toJson((ldItem).validate[Agent].get).toString, MDAction.Added.toString(), None, new SimpleDateFormat("EEE MMM dd hh:mm:ss zzz yyyy").parse((ldItem \ "created_at").toString().replace("\"", "")))
+                    metadataEntryPreds += uri
+                  }
+                }
+              }
             }
+            case "cat:extractor" => {
+              //Leave legacy extractor entries as is
+            }
+            case s: String => {
+              //Leave entries as is and report the agent type
+              Logger.debug("Found agent of type \"" + s + "\" when summarizing metadata");
+            }
+          }
+
         }
+    }
 
-        
-        mdCount = mdCount + metadataEntryList.size
+    mdCount = mdCount + metadataEntryList.size
 
-        
-        /* Since preds with '.' (such as URLs!) can't be stored as keys in Mongo docs, we can normalize 
+    /* Since preds with '.' (such as URLs!) can't be stored as keys in Mongo docs, we can normalize 
      		 * all labels and then store the label/predicate definition maps and the label/values entries
 		     * with labels restricted to being Mongo-safe
 		     * 
 		     */
-        
 
-        var newDefs = metadataDefsMap.clone()
-        for (md <- getDefinitions(space)) {
-          //Remove any entries already in the space/global context
-          newDefs.remove((md.json \ "uri").asOpt[String].getOrElse("").toString())
-          //Update labels for entries already in the space/global context
-          metadataDefsMap((md.json \ "uri").asOpt[String].getOrElse("").toString()) = (md.json \ "label").asOpt[String].getOrElse("").toString()
+    var newDefs = metadataDefsMap.clone()
+    for (md <- getDefinitions(space)) {
+      //Remove any entries already in the space/global context
+      newDefs.remove((md.json \ "uri").asOpt[String].getOrElse("").toString())
+      //Update labels for entries already in the space/global context
+      metadataDefsMap((md.json \ "uri").asOpt[String].getOrElse("").toString()) = (md.json \ "label").asOpt[String].getOrElse("").toString()
 
+    }
+    //The newDefs map now has all new 1-1 predicate to label pairs that will be used for a canonical context plus other entries (e.g. from @vocab statements)
+    //Add any that correspond to used predicates back as new metadata definitions for the space
+    for ((pred, label) <- newDefs.filterKeys { x => { metadataEntryPreds.contains(x) } }) {
+      val newdef = new JsObject(Seq(("uri", JsString(pred)), ("label", JsString(label)), ("type", JsString("string")), ("addable", JsBoolean(false))))
+      addDefinition(MetadataDefinition(spaceId = space, json = newdef))
+    }
+
+    Logger.info("Entries for: " + metadataEntryPreds.toString())
+    val metadataEntryJson = scala.collection.mutable.Map.empty[String, JsValue]
+    for (pred <- metadataEntryPreds) {
+      val filteredList = metadataEntryList.filter(_.uri == pred)
+      metadataEntryJson(metadataDefsMap.apply(pred)) = Json.toJson(filteredList.map { item => { (item.id.stringify) -> item.value } }toMap)
+
+      metadataHistoryMap = metadataHistoryMap ++ Map((metadataDefsMap.apply(pred)).toString -> filteredList.toList)
+    }
+
+    //For storage, we now need a canonical (1:1) inverseMetadataDefsMap
+    val inverseMetadataDefsMap = scala.collection.mutable.Map.empty[String, String] //needed to convert current metadata
+
+    for ((pred, label) <- metadataDefsMap.filterKeys { x => { metadataEntryPreds.contains(x) } }) {
+      inverseMetadataDefsMap(label) = pred
+    }
+
+    val rdf = RdfMetadata(UUID.generate(), resourceRef, contextSpace, metadataEntryJson.toMap, metadataHistoryMap.toMap)
+    val mid = MetadataSummaryDAO.insert(rdf, WriteConcern.Safe)
+
+    //re-index datasets or files
+    resourceRef.resourceType match {
+      case 'dataset => {
+        current.plugin[ElasticsearchPlugin].foreach { p =>
+          p.delete("data", "dataset", resourceRef.id.stringify)
+          p.index(datasets.get(resourceRef.id).get, false)
         }
-        //The newDefs map now has all new 1-1 predicate to label pairs that will be used for a canonical context plus other entries (e.g. from @vocab statements)
-        //Add any that correspond to used predicates back as new metadata definitions for the space
-        for ((pred, label) <- newDefs.filterKeys { x => { metadataEntryPreds.contains(x) } }) {
-          val newdef = new JsObject(Seq(("uri", JsString(pred)), ("label", JsString(label)), ("type", JsString("string")), ("addable", JsBoolean(false))))
-          addDefinition(MetadataDefinition(spaceId = space, json = newdef))
-        }
-
-        Logger.info("Entries for: " + metadataEntryPreds.toString())
-        val metadataEntryJson = scala.collection.mutable.Map.empty[String, JsValue]
-        for (pred <- metadataEntryPreds) {
-          val filteredList = metadataEntryList.filter(_.uri == pred)
-          metadataEntryJson(metadataDefsMap.apply(pred)) = Json.toJson(filteredList.map { item => { (item.id.stringify) -> item.value } }toMap)
-
-          metadataHistoryMap = metadataHistoryMap ++ Map((metadataDefsMap.apply(pred)).toString -> filteredList.toList)
-        }
-
-        //For storage, we now need a canonical (1:1) inverseMetadataDefsMap
-        val inverseMetadataDefsMap = scala.collection.mutable.Map.empty[String, String] //needed to convert current metadata
-
-        for ((pred, label) <- metadataDefsMap.filterKeys { x => { metadataEntryPreds.contains(x) } }) {
-          inverseMetadataDefsMap(label) = pred
-        }
-
-        val rdf = RdfMetadata(UUID.generate(), resourceRef, contextSpace, metadataEntryJson.toMap, metadataHistoryMap.toMap)
-        val mid = MetadataSummaryDAO.insert(rdf, WriteConcern.Safe)
-
-        //re-index datasets or files
-        resourceRef.resourceType match {
-          case 'dataset => {
-            current.plugin[ElasticsearchPlugin].foreach { p =>
-              p.delete("data", "dataset", resourceRef.id.stringify)
-              p.index(datasets.get(resourceRef.id).get, false)
-            }
-          }
-          case 'file => {
-            current.plugin[ElasticsearchPlugin].foreach { p =>
-              p.delete("data", "file", resourceRef.id.stringify)
-              p.index(files.get(resourceRef.id).get)
-            }
-
-          }
-        }
-        
-        //update metadata count for resource
-        current.plugin[MongoSalatPlugin] match {
-          case None => throw new RuntimeException("No MongoSalatPlugin")
-          case Some(x) => x.collection(resourceRef) match {
-            case Some(c) => {
-              c.update(MongoDBObject("_id" -> new ObjectId(resourceRef.id.stringify)), $set("metadataCount" -> mdCount))
-            }
-            case None => {
-              Logger.error(s"Could not change metadata counter for ${resourceRef}")
-            }
-          }
+      }
+      case 'file => {
+        current.plugin[ElasticsearchPlugin].foreach { p =>
+          p.delete("data", "file", resourceRef.id.stringify)
+          p.index(files.get(resourceRef.id).get)
         }
 
-        
-        rdf
       }
     }
+
+    //update metadata count for resource
+    current.plugin[MongoSalatPlugin] match {
+      case None => throw new RuntimeException("No MongoSalatPlugin")
+      case Some(x) => x.collection(resourceRef) match {
+        case Some(c) => {
+          c.update(MongoDBObject("_id" -> new ObjectId(resourceRef.id.stringify)), $set("metadataCount" -> mdCount))
+        }
+        case None => {
+          Logger.error(s"Could not change metadata counter for ${resourceRef}")
+        }
+      }
+    }
+    rdf
   }
 
   def copyMetadataSummary(sourceResourceRef: ResourceRef, targetResourceRef: ResourceRef) {
