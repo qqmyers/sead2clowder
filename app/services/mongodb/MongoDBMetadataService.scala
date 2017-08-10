@@ -136,7 +136,7 @@ class MongoDBMetadataService @Inject() (contextService: ContextLDService, datase
     Logger.info("Updated Summary")
     //Update defs for contextSpace
     for ((label, uri) <- newDefs) {
-      addDefinition(MetadataDefinition(spaceId = summary.contextSpace, json = new JsObject(Seq("label" -> JsString(label), "uri" -> JsString(uri), "type" -> JsString("string"), "gui" -> JsBoolean(false)))))
+      addDefinition(MetadataDefinition(spaceId = summary.contextSpace, json = new JsObject(Seq("label" -> JsString(label), "uri" -> JsString(uri), "type" -> JsString("string"), "addable" -> JsBoolean(false)))))
     }
     
     //update metadata count for resource
@@ -548,12 +548,20 @@ class MongoDBMetadataService @Inject() (contextService: ContextLDService, datase
         var metadataEntryPreds = Set.empty[String]
 
         //FixMe - skip existing extractor entries
-
-        getMetadataByAttachTo(resourceRef).map {
+        val currentMDEntries = getMetadataByAttachTo(resourceRef)
+        /* Count metadata - the old code counts each md document as 1, regardless of how many terms are in each one. The new count 
+         * keeps tracking extractor metadata this way but now counts how many separate values exist. 
+         * To start we calculate that by taking the total # of docs, subtracting 1 for each user doc, and then adding the 
+         * number of values contained in all of the user docs
+         */
+        var mdCount = currentMDEntries.size
+        currentMDEntries.map {
           item =>
             {
               item.creator.typeOfAgent match {
                 case "cat:user" => {
+                  //Decrement count since we're processing this one
+                  mdCount= mdCount -1
                   val ldItem = JSONLD.jsonMetadataWithContext(item)
                   val json = JsonUtils.fromInputStream(new java.io.ByteArrayInputStream(Json.stringify(ldItem).getBytes("UTF-8")))
                   val ctxt = new Context().parse(json.asInstanceOf[LinkedHashMap[String, Object]].getOrDefault("@context", ""))
@@ -620,12 +628,16 @@ class MongoDBMetadataService @Inject() (contextService: ContextLDService, datase
             }
         }
 
+        
+        mdCount = mdCount + metadataEntryList.size
+
+        
         /* Since preds with '.' (such as URLs!) can't be stored as keys in Mongo docs, we can normalize 
      		 * all labels and then store the label/predicate definition maps and the label/values entries
 		     * with labels restricted to being Mongo-safe
 		     * 
 		     */
-        Logger.info("Space: " + space)
+        
 
         var newDefs = metadataDefsMap.clone()
         for (md <- getDefinitions(space)) {
@@ -638,7 +650,7 @@ class MongoDBMetadataService @Inject() (contextService: ContextLDService, datase
         //The newDefs map now has all new 1-1 predicate to label pairs that will be used for a canonical context plus other entries (e.g. from @vocab statements)
         //Add any that correspond to used predicates back as new metadata definitions for the space
         for ((pred, label) <- newDefs.filterKeys { x => { metadataEntryPreds.contains(x) } }) {
-          val newdef = new JsObject(Seq(("uri", JsString(pred)), ("label", JsString(label)), ("type", JsString("string")), ("gui", JsBoolean(false))))
+          val newdef = new JsObject(Seq(("uri", JsString(pred)), ("label", JsString(label)), ("type", JsString("string")), ("addable", JsBoolean(false))))
           addDefinition(MetadataDefinition(spaceId = space, json = newdef))
         }
 
@@ -677,6 +689,21 @@ class MongoDBMetadataService @Inject() (contextService: ContextLDService, datase
 
           }
         }
+        
+        //update metadata count for resource
+        current.plugin[MongoSalatPlugin] match {
+          case None => throw new RuntimeException("No MongoSalatPlugin")
+          case Some(x) => x.collection(resourceRef) match {
+            case Some(c) => {
+              c.update(MongoDBObject("_id" -> new ObjectId(resourceRef.id.stringify)), $set("metadataCount" -> mdCount))
+            }
+            case None => {
+              Logger.error(s"Could not change metadata counter for ${resourceRef}")
+            }
+          }
+        }
+
+        
         rdf
       }
     }
