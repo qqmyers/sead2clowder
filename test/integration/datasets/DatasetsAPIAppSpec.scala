@@ -423,44 +423,6 @@ class DatasetsAPIAppSpec extends PlaySpec with ConfiguredApp with FakeMultipartU
       contentType(result_get) mustEqual Some("application/json")
     }
 
-    "respond to the addUserMetadata(id: UUID) function routed by POST /api/datasets/:id/usermetadata" in {
-      info("Working Directory: " + workingDir)
-      val file1 = new java.io.File(workingDir + "/test/data/datasets/dataset-test-user.json")
-      if (file1.isFile && file1.exists) {
-        Logger.debug("File1 is File:True")
-      }
-      info("File Pathing " + file1.toString)
-      val json_data_from_file_source = Source.fromFile(file1.toString)
-      val json_data_from_file_lines = json_data_from_file_source.mkString
-      json_data_from_file_source.close()
-
-      // Place file string into a JSON object
-      val json_meta: JsValue = Json.parse(json_data_from_file_lines)
-      val readableString_meta: String = Json.prettyPrint(json_meta)
-      info("Pretty JSON format")
-      info(readableString_meta)
-
-      // Send JSON object into RESTful API and read response
-      val Some(result_get) = route(FakeRequest(POST, "/api/datasets/" + datasetId + "/usermetadata?key=" + secretKey).withJsonBody(json_meta))
-      status(result_get) mustEqual OK
-      info("Status_Get="+status(result_get))
-      status(result_get) mustEqual OK
-      info("contentType_Get="+contentType(result_get))
-      contentType(result_get) mustEqual Some("application/json")
-    }
-
-    "respond to the getUserMetadataJSON(id: UUID) function routed by GET /api/datasets/:id/usermetadata" in {
-      val Some(result_get) = route(FakeRequest(GET, "/api/datasets/" + datasetId + "/usermetadatajson?key=" + secretKey))
-      info("Status_Get="+status(result_get))
-      status(result_get) mustEqual OK
-      info("contentType_Get="+contentType(result_get))
-      contentType(result_get) mustEqual Some("text/plain")
-      val json: JsValue = Json.parse(contentAsString(result_get))
-      val readableString: String = Json.prettyPrint(json)
-      info("Pretty JSON format")
-      info(readableString)
-    }
-
     "respond to the getTechnicalMetadataJSON(id: UUID) function routed by GET /api/datasets/:id/technicalmetadatajson" in {
       val Some(result_get) = route(FakeRequest(GET, "/api/datasets/" + datasetId + "/technicalmetadatajson?key=" + secretKey))
       info("Status_Get="+status(result_get))

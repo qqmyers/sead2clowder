@@ -145,33 +145,6 @@ class FilesAPIAppSpec extends PlaySpec with ConfiguredApp with FakeMultipartUplo
       contentType(result_get) mustEqual Some("application/json")
     }
 
-    "respond to the addUserMetadata(id: UUID) function routed by POST /api/files/:id/usermetadata" in {
-      //link up json file here before fake request.
-      info("Working Directory: " + workingDir)
-      val file1 = new java.io.File(workingDir + "/test/data/files/data-test-user.json")
-      if (file1.isFile && file1.exists) {
-        Logger.debug("File1 is File:True")
-      }
-      info("File Pathing " + file1.toString)
-      val json_data_from_file_source = Source.fromFile(file1.toString)
-      val json_data_from_file_lines = json_data_from_file_source.mkString
-      json_data_from_file_source.close()
-
-      // Place file string into a JSON object
-      val json_meta: JsValue = Json.parse(json_data_from_file_lines)
-      val readableString_meta: String = Json.prettyPrint(json_meta)
-      info("Pretty JSON format")
-      info(readableString_meta)
-
-      // Send JSON object into RESTful API and read response
-      val Some(result_get) = route(FakeRequest(POST, "/api/files/" + morrowPlotFileId + "/usermetadata?key=" + secretKey).withJsonBody(json_meta))
-      status(result_get) mustEqual OK
-      info("Status_Get="+status(result_get))
-      status(result_get) mustEqual OK
-      info("contentType_Get="+contentType(result_get))
-      contentType(result_get) mustEqual Some("application/json")
-    }
-
     "respond to the get(id: UUID) function routed by GET /api/files/:id/metadata" in {
       // Call RESTful API to get JSON information
       val Some(result_get) = route(FakeRequest(GET, "/api/files/" + morrowPlotFileId + "/metadata?key=" + secretKey))
