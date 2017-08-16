@@ -695,6 +695,9 @@ class MongoDBMetadataService @Inject() (contextService: ContextLDService, datase
         }
 
       }
+      case _ => {
+        //Other types are not currently indexed
+      }
     }
 
     //update metadata count for resource
