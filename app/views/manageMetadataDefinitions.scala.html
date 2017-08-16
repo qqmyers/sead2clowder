@@ -213,11 +213,11 @@
                         <td>
                             @((m.json \ "type").asOpt[String].getOrElse("")) match {
                                 case "string" => {String}
-                                case "list" => {List (@(m.json \"definitions_url"))}
-                                case "listjquery" => {Queryable List (@(m.json \"definitions_url")?@(m.json \"query_parameter")= )}
-                                case "scientific_variable" => {Scientific Variable (@(m.json \"definitions_url")?@(m.json \"query_parameter")= )}
+                                case "list" => {List (@((m.json \"definitions_url").as[String]))}
+                                case "listjquery" => {Queryable List (@((m.json \"definitions_url").as[String])?@((m.json \"query_parameter").as[String])= )}
+                                case "scientific_variable" => {Scientific Variable (@((m.json \"definitions_url").as[String])?@((m.json \"query_parameter").as[String])= )}
                                 case "datetime" => {Date and Time}
-                                case "listgeocode" => {Location (@(m.json \"definitions_url")?@(m.json \"query_parameter")= )}
+                                case "listgeocode" => {Location (@((m.json \"definitions_url").as[String])?@((m.json \"query_parameter").as[String])= )}
                                 case "wkt" => {WKT Location}
                                 case "person" => {Person}
                                 case _ => {Error: unrecognized type}
