@@ -784,14 +784,16 @@ class MongoDBMetadataService @Inject() (contextService: ContextLDService, datase
             }
             //add a def
             val mddef = curDefs.filter(d => (d.json \ "label").as[String].equals(key)).head
-            possibleNewDefsMap(newKey) = MetadataDefinition(spaceId = newContextSpace, json = new JsObject(Seq("label" -> JsString(newKey), "uri" -> mddef.json \ "uri", "type" -> mddef.json \ "type", "addable" -> JsBoolean(false))))
+            val json = mddef.json.as[JsObject] + ("label" -> JsString(newKey)) + ("addable" -> JsBoolean(false))
+            possibleNewDefsMap(newKey) = MetadataDefinition(spaceId = newContextSpace, json = json)
 
             (key, newKey)
           } else {
             //The uri and label are not in use
             //Add the def
             val mddef = curDefs.filter(d => (d.json \ "label").as[String].equals(key)).head
-            possibleNewDefsMap(key) = MetadataDefinition(spaceId = newContextSpace, json = new JsObject(Seq("label" -> mddef.json \ "label", "uri" -> mddef.json \ "uri", "type" -> mddef.json \ "type", "addable" -> JsBoolean(false))))
+            val json = mddef.json.as[JsObject] + ("addable" -> JsBoolean(false))
+            possibleNewDefsMap(key) = MetadataDefinition(spaceId = newContextSpace, json = json)
             (key, key)
           }
         }
