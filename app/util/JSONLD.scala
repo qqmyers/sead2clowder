@@ -13,7 +13,7 @@ object JSONLD {
   /**
    * Converts models.Metadata object and context information to JsValue object.
    */
-  def jsonMetadataWithContext(metadata: Metadata): JsValue = {
+  def jsonMetadataWithContext(metadata: Metadata, baseUrlExcludingContext: String = "", isHttps: Boolean = false): JsValue = {
     val contextService: ContextLDService = DI.injector.getInstance(classOf[ContextLDService])
     // check if there is a context url or a local context definition
     val contextLd = metadata.contextId.flatMap(contextService.getContextById(_))
@@ -27,11 +27,43 @@ object JSONLD {
         Some(JsObject(Seq("@context" -> contextLd.get)))
       else if (contextLd.isEmpty && metadata.contextURL.isDefined)
         Some(JsObject(Seq("@context" -> JsString(metadata.contextURL.get.toString))))
-      // no context defintions available
+      // no context definition available
       else None
 
+    // Find resource type
+    val resourceType = metadata.attachedTo.resourceType.toString().tail
+
+    // Add protocol to URL
+    val urlWithProtocol = {
+      if (!isHttps)
+        "http://" + baseUrlExcludingContext
+      else
+        "https://" + baseUrlExcludingContext
+    }
+
+    // Get resource URL
+    val resourceUrl = resourceType match {
+      case "file" =>
+        controllers.routes.Files.file(metadata.attachedTo.id)
+      case "dataset" =>
+        controllers.routes.Datasets.dataset(metadata.attachedTo.id)
+      case "collection" =>
+        controllers.routes.Collections.collection(metadata.attachedTo.id)
+      case "" =>
+        None
+    }
+
+    // Generate resource metadata json
+    val resourceJson = JsObject(Seq(
+        "attached_to" -> JsObject(Seq(
+          "resource_type" -> JsString("cat:" + resourceType),
+          "url" -> JsString(urlWithProtocol + resourceUrl.toString))
+        )
+      )
+    )
+
     //convert metadata to json using implicit writes in Metadata model
-    val metadataJson = (toJson(metadata)).asInstanceOf[JsObject]
+    val metadataJson = resourceJson ++ toJson(metadata).asInstanceOf[JsObject]
 
     //combine the two json objects and return
     if (contextJson.isEmpty) metadataJson else contextJson.get ++ metadataJson
