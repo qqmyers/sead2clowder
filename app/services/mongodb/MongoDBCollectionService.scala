@@ -90,7 +90,7 @@ class MongoDBCollectionService @Inject() (
    * Return a list of collections the user has access to.
    */
   def listAccess(limit: Integer, title: String, permissions: Set[Permission], user: Option[User], showAll: Boolean, showPublic: Boolean, showOnlyShared : Boolean, exact: Boolean): List[Collection] = {
-    list(None, false, limit, Some(title), None, permissions, user, showAll, None, showPublic, showOnlyShared)
+    list(None, false, limit, Some(title), None, permissions, user, showAll, None, showPublic, showOnlyShared, exactMatch=exact)
   }
 
   /**
