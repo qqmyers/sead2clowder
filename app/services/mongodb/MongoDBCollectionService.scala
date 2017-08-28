@@ -157,8 +157,9 @@ class MongoDBCollectionService @Inject() (
   /**
    * Return a list of the requested collections
    */
-  private def list(date: Option[String], nextPage: Boolean, limit: Integer, title: Option[String], space: Option[String], permissions: Set[Permission], user: Option[User], showAll: Boolean, owner: Option[User], showPublic: Boolean = true, showOnlyShared : Boolean = false): List[Collection] = {
-    val (filter, sort) = filteredQuery(date, nextPage, title, space, permissions, user, showAll, owner, showPublic, showOnlyShared)
+  private def list(date: Option[String], nextPage: Boolean, limit: Integer, title: Option[String], space: Option[String], permissions: Set[Permission], user: Option[User],
+                   showAll: Boolean, owner: Option[User], showPublic: Boolean = true, showOnlyShared : Boolean = false, exactMatch : Boolean = false): List[Collection] = {
+    val (filter, sort) = filteredQuery(date, nextPage, title, space, permissions, user, showAll, owner, showPublic, showOnlyShared, exactMatch)
     if (date.isEmpty || nextPage) {
       Collection.find(filter).sort(sort).limit(limit).toList
     } else {
@@ -169,7 +170,8 @@ class MongoDBCollectionService @Inject() (
   /**
    * Monster function, does all the work. Will create a filters and sorts based on the given parameters
    */
-  private def filteredQuery(date: Option[String], nextPage: Boolean, titleSearch: Option[String], space: Option[String], permissions: Set[Permission], user: Option[User], showAll: Boolean, owner: Option[User], showPublic: Boolean, showOnlyShared : Boolean):(DBObject, DBObject) = {
+  private def filteredQuery(date: Option[String], nextPage: Boolean, titleSearch: Option[String], space: Option[String], permissions: Set[Permission], user: Option[User],
+                            showAll: Boolean, owner: Option[User], showPublic: Boolean, showOnlyShared : Boolean, exactMatch : Boolean):(DBObject, DBObject) = {
 
     // In /Collections page you should see:
     //  a) Parent Collections in a space you belong to ( root_collections.length > 0 and you belong to the space).
@@ -296,7 +298,12 @@ class MongoDBCollectionService @Inject() (
       case None => MongoDBObject()
     }
     val filterTitle = titleSearch match {
-      case Some(title) =>  MongoDBObject("name" -> ("(?i)" + title).r)
+      case Some(title) =>
+        if (exactMatch) {
+          MongoDBObject("name" -> title)
+        } else {
+          MongoDBObject("name" -> ("(?i)" + title).r)
+        }
       case None => MongoDBObject()
     }
 
