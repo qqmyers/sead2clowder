@@ -47,7 +47,7 @@ class MongoDBCollectionService @Inject() (
    * Return the count of root collections in a space, this does not check for permissions
    */
   def countSpace(space: String): Long = {
-    count(None, false,  None, Some(space), Set[Permission](Permission.ViewCollection), None, showAll=true, None)
+    count(None, false,  None, Some(space), Set[Permission](Permission.ViewCollection), None, showAll=true, None, false)
   }
 
   /**
@@ -60,8 +60,8 @@ class MongoDBCollectionService @Inject() (
   /**
     * Return a list of collections in a space and checks for permissions
     */
-  def listInSpaceList(title: Option[String], date: Option[String], limit: Integer, spaces: List[UUID], permissions: Set[Permission], user: Option[User]): List[Collection] = {
-    val (filter, sort) = filteredQuery(date, false, title, None, permissions, user, true, None, true, false)
+  def listInSpaceList(title: Option[String], date: Option[String], limit: Integer, spaces: List[UUID], permissions: Set[Permission], user: Option[User], exactMatch : Boolean = false): List[Collection] = {
+    val (filter, sort) = filteredQuery(date, false, title, None, permissions, user, true, None, true, false, exactMatch)
     Collection.find(filter ++  ("spaces" $in spaces.map(x => new ObjectId(x.stringify)))).limit(limit).toList
   }
 
@@ -89,7 +89,7 @@ class MongoDBCollectionService @Inject() (
   /**
    * Return a list of collections the user has access to.
    */
-  def listAccess(limit: Integer, title: String, permissions: Set[Permission], user: Option[User], showAll: Boolean, showPublic: Boolean, showOnlyShared : Boolean): List[Collection] = {
+  def listAccess(limit: Integer, title: String, permissions: Set[Permission], user: Option[User], showAll: Boolean, showPublic: Boolean, showOnlyShared : Boolean, exact: Boolean): List[Collection] = {
     list(None, false, limit, Some(title), None, permissions, user, showAll, None, showPublic, showOnlyShared)
   }
 
@@ -103,8 +103,8 @@ class MongoDBCollectionService @Inject() (
   /**
    * Return a list of collections the user has access to starting at a specific date.
    */
-  def listAccess(date: String, nextPage: Boolean, limit: Integer, title: String, permissions: Set[Permission], user: Option[User], showAll: Boolean, showPublic: Boolean, showOnlyShared : Boolean): List[Collection] = {
-    list(Some(date), nextPage, limit, Some(title), None, permissions, user, showAll, None, showPublic, showOnlyShared)
+  def listAccess(date: String, nextPage: Boolean, limit: Integer, title: String, permissions: Set[Permission], user: Option[User], showAll: Boolean, showPublic: Boolean, showOnlyShared : Boolean, exact: Boolean): List[Collection] = {
+    list(Some(date), nextPage, limit, Some(title), None, permissions, user, showAll, None, showPublic, showOnlyShared, exactMatch=exact)
   }
 
   /**
@@ -124,8 +124,8 @@ class MongoDBCollectionService @Inject() (
   /**
    * Return a list of collections the user has created with matching title.
    */
-  def listUser(limit: Integer, title: String, user: Option[User], showAll: Boolean, owner: User): List[Collection] = {
-    list(None, false, limit, Some(title), None, Set[Permission](Permission.ViewCollection), user, showAll, Some(owner))
+  def listUser(limit: Integer, title: String, user: Option[User], showAll: Boolean, owner: User, exact: Boolean): List[Collection] = {
+    list(None, false, limit, Some(title), None, Set[Permission](Permission.ViewCollection), user, showAll, Some(owner), exactMatch=exact)
   }
 
   /**
@@ -138,8 +138,8 @@ class MongoDBCollectionService @Inject() (
   /**
    * Return a list of collections the user has created starting at a specific date with matching title.
    */
-  def listUser(date: String, nextPage: Boolean, limit: Integer, title: String, user: Option[User], showAll: Boolean, owner: User): List[Collection] = {
-    list(Some(date), nextPage, limit, Some(title), None, Set[Permission](Permission.ViewCollection), user, showAll, Some(owner))
+  def listUser(date: String, nextPage: Boolean, limit: Integer, title: String, user: Option[User], showAll: Boolean, owner: User, exact: Boolean): List[Collection] = {
+    list(Some(date), nextPage, limit, Some(title), None, Set[Permission](Permission.ViewCollection), user, showAll, Some(owner), exactMatch=exact)
   }
   
   def listSpaceAccess(limit: Integer, space: String, permissions: Set[Permission], user: Option[User], showAll: Boolean, showPublic: Boolean) = {
@@ -149,8 +149,9 @@ class MongoDBCollectionService @Inject() (
   /**
    * Return count of the requested collections
    */
-  private def count(date: Option[String], nextPage: Boolean, title: Option[String], space: Option[String], permissions: Set[Permission], user: Option[User], showAll: Boolean, owner: Option[User]): Long = {
-    val (filter, _) = filteredQuery(date, nextPage, title, space, Set[Permission](Permission.ViewCollection), user, showAll, owner, true, false)
+  private def count(date: Option[String], nextPage: Boolean, title: Option[String], space: Option[String], permissions: Set[Permission], user: Option[User],
+                    showAll: Boolean, owner: Option[User], exactMatch : Boolean = false): Long = {
+    val (filter, _) = filteredQuery(date, nextPage, title, space, Set[Permission](Permission.ViewCollection), user, showAll, owner, true, false, exactMatch)
     Collection.count(filter)
   }
 
