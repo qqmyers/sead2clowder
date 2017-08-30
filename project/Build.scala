@@ -78,7 +78,7 @@ object ApplicationBuild extends Build {
     "org.mongodb" %% "casbah" % "2.6.3",
 
     // geostreams
-    "org.postgresql" % "postgresql" % "9.4-1203-jdbc41",
+    "org.postgresql" % "postgresql" % "42.1.1",
 
     // Find listing of previewers/stylesheets at runtime
     //  servlet is needed here since it is not specified in org.reflections.
