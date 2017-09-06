@@ -625,6 +625,13 @@ class MongoDBMetadataService @Inject() (contextService: ContextLDService, datase
                   }
                 }
               }
+              //We've parsed the old entry, now remove it              
+              item.contextId.foreach { cid =>
+                if (getMetadataBycontextId(cid).length == 1) {
+                  contextService.removeContext(cid)
+                }
+              }
+              MetadataDAO.remove(item, WriteConcern.Safe)
             }
             case "cat:extractor" => {
               //Leave legacy extractor entries as is
