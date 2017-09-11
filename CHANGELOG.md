@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/) 
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [In Development]
+### Added
+
+### Changed
+- Altered the wording choices presented to the User during the sign up process
+  [CATS-791](https://opensource.ncsa.illinois.edu/jira/browse/CATS-791)
+
+### Fixed
+
 ## 1.3.2 - 2017-08-15
 
 ### Fixed
