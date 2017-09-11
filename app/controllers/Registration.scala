@@ -85,7 +85,7 @@ class Registration @Inject()(spaces: SpaceService, users: UserService) extends S
               if ( UsernamePasswordProvider.signupSkipLogin ) {
                 ProviderController.completeAuthentication(user, eventSession).flashing(Success -> Messages(SignUpDone))
               } else {
-                Redirect(onHandleSignUpGoTo).flashing(Success -> Messages(SignUpDone)).withSession(eventSession)
+                Redirect(onHandleSignUpGoTo).flashing(Success -> Messages(ThankYouCheckEmail)).withSession(eventSession)
               }
             }
           )
