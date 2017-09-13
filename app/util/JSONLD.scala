@@ -4,6 +4,7 @@ import models.Metadata
 import play.api.libs.json.Json._
 import play.api.libs.json.{JsString, JsArray, JsObject, JsValue}
 import services.{ContextLDService, DI}
+import models.ResourceRef
 
 /**
  * Utility functions for JSON-LD manipulations.
@@ -31,7 +32,7 @@ object JSONLD {
       else None
 
     // Find resource type
-    val resourceType = metadata.attachedTo.resourceType.toString().tail
+    val resourceType = metadata.attachedTo.resourceType
 
     // Add protocol to URL
     val urlWithProtocol = {
@@ -43,13 +44,13 @@ object JSONLD {
 
     // Get resource URL
     val resourceUrl = resourceType match {
-      case "file" =>
+      case ResourceRef.file =>
         controllers.routes.Files.file(metadata.attachedTo.id)
-      case "dataset" =>
+      case ResourceRef.dataset =>
         controllers.routes.Datasets.dataset(metadata.attachedTo.id)
-      case "collection" =>
+      case ResourceRef.collection =>
         controllers.routes.Collections.collection(metadata.attachedTo.id)
-      case "" =>
+      case _ =>
         None
     }
 
