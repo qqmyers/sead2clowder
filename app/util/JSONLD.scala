@@ -57,7 +57,7 @@ object JSONLD {
     // Generate resource metadata json
     val resourceJson = JsObject(Seq(
         "attached_to" -> JsObject(Seq(
-          "resource_type" -> JsString("cat:" + resourceType),
+          "resource_type" -> JsString("cat:" + resourceType.toString.tail),
           "url" -> JsString(urlWithProtocol + resourceUrl.toString))
         )
       )
