@@ -298,18 +298,18 @@ class MongoDBMetadataService @Inject() (contextService: ContextLDService, datase
     }
   }
 
-  def addPromotedMetadataField(metadataField: PromotedMetadata) = {
+  def addPromotedMetadataField(metadataField: PromotedMetadata): Unit = {
     Logger.debug("Adding new promoted metadata field " + metadataField)
     PromotedMetadataDAO.save(metadataField)
   }
 
-  def editPromotedMetadataField(id: UUID, json: JsValue) = {
+  def editPromotedMetadataField(id: UUID, json: JsValue): Unit = {
     Logger.debug("Updating promoted metadata field " + json)
     PromotedMetadataDAO.update(MongoDBObject("_id" -> new ObjectId(id.stringify)),
       $set("json" -> JSON.parse(json.toString()).asInstanceOf[DBObject]) , upsert = false, multi = false, WriteConcern.Safe)
   }
 
-  def deletePromotedMetadataField(id: UUID) = {
+  def deletePromotedMetadataField(id: UUID): Unit = {
     Logger.debug("Removing promoted metadata field with ID: " + id)
     PromotedMetadataDAO.remove(MongoDBObject("_id" -> new ObjectId(id.stringify)))
   }
