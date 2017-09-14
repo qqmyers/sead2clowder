@@ -2,7 +2,6 @@ package api
 
 import javax.inject.Inject
 
-import com.wordnik.swagger.annotations.ApiOperation
 import play.api.Logger
 import models.User
 import play.api.Play._
@@ -25,16 +24,10 @@ class Status @Inject()(spaces: SpaceService,
   val jsontrue = Json.toJson(true)
   val jsonfalse = Json.toJson(false)
 
-  @ApiOperation(value = "version",
-    notes = "returns the version information",
-    responseClass = "None", httpMethod = "GET")
   def version = UserAction(needActive=false) { implicit request =>
     Ok(Json.obj("version" -> getVersionInfo))
   }
 
-  @ApiOperation(value = "status",
-    notes = "returns the status information",
-    responseClass = "None", httpMethod = "GET")
   def status = UserAction(needActive=false) { implicit request =>
 
     Ok(Json.obj("version" -> getVersionInfo,
@@ -59,7 +52,7 @@ class Status @Inject()(spaces: SpaceService,
 
       // elasticsearch
       case p: ElasticsearchPlugin => {
-        val status = if (p.connect) {
+        val status = if (p.isEnabled()) {
           "connected"
         } else {
           "disconnected"
@@ -149,16 +142,20 @@ class Status @Inject()(spaces: SpaceService,
   }
 
   def getCounts(user: Option[User]): JsValue = {
-    val fileinfo = if (Permission.checkServerAdmin(user)) {
-      Json.toJson(files.statusCount().map{x => x._1.toString -> Json.toJson(x._2)})
-    } else {
-      Json.toJson(files.count())
-    }
-    Json.obj("spaces" -> spaces.count(),
-      "collections" -> collections.count(),
-      "datasets" -> datasets.count(),
+    val counts = appConfig.getIndexCounts()
+    // TODO: Revisit this check as it is currently too slow
+    //val fileinfo = if (Permission.checkServerAdmin(user)) {
+    //  Json.toJson(files.statusCount().map{x => x._1.toString -> Json.toJson(x._2)})
+    //} else {
+    //  Json.toJson(counts.numFiles)
+    //}
+    val fileinfo = counts.numFiles
+    Json.obj("spaces" -> counts.numSpaces,
+      "collections" -> counts.numCollections,
+      "datasets" -> counts.numDatasets,
       "files" -> fileinfo,
-      "users" -> users.count())
+      "bytes" -> counts.numBytes,
+      "users" -> counts.numUsers)
   }
 
   def getVersionInfo: JsValue = {
