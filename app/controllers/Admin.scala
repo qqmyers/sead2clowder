@@ -323,7 +323,8 @@ class Admin @Inject() (sectionIndexInfo: SectionIndexInfoService, userService: U
 
   def promoteMetadataFields() = ServerAdminAction { implicit request =>
     implicit val user = request.user
-    Ok(views.html.admin.promoteExtractedMetadataFields())
+    val promotedMetadata = metadataService.getPromotedMetadataFields()
+    Ok(views.html.admin.promoteExtractedMetadataFields(promotedMetadata))
   }
 
   val roleForm = Form(

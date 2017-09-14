@@ -1,9 +1,11 @@
-@()(implicit user: Option[models.User])
+@(metadata: List[models.PromotedMetadata])(implicit user: Option[models.User])
 
 @import play.api.i18n.Messages
 @import _root_.util.Formatters._
 
 @main("Promote Extracted Metadata Fields") {
+
+    <script src="@routes.Assets.at("javascripts/metadata/managePromotedMetadata.js")" type="text/javascript"></script>
 
     <div class="page-header">
         <h1>Promote Extracted Metadata Fields</h1>
