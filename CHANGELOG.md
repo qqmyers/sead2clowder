@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/) 
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [Unreleased]
+
+### Changed
+- File and dataset GET metadata endpoints to include their corresponding IDs and resource type information. [CATS-718](https://opensource.ncsa.illinois.edu/jira/browse/CATS-718)
+
 ## 1.3.2 - 2017-08-15
 
 ### Fixed
