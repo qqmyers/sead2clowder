@@ -222,6 +222,7 @@ class MongoDBMetadataService @Inject() (contextService: ContextLDService, datase
         case None => MongoDBObject()
       }
     }
+    Logger.debug(filterAccess.toString)
     MetadataDefinitionDAO.find(filterAccess).toList.groupBy(_.json).map(_._2.head).toList.sortWith( _.json.\("label").asOpt[String].getOrElse("") < _.json.\("label").asOpt[String].getOrElse("") )
   }
 
@@ -289,6 +290,29 @@ class MongoDBMetadataService @Inject() (contextService: ContextLDService, datase
     MetadataDAO.update(MongoDBObject("creator._id" -> new ObjectId(userId.stringify), "creator.typeOfAgent" -> "cat:user"),
       $set("creator.user.fullName" -> fullName, "creator.fullName" -> fullName), false, true, WriteConcern.Safe)
   }
+
+  def getPromotedMetadataFields(spaceId: Option[UUID] = None): List[PromotedMetadata] = {
+    spaceId match {
+      case None => PromotedMetadataDAO.find(MongoDBObject("spaceId" -> null)).toList.sortWith(_.json.\("label").asOpt[String].getOrElse("") < _.json.\("label").asOpt[String].getOrElse(""))
+      case Some(s) => PromotedMetadataDAO.find(MongoDBObject("spaceId" -> new ObjectId(s.stringify))).toList.sortWith(_.json.\("label").asOpt[String].getOrElse("") < _.json.\("label").asOpt[String].getOrElse(""))
+    }
+  }
+
+  def addPromotedMetadataField(metadataField: PromotedMetadata) = {
+    Logger.debug("Adding new promoted metadata field " + metadataField)
+    PromotedMetadataDAO.save(metadataField)
+  }
+
+  def editPromotedMetadataField(id: UUID, json: JsValue) = {
+    Logger.debug("Updating promoted metadata field " + json)
+    PromotedMetadataDAO.update(MongoDBObject("_id" -> new ObjectId(id.stringify)),
+      $set("json" -> JSON.parse(json.toString()).asInstanceOf[DBObject]) , upsert = false, multi = false, WriteConcern.Safe)
+  }
+
+  def deletePromotedMetadataField(id: UUID) = {
+    Logger.debug("Removing promoted metadata field with ID: " + id)
+    PromotedMetadataDAO.remove(MongoDBObject("_id" -> new ObjectId(id.stringify)))
+  }
 }
 
 object MetadataDAO extends ModelCompanion[Metadata, ObjectId] {
@@ -302,5 +326,12 @@ object MetadataDefinitionDAO extends ModelCompanion[MetadataDefinition, ObjectId
   val dao = current.plugin[MongoSalatPlugin] match {
     case None => throw new RuntimeException("No MongoSalatPlugin")
     case Some(x) => new SalatDAO[MetadataDefinition, ObjectId](collection = x.collection("metadata.definitions")) {}
+  }
+}
+
+object PromotedMetadataDAO extends ModelCompanion[PromotedMetadata, ObjectId] {
+  val dao = current.plugin[MongoSalatPlugin] match {
+    case None => throw new RuntimeException("No MongoSalatPlugin")
+    case Some(x) => new SalatDAO[PromotedMetadata, ObjectId](collection = x.collection("metadata.promoted")) {}
   }
 }

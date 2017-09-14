@@ -3,7 +3,7 @@ package services
 import api.UserRequest
 import play.api.libs.Files
 import play.api.libs.json.JsValue
-import models.{MetadataDefinition, ResourceRef, UUID, Metadata, User}
+import models._
 import play.api.mvc.MultipartFormData
 
 /**
@@ -49,6 +49,18 @@ trait MetadataService {
 
   /** Get vocabulary based on id **/
   def getDefinition(id: UUID): Option[MetadataDefinition]
+
+  /** Get list of promoted metadata fields **/
+  def getPromotedMetadataFields(spaceId: Option[UUID] = None): List[PromotedMetadata]
+
+  /** Add metadata field for listing in advanced search page by default **/
+  def addPromotedMetadataField(metadataField: PromotedMetadata)
+
+  /** Edit promoted metadata field **/
+  def editPromotedMetadataField(id: UUID, json: JsValue)
+
+  /** Delete promoted metadata field **/
+  def deletePromotedMetadataField(id: UUID)
 
   /** Get vocabulary based on uri **/
   def getDefinitionByUri(uri:String):Option[MetadataDefinition]
