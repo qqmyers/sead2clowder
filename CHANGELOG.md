@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Added
 
 ### Changed
-- Altered the wording choices presented to the User during the sign up process
+- Created email to be sent when registerThroughAdmins=true
   [CATS-791](https://opensource.ncsa.illinois.edu/jira/browse/CATS-791)
 
 ### Fixed
