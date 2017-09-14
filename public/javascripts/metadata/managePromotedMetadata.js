@@ -1,7 +1,5 @@
 
 function addPromotedMetadata() {
-    var url;
-    url = jsRoutes.controllers.admin.addPro;
 
 }
 
