@@ -249,6 +249,7 @@ class MongoSalatPlugin(app: Application) extends Plugin {
     collection("licensedata").drop()
     collection("metadata").drop()
     collection("metadata.definitions").drop()
+    collection("metadata.promoted").drop()
     collection("multimedia.distances").drop()
     collection("multimedia.features").drop()
     removeFiles("previews")
