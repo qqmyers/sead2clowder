@@ -267,6 +267,33 @@ class Metadata @Inject() (
     }
   }
 
+  def getPromotedMetadataFields = ServerAdminAction {
+    implicit request =>
+      request.user match {
+        case Some(user) =>
+          val vocabularies = metadataService.getPromotedMetadataFields()
+          Ok(toJson(vocabularies))
+        case None => BadRequest(toJson("Invalid user"))
+      }
+  }
+
+  def addPromotedMetadataField() = ServerAdminAction(parse.json) {
+
+    implicit request =>
+      request.user match {
+        case Some(user) =>
+          val body = request.body
+          if ((body \ "label").asOpt[String].isDefined && (body \ "type").asOpt[String].isDefined && (body \ "uri").asOpt[String].isDefined) {
+            val metadataField = PromotedMetadata(json = body)
+            metadataService.addPromotedMetadataField(metadataField)
+            Ok("Success")
+          }
+          else{
+            BadRequest(toJson("Invalid Resource type"))
+          }
+        case None => BadRequest(toJson("Invalid user"))
+      }
+  }
   def addUserMetadata() = PermissionAction(Permission.AddMetadata)(parse.json) {
     implicit request =>
       request.user match {
