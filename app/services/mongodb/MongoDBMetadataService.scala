@@ -298,6 +298,10 @@ class MongoDBMetadataService @Inject() (contextService: ContextLDService, datase
     }
   }
 
+  def getPromotedMetadataFieldByUri(uri:String): Option[PromotedMetadata] = {
+    PromotedMetadataDAO.findOne(MongoDBObject("json.uri" -> uri))
+  }
+
   def addPromotedMetadataField(metadataField: PromotedMetadata): Unit = {
     Logger.debug("Adding new promoted metadata field " + metadataField)
     PromotedMetadataDAO.save(metadataField)

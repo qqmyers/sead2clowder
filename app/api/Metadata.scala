@@ -284,9 +284,17 @@ class Metadata @Inject() (
         case Some(user) =>
           val body = request.body
           if ((body \ "label").asOpt[String].isDefined && (body \ "type").asOpt[String].isDefined && (body \ "uri").asOpt[String].isDefined) {
-            val metadataField = PromotedMetadata(json = body)
-            metadataService.addPromotedMetadataField(metadataField)
-            Ok("Success")
+
+            metadataService.getPromotedMetadataFieldByUri((body \ "uri").as[String]) match {
+
+              case Some(metadataFieldName) =>
+                BadRequest(toJson("Promoted metadata field with same uri already exists."))
+
+              case None =>
+                val metadataField = PromotedMetadata(json = body)
+                metadataService.addPromotedMetadataField(metadataField)
+                Ok(toJson("Success"))
+            }
           }
           else{
             BadRequest(toJson("Invalid Resource type"))

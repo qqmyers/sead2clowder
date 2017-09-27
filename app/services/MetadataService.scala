@@ -53,6 +53,9 @@ trait MetadataService {
   /** Get list of promoted metadata fields **/
   def getPromotedMetadataFields(spaceId: Option[UUID] = None): List[PromotedMetadata]
 
+  /** Get promoted metadata field given its URI **/
+  def getPromotedMetadataFieldByUri(uri:String): Option[PromotedMetadata]
+
   /** Add metadata field for listing in advanced search page by default **/
   def addPromotedMetadataField(metadataField: PromotedMetadata)
 
