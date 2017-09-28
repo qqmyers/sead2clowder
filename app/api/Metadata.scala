@@ -271,8 +271,8 @@ class Metadata @Inject() (
     implicit request =>
       request.user match {
         case Some(user) =>
-          val vocabularies = metadataService.getPromotedMetadataFields()
-          Ok(toJson(vocabularies))
+          val promotedMetadataFields = metadataService.getPromotedMetadataFields()
+          Ok(toJson(promotedMetadataFields))
         case None => BadRequest(toJson("Invalid user"))
       }
   }
@@ -283,7 +283,7 @@ class Metadata @Inject() (
       request.user match {
         case Some(user) =>
           val body = request.body
-          if ((body \ "label").asOpt[String].isDefined && (body \ "type").asOpt[String].isDefined && (body \ "uri").asOpt[String].isDefined) {
+          if ((body \ "label").asOpt[String].isDefined && (body \ "uri").asOpt[String].isDefined) {
 
             metadataService.getPromotedMetadataFieldByUri((body \ "uri").as[String]) match {
 
@@ -297,7 +297,7 @@ class Metadata @Inject() (
             }
           }
           else{
-            BadRequest(toJson("Invalid Resource type"))
+            BadRequest(toJson("Invalid request payload"))
           }
         case None => BadRequest(toJson("Invalid user"))
       }

@@ -56,16 +56,27 @@
         var $form = $( "form[id='metadata-promote']");
         var rowCount = 0;
         var selectedMetadataList = [];
+        var existingMetadataList = [];
         $("#add-metadata-grouping").select2({
             theme: "bootstrap",
             allowClear: false,
             width: "100%"
         });
 
-        // TODO: Display any metadata fields already present in the database
+        getPromotedMetadataFields().then(function (response) {
 
-        // Add a new row for the user to get started with
-        addMetadataFieldRows(++rowCount, "new");
+            existingMetadataList = response;
+
+            for (var i=0; i < existingMetadataList.length; i++) {
+                addMetadataFieldRows(++rowCount, "submitted", existingMetadataList[i].json)
+            }
+
+            // Add a new row for the user to get started with
+            addMetadataFieldRows(++rowCount, "new");
+
+        },function(error) {
+            notify(error + ". Fetching promoted metadata fields failed.", "error");
+        });
 
         // Add a new row to the set of criteria
         function addMetadataFieldRows(rowId, rowType, rowData) {
@@ -74,9 +85,8 @@
             rowList.push(rowStr);
 
             if (rowType === "saved" || rowType === "submitted") {
-
-                var dataId = rowData.id;
-                var dataText = rowData.text;
+                var dataId = rowData.uri;
+                var dataText = rowData.label;
                 var dataGroup = dataId.substring(dataId.indexOf('/extractors/') + 12, dataId.lastIndexOf('.'));
                 var dataGroupText = dataGroup + " (Extractor)";
 
@@ -94,7 +104,7 @@
                                 <!-- EDIT ROW BUTTON -->
                             "<div title='Edit row' class='form-group col-lg-1 col-md-1'>" +
                                 "<button type='button' class='btn' id='edit-" + rowStr + "' " +
-                                    "onclick='editRow(" + rowStr + ")'>" +
+                                    "onclick='editRow(" + rowStr + ",\"" + rowType + "\")'>" +
                                     "<span class='glyphicon glyphicon-edit'></span>" +
                                 "</button>" +
                             "</div>" +
@@ -420,12 +430,16 @@
 
             // Generate data list from map
             for (var key in dataMap) {
-                dataList.push({id: key, text: dataMap[key]})
+                dataList.push({uri: key, label: dataMap[key]})
             }
 
             // Display the results
             for (var row=1; row <= rowCount; row++) {
                 saveRow(row, "submitted");
+            }
+
+            for (var index in dataList) {
+                addPromotedMetadata(dataList[index]);
             }
 
             console.log(dataList);
