@@ -63,20 +63,26 @@
             width: "100%"
         });
 
-        getPromotedMetadataFields().then(function (response) {
+        populatePromotedMetadataFields();
 
-            existingMetadataList = response;
+        function populatePromotedMetadataFields() {
 
-            for (var i=0; i < existingMetadataList.length; i++) {
-                addMetadataFieldRows(++rowCount, "submitted", existingMetadataList[i].json)
-            }
+            getPromotedMetadataFields().then(
+                    function (response) {
+                        existingMetadataList = response;
 
-            // Add a new row for the user to get started with
-            addMetadataFieldRows(++rowCount, "new");
+                        for (var i=0; i < existingMetadataList.length; i++) {
+                            addMetadataFieldRows(++rowCount, "submitted", existingMetadataList[i].json)
+                        }
 
-        },function(error) {
-            notify(error + ". Fetching promoted metadata fields failed.", "error");
-        });
+                        // Add a new row for the user to get started with
+                        addMetadataFieldRows(++rowCount, "new");
+                    },
+                    function(error) {
+                        notify(error + ". Fetching promoted metadata fields failed.", "error");
+                    }
+            );
+        }
 
         // Add a new row to the set of criteria
         function addMetadataFieldRows(rowId, rowType, rowData) {
@@ -447,9 +453,15 @@
         });
 
         function resetPage() {
+            // Reset variables
+            $("#metadata-rows").empty();
+            rowList.length = 0;
+            rowCount = 0;
+
+            // Populate data
+            populatePromotedMetadataFields();
             console.log("Reset changes");
         }
-
 
     </script>
 
