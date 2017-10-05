@@ -14,8 +14,9 @@ Following is a list of contributors in alphabetical order:
 - Kenton McHenry
 - Luigi Marini
 - Max Burnette
-- Michal Ondrejcek
 - Mario Felarca
+- Michal Ondrejcek
+- Michelle Pitcel
 - Nicholas Tenczar
 - Nishant Nayudu
 - Rob Kooper
