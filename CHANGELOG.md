@@ -5,6 +5,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [In Development]
+
 ### Added
 
 ### Changed
@@ -12,6 +13,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   [CATS-791](https://opensource.ncsa.illinois.edu/jira/browse/CATS-791)
 
 ### Fixed
+- Dataset descriptions of sufficient length no longer cause the page to freeze in tiles view.
 
 ## 1.3.2 - 2017-08-15
 
