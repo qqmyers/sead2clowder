@@ -13,8 +13,8 @@ Following is a list of contributors in alphabetical order:
 - Jong Lee
 - Kenton McHenry
 - Luigi Marini
-- Max Burnette
 - Mario Felarca
+- Max Burnette
 - Michal Ondrejcek
 - Michelle Pitcel
 - Nicholas Tenczar
