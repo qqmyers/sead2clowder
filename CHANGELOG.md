@@ -4,10 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/) 
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+
 ## [In Development]
 
 ### Added
-
+- Added an *exact* flag on collection and dataset API endpoints that accept a *title* flag. This will use
+  exact matching on the title field instead of regular expression fuzzy matching.
+  
 ### Changed
 - Created email to be sent when registerThroughAdmins=true
   [CATS-791](https://opensource.ncsa.illinois.edu/jira/browse/CATS-791)
