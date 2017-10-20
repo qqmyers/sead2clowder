@@ -7053,3 +7053,10 @@ fieldset[disabled] .btn-default.active {
 	padding-top: 3px!important;
 }
 
+.repository {
+	display: inline;
+}
+
+.grid-item {
+	width:350px;
+}
