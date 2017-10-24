@@ -11,7 +11,6 @@ import models._
 import org.apache.commons.lang.StringEscapeUtils._
 import play.api.Logger
 import play.api.i18n.Messages
-import play.api.libs.Files
 import play.api.libs.json._
 import play.api.libs.json.Json._
 import play.api.libs.json.JsArray
@@ -901,10 +900,9 @@ class CurationObjects @Inject() (
     out.toMap
   }
 
-  def getPublishedData(index: Int, limit: Int) = UserAction(needActive = false) { implicit request =>
+  def getPublishedData() = UserAction(needActive = false) { implicit request =>
     implicit val user = request.user
     implicit val context = scala.concurrent.ExecutionContext.Implicits.global
-    var next = index + 1
     val endpoint = play.Play.application().configuration().getString("publishData.list.uri").replaceAll("/$", "")
     Logger.debug(endpoint)
     val futureResponse = WS.url(endpoint).get()
@@ -922,7 +920,7 @@ class CurationObjects @Inject() (
 
     val rs = Await.result(result, Duration.Inf)
 
-    Ok(views.html.curations.publishedData(rs, play.Play.application().configuration().getString("SEADservices.uri"), index - 1, next, limit))
+    Ok(views.html.curations.publishedData(rs, play.Play.application().configuration().getString("SEADservices.uri")))
 
   }
 }

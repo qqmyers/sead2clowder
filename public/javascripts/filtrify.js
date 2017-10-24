@@ -438,7 +438,7 @@
 					};
 				};
 
-				if ( !this._query[f].length  || c >= this._query[f].length ) {
+				if ( !this._query[f].length  || c >= 1 ) {
 					// match!
 				} else { 
 					m = false; 
@@ -468,7 +468,7 @@
 
 			tags = this._matrix[row][field];
 
-			if( match && tags ) {
+			if( tags ) {
 
 				for ( t = 0; t < tags.length; t++ ) {
 					if ( tags[t].length ) {
