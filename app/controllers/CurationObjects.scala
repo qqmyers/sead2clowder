@@ -28,18 +28,18 @@ import play.api.libs.json.Reads._
  * Methods for interacting with the Curation Objects (now referred to as Publication Requests) in the staging area.
  */
 class CurationObjects @Inject() (
-    curations: CurationService,
-    datasets: DatasetService,
-    collections: CollectionService,
-    spaces: SpaceService,
-    files: FileService,
-    folders: FolderService,
-    comments: CommentService,
-    sections: SectionService,
-    events: EventService,
-    userService: UserService,
-    metadatas: MetadataService,
-    contextService: ContextLDService) extends SecuredController {
+  curations: CurationService,
+  datasets: DatasetService,
+  collections: CollectionService,
+  spaces: SpaceService,
+  files: FileService,
+  folders: FolderService,
+  comments: CommentService,
+  sections: SectionService,
+  events: EventService,
+  userService: UserService,
+  metadatas: MetadataService,
+  contextService: ContextLDService) extends SecuredController {
 
   /**
    * String name of the Space such as 'Project space' etc., parsed from conf/messages
@@ -900,9 +900,10 @@ class CurationObjects @Inject() (
     out.toMap
   }
 
-  def getPublishedData() = UserAction(needActive = false) { implicit request =>
+  def getPublishedData(space: String) = UserAction(needActive = false) { implicit request =>
     implicit val user = request.user
     implicit val context = scala.concurrent.ExecutionContext.Implicits.global
+
     val endpoint = play.Play.application().configuration().getString("publishData.list.uri").replaceAll("/$", "")
     Logger.debug(endpoint)
     val futureResponse = WS.url(endpoint).get()
@@ -920,8 +921,54 @@ class CurationObjects @Inject() (
 
     val rs = Await.result(result, Duration.Inf)
 
-    Ok(views.html.curations.publishedData(rs, play.Play.application().configuration().getString("SEADservices.uri")))
+    Ok(views.html.curations.publishedData(getPublications(space), play.Play.application().configuration().getString("SEADservices.uri")))
 
   }
+
+  def getPublications(space: String) = {
+    implicit val context = scala.concurrent.ExecutionContext.Implicits.global
+    val endpoint = play.Play.application().configuration().getString("publishData.list.uri").replaceAll("/$", "")
+    Logger.debug(endpoint)
+    val futureResponse = WS.url(endpoint).get()
+    var publishDataList: List[Map[String, String]] = List.empty
+     Logger.warn("Space is " + space)
+    val spaceSet: Set[String] = space match {
+      case s: String if (s.isEmpty) => Set()
+      case sp: String => spaces.get(UUID(sp)) match {
+        case Some(s) => Set(s.name)
+        case None => Set()
+      }
+
+    }
+    val result = futureResponse.map {
+      case response =>
+        if (response.status >= 200 && response.status < 300 || response.status == 304) {
+          Logger.warn("Size is " + spaceSet.size)
+          val rawDataList = spaceSet.size match {
+            case 0 => response.json.as[List[JsValue]]
+            case _ => {
+              response.json.as[List[JsValue]].filter(x => {
+                Logger.warn(spaceSet.toString())
+                val name = ((x.as[JsObject]) \ "Publishing Project Name").asOpt[String] match {
+                  case Some(s) => s
+                  case None => ((x.as[JsObject]) \ "Publishing Project").as[String]
+                }
+
+                spaceSet.contains(name)
+              })
+            }
+          }
+
+          rawDataList.reverse
+        } else {
+          Logger.error("Error Getting published data: " + response.getAHCResponse.getResponseBody)
+          List.empty
+        }
+    }
+
+    Await.result(result, Duration.Inf)
+
+  }
+
 }
 
