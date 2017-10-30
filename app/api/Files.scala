@@ -1247,6 +1247,59 @@ class Files @Inject()(
   * Returns metadata extracted so far for a file with id
   * 
   */
+
+  /**
+    * Rest endpoint,
+    * given a file id, tag this file with the name of any parent/ancestor folder or dataset containing this file.
+    * @param id a file id in dataset.
+    * @return String
+    */
+  def accumTags(id: UUID) = PermissionAction(Permission.ViewMetadata, Some(ResourceRef(ResourceRef.file, id))) { implicit request =>
+    Logger.debug("tag file with names of any dataset and folders (parent, ancestor) which contains the file with id " + id)
+    import scala.annotation.tailrec
+    @tailrec def folderPath(folder: Folder, path: List[String]) : List[String]= {
+      folder.parentType match {
+        case "folder" => {
+          folders.get(folder.parentId) match {
+            case Some(fparent) => folderPath(fparent, folder.name :: path)
+            case _ => folder.name :: path
+          }
+        }
+        case "dataset" => {
+          datasets.get(folder.parentId) match {
+            case Some(dataset) => folder.name :: dataset.name :: path
+            case _ => folder.name :: path
+          }
+        }
+        case _ => folder.name :: path
+      }
+    }
+
+    if (UUID.isValid(id.stringify)) {
+      files.get(id) match {
+        case Some(file) =>
+          var tags: Set[String] = Set()
+          // 1. get name of dataset directorly containing this file.
+          val datasetList = datasets.findByFileId(file.id)
+          tags ++= (for(dataset <- datasetList) yield(dataset.name))
+          //2. get name of any parent/ancestor folder or dataset containing this file.
+          val foldersContainingFile = folders.findByFileId(file.id)
+          tags ++= (for(folder <- foldersContainingFile) yield (folderPath(folder, List()))).flatten
+          files.addTags(file.id, None, None, tags.toList)
+          Ok("Success")
+        case None => {
+          val error_str = "The file with id " + id + " is not found."
+          Logger.error(error_str)
+          NotFound(toJson(error_str))
+        }
+      }
+    } else {
+      val error_str ="The given id " + id + " is not a valid ObjectId."
+      Logger.error(error_str)
+      BadRequest(toJson(error_str))
+    }
+  }
+
   def extract(id: UUID) = PermissionAction(Permission.ViewMetadata, Some(ResourceRef(ResourceRef.file, id))) { implicit request =>
     Logger.debug("Getting extract info for file with id " + id)
     if (UUID.isValid(id.stringify)) {
