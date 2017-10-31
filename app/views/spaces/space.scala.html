@@ -98,7 +98,7 @@
                 }
                 <div role="tabpanel" class="tab-pane fade" id="tab-publish">
                 <p>The following @Messages("datasets.title").toLowerCase have been published through this @Messages("space.title") and any affiliated @Messages("space.title")s.</p>
-                    @curations.publishedGrid(publishedData, servicesUrl, Some("[\""+ space.name + "\"]"))
+                    @curations.publishedGrid(publishedData, servicesUrl, None)
                 </div>
             </div>
         </div>

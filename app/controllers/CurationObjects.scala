@@ -15,7 +15,7 @@ import play.api.libs.json._
 import play.api.libs.json.Json._
 import play.api.libs.json.JsArray
 import services._
-import _root_.util.{ Formatters, RequiredFieldsConfig }
+import _root_.util.{ Formatters, RequiredFieldsConfig, Publications }
 import play.api.Play._
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.{ Future, Await }
@@ -908,6 +908,7 @@ class CurationObjects @Inject() (
     Logger.debug(endpoint)
     val futureResponse = WS.url(endpoint).get()
     var publishDataList: List[Map[String, String]] = List.empty
+    /*
     val result = futureResponse.map {
       case response =>
         if (response.status >= 200 && response.status < 300 || response.status == 304) {
@@ -920,55 +921,11 @@ class CurationObjects @Inject() (
     }
 
     val rs = Await.result(result, Duration.Inf)
-
-    Ok(views.html.curations.publishedData(getPublications(space), play.Play.application().configuration().getString("SEADservices.uri")))
-
-  }
-
-  def getPublications(space: String) = {
-    implicit val context = scala.concurrent.ExecutionContext.Implicits.global
-    val endpoint = play.Play.application().configuration().getString("publishData.list.uri").replaceAll("/$", "")
-    Logger.debug(endpoint)
-    val futureResponse = WS.url(endpoint).get()
-    var publishDataList: List[Map[String, String]] = List.empty
-     Logger.warn("Space is " + space)
-    val spaceSet: Set[String] = space match {
-      case s: String if (s.isEmpty) => Set()
-      case sp: String => spaces.get(UUID(sp)) match {
-        case Some(s) => Set(s.name)
-        case None => Set()
-      }
-
-    }
-    val result = futureResponse.map {
-      case response =>
-        if (response.status >= 200 && response.status < 300 || response.status == 304) {
-          Logger.warn("Size is " + spaceSet.size)
-          val rawDataList = spaceSet.size match {
-            case 0 => response.json.as[List[JsValue]]
-            case _ => {
-              response.json.as[List[JsValue]].filter(x => {
-                Logger.warn(spaceSet.toString())
-                val name = ((x.as[JsObject]) \ "Publishing Project Name").asOpt[String] match {
-                  case Some(s) => s
-                  case None => ((x.as[JsObject]) \ "Publishing Project").as[String]
-                }
-
-                spaceSet.contains(name)
-              })
-            }
-          }
-
-          rawDataList.reverse
-        } else {
-          Logger.error("Error Getting published data: " + response.getAHCResponse.getResponseBody)
-          List.empty
-        }
-    }
-
-    Await.result(result, Duration.Inf)
+*/
+    Ok(views.html.curations.publishedData(Publications.getPublications(space, spaces), play.Play.application().configuration().getString("SEADservices.uri")))
 
   }
 
+ 
 }
 
