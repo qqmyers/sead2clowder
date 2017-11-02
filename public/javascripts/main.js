@@ -16,10 +16,11 @@ function notify(text, type, logConsole, timeout) {
         text: txt,
         timeout: timeout,
         closeWith: ['click'],
+        //Needed? I get an error about noty.close not being a function, and things appear to work without the callback...
         callback : {
             afterShow: function() {
                 $('#notyCloseButton').one('click', function() {
-                    $noty.close();
+                    noty.close();
                 });
             }
         }

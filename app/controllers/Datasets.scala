@@ -6,9 +6,10 @@ import api.Permission.Permission
 import models._
 import play.api.Logger
 import play.api.Play.current
+import play.api.libs.json._
 import play.api.libs.json.Json._
 import services._
-import util.{ FileUtils, Formatters, RequiredFieldsConfig, SortingUtils }
+import _root_.util.{ FileUtils, Formatters, RequiredFieldsConfig, SortingUtils, JSONLD }
 import scala.collection.immutable._
 import scala.collection.mutable.ListBuffer
 import play.api.i18n.Messages
@@ -517,6 +518,30 @@ class Datasets @Inject() (
 
         val m = metadata.getMetadataByAttachTo(ResourceRef(ResourceRef.dataset, dataset.id))
 
+        //RDF MD
+        val spaceId: Option[models.UUID] = currentSpace match {
+          case Some(s) => {
+            if (dataset.spaces.contains(UUID(s))) {
+              Some(UUID(s))
+            } else {
+              if (dataset.spaces.size != 0) {
+                Some(dataset.spaces.head)
+              } else {
+                None
+              }
+            }
+          }
+          case None => {
+            if (dataset.spaces.size != 0) {
+              Some(dataset.spaces.head)
+            } else {
+              None
+            }
+          }
+        }
+
+        val metadataSummary = metadata.getMetadataSummary(ResourceRef(ResourceRef.dataset, dataset.id), spaceId)
+
         val collectionsInside = collections.listInsideDataset(id, request.user, request.user.fold(false)(_.superAdminMode)).sortBy(_.name)
         var decodedCollectionsInside = new ListBuffer[models.Collection]()
         var filesTags = TreeSet.empty[String]
@@ -544,11 +569,7 @@ class Datasets @Inject() (
           decodedCommentsByDataset += dComment
         }
 
-        val isRDFExportEnabled = current.plugin[RDFExportService].isDefined
-
-
-          filesInDataset.map
-          {
+        filesInDataset.map {
           file =>
             file.tags.map {
               tag => filesTags += tag.name
@@ -578,7 +599,8 @@ class Datasets @Inject() (
         var decodedSpaces_canRemove: Map[ProjectSpace, Boolean] = Map.empty
         var isInPublicSpace = false
         dataset.spaces.map {
-            sp => spaceService.get(sp) match {
+          sp =>
+            spaceService.get(sp) match {
               case Some(s) => {
                 decodedSpaces_canRemove += (Utils.decodeSpaceElements(s) -> true)
                 datasetSpaces = s :: datasetSpaces
@@ -641,12 +663,11 @@ class Datasets @Inject() (
           datasetSpaces.map(space =>
             if (Permission.checkPermission(Permission.AddResourceToCollection, ResourceRef(ResourceRef.space, space.id))) {
               canAddDatasetToCollection = true
+            })
         	}
-          )
-        }
         val stagingAreaDefined = play.api.Play.current.plugin[services.StagingAreaPlugin].isDefined
-        Ok(views.html.dataset(datasetWithFiles, commentsByDataset, filteredPreviewers.toList, m,
-          decodedCollectionsInside.toList, isRDFExportEnabled, sensors, Some(decodedSpaces_canRemove), fileList,
+        Ok(views.html.dataset(datasetWithFiles, commentsByDataset, filteredPreviewers.toList, m, metadataSummary, metadata.getDefinitions(metadataSummary.contextSpace),
+          decodedCollectionsInside.toList, sensors, Some(decodedSpaces_canRemove), fileList,
           filesTags, toPublish, curPubObjects, currentSpace, limit, showDownload, accessData, canAddDatasetToCollection, stagingAreaDefined))
       }
       case None => {
@@ -769,8 +790,7 @@ class Datasets @Inject() (
               "size" -> toJson(f.length),
               "url" -> toJson(routes.Files.file(f.id).absoluteURL(Utils.https(request))),
               "deleteUrl" -> toJson(api.routes.Files.removeFile(f.id).absoluteURL(Utils.https(request))),
-              "deleteType" -> toJson("POST")
-            ))))
+              "deleteType" -> toJson("POST")))))
           }
           case None => {
             Map("files" ->
@@ -779,11 +799,7 @@ class Datasets @Inject() (
                   Map(
                     "name" -> toJson(Messages("dataset.title") + " ID Invalid."),
                     "size" -> toJson(0),
-                    "error" -> toJson(s"${Messages("dataset.title")} with the specified ID=${ds} was not found. Please try again.")
-                  )
-                )
-              )
-            )
+                    "error" -> toJson(s"${Messages("dataset.title")} with the specified ID=${ds} was not found. Please try again.")))))
           }
         }
       }
@@ -794,11 +810,7 @@ class Datasets @Inject() (
               Map(
                 "name" -> toJson("Missing " + Messages("dataset.title") + "  ID."),
                 "size" -> toJson(0),
-                "error" -> toJson("No "+ Messages("dataset.title")+"id found. Please try again.")
-              )
-            )
-          )
-        )
+                "error" -> toJson("No " + Messages("dataset.title") + "id found. Please try again.")))))
       }
     }
     Ok(toJson(retMap))
@@ -846,8 +858,7 @@ class Datasets @Inject() (
 
         if(userList.nonEmpty) {
           Ok(views.html.datasets.users(dataset, userListSpaceRoleTupleMap, userList))
-        }
-        else Redirect(routes.Datasets.dataset(id)).flashing("error" -> s"Error: No users found for $Messages('dataset.title') $id.")
+        } else Redirect(routes.Datasets.dataset(id)).flashing("error" -> s"Error: No users found for $Messages('dataset.title') $id.")
       }
       case None => Redirect(routes.Datasets.dataset(id)).flashing("error" -> s"Error: $Messages('dataset.title') $id not found.")
     }

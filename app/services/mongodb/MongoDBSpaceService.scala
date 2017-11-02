@@ -386,7 +386,7 @@ class MongoDBSpaceService @Inject() (
   }
 
   /**
-   * Remove association betweren dataset and a space
+   * Remove association between dataset and a space
     *
     * @param dataset dataset id
    * @param space space id

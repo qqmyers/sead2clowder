@@ -93,7 +93,7 @@ class Extractions @Inject()(
                     val id = f.id
                     fileType = f.contentType
                     val key = "unknown." + "file." + fileType.replace(".", "_").replace("/", ".")
-                    val host = Utils.baseUrl(request)
+                    val host = Utils.baseEventUrl(request)
                     val extra = Map("filename" -> f.filename)
                     Logger.debug("---hostURL------" + host);
                     current.plugin[RabbitmqPlugin].foreach {
@@ -146,7 +146,7 @@ class Extractions @Inject()(
             case Some(file) => {
               val fileType = file.contentType
               val key = "unknown." + "file." + fileType.replace(".", "_").replace("/", ".")
-              val host = Utils.baseUrl(request)
+              val host = Utils.baseEventUrl(request)
               val extra = Map("filename" -> file.filename)
               current.plugin[RabbitmqPlugin].foreach {
                 _.extract(ExtractorMessage(id, id, host, key, extra, file.length.toString, null, ""))
@@ -488,7 +488,7 @@ class Extractions @Inject()(
             val id = file.id
             val fileType = file.contentType
             val idAndFlags = ""
-            val host = Utils.baseUrl(request)
+            val host = Utils.baseEventUrl(request)
 
             // check that the file is ready for processing
             if (file.status.equals(models.FileStatus.PROCESSED.toString)) {
@@ -551,7 +551,7 @@ class Extractions @Inject()(
         datasets.get(ds_id) match {
           case Some(ds) => {
             val id = ds.id
-            val host = Utils.baseUrl(request)
+            val host = Utils.baseEventUrl(request)
 
             // if extractor_id is not specified default to execution of all extractors matching mime type
             val key = (request.body \ "extractor").asOpt[String] match {

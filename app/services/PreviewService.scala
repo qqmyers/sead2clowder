@@ -68,7 +68,7 @@ trait PreviewService {
     */
   def setTitle(previewId: UUID, title: String)
 
-  def getMetadata(id: UUID): scala.collection.immutable.Map[String,Any]
+  def getMetadata(id: UUID): JsValue
   
   def getExtractorId(id: UUID): String
   

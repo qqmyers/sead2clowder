@@ -286,7 +286,7 @@ class Files @Inject()(
             //send RabbitMQ message
             current.plugin[RabbitmqPlugin].foreach { p =>
               val dtkey = s"${p.exchange}.metadata.added"
-              p.extract(ExtractorMessage(metadata.attachedTo.id, UUID(""), controllers.Utils.baseUrl(request), dtkey, mdMap, "", UUID(""), ""))
+              p.extract(ExtractorMessage(metadata.attachedTo.id, UUID(""), controllers.Utils.baseEventUrl(request), dtkey, mdMap, "", UUID(""), ""))
             }
 
             files.index(id)
@@ -353,7 +353,7 @@ class Files @Inject()(
                   //send RabbitMQ message
                   current.plugin[RabbitmqPlugin].foreach { p =>
                     val dtkey = s"${p.exchange}.metadata.added"
-                    p.extract(ExtractorMessage(metadata.attachedTo.id, UUID(""), controllers.Utils.baseUrl(request), dtkey, mdMap, "", UUID(""), ""))
+                    p.extract(ExtractorMessage(metadata.attachedTo.id, UUID(""), controllers.Utils.baseEventUrl(request), dtkey, mdMap, "", UUID(""), ""))
                   }
                   
                   files.index(id)
@@ -525,7 +525,7 @@ class Files @Inject()(
 
         val key = "unknown." + "file." + fileType.replace("__", ".")
 
-        val host = Utils.baseUrl(request)
+        val host = Utils.baseEventUrl(request)
         val extra = Map("filename" -> theFile.filename)
 
         // TODO replace null with None
@@ -583,59 +583,6 @@ class Files @Inject()(
       }
   }
 
-  def getRDFUserMetadata(id: UUID, mappingNumber: String="1") = PermissionAction(Permission.ViewMetadata, Some(ResourceRef(ResourceRef.file, id))) { implicit request =>
-   current.plugin[RDFExportService].isDefined match{
-    case true => {
-      current.plugin[RDFExportService].get.getRDFUserMetadataFile(id.stringify, mappingNumber) match{
-        case Some(resultFile) =>{
-          Ok.chunked(Enumerator.fromStream(new FileInputStream(resultFile)))
-			            	.withHeaders(CONTENT_TYPE -> "application/rdf+xml")
-			            	.withHeaders(CONTENT_DISPOSITION -> (FileUtils.encodeAttachment(resultFile.getName(), request.headers.get("user-agent").getOrElse(""))))
-        }
-        case None => BadRequest(toJson("File not found " + id))
-      }
-    }
-    case false=>{
-      Ok("RDF export plugin not enabled")
-    }      
-   }
-  }
-  
-  def getRDFURLsForFile(id: UUID) = PermissionAction(Permission.ViewMetadata, Some(ResourceRef(ResourceRef.file, id))) { implicit request =>
-    current.plugin[RDFExportService].isDefined match{
-      case true =>{
-	    current.plugin[RDFExportService].get.getRDFURLsForFile(id.stringify)  match {
-	      case Some(listJson) => {
-	        Ok(listJson) 
-	      }
-	      case None => {Logger.error("Error getting file" + id); InternalServerError}
-	    }
-      }
-      case false => {
-        Ok("RDF export plugin not enabled")
-      }
-    }
-  }
-  
-  def addUserMetadata(id: UUID) = PermissionAction(Permission.AddMetadata, Some(ResourceRef(ResourceRef.file, id)))(parse.json) { implicit request =>
-        Logger.debug("Adding user metadata to file " + id)
-        val theJSON = Json.stringify(request.body)
-        files.addUserMetadata(id, theJSON)
-        files.get(id) match {
-          case Some(file) =>{
-            events.addObjectEvent(request.user, file.id, file.filename, "addMetadata_file")
-          }
-        }
-        files.index(id)
-        configuration.getString("userdfSPARQLStore").getOrElse("no") match {
-          case "yes" => {
-            files.setUserMetadataWasModified(id, true)
-          }
-          case _ => {}
-        }
-
-        Ok(toJson(Map("status" -> "success")))
-  }
 
   def jsonFile(file: File, serverAdmin: Boolean = false): JsValue = {
     val defaultMap = Map(
@@ -1388,43 +1335,6 @@ class Files @Inject()(
     } 
 
 
-    def getXMLMetadataJSON(id: UUID) = PermissionAction(Permission.ViewMetadata, Some(ResourceRef(ResourceRef.file, id))) { implicit request =>
-      files.get(id)  match {
-        case Some(file) => {
-          Ok(files.getXMLMetadataJSON(id))
-        }
-        case None => {Logger.error("Error finding file" + id); InternalServerError}      
-      }
-    }
-
-    def getUserMetadataJSON(id: UUID) = PermissionAction(Permission.ViewMetadata, Some(ResourceRef(ResourceRef.file, id))) { implicit request =>
-     files.get(id)  match {
-        case Some(file) => {
-          Ok(files.getUserMetadataJSON(id))
-        }
-        case None => {Logger.error("Error finding file" + id); InternalServerError}      
-      }
-    }
-
-  /**
-    * Update technical metadata of a file.
-    */
-  def updateMetadata(id: UUID, extractor_id: String = "") =
-    PermissionAction(Permission.AddMetadata, Some(ResourceRef(ResourceRef.file, id)))(parse.json) { implicit request =>
-      Logger.debug(s"Updating metadata of file $id")
-      val doc = com.mongodb.util.JSON.parse(Json.stringify(request.body)).asInstanceOf[DBObject]
-      files.get(id) match {
-        case Some(x) => {
-          files.updateMetadata(id, request.body, extractor_id)
-          files.index(id)
-        }
-        case None => Logger.error(s"Error getting file $id"); NotFound
-      }
-
-      Logger.debug(s"Updated metadata of file $id")
-      Ok(toJson("success"))
-    }
-
     def getTechnicalMetadataJSON(id: UUID) = PermissionAction(Permission.ViewMetadata, Some(ResourceRef(ResourceRef.file, id))) { implicit request =>
         files.get(id) match {
           case Some(file) => {
@@ -1468,7 +1378,7 @@ class Files @Inject()(
           events.addObjectEvent(request.user, file.id, file.filename, "delete_file")
           // notify rabbitmq
           current.plugin[RabbitmqPlugin].foreach { p =>
-            val clowderurl = Utils.baseUrl(request)
+            val clowderurl = Utils.baseEventUrl(request)
             datasets.findByFileId(file.id).foreach{ds =>
               val dtkey = s"${p.exchange}.dataset.file.removed"
               p.extract(ExtractorMessage(file.id, file.id, clowderurl, dtkey, Map.empty, file.length.toString, ds.id, ""))
@@ -1584,20 +1494,6 @@ class Files @Inject()(
     }
   }
 
-  def dumpFilesMetadata = ServerAdminAction { implicit request =>
-
-	  val unsuccessfulDumps = files.dumpAllFileMetadata
-	  if(unsuccessfulDumps.size == 0)
-	    Ok("Dumping of files metadata was successful for all files.")
-	  else{
-	    var unsuccessfulMessage = "Dumping of files metadata was successful for all files except file(s) with id(s) "
-	    for(badFile <- unsuccessfulDumps){
-	      unsuccessfulMessage = unsuccessfulMessage + badFile + ", "
-	    }
-	    unsuccessfulMessage = unsuccessfulMessage.substring(0, unsuccessfulMessage.length()-2) + "."
-	    Ok(unsuccessfulMessage)
-	  }
-   }
 
   def follow(id: UUID) = AuthenticatedAction {implicit request =>
       implicit val user = request.user

@@ -38,9 +38,12 @@ class Metadata @Inject() (
     events: EventService,
     spaceService: SpaceService) extends ApiController {
 
-  def getDefinitions() = PermissionAction(Permission.ViewDataset) {
+  def getDefinitions(spaceId: Option[String]) = PermissionAction(Permission.ViewDataset) {
     implicit request =>
-      val vocabularies = metadataService.getDefinitions()
+      val vocabularies = spaceId match {
+        case Some(s: String) => metadataService.getDefinitions(Some(UUID(s)))
+        case None => metadataService.getDefinitions()
+      }
       Ok(toJson(vocabularies))
   }
 
@@ -51,22 +54,31 @@ class Metadata @Inject() (
       Ok(toJson(vocabularies))
   }
 
+  def getDefinitionsAutocompleteName(query: String, spaceId: Option[String]) = PermissionAction(Permission.ViewDataset) {
+    implicit request =>
+      implicit val user = request.user
+      var listOfDefs = ListBuffer.empty[MetadataDefinition]
+      val definitions = spaceId match {
+        case Some(id) => metadataService.getDefinitions(Some(UUID(id)))
+        case None => metadataService.getDefinitions()
+      }
+      for (md_def <- definitions) {
+        val currVal = (md_def.json \ "label").as[String]
+        if (currVal.toLowerCase startsWith query.toLowerCase) {
+
+          listOfDefs.append(md_def)
+        }
+      }
+      Ok(toJson(listOfDefs.distinct))
+  }
+
   /** Get set of metadata fields containing filter substring for autocomplete */
-  def getAutocompleteName(query: String) = PermissionAction(Permission.ViewDataset) { implicit request =>
+  def getManagedTermsAutocompleteName(query: String) = PermissionAction(Permission.ViewDataset) { implicit request =>
     implicit val user = request.user
 
     var listOfTerms = ListBuffer.empty[String]
 
-    // First, get regular vocabulary matches
-    val definitions = metadataService.getDefinitionsDistinctName(user)
-    for (md_def <- definitions) {
-      val currVal = (md_def.json \ "label").as[String]
-      if (currVal.toLowerCase startsWith query.toLowerCase) {
-        listOfTerms.append("metadata." + currVal)
-      }
-    }
-
-    // Next get Elasticsearch metadata fields if plugin available
+    // Get Elasticsearch metadata fields if plugin available
     current.plugin[ElasticsearchPlugin] match {
       case Some(plugin) => {
         val mdTerms = plugin.getAutocompleteMetadataFields(query)
@@ -145,7 +157,7 @@ class Metadata @Inject() (
                 uri = play.Play.application().configuration().getString("metadata.uri.prefix") + "/" + space.id.stringify + "#" + WordUtils.capitalize((body \ "label").as[String]).replaceAll("\\s", "")
                 body = body.as[JsObject] + ("uri" -> Json.toJson(uri))
               }
-              addDefinitionHelper(uri, body, Some(space.id), u, Some(space))
+              addDefinitionHelper(uri, (body \ "label").as[String], body, Some(space.id), u, Some(space))
             }
             case None => BadRequest("The space does not exist")
           }
@@ -170,7 +182,7 @@ class Metadata @Inject() (
               uri = play.Play.application().configuration().getString("metadata.uri.prefix") + "#" + WordUtils.capitalize((body \ "label").as[String]).replaceAll("\\s", "")
               body = body.as[JsObject] + ("uri" -> Json.toJson(uri))
             }
-            addDefinitionHelper(uri, body, None, user, None)
+            addDefinitionHelper(uri, (body \ "label").as[String], body, None, user, None)
           } else {
             BadRequest(toJson("Invalid Resource type"))
           }
@@ -180,23 +192,43 @@ class Metadata @Inject() (
   }
 
   //On GUI, URI is not required, however URI is required in DB. a default one will be generated when needed.
-  private def addDefinitionHelper(uri: String, body: JsValue, spaceId: Option[UUID], user: User, space: Option[ProjectSpace]): Result = {
-    metadataService.getDefinitionByUriAndSpace(uri, space map { _.id.toString() }) match {
-      case Some(metadata) => BadRequest(toJson("Metadata definition with same uri exists."))
-      case None => {
-        val definition = MetadataDefinition(json = body, spaceId = spaceId)
-        metadataService.addDefinition(definition)
-        space match {
-          case Some(s) => {
-            events.addObjectEvent(Some(user), s.id, s.name, "added_metadata_space")
-          }
+  private def addDefinitionHelper(uri: String, label: String, body: JsValue, spaceId: Option[UUID], user: User, space: Option[ProjectSpace]): Result = {
+    current.plugin[StagingAreaPlugin] match {
+      case Some(plugin) if (plugin.isRestrictedLabel(label)) => {
+        Logger.info("RLabel: " + plugin.isRestrictedLabel(label))
+        BadRequest(toJson("Label is Reserved for Internal Use"))
+      }
+      case Some(plugin) if (plugin.isRestrictedURI(uri)) => {
+        Logger.info("RURI: " + plugin.isRestrictedURI(uri))
+        BadRequest(toJson("URI is Reserved for Internal Use"))
+      }
+      case _ => {
+        metadataService.getDefinitionByUriAndSpace(uri, space map { _.id.toString() }) match {
+          case Some(metadata) => BadRequest(toJson("Metadata definition with same uri exists."))
           case None => {
-            events.addEvent(new Event(user.getMiniUser, None, None, None, None, None, "added_metadata_instance", new Date()))
+            metadataService.getDefinitionByLabelAndSpace(label, space map { _.id.toString() }) match {
+              case Some(metadata) => BadRequest(toJson("Metadata definition with same label exists."))
+              case None => {
+
+                val definition = MetadataDefinition(json = body, spaceId = spaceId)
+                metadataService.addDefinition(definition)
+                space match {
+                  case Some(s) => {
+                    events.addObjectEvent(Some(user), s.id, s.name, "added_metadata_space")
+                  }
+                  case None => {
+                    events.addEvent(new Event(user.getMiniUser, None, None, None, None, None, "added_metadata_instance", new Date()))
+                  }
+                }
+                Ok(JsObject(Seq("status" -> JsString("ok"))))
+              }
+            }
           }
         }
-        Ok(JsObject(Seq("status" -> JsString("ok"))))
+
       }
     }
+
   }
 
   def editDefinition(id: UUID, spaceId: Option[String]) = ServerAdminAction(parse.json) {
@@ -206,27 +238,53 @@ class Metadata @Inject() (
           val body = request.body
           if ((body \ "label").asOpt[String].isDefined && (body \ "type").asOpt[String].isDefined && (body \ "uri").asOpt[String].isDefined) {
             val uri = (body \ "uri").as[String]
+            val label = (body \ "label").as[String]
+            //Don't allow a change that would give two defs with the same formal uri
             metadataService.getDefinitionByUriAndSpace(uri, spaceId) match {
-              case Some(metadata) => if (metadata.id != id) {
+              case Some(metadata) if (metadata.id != id) => {
                 BadRequest(toJson("Metadata definition with same uri exists."))
-              } else {
-                metadataService.editDefinition(id, body)
-                metadata.spaceId match {
-                  case Some(spaceId) => {
-                    spaceService.get(spaceId) match {
-                      case Some(s) => events.addObjectEvent(Some(user), s.id, s.name, "edit_metadata_space")
-                      case None =>
-                    }
-                  }
-                  case None => {
-                    events.addEvent(new Event(user.getMiniUser, None, None, None, None, None, "edit_metadata_instance", new Date()))
-                  }
-                }
-                Ok(JsObject(Seq("status" -> JsString("ok"))))
+                //If metadata was found, we know the spaceId parameter is correct
               }
-              case None => {
-                metadataService.editDefinition(id, body)
-                Ok(JsObject(Seq("status" -> JsString("ok"))))
+              case _ => {
+                //Don't allow change that would allow two defs with the same label
+                metadataService.getDefinitionByLabelAndSpace(label, spaceId) match {
+                  case Some(metadata) if (metadata.id != id) => {
+                    BadRequest(toJson("Metadata definition with same uri exists."))
+                  }
+                  case _ => {
+                    current.plugin[StagingAreaPlugin] match {
+
+                      case Some(plugin) if (plugin.isRestrictedLabel(label)) => {
+                        Logger.info("RLabel: " + plugin.isRestrictedLabel(label))
+                        BadRequest(toJson("Label is Reserved for Internal Use"))
+                      }
+                      case Some(plugin) if (plugin.isRestrictedURI(uri)) => {
+                        Logger.info("RURI: " + plugin.isRestrictedURI(uri))
+                        BadRequest(toJson("URI is Reserved for Internal Use"))
+                      }
+                      case _ => {
+                        //Otherwise, go ahead with the edit
+                        metadataService.editDefinition(id, body)
+                        spaceId match {
+                          case Some(sId) => {
+                            spaceService.get(UUID(sId)) match {
+                              case Some(s) => events.addObjectEvent(Some(user), s.id, s.name, "edit_metadata_space")
+                              case None =>
+                            }
+                          }
+                          case None => {
+                            events.addEvent(new Event(user.getMiniUser, None, None, None, None, None, "edit_metadata_instance", new Date()))
+                          }
+                        }
+                        Ok(JsObject(Seq("status" -> JsString("ok"))))
+
+                      }
+                    }
+
+                  }
+
+                }
+
               }
             }
           } else {
@@ -267,58 +325,97 @@ class Metadata @Inject() (
     }
   }
 
+  def makeDefinitionAddable(id: UUID, addable: Boolean) = ServerAdminAction { implicit request =>
+    implicit val user = request.user
+    user match {
+      case Some(user) => {
+        metadataService.getDefinition(id) match {
+          case Some(md) => {
+            metadataService.makeDefinitionAddable(id, addable)
+
+            md.spaceId match {
+              case Some(spaceId) => {
+                spaceService.get(spaceId) match {
+                  case Some(s) => events.addObjectEvent(Some(user), s.id, s.name, "toggle_metadata_space")
+                  case None =>
+                }
+              }
+              case None => {
+                events.addEvent(new Event(user.getMiniUser, None, None, None, None, None, "toggle_metadata_instance", new Date()))
+              }
+            }
+            Ok(JsObject(Seq("status" -> JsString("ok"))))
+          }
+          case None => BadRequest(toJson("Invalid metadata definition"))
+        }
+
+      }
+      case None => BadRequest(toJson("Invalid user"))
+    }
+  }
+
   def addUserMetadata() = PermissionAction(Permission.AddMetadata)(parse.json) {
     implicit request =>
       request.user match {
         case Some(user) => {
           val json = request.body
-          // parse request for JSON-LD model
-          var model: RDFModel = null
-          json.validate[RDFModel] match {
-            case e: JsError => {
-              Logger.error("Errors: " + JsError.toFlatForm(e))
-              BadRequest(JsError.toFlatJson(e))
-            }
-            case s: JsSuccess[RDFModel] => {
-              model = s.get
-              // when the new metadata is added
-              val createdAt = new Date()
+          // when the new metadata is added
+          val createdAt = new Date()
 
-              // build creator uri
-              // TODO switch to internal id and then build url when returning?
-              val userURI = controllers.routes.Application.index().absoluteURL() + "api/users/" + user.id
-              val creator = UserAgent(user.id, "cat:user", MiniUser(user.id, user.fullName, user.avatarUrl.getOrElse(""), user.email), Some(new URL(userURI)))
+          // build creator uri
+          // TODO switch to internal id and then build url when returning?
+          val userURI = controllers.routes.Application.index().absoluteURL() + "api/users/" + user.id
+          val creator = UserAgent(user.id, "cat:user", MiniUser(user.id, user.fullName, user.avatarUrl.getOrElse(""), user.email), Some(new URL(userURI)))
 
-              val context: JsValue = (json \ "@context")
+          val context: JsValue = (json \ "@context")
 
-              // figure out what resource this is attached to
-              val attachedTo =
-                if ((json \ "file_id").asOpt[String].isDefined)
+          // figure out what resource this is attached to
+          val attachedTo =
+            if ((json \ "file_id").asOpt[String].isDefined) {
+              files.get(UUID((json \ "file_id").as[String])) match {
+                case Some(file) => {
                   Some(ResourceRef(ResourceRef.file, UUID((json \ "file_id").as[String])))
-                else if ((json \ "dataset_id").asOpt[String].isDefined)
+                }
+              }
+            } else if ((json \ "dataset_id").asOpt[String].isDefined) {
+              datasets.get(UUID((json \ "dataset_id").as[String])) match {
+                case Some(dataset) => {
                   Some(ResourceRef(ResourceRef.dataset, UUID((json \ "dataset_id").as[String])))
-                else if ((json \ "curationObject_id").asOpt[String].isDefined)
+                }
+              }
+            } else if ((json \ "curationObject_id").asOpt[String].isDefined) {
+              curations.get(UUID((json \ "curationObject_id").as[String])) match {
+                case Some(curationObject) => {
                   Some(ResourceRef(ResourceRef.curationObject, UUID((json \ "curationObject_id").as[String])))
-                else if ((json \ "curationFile_id").asOpt[String].isDefined)
-                  Some(ResourceRef(ResourceRef.curationFile, UUID((json \ "curationFile_id").as[String])))
-                else None
+                }
+              }
+            } else if ((json \ "curationFile_id").asOpt[String].isDefined) {
+              val file_id = UUID((json \ "curationFile_id").as[String])
+              Some(ResourceRef(ResourceRef.curationFile, file_id))
+            } else (None)
 
-              // check if the context is a URL to external endpoint
-              val contextURL: Option[URL] = context.asOpt[String].map(new URL(_))
+          val content = (json \ "content")
+          val content_ld = (json \ "content_ld")
 
-              // check if context is a JSON-LD document
-              val contextID: Option[UUID] =
-                if (context.isInstanceOf[JsObject]) {
-                  context.asOpt[JsObject].map(contextService.addContext(new JsString("context name"), _))
-                } else if (context.isInstanceOf[JsArray]) {
-                  context.asOpt[JsArray].map(contextService.addContext(new JsString("context name"), _))
-                } else None
+          if (attachedTo.isDefined) {
+            val space = metadataService.getContextSpace(attachedTo.get, None)
+            content match {
+              case c: JsObject => {
 
-              //parse the rest of the request to create a new models.Metadata object
-              val content = (json \ "content")
-              val version = None
+                //parse the rest of the request to create a new models.Metadata object
 
-              if (attachedTo.isDefined) {
+                // check if the context is a URL to external endpoint
+                val contextURL: Option[URL] = context.asOpt[String].map(new URL(_))
+
+                // check if context is a JSON-LD document
+                val contextID: Option[UUID] =
+                  if (context.isInstanceOf[JsObject]) {
+                    context.asOpt[JsObject].map(contextService.addContext(new JsString("context name"), _))
+                  } else if (context.isInstanceOf[JsArray]) {
+                    context.asOpt[JsArray].map(contextService.addContext(new JsString("context name"), _))
+                  } else None
+
+                val version = None
                 val metadata = models.Metadata(UUID.generate, attachedTo.get, contextID, contextURL, createdAt, creator,
                   content, version)
 
@@ -334,7 +431,7 @@ class Metadata @Inject() (
                         //send RabbitMQ message
                         current.plugin[RabbitmqPlugin].foreach { p =>
                           val dtkey = s"${p.exchange}.metadata.added"
-                          p.extract(ExtractorMessage(UUID(""), UUID(""), controllers.Utils.baseUrl(request),
+                          p.extract(ExtractorMessage(UUID(""), UUID(""), controllers.Utils.baseEventUrl(request),
                             dtkey, mdMap, "", metadata.attachedTo.id, ""))
                         }
                       }
@@ -343,28 +440,135 @@ class Metadata @Inject() (
                         //send RabbitMQ message
                         current.plugin[RabbitmqPlugin].foreach { p =>
                           val dtkey = s"${p.exchange}.metadata.added"
-                          p.extract(ExtractorMessage(metadata.attachedTo.id, UUID(""), controllers.Utils.baseUrl(request),
+                          p.extract(ExtractorMessage(metadata.attachedTo.id, UUID(""), controllers.Utils.baseEventUrl(request),
                             dtkey, mdMap, "", UUID(""), ""))
                         }
                       }
                       case _ => {}
                     }
                   }
-                  case None => {}
-                }
 
-                Ok(views.html.metadatald.view(List(metadata), true)(request.user))
-              } else {
-                BadRequest(toJson("Invalid resource type"))
+                }
+                Ok(JsObject(Seq("status" -> JsString("ok"))))
+              }
+              case u: JsUndefined => {
+                content_ld match {
+                  case c: JsObject => {
+
+                    //add metadata to mongo
+                    val newInfo = metadataService.addMetadata(content_ld, context, attachedTo.get, createdAt, creator, space)
+                    Logger.info("new stuff is: " + newInfo.toString())
+                    val mdMap = Map("metadata" -> content_ld,
+                      "resourceType" -> attachedTo.get.resourceType.name,
+                      "resourceId" -> attachedTo.get.id.toString)
+
+                    attachedTo match {
+                      case Some(resource) => {
+                        resource.resourceType match {
+                          case ResourceRef.dataset => {
+                            datasets.index(resource.id)
+                            //send RabbitMQ message
+                            current.plugin[RabbitmqPlugin].foreach { p =>
+                              val dtkey = s"${p.exchange}.metadata.added"
+                              p.extract(ExtractorMessage(UUID(""), UUID(""), controllers.Utils.baseEventUrl(request),
+                                dtkey, mdMap, "", attachedTo.get.id, ""))
+                            }
+                          }
+                          case ResourceRef.file => {
+                            files.index(resource.id)
+                            //send RabbitMQ message
+                            current.plugin[RabbitmqPlugin].foreach { p =>
+                              val dtkey = s"${p.exchange}.metadata.added"
+                              p.extract(ExtractorMessage(attachedTo.get.id, UUID(""), controllers.Utils.baseEventUrl(request),
+                                dtkey, mdMap, "", UUID(""), ""))
+                            }
+                          }
+                          case _ => {}
+                        }
+                      }
+                      case None => {}
+                    }
+
+                    Ok(JsObject(Seq("status" -> JsString("ok"))) ++ newInfo)
+                  }
+                  case u: JsUndefined => {
+                    BadRequest(toJson("No metadata entries"))
+                  }
+                }
               }
             }
+          } else {
+            BadRequest(toJson("Invalid resource type"))
           }
         }
         case None => BadRequest(toJson("Invalid user"))
       }
   }
 
-  def removeMetadata(id: UUID) = PermissionAction(Permission.DeleteMetadata, Some(ResourceRef(ResourceRef.metadata, id))) { implicit request =>
+  def updateMetadata(attachedtype: String, attachedid: UUID, entryId: String) = PermissionAction(Permission.DeleteMetadata, Some(ResourceRef(Symbol(attachedtype), attachedid)))(parse.json) { implicit request =>
+    request.user match {
+      case Some(user) => {
+        if (attachedtype == ResourceRef.curationObject.name && curations.get(attachedid).map(_.status != "In Preparation").getOrElse(false)
+          || attachedtype == ResourceRef.curationFile.name && curations.getCurationByCurationFile(attachedid).map(_.status != "In Preparation").getOrElse(false)) {
+          BadRequest("Publication Request has already been submitted")
+        } else {
+
+          val updatedAt = new Date()
+
+          // build creator uri
+          // TODO switch to internal id and then build url when returning?
+          val userURI = controllers.routes.Application.index().absoluteURL() + "api/users/" + user.id
+          val updator = UserAgent(user.id, "cat:user", MiniUser(user.id, user.fullName, user.avatarUrl.getOrElse(""), user.email), Some(new URL(userURI)))
+          val resource = ResourceRef(Symbol(attachedtype), attachedid)
+          val space = metadataService.getContextSpace(resource, None)
+
+          val content = (request.body \ "content_ld")
+          val context = (request.body \ "@context")
+
+          metadataService.updateMetadata(content, context, resource, entryId, updatedAt, updator, space) match {
+            case u: JsUndefined => {
+              BadRequest("Entry to update not found.")
+            }
+            case result: JsObject => {
+
+              val mdMap = Map("metadata" -> content,
+                "resourceType" -> attachedtype,
+                "resourceId" -> attachedid)
+
+              current.plugin[RabbitmqPlugin].foreach { p =>
+                val dtkey = s"${p.exchange}.metadata.updated"
+                p.extract(ExtractorMessage(UUID(""), UUID(""), request.host, dtkey, mdMap, "", attachedid, ""))
+              }
+
+              Logger.debug("re-indexing after metadata update")
+              current.plugin[ElasticsearchPlugin].foreach { p =>
+                // Delete existing index entry and re-index
+                Symbol(attachedtype) match {
+                  case ResourceRef.file => {
+                    p.delete("data", "file", attachedid.stringify)
+                    files.index(attachedid)
+                  }
+                  case ResourceRef.dataset => {
+                    p.delete("data", "dataset", attachedid.stringify)
+                    datasets.index(attachedid)
+                  }
+                  case _ => {
+                    Logger.error("unknown attached resource type for metadata - not reindexing")
+                  }
+                }
+              }
+
+              Ok(JsObject(Seq("status" -> JsString("ok"))) ++ result)
+            }
+
+          }
+        }
+      }
+      case None => BadRequest("Not authorized.")
+    }
+  }
+
+  def removeMetadataById(id: UUID) = PermissionAction(Permission.DeleteMetadata, Some(ResourceRef(ResourceRef.metadata, id))) { implicit request =>
     request.user match {
       case Some(user) => {
         metadataService.getMetadataById(id) match {
@@ -373,7 +577,7 @@ class Metadata @Inject() (
               || m.attachedTo.resourceType == ResourceRef.curationFile && curations.getCurationByCurationFile(m.attachedTo.id).map(_.status != "In Preparation").getOrElse(false)) {
               BadRequest("Publication Request has already been submitted")
             } else {
-              metadataService.removeMetadata(id)
+              metadataService.removeMetadataById(id)
               val mdMap = m.getExtractionSummary
 
               current.plugin[RabbitmqPlugin].foreach { p =>
@@ -403,6 +607,67 @@ class Metadata @Inject() (
             }
           }
           case None => BadRequest(toJson("Invalid Metadata"))
+        }
+      }
+      case None => BadRequest("Not authorized.")
+    }
+  }
+
+  def removeMetadata(attachedtype: String, attachedid: String, term: String, itemid: String) = PermissionAction(Permission.DeleteMetadata, Some(ResourceRef(Symbol(attachedtype), UUID(attachedid)))) { implicit request =>
+    val attachedUuid = UUID(attachedid)
+    request.user match {
+      case Some(user) => {
+
+        if (attachedtype == ResourceRef.curationObject.name && curations.get(attachedUuid).map(_.status != "In Preparation").getOrElse(false)
+          || attachedtype == ResourceRef.curationFile.name && curations.getCurationByCurationFile(attachedUuid).map(_.status != "In Preparation").getOrElse(false)) {
+          BadRequest("Publication Request has already been submitted")
+        } else {
+
+          val deletedAt = new Date()
+
+          // build creator uri
+          // TODO switch to internal id and then build url when returning?
+          val userURI = controllers.routes.Application.index().absoluteURL() + "api/users/" + user.id
+          val deletor = UserAgent(user.id, "cat:user", MiniUser(user.id, user.fullName, user.avatarUrl.getOrElse(""), user.email), Some(new URL(userURI)))
+          val resource = ResourceRef(Symbol(attachedtype), attachedUuid)
+          val space = metadataService.getContextSpace(resource, None)
+
+          metadataService.removeMetadata(resource, term, itemid, deletedAt, deletor, space) match {
+            case content: JsObject => {
+
+              val mdMap = Map("metadata" -> content,
+                "resourceType" -> attachedtype,
+                "resourceId" -> attachedUuid)
+
+              current.plugin[RabbitmqPlugin].foreach { p =>
+                val dtkey = s"${p.exchange}.metadata.removed"
+                p.extract(ExtractorMessage(UUID(""), UUID(""), request.host, dtkey, mdMap, "", attachedUuid, ""))
+              }
+
+              Logger.debug("re-indexing after metadata removal")
+              current.plugin[ElasticsearchPlugin].foreach { p =>
+                // Delete existing index entry and re-index
+                Symbol(attachedtype) match {
+                  case ResourceRef.file => {
+                    p.delete("data", "file", attachedUuid.stringify)
+                    files.index(attachedUuid)
+                  }
+                  case ResourceRef.dataset => {
+                    p.delete("data", "dataset", attachedUuid.stringify)
+                    datasets.index(attachedUuid)
+                  }
+                  case _ => {
+                    Logger.error("unknown attached resource type for metadata - not reindexing")
+                  }
+                }
+              }
+
+              Ok(JsObject(Seq("status" -> JsString("ok"))))
+            }
+            case u: JsUndefined => {
+              BadRequest("Entry to delete not found.")
+            }
+          }
         }
       }
       case None => BadRequest("Not authorized.")
@@ -486,7 +751,7 @@ class Metadata @Inject() (
       }
       result
     } else { //TBD - just get list of Clowder users
-    /*  val lcTerm = term.toLowerCase()
+      /*  val lcTerm = term.toLowerCase()
       Future(Ok(Json.toJson(userService.list.map(jsonPerson).filter((x) => {
         if (term.length == 0) {
           true

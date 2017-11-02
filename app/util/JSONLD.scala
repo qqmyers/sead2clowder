@@ -2,7 +2,8 @@ package util
 
 import models.Metadata
 import play.api.libs.json.Json._
-import play.api.libs.json.{JsString, JsArray, JsObject, JsValue}
+
+import play.api.libs.json.{JsString, JsArray, JsObject, JsValue, Json}
 import services.{ContextLDService, DI}
 
 /**
@@ -35,5 +36,40 @@ object JSONLD {
 
     //combine the two json objects and return
     if (contextJson.isEmpty) metadataJson else contextJson.get ++ metadataJson
+  }
+  
+    def buildMetadataMap(content: JsValue): Map[String, JsValue] = {
+    var out = scala.collection.mutable.Map.empty[String, JsValue]
+    content match {
+      case o: JsObject => {
+        for ((key, value) <- o.fields) {
+          value match {
+            case o: JsObject => value match {
+              case b: JsArray => out(key) = Json.toJson(buildMetadataMap(value))
+              case b: JsString => out(key) = Json.toJson(b.value)
+              case _ => out(key) = value
+            }
+            case o: JsArray => value match {
+              case b: JsArray => out(key) = Json.toJson(buildMetadataMap(value))
+              case b: JsString => out(key) = Json.toJson(b.value)
+              case _ => out(key) = value
+            }
+            case _ => value match {
+              case b: JsArray => out(key) = Json.toJson(buildMetadataMap(value))
+              case b: JsString => out(key) = Json.toJson(b.value)
+              case _ => out(key) = value
+            }
+          }
+        }
+      }
+      case a: JsArray => {
+        for((value, i) <- a.value.zipWithIndex){
+          out = out ++ buildMetadataMap(value)
+        }
+      }
+
+    }
+
+    out.toMap
   }
 }

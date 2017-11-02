@@ -191,7 +191,7 @@ object MongoContext {
 
 
   /**
-   * JsValue-DBObject Transformer
+   * JsValue-DBObject Transformer - assumes value is not JsString!
    */
   object JsValueTransformer extends CustomTransformer[play.api.libs.json.JsValue, DBObject] {
     def deserialize(value: DBObject) = {

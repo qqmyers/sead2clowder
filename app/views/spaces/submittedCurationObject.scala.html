@@ -1,4 +1,4 @@
-@(curationObject: models.CurationObject, files :List[CurationFile], m: List[models.Metadata], limit:Int, spaceName: String)(implicit user: Option[models.User])
+@(curationObject: models.CurationObject, files :List[CurationFile], r: models.RdfMetadata, mDefs: List[MetadataDefinition], limit:Int, spaceName: String)(implicit user: Option[models.User])
 @import play.api.i18n.Messages
 @import helper._
 @import _root_.util.Formatters._
@@ -78,11 +78,11 @@
         @*if(Permission.checkPermission(Permission.ViewMetadata, ResourceRef(ResourceRef.curationObject, curationObject.id))) {*@
         <div class="row">
           <div class="col-md-12 box-white-space">
-            @if(m.filter(_.attachedTo.resourceType == ResourceRef.curationObject).size > 0) {
-           	  <h4>Metadata</h4>
+            @if(r.entries.size > 0) {
+           	  <h4>@Messages("metadata.user")</h4>
             }
             <div  class='usr_md_'>
-            @metadatald.view(m.filter(_.attachedTo.resourceType == ResourceRef.curationObject), false)
+            @metadatald.view(None, r, mDefs, false)
             </div>
           </div>
         </div>

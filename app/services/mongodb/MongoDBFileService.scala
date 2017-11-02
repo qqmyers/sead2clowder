@@ -263,149 +263,6 @@ class MongoDBFileService @Inject() (
     $or(orlist.map(_.asDBObject))
   }
 
-  def modifyRDFOfMetadataChangedFiles() {
-    val changedFiles = findMetadataChangedFiles()
-    for (changedFile <- changedFiles) {
-      modifyRDFUserMetadata(changedFile.id)
-    }
-  }
-
-
-  def modifyRDFUserMetadata(id: UUID, mappingNumber: String = "1") = { implicit request: Request[Any] =>
-    sparql.removeFileFromGraphs(id, "rdfCommunityGraphName")
-    get(id) match {
-      case Some(file) => {
-        val theJSON = getUserMetadataJSON(id)
-        val fileSep = System.getProperty("file.separator")
-        val tmpDir = System.getProperty("java.io.tmpdir")
-        var resultDir = tmpDir + fileSep + "clowder__rdfuploadtemporaryfiles" + fileSep + UUID.generate.stringify
-        val resultDirFile = new java.io.File(resultDir)
-        resultDirFile.mkdirs()
-
-        if (!theJSON.replaceAll(" ", "").equals("{}")) {
-          val xmlFile = jsonToXML(theJSON)
-          new LidoToCidocConvertion(play.api.Play.configuration.getString("filesxmltordfmapping.dir_" + mappingNumber).getOrElse(""), xmlFile.getAbsolutePath(), resultDir)
-          xmlFile.delete()
-        }
-        else {
-          new java.io.File(resultDir + fileSep + "Results.rdf").createNewFile()
-        }
-        val resultFile = new java.io.File(resultDir + fileSep + "Results.rdf")
-
-        //Connecting RDF metadata with the entity describing the original file
-        val rootNodes = new ArrayList[String]()
-        val rootNodesFile = play.api.Play.configuration.getString("rootNodesFile").getOrElse("")
-        Logger.debug(rootNodesFile)
-        if (!rootNodesFile.equals("*")) {
-          val rootNodesReader = new BufferedReader(new FileReader(new java.io.File(rootNodesFile)))
-          var line = rootNodesReader.readLine()
-          while (line != null) {
-            Logger.debug((line == null).toString())
-            rootNodes.add(line.trim())
-            line = rootNodesReader.readLine()
-          }
-          rootNodesReader.close()
-        }
-
-        val resultFileConnected = java.io.File.createTempFile("ResultsConnected", ".rdf")
-
-        val fileWriter = new BufferedWriter(new FileWriter(resultFileConnected))
-        val fis = new FileInputStream(resultFile)
-        val data = new Array[Byte](resultFile.length().asInstanceOf[Int])
-        fis.read(data)
-        fis.close()
-        resultFile.delete()
-        FileUtils.deleteDirectory(resultDirFile)
-        //
-        val s = new String(data, "UTF-8")
-        val rdfDescriptions = s.split("<rdf:Description")
-        fileWriter.write(rdfDescriptions(0))
-        var i = 0
-        for (i <- 1 to (rdfDescriptions.length - 1)) {
-          fileWriter.write("<rdf:Description" + rdfDescriptions(i))
-          if (rdfDescriptions(i).contains("<rdf:type")) {
-            var isInRootNodes = false
-            if (rootNodesFile.equals("*"))
-              isInRootNodes = true
-            else {
-              var j = 0
-              try {
-                for (j <- 0 to (rootNodes.size() - 1)) {
-                  if (rdfDescriptions(i).contains("\"" + rootNodes.get(j) + "\"")) {
-                    isInRootNodes = true
-                    throw MustBreak
-                  }
-                }
-              } catch {
-                case MustBreak =>
-              }
-            }
-
-            if (isInRootNodes) {
-              val theResource = rdfDescriptions(i).substring(rdfDescriptions(i).indexOf("\"") + 1, rdfDescriptions(i).indexOf("\"", rdfDescriptions(i).indexOf("\"") + 1))
-              // TODO RK : need to make sure we know if it is https
-              var connection = "<rdf:Description rdf:about=\"" + api.routes.Files.get(id).absoluteURL(false)
-              connection = connection + "\"><P129_is_about xmlns=\"http://www.cidoc-crm.org/rdfs/cidoc_crm_v5.0.2.rdfs#\" rdf:resource=\"" + theResource
-              connection = connection + "\"/></rdf:Description>"
-              fileWriter.write(connection)
-            }
-          }
-        }
-        fileWriter.close()
-
-        sparql.addFromFile(id, resultFileConnected, "file")
-        resultFileConnected.delete()
-
-        sparql.addFileToGraph(id, "rdfCommunityGraphName")
-
-        setUserMetadataWasModified(id, false)
-      }
-      case None => {}
-    }
-  }
-
-  def jsonToXML(theJSON: String): java.io.File = {
-
-    val jsonObject = new JSONObject(theJSON)
-    var xml = org.json.XML.toString(jsonObject)
-
-    //Remove spaces from XML tags
-    var currStart = xml.indexOf("<")
-    var currEnd = -1
-    var xmlNoSpaces = ""
-    while (currStart != -1) {
-      xmlNoSpaces = xmlNoSpaces + xml.substring(currEnd + 1, currStart)
-      currEnd = xml.indexOf(">", currStart + 1)
-      xmlNoSpaces = xmlNoSpaces + xml.substring(currStart, currEnd + 1).replaceAll(" ", "_")
-      currStart = xml.indexOf("<", currEnd + 1)
-    }
-    xmlNoSpaces = xmlNoSpaces + xml.substring(currEnd + 1)
-
-    val xmlFile = java.io.File.createTempFile("xml", ".xml")
-    val fileWriter = new BufferedWriter(new FileWriter(xmlFile))
-    fileWriter.write(xmlNoSpaces)
-    fileWriter.close()
-
-    return xmlFile
-  }
-
-  def getXMLMetadataJSON(id: UUID): String = {
-    FileDAO.dao.collection.findOneByID(new ObjectId(id.stringify)) match {
-      case None => "{}"
-      case Some(x) => {
-        x.getAs[DBObject]("xmlMetadata") match {
-          case Some(y) => {
-            val returnedMetadata = com.mongodb.util.JSON.serialize(x.getAs[DBObject]("xmlMetadata").get)
-            returnedMetadata
-          }
-          case None => "{}"
-        }
-      }
-    }
-  }
-  
- 
-  
 
   def removeTags(id: UUID, userIdStr: Option[String], eid: Option[String], tags: List[String]) {
     Logger.debug("Removing tags in file " + id + " : " + tags + ", userId: " + userIdStr + ", eid: " + eid)
@@ -416,21 +273,6 @@ class MongoDBFileService @Inject() (
     tags.intersect(existingTags).map {
       tag =>
         FileDAO.update(MongoDBObject("_id" -> new ObjectId(id.stringify)), $pull("tags" -> MongoDBObject("name" -> tag)), false, false, WriteConcern.Safe)
-    }
-  }
-
-  def addMetadata(fileId: UUID, metadata: JsValue) {
-    val doc = JSON.parse(Json.stringify(metadata)).asInstanceOf[DBObject]
-    FileDAO.update(MongoDBObject("_id" -> new ObjectId(fileId.stringify)), $addToSet("metadata" -> doc), false, false, WriteConcern.Safe)
-  }
-
-  def updateMetadata(fileId: UUID, metadata: JsValue, extractor_id: String) {
-    val doc = JSON.parse(Json.stringify(metadata)).asInstanceOf[DBObject]
-    FileDAO.findOneById(new ObjectId(fileId.stringify)) match {
-      case None => None
-      case Some(file) => {
-        FileDAO.update(MongoDBObject("_id" -> new ObjectId(fileId.stringify), "metadata.extractor_id" -> extractor_id), $set("metadata.$" -> doc), false, false, WriteConcern.Safe)
-      }
     }
   }
 
@@ -474,61 +316,6 @@ class MongoDBFileService @Inject() (
     return false
   }
 
-  //Not used yet
-  def getMetadata(id: UUID): scala.collection.immutable.Map[String,Any] = {
-    FileDAO.dao.collection.findOneByID(new ObjectId(id.stringify)) match {
-      case None => new scala.collection.immutable.HashMap[String,Any]
-      case Some(x) => {
-        val returnedMetadata = x.getAs[DBObject]("metadata").get.toMap.asScala.asInstanceOf[scala.collection.mutable.Map[String,Any]].toMap
-        returnedMetadata
-      }
-    }
-  }
-
-  def getUserMetadata(id: UUID): scala.collection.mutable.Map[String,Any] = {
-    FileDAO.dao.collection.findOneByID(new ObjectId(id.stringify)) match {
-      case None => new scala.collection.mutable.HashMap[String,Any]
-      case Some(x) => {
-        x.getAs[DBObject]("userMetadata") match{
-          case Some(y)=>{
-            val returnedMetadata = x.getAs[DBObject]("userMetadata").get.toMap.asScala.asInstanceOf[scala.collection.mutable.Map[String,Any]]
-            returnedMetadata
-          }
-          case None => new scala.collection.mutable.HashMap[String,Any]
-        }
-      }
-    }
-  }
-
-  def getUserMetadataJSON(id: UUID): String = {
-    FileDAO.dao.collection.findOneByID(new ObjectId(id.stringify)) match {
-      case None => "{}"
-      case Some(x) => {
-        x.getAs[DBObject]("userMetadata") match{
-          case Some(y)=>{
-            val returnedMetadata = com.mongodb.util.JSON.serialize(x.getAs[DBObject]("userMetadata").get)
-            returnedMetadata
-          }
-          case None => "{}"
-        }
-      }
-    }
-  }
-
-  def getTechnicalMetadataJSON(id: UUID): String = {
-    FileDAO.dao.collection.findOneByID(new ObjectId(id.stringify)) match {
-      case None => "{}"
-      case Some(x) => {
-        x.getAs[DBObject]("metadata") match{
-          case Some(y)=>{
-            val returnedMetadata = com.mongodb.util.JSON.serialize(x.getAs[DBObject]("metadata").get)
-            returnedMetadata
-          }
-          case None => "{}"
-        }
-      }
-    }
-  }
 
   /** Change the metadataCount field for a file */
   def incrementMetadataCount(id: UUID, count: Long) = {
@@ -562,18 +349,6 @@ class MongoDBFileService @Inject() (
    /*convert list of JsObject to JsArray*/
   def getJsonArray(list: List[JsObject]): JsArray = {
     list.foldLeft(JsArray())((acc, x) => acc ++ Json.arr(x))
-  }
-
-  def addUserMetadata(id: UUID, json: String) {
-    Logger.debug("Adding/modifying user metadata to file " + id + " : " + json)
-    val md = com.mongodb.util.JSON.parse(json).asInstanceOf[DBObject]
-    FileDAO.update(MongoDBObject("_id" -> new ObjectId(id.stringify)), $set("userMetadata" -> md), false, false, WriteConcern.Safe)
-  }
-
-  def addXMLMetadata(id: UUID, json: String) {
-    Logger.debug("Adding/modifying XML file metadata to file " + id + " : " + json)
-    val md = com.mongodb.util.JSON.parse(json).asInstanceOf[DBObject]
-    FileDAO.update(MongoDBObject("_id" -> new ObjectId(id.stringify)), $set("xmlMetadata" -> md), false, false, WriteConcern.Safe)
   }
 
   def findByTag(tag: String, user: Option[User]): List[File] = {
@@ -680,9 +455,6 @@ class MongoDBFileService @Inject() (
           val fileDatasets = datasets.findByFileId(file.id)
           for(fileDataset <- fileDatasets){
             datasets.removeFile(fileDataset.id, id)
-            if(!file.xmlMetadata.isEmpty){
-              datasets.index(fileDataset.id)
-            }
 
             if(!file.thumbnail_id.isEmpty && !fileDataset.thumbnail_id.isEmpty){            
               if(file.thumbnail_id.get.equals(fileDataset.thumbnail_id.get)){ 
@@ -948,72 +720,6 @@ class MongoDBFileService @Inject() (
     FileDAO.update(MongoDBObject("_id" -> new ObjectId(fileId.stringify)),
       $set("thumbnail_id" -> thumbnailId.stringify), false, false, WriteConcern.Safe)
   }
-
-  def dumpAllFileMetadata(): List[String] = {
-		    Logger.debug("Dumping metadata of all files.")
-
-		    val fileSep = System.getProperty("file.separator")
-		    val lineSep = System.getProperty("line.separator")
-		    var fileMdDumpDir = play.api.Play.configuration.getString("filedump.dir").getOrElse("")
-			if(!fileMdDumpDir.endsWith(fileSep))
-				fileMdDumpDir = fileMdDumpDir + fileSep
-			var fileMdDumpMoveDir = play.api.Play.configuration.getString("filedumpmove.dir").getOrElse("")
-			if(fileMdDumpMoveDir.equals("")){
-				Logger.warn("Will not move dumped files metadata to staging directory. No staging directory set.")
-			}
-			else{
-			    if(!fileMdDumpMoveDir.endsWith(fileSep))
-				  fileMdDumpMoveDir = fileMdDumpMoveDir + fileSep
-			}
-
-			var unsuccessfulDumps: ListBuffer[String] = ListBuffer.empty
-
-			for(file <- FileDAO.findAll){
-			  try{
-				  val fileId = file.id.toString
-
-				  val fileTechnicalMetadata = getTechnicalMetadataJSON(file.id)
-				  val fileUserMetadata = getUserMetadataJSON(file.id)
-				  if(fileTechnicalMetadata != "{}" || fileUserMetadata != "{}"){
-
-				    val filenameNoExtension = file.filename.substring(0, file.filename.lastIndexOf("."))
-				    val filePathInDirs = fileId.charAt(fileId.length()-3)+ fileSep + fileId.charAt(fileId.length()-2)+fileId.charAt(fileId.length()-1)+ fileSep + fileId + fileSep + filenameNoExtension + "__metadata.txt"
-				    val mdFile = new java.io.File(fileMdDumpDir + filePathInDirs)
-				    mdFile.getParentFile().mkdirs()
-
-				    val fileWriter =  new BufferedWriter(new FileWriter(mdFile))
-					fileWriter.write(fileTechnicalMetadata + lineSep + lineSep + fileUserMetadata)
-					fileWriter.close()
-
-					if(!fileMdDumpMoveDir.equals("")){
-					  try{
-						  val mdMoveFile = new java.io.File(fileMdDumpMoveDir + filePathInDirs)
-					      mdMoveFile.getParentFile().mkdirs()
-
-						  if(mdFile.renameTo(mdMoveFile)){
-			            	Logger.debug("File metadata dumped and moved to staging directory successfully.")
-						  }else{
-			            	Logger.warn("Could not move dumped file metadata to staging directory.")
-			            	throw new Exception("Could not move dumped file metadata to staging directory.")
-						  }
-					  }catch {case ex:Exception =>{
-						  val badFileId = file.id.toString
-						  Logger.error("Unable to stage dumped metadata of file with id "+badFileId+": "+ex.printStackTrace())
-						  unsuccessfulDumps += badFileId
-					  }}
-					}
-				  }
-
-			  }catch {case ex:Exception =>{
-			    val badFileId = file.id.toString
-			    Logger.error("Unable to dump metadata of file with id "+badFileId+": "+ex.printStackTrace())
-			    unsuccessfulDumps += badFileId
-			  }}
-			}
-
-		    return unsuccessfulDumps.toList
-
-	}
 
   def addFollower(id: UUID, userId: UUID) {
     FileDAO.update(MongoDBObject("_id" -> new ObjectId(id.stringify)),

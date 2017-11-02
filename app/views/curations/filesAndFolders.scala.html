@@ -1,4 +1,4 @@
-@(curation: CurationObject, currentFolder: Option[String], foldersList: List[CurationFolder], folderHierarchy: List[CurationFolder], filepage: Int, next: Boolean, files:List[CurationFile], m: List[models.Metadata])(implicit user: Option[models.User])
+@(curation: CurationObject, currentFolder: Option[String], foldersList: List[CurationFolder], folderHierarchy: List[CurationFolder], filepage: Int, next: Boolean, files:List[CurationFile], rdfMetadataMap: Map[String, models.RdfMetadata], mDefs:List[MetadataDefinition])(implicit user: Option[models.User])
 @import api.Permission
 
 @if(files.size > 0 ||folderHierarchy.length > 0 || foldersList.size>0){
@@ -52,16 +52,16 @@
               @if(curation.status =="In Preparation" && Permission.checkPermission(Permission.AddMetadata, ResourceRef(ResourceRef.curationObject, curation.id))) {
                 <div class="row">
                   <div class="col-md-12">
-                  @metadatald.addMetadata("curationFile", file.id.toString, "metadata-content-"+file.id.stringify)
+                  @metadatald.addMetadata("curationFile", file.id.toString, mDefs, "metadata-content-"+file.id.stringify)
                   </div>
                 </div>
               }
             <div class="row">
               <div class="col-md-12" id="metadata-content-@file.id.stringify">
                 @if(curation.status =="In Preparation") {
-                    @metadatald.view(m.filter(_.attachedTo.id == file.id), true)
+                    @metadatald.view(None, rdfMetadataMap.apply(file.id.stringify), mDefs, true)
                 } else {
-                    @metadatald.view(m.filter(_.attachedTo.id == file.id), false)
+                    @metadatald.view(None, rdfMetadataMap.apply(file.id.stringify), mDefs, false)
                 }
               </div>
             </div>

@@ -101,7 +101,7 @@ object FileUtils {
     val creator = UserAgent(id = UUID.generate(), user = user, userId = Some(new URL(creator_url)))
 
     // Extract path information from requests for later
-    val clowderurl = Utils.baseUrl(request)
+    val clowderurl = Utils.baseEventUrl(request)
     val clientIP = request.remoteAddress
     val serverIP = request.host
 
@@ -275,8 +275,8 @@ object FileUtils {
         case Some(currentPreview) => {
           val extractorId = currentPreview.extractor_id
           val currentPreviewTitle = currentPreview.title
-          val currentMetadata = currentPreview.jsonldMetadata
-          previews.attachToFile(pv.id,originalFile.id,extractorId,Json.toJson(currentMetadata))
+          val currentMetadata = previews.getMetadata(currentPreview.id)
+          previews.attachToFile(pv.id,originalFile.id,extractorId, Json.toJson(currentMetadata))
         }
         case None => Logger.error("No preview found during copy for original preview with id " + pv.id)
       }
@@ -300,7 +300,7 @@ object FileUtils {
     val creator = UserAgent(id = UUID.generate(), user=user.getMiniUser, userId = Some(new URL(creator_url)))
 
     // Extract path information from requests for later
-    val clowderurl = Utils.baseUrl(request)
+    val clowderurl = Utils.baseEventUrl(request)
     val clientIP = request.remoteAddress
     val serverIP = request.host
 
@@ -687,22 +687,6 @@ object FileUtils {
       // store the file
       current.plugin[FileDumpService].foreach {
         _.dump(DumpOfFile(fp, file.id.toString(), file.filename))
-      }
-
-      // for metadata files
-      if (file.contentType.equals("application/xml") || file.contentType.equals("text/xml")) {
-        val xmlToJSON = FilesUtils.readXMLgetJSON(fp)
-        Logger.debug("xmlmd=" + xmlToJSON)
-
-        // add xml as xml metadata
-        // TODO is this still valid?
-        files.addXMLMetadata(file.id, xmlToJSON)
-
-        //add file to RDF triple store if triple store is used
-        configuration.getString("userdfSPARQLStore").getOrElse("no") match {
-          case "yes" => sqarql.addFileToGraph(file.id)
-          case _ => {}
-        }
       }
     }
   }

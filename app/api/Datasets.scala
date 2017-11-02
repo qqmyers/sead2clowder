@@ -219,17 +219,9 @@ class  Datasets @Inject()(
                   }
                   attachExistingFileHelper(UUID(id), file.id, d, file, request.user)
                   files.index(UUID(file_id))
-                  if (!file.xmlMetadata.isEmpty) {
-                    val xmlToJSON = files.getXMLMetadataJSON(UUID(file_id))
-                    datasets.addXMLMetadata(UUID(id), UUID(file_id), xmlToJSON)
                     current.plugin[ElasticsearchPlugin].foreach {
                       _.index(SearchUtils.getElasticsearchObject(d))
                     }
-                  } else {
-                    current.plugin[ElasticsearchPlugin].foreach {
-                      _.index(SearchUtils.getElasticsearchObject(d))
-                    }
-                  }
 
                   current.plugin[AdminsNotifierPlugin].foreach {
                     _.sendAdminsNotification(Utils.baseUrl(request), "Dataset", "added", id, name)
@@ -418,9 +410,6 @@ class  Datasets @Inject()(
       datasets.addFile(dsId, file)
       events.addSourceEvent(user , file.id, file.filename, dataset.id, dataset.name, "attach_file_dataset")
       files.index(fileId)
-      if (!file.xmlMetadata.isEmpty){
-        datasets.index(dsId)
-      }
 
       if(dataset.thumbnail_id.isEmpty && !file.thumbnail_id.isEmpty){
         datasets.updateThumbnail(dataset.id, UUID(file.thumbnail_id.get))
@@ -501,9 +490,7 @@ class  Datasets @Inject()(
           datasets.removeFile(dataset.id, file.id)
           events.addSourceEvent(user , file.id, file.filename, dataset.id, dataset.name, "detach_file_dataset")
           files.index(fileId)
-          if (!file.xmlMetadata.isEmpty)
-            datasets.index(datasetId)
-
+ 
           Logger.debug("----- Removing a file from dataset completed")
 
           if(!dataset.thumbnail_id.isEmpty && !file.thumbnail_id.isEmpty){
@@ -524,7 +511,8 @@ class  Datasets @Inject()(
               }
             }
           }
-
+          //Possible context space change
+          metadataService.synchMetadataContext(ResourceRef(ResourceRef.file, fileId))
           //remove link between dataset and file from RDF triple store if triple store is used
           if (file.filename.endsWith(".xml")) {
             configuration.getString("userdfSPARQLStore").getOrElse("no") match {
@@ -613,7 +601,7 @@ class  Datasets @Inject()(
         //send RabbitMQ message
         current.plugin[RabbitmqPlugin].foreach { p =>
           val dtkey = s"${p.exchange}.metadata.added"
-          p.extract(ExtractorMessage(UUID(""), UUID(""), controllers.Utils.baseUrl(request), dtkey, mdMap, "", metadata.attachedTo.id, ""))
+          p.extract(ExtractorMessage(UUID(""), UUID(""), controllers.Utils.baseEventUrl(request), dtkey, mdMap, "", metadata.attachedTo.id, ""))
         }
 
 
@@ -636,49 +624,49 @@ class  Datasets @Inject()(
             var model: RDFModel = null
             json.validate[RDFModel] match {
               case e: JsError => {
-                Logger.error("Errors: " + JsError.toFlatForm(e))
+                Logger.error("RDFModel Errors: " + JsError.toFlatForm(e))
                 BadRequest(JsError.toFlatJson(e))
               }
-              case s: JsSuccess[RDFModel] => {
-                model = s.get
-
+              case s: JsSuccess[RDFModel] => { 
+                model = s.get 
+                
                 //parse request for agent/creator info
                 //creator can be UserAgent or ExtractorAgent
                 var creator: models.Agent = null
                 json.validate[Agent] match {
                   case s: JsSuccess[Agent] => {
                     creator = s.get
-
+    
                     // check if the context is a URL to external endpoint
                     val contextURL: Option[URL] = (json \ "@context").asOpt[String].map(new URL(_))
-
+    
                     // check if context is a JSON-LD document
                     val contextID: Option[UUID] = (json \ "@context").asOpt[JsObject]
                       .map(contextService.addContext(new JsString("context name"), _))
-
+    
                     // when the new metadata is added
                     val createdAt = new Date()
-
+    
                     //parse the rest of the request to create a new models.Metadata object
                     val attachedTo = ResourceRef(ResourceRef.dataset, id)
                     val content = (json \ "content")
                     val version = None
                     val metadata = models.Metadata(UUID.generate, attachedTo, contextID, contextURL, createdAt, creator,
                       content, version)
-
+    
                     //add metadata to mongo
                     metadataService.addMetadata(metadata)
                     val mdMap = metadata.getExtractionSummary
-
+    
                     //send RabbitMQ message
                     current.plugin[RabbitmqPlugin].foreach { p =>
                       val dtkey = s"${p.exchange}.metadata.added"
-                      p.extract(ExtractorMessage(UUID(""), UUID(""), controllers.Utils.baseUrl(request), dtkey, mdMap, "", metadata.attachedTo.id, ""))
+                      p.extract(ExtractorMessage(UUID(""), UUID(""), controllers.Utils.baseEventUrl(request), dtkey, mdMap, "", metadata.attachedTo.id, ""))
                     }
 
                     datasets.index(id)
                     Ok(toJson("Metadata successfully added to db"))
-
+    
                   }
                   case e: JsError => {
                     Logger.error("Error getting creator");
@@ -767,25 +755,6 @@ class  Datasets @Inject()(
         BadRequest(toJson("Error getting dataset  " + id))
       }
     }
-  }
-
-  def addUserMetadata(id: UUID) = PermissionAction(Permission.AddMetadata, Some(ResourceRef(ResourceRef.dataset, id)))(parse.json) { implicit request =>
-    implicit val user = request.user
-    Logger.debug(s"Adding user metadata to dataset $id")
-    datasets.addUserMetadata(id, Json.stringify(request.body))
-
-    datasets.get(id) match {
-      case Some(dataset) => {
-        events.addObjectEvent(user, id, dataset.name, "addMetadata_dataset")
-      }
-    }
-
-    datasets.index(id)
-    configuration.getString("userdfSPARQLStore").getOrElse("no") match {
-      case "yes" => datasets.setUserMetadataWasModified(id, true)
-      case _ => Logger.debug("userdfSPARQLStore not enabled")
-    }
-    Ok(toJson(Map("status" -> "success")))
   }
 
   def datasetFilesGetIdByDatasetAndFilename(datasetId: UUID, filename: String): Option[String] = {
@@ -1771,64 +1740,6 @@ class  Datasets @Inject()(
     deleteDatasetHelper(id, request)
   }
 
-  def getRDFUserMetadata(id: UUID, mappingNumber: String="1") = PermissionAction(Permission.ViewMetadata, Some(ResourceRef(ResourceRef.dataset, id))) { implicit request =>
-    current.plugin[RDFExportService].isDefined match{
-      case true => {
-        current.plugin[RDFExportService].get.getRDFUserMetadataDataset(id.toString, mappingNumber) match{
-          case Some(resultFile) =>{
-            Ok.chunked(Enumerator.fromStream(new FileInputStream(resultFile)))
-              .withHeaders(CONTENT_TYPE -> "application/rdf+xml")
-              .withHeaders(CONTENT_DISPOSITION -> (FileUtils.encodeAttachment(resultFile.getName(),request.headers.get("user-agent").getOrElse(""))))
-          }
-          case None => BadRequest(toJson("Dataset not found " + id))
-        }
-      }
-      case _ => Ok("RDF export plugin not enabled")
-    }
-  }
-
-  def jsonToXML(theJSON: String): java.io.File = {
-
-    val jsonObject = new JSONObject(theJSON)
-    var xml = org.json.XML.toString(jsonObject)
-
-    Logger.debug("thexml: " + xml)
-
-    //Remove spaces from XML tags
-    var currStart = xml.indexOf("<")
-    var currEnd = -1
-    var xmlNoSpaces = ""
-    while (currStart != -1) {
-      xmlNoSpaces = xmlNoSpaces + xml.substring(currEnd + 1, currStart)
-      currEnd = xml.indexOf(">", currStart + 1)
-      xmlNoSpaces = xmlNoSpaces + xml.substring(currStart, currEnd + 1).replaceAll(" ", "_")
-      currStart = xml.indexOf("<", currEnd + 1)
-    }
-    xmlNoSpaces = xmlNoSpaces + xml.substring(currEnd + 1)
-
-    val xmlFile = java.io.File.createTempFile("xml", ".xml")
-    val fileWriter = new BufferedWriter(new FileWriter(xmlFile))
-    fileWriter.write(xmlNoSpaces)
-    fileWriter.close()
-
-    return xmlFile
-  }
-
-  def getRDFURLsForDataset(id: UUID) = PermissionAction(Permission.ViewMetadata, Some(ResourceRef(ResourceRef.dataset, id))) { implicit request =>
-    current.plugin[RDFExportService].isDefined match{
-      case true =>{
-        current.plugin[RDFExportService].get.getRDFURLsForDataset(id.toString)  match {
-          case Some(listJson) => {
-            Ok(listJson)
-          }
-          case None => Logger.error(s"Error getting dataset $id"); InternalServerError
-        }
-      }
-      case false => {
-        Ok("RDF export plugin not enabled")
-      }
-    }
-  }
 
   def getTechnicalMetadataJSON(id: UUID) = PermissionAction(Permission.ViewMetadata, Some(ResourceRef(ResourceRef.dataset, id))) { implicit request =>
     datasets.get(id) match {
@@ -1842,29 +1753,7 @@ class  Datasets @Inject()(
     }
   }
 
-
-  def getXMLMetadataJSON(id: UUID) = PermissionAction(Permission.ViewMetadata, Some(ResourceRef(ResourceRef.dataset, id))) { implicit request =>
-    datasets.get(id)  match {
-      case Some(dataset) => {
-        Ok(datasets.getXMLMetadataJSON(id))
-      }
-      case None => {Logger.error("Error finding dataset" + id); InternalServerError}
-    }
-  }
-
-  def getUserMetadataJSON(id: UUID) = PermissionAction(Permission.ViewMetadata, Some(ResourceRef(ResourceRef.dataset, id))) { implicit request =>
-    datasets.get(id)  match {
-      case Some(dataset) => {
-        Ok(datasets.getUserMetadataJSON(id))
-      }
-      case None => {
-        Logger.error("Error finding dataset" + id);
-        InternalServerError
-      }
-
-    }
-  }
-
+ 
   def dumpDatasetGroupings = ServerAdminAction { request =>
 
     val unsuccessfulDumps = datasets.dumpAllDatasetGroupings
@@ -1880,20 +1769,6 @@ class  Datasets @Inject()(
     }
   }
 
-  def dumpDatasetsMetadata = ServerAdminAction { request =>
-
-    val unsuccessfulDumps = datasets.dumpAllDatasetMetadata
-    if(unsuccessfulDumps.size == 0)
-      Ok("Dumping of datasets metadata was successful for all datasets.")
-    else{
-      var unsuccessfulMessage = "Dumping of datasets metadata was successful for all datasets except dataset(s) with id(s) "
-      for(badDataset <- unsuccessfulDumps){
-        unsuccessfulMessage = unsuccessfulMessage + badDataset + ", "
-      }
-      unsuccessfulMessage = unsuccessfulMessage.substring(0, unsuccessfulMessage.length()-2) + "."
-      Ok(unsuccessfulMessage)
-    }
-  }
 
   def follow(id: UUID) = AuthenticatedAction {
     request =>
@@ -2407,7 +2282,6 @@ class  Datasets @Inject()(
     }
     Ok(toJson("added new event"))
   }
-
   def copyDatasetToSpace(datasetId: UUID, spaceId: UUID) = PermissionAction(Permission.AddResourceToSpace, Some(ResourceRef(ResourceRef.space, spaceId))) { implicit request =>
     implicit val user = request.user
     user match {
@@ -2418,6 +2292,7 @@ class  Datasets @Inject()(
               spaces.get(spaceId) match {
                 case Some(space) => {
                   val d = Dataset(name = dataset.name, description = dataset.description, created = new Date(), author = dataset.author, licenseData = dataset.licenseData, spaces = List(spaceId))
+
                   datasets.insert(d) match {
                     case Some(id) => {
                       copyDatasetMetadata(dataset.id,UUID(id))
@@ -2490,7 +2365,7 @@ class  Datasets @Inject()(
           content, version)
         //add metadata to mongo
         metadataService.addMetadata(metadata)
-      }
+  }
     }
   }
 

@@ -1,4 +1,6 @@
-@()(implicit user: Option[models.User])
+@(spaceMap : Map[String, String])(implicit user: Option[models.User])
+
+@import play.api.libs.json.Json 
 
 @main("Search metadata") {
     <h2>Advanced Search</h2>
@@ -47,8 +49,26 @@
     <script src="@routes.Assets.at("javascripts/chosen.jquery.js")" type="text/javascript"></script>
     <script src="@routes.Assets.at("javascripts/handlebars-v1.3.0.js")" type="text/javascript"></script>
     <script src="@routes.Assets.at("javascripts/handlebars-loader.js")" type="text/javascript"></script>
+    <script src="@routes.Assets.at("javascripts/metadata/metadata.js")" type="text/javascript"></script>
+    <script src="@routes.Assets.at("javascripts/errorRedirect.js")" type="text/javascript"></script>
+    <script src="@routes.Assets.at("javascripts/jquery-ui-timepicker-addon.js")" type="text/javascript"></script>
+	<script src="@routes.Assets.at("javascripts/terraformer/terraformer-1.0.5.min.js")"></script>
+	<script src="@routes.Assets.at("javascripts/terraformer/terraformer-wkt-parser-1.1.0.min.js")"></script>
+	@if(play.api.Play.current.plugin[services.StagingAreaPlugin].isDefined) {
+  	  <script src="@routes.Assets.at("javascripts/creators.js")" type="text/javascript"></script>
+     @* <script src="@routes.Assets.at("javascripts/people.js")" type="text/javascript"></script>*@
+    }
+    <script src="@routes.Assets.at("javascripts/listgeocode.js")" type="text/javascript"></script>
+    <script src="@routes.Assets.at("javascripts/scientificvariable.js")" type="text/javascript"></script>      
+    
     <script>
         var row_list = [];
+        var spaces = {};
+        var priorSel = {};
+        @for((name, id) <- spaceMap) {
+        	spaces["@name"] = "@id";
+        }
+        
         $("#add-metadata-grouping").select2({
             theme: "bootstrap",
             allowClear: false,
@@ -60,12 +80,43 @@
         // Add a new row to the set of criteria
         function getBasicDefinitions(rowId) {
             var rowStr = String(rowId);
+			$("#metadata-search-rows").append($("<div/>")
 
+			.append($("<div>").addClass('col-lg-3 col-md-3').text("Definition Source ")
+			  .append($("<a/>").attr("tabindex","0").attr("role","button").attr("aria-hidden","true").attr("title","Source")
+			  .attr("data-content","Terms are defined within a given space or by programs that automatically report @Messages("metadata.managed"). Searches are done across all sources but the terms in the next choice box are drawn from the source you select here.")
+			  .attr("data-toggle","popover").append($("<span/>").addClass("glyphicon glyphicon-info-sign"))))
+			
+			.append($("<div>").addClass('col-lg-3 col-md-3').text("Term ")
+			  .append($("<a/>").attr("tabindex","0").attr("role","button").attr("aria-hidden","true").attr("title","Term")
+			  .attr("data-content","Terms from the chosen source are listed here by their short label. Searches are semantic (based on the formal URI of a Term) and will find items across spaces where the Terms' formal URIs match and other search conditions are met.")
+			  .attr("data-toggle","popover").append($("<span/>").addClass("glyphicon glyphicon-info-sign"))))
+			
+			.append($("<div>").addClass('col-lg-2 col-md-2').text("Operator ")
+			  .append($("<a/>").attr("tabindex","0").attr("role","button").attr("aria-hidden","true").attr("title","Operator")
+			  .attr("data-content","The matching condition to be applied for this element (row) of the search query.")
+			  .attr("data-toggle","popover").append($("<span/>").addClass("glyphicon glyphicon-info-sign"))))
+			
+			.append(getTypeSpecificLabel("", rowStr)));
+			
+			
             // Basic row definition
-            $("#metadata-search-rows").append(
-                $("<p><div id='metadata-clause-"+rowStr+"'>" +
+              var row = "<div id='metadata-clause-"+rowStr+"'>" +
+                 <!-- SOURCE SELECTOR DROPDOWN -->
+                    "<div class='form-group col-lg-3 col-md-3'>" +
+                        "<select id='add-source-select-"+rowStr+"'>" + 
+						"<option value='defaults'>Default (not in a space)</option>";
+						for (var name in spaces) {
+					    	if (spaces.hasOwnProperty(name)) {
+					    	row = row + "<option value='" + spaces[name] + "'>Space: " + name + "</option>";
+					    	}
+						}			
+                        row = row + 
+                        "<option value='managed'>@Messages("metadata.managed")</option>" +
+                        "</select></div>" +
+                   
                     <!-- FIELD SELECTOR DROPDOWN -->
-                    "<div class='form-group col-lg-4 col-md-4'>" +
+                    "<div class='form-group col-lg-3 col-md-3'>" +
                         "<select id='add-metadata-select-"+rowStr+"'><option value=''></option></select></div>" +
                     <!-- OPERATOR DROPDOWN -->
                     "<div class='form-group col-lg-2 col-md-2'> <select id='add-metadata-operator-"+rowStr+"'>" +
@@ -76,16 +127,15 @@
                         "<option value='<'>less than</option>" +
                     "</select></div>" +
                     <!-- VALUE FIELD -->
-                    "<div class='form-group col-lg-4 col-md-4'>" +
+                    "<div class='form-group col-lg-3 col-md-3'>" +
                         "<input type='text' class='form-control' id='v-"+rowStr+"' placeholder='Type value here'>" +
                     "</div>" +
                     <!-- REMOVE ROW BUTTON -->
-                    "<div class='form-group col-lg-2 col-md-2'>" +
+                    "<div class='form-group col-lg-1 col-md-1'>" +
                     "<button class='btn' id='remove-"+rowStr+"' onclick='removeRow("+rowStr+")'>" +
                     "<span class='glyphicon glyphicon-minus'></span></button></div>" +
                 "</div>"
-                )
-            );
+            $("#metadata-search-rows").append($(row));
             document.getElementById("add-clause").onclick = function () { getBasicDefinitions(rowId+1); };
             document.getElementById("v-"+rowStr).onkeydown = function(evt) {
                 // Allow Enter key to perform search on any value box
@@ -108,42 +158,80 @@
                 width: "100%"
             });
 
+    		$('[data-toggle="popover"]').popover(); 
+    
             // fetch metadata definitions
-            var request = jsRoutes.api.Metadata.getDefinitionsDistinctName().ajax({
+            var request = jsRoutes.api.Metadata.getDefinitionsAutocompleteName("").ajax({
                 type: 'GET',
                 contentType: "application/json"
             });
             request.done(function (response, textStatus, jqXHR) {
                 var fields = response;
 
-                $("#add-metadata-select-"+rowStr).empty()
+                $("#add-metadata-select-"+rowStr).empty();
                 for (var i = 0; i < fields.length; i++) {
                     var elem = $("<option></option>");
                     elem.attr("data-type", fields[i].json.type);
+                    elem.attr("data-defid", fields[i].id);
+                    
                     elem.attr("data-id", fields[i].json.label);
-                    elem.attr("value", "metadata."+fields[i].json.label);
+                    elem.attr("value", "metadata."+safe(fields[i].json.uri));
+                    if(typeof fields[i].json.definitions_url !== "undefined") {
+						elem.attr("data-service", fields[i].json.definitions_url);
+					}
+            		if(typeof fields[i].json.query_parameter !== "undefined") {
+						elem.attr("data-param",fields[i].json.query_parameter);
+					}
+                    
                     elem.text(fields[i].json.label);
                     $("#add-metadata-select-"+String(rowId)).append(elem);
                 }
+                
+                
 
+                
+                
+
+       // Select box will populate as user types, with metadata field autocomplete suggestions
+                $("#add-source-select-"+rowStr).select2({
+                    theme: "bootstrap",
+                    placeholder: "Select a source",
+                    width: "100%"
+                    });
+
+				//Remove current term choice since it may not exist in the newly selected source 
+				//(could keep value if it exists in new space but the new values are not know at the time of this event)
+ 				$("#add-source-select-"+rowStr).on('select2:select', function (evt) {
+ 					$("#add-metadata-select-"+rowStr).empty();
+ 					$("#add-metadata-select-"+rowStr).select2('val',"");
+ 				});
+ 				
                 // Select box will populate as user types, with metadata field autocomplete suggestions
                 $("#add-metadata-select-"+rowStr).select2({
                     theme: "bootstrap",
-                    placeholder: "Select a type or field key",
+                    placeholder: "Select a term",
                     allowClear: true,
                     width: "100%",
                     ajax: {
                         url: function(filter) {
-                            // Get autocomplete results if typing; otherwise return standard set of definitions
-                            if (filter.term == null || filter.term == "") {
-                                return jsRoutes.api.Metadata.getDefinitionsDistinctName().url
-                            }
-                            else {
-                                return jsRoutes.api.Metadata.getAutocompleteName(filter.term).url
-                            }
+                            var source =$("#add-source-select-"+rowStr).val(); 
+                            var queryTerm =  "";
+                            if (filter.term != null) {
+							  queryTerm = filter.term;
+							} 
+	                        if(source ==="managed") {
+                                return jsRoutes.api.Metadata.getManagedTermsAutocompleteName(queryTerm).url;
+                            } else {
+                            	if(source==="defaults") {
+                            	  return jsRoutes.api.Metadata.getDefinitionsAutocompleteName(queryTerm).url;
+                           	    } else {
+                            	  return jsRoutes.api.Metadata.getDefinitionsAutocompleteName(queryTerm, source).url ;
+                            	}
+                            }  
                         },
                         // Populate autocomplete as user types
                         processResults: function(data, page) {
+							
                             var outMap = {}
 
                             for (var rez=0; rez<data.length; rez++) {
@@ -152,13 +240,24 @@
                                 // Metadata Definitions
                                 if (typeof(entry) == 'object') {
                                     var entryGroup = "Metadata Definitions";
-                                    var entryData = {text: entry.json.label, id: "metadata."+entry.json.label};
+                                    var entryData = {text: entry.json.label, id: "metadata."+safe(entry.json.uri)};
+                                    var opt = $("<option/>").attr("data-type",entry.json.type).attr("data-id",entry.json.label).attr("data-defid",entry.id).val("metadata."+safe(entry.json.uri)).text(entry.json.label);
+                                    if(typeof entry.json.definitions_url !== "undefined") {
+              							opt.attr("data-service", entry.json.definitions_url);
+							        }
+            						if(typeof entry.json.query_parameter !== "undefined") {
+							            opt.attr("data-param",entry.json.query_parameter);
+						            }
+                                    
+                                    $("#add-metadata-select-"+rowStr).append(opt);
+
                                 // suggestions from elasticsearch
                                 } else {
                                     if (entry.indexOf('.') > -1) {
                                         if (entry.indexOf('/extractors/') > -1) {
                                             // Group extractor-specific fields together under extractor
                                             var entryGroup = entry.substring(entry.indexOf('/extractors/')+12, entry.lastIndexOf('.'))+" (Extractor)";
+                                            
                                         }
                                         else if (entry.split('.').length > 2 ){
                                             // Group user-submitted metadata under user's name
@@ -182,7 +281,7 @@
 
                             var outList = []
                             for (var group in outMap) {
-                                if (group == "") {
+                                if (group == "" || group === "Metadata Definitions") {
                                     for (var ungrouped=0; ungrouped<outMap[group].length; ungrouped++)
                                         outList.push(outMap[group][ungrouped])
                                 } else
@@ -196,13 +295,56 @@
                         }
                     }
                 })
+                
+   				$("#add-metadata-select-"+rowStr).on('select2:select', function (evt) {
+   				
+ 					var selDef = $("#add-metadata-select-"+rowStr + " option").filter("[value=\'" + ($("#add-metadata-select-"+rowStr).val())+"\']");
+ 					var field_type = selDef.attr("data-type");
+ 					@if(!(play.api.Play.current.plugin[services.StagingAreaPlugin].isDefined)) {
+ 						//person field is from a list only if the plugin is on, otherwise it is just a string
+ 						if(field_type === 'person') {
+ 							field_type = 'string';
+ 						}
+ 					}	
+ 					var field_service = selDef.attr("data-service");
+ 					var field_param = selDef.attr("data-param");
+ 					
+ 					var parent = $("#metadata-clause-"+rowStr + " #v-" + rowStr).parent();
+ 					parent.empty();
+ 					
+                    
+                    if (field_type === "list") {
+						parent.append($("<select/>").addClass('form-control').attr('id', "v-"+rowStr));
+						// make call to external service
+						var request = jsRoutes.api.Metadata.getDefinition(selDef.attr("data-defid")).ajax({
+							type : 'GET',
+							contentType : "application/json"
+						});
+
+						request.done(function(response, textStatus, jqXHR) {
+							var vocabulary = JSON.parse(response);
+							$("#metadata-clause-"+rowStr + " #v-" + rowStr).append($("<option/>"));
+							for (var i=0; i<vocabulary.length; i++) {
+								$("#metadata-clause-"+rowStr + " #v-" + rowStr).append($("<option/>").val(vocabulary[i]).text(vocabulary[i]));
+							}
+							$('#label-'+rowStr).replaceWith(getTypeSpecificLabel(field_type, rowStr));
+							configureField("metadata-clause-"+rowStr, null, "v-" + rowStr, field_type, null, field_service, field_param);
+						});
+						
+					} else {
+						addValueFieldForType(parent, "v-"+rowStr, field_type, field_service, field_param);
+						$('#label-'+rowStr).replaceWith(getTypeSpecificLabel(field_type, rowStr));
+						configureField("metadata-clause-"+rowStr, null, "v-" + rowStr, field_type, null, field_service, field_param);
+ 					}
+ 					
+ 				});
             });
 
             request.fail(function (jqXHR, textStatus, errorThrown){
                 console.error("The following error occured: " + textStatus, errorThrown);
                 var errMsg = "You must be logged in to retrieve metadata definitions";
                 if (!checkErrorAndRedirect(jqXHR, errMsg)) {
-                    notify("Metadata was not added due to : " + errorThrown, "error");
+                    notify("Unable to retrieve metadata terms for search : " + errorThrown, "error");
                 }
             });
         }
@@ -265,6 +407,7 @@
 
         function removeRow(rowId) {
             var rowStr = String(rowId);
+            $("#metadata-clause-"+rowStr).prev().remove();
             $("#metadata-clause-"+rowStr).remove();
             row_list.splice(row_list.indexOf(rowStr), 1);
         }
@@ -301,5 +444,10 @@
             search();
 
         });
+        
+        //Used in view.scala.html as well - should be moved to a common place
+         function safe(name) {
+        	return name.replace(/\//g,"_").replace(/\./g,"_").replace(/\:/g,"_").replace(/ /g,"_").replace(/;/g,"_")
+        }
     </script>
 }

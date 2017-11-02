@@ -4,7 +4,7 @@
             <strong>{{field_label}}</strong>
         </label>
         <div class="col-sm-7">
-            <select id="field-value" data-id="{{field_id}}" data-label="{{field_label}}">
+            <select style="width: 100%" id="field-value" data-id="{{field_id}}" data-label="{{field_label}}" data-entry-id = "{{entry_id}}" value="{{field_value}}">
                 <option value=""></option>
                 {{#each options}}<option value="{{this}}">{{this}}</option>{{/each}}
             </select>

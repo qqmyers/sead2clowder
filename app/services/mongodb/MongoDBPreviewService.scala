@@ -2,36 +2,35 @@ package services.mongodb
 
 import java.util.Date
 
-import services.{ByteStorageService, TileService, FileService, PreviewService}
+import services.{ ByteStorageService, TileService, FileService, PreviewService }
 import com.mongodb.casbah.commons.MongoDBObject
-import java.io.{InputStreamReader, BufferedReader, InputStream}
+import java.io.{ InputStreamReader, BufferedReader, InputStream }
 import play.api.Logger
 import models._
 import org.apache.http.impl.client.DefaultHttpClient
 import org.apache.http.client.methods.HttpPost
-import org.apache.http.entity.mime.{HttpMultipartMode, MultipartEntity}
+import org.apache.http.entity.mime.{ HttpMultipartMode, MultipartEntity }
 import org.apache.http.entity.mime.content.StringBody
 import java.nio.charset.Charset
 import org.apache.http.util.EntityUtils
-import com.novus.salat.dao.{ModelCompanion, SalatDAO}
+import com.novus.salat.dao.{ ModelCompanion, SalatDAO }
 import MongoContext.context
 import play.api.Play.current
 import com.mongodb.casbah.Imports._
-import play.api.libs.json.JsValue
-import javax.inject.{Inject, Singleton}
+import play.api.libs.json._
+import javax.inject.{ Inject, Singleton }
 import models.Preview
 import play.api.libs.json.JsObject
 import com.mongodb.casbah.commons.TypeImports.ObjectId
 import com.mongodb.casbah.WriteConcern
-import util.FileUtils
+import _root_.util.FileUtils
 import collection.JavaConverters._
 
 /**
  * Use MongoDB to store previews
  */
 @Singleton
-class MongoDBPreviewService @Inject()(files: FileService, tiles: TileService, storage: ByteStorageService) extends PreviewService {
-
+class MongoDBPreviewService @Inject() (files: FileService, tiles: TileService, storage: ByteStorageService) extends PreviewService {
 
   /**
    * Count all files
@@ -130,7 +129,6 @@ class MongoDBPreviewService @Inject()(files: FileService, tiles: TileService, st
     }
   }
 
-
   def listAnnotations(preview_id: UUID): List[ThreeDAnnotation] = {
     PreviewDAO.dao.findOneById(new ObjectId(preview_id.stringify)) match {
       case Some(preview) => {
@@ -141,12 +139,11 @@ class MongoDBPreviewService @Inject()(files: FileService, tiles: TileService, st
   }
 
   def remove(id: UUID): Unit = {
-    get(id).foreach{ x=>
+    get(id).foreach { x =>
       ByteStorageService.delete(x.loader, x.loader_id, PreviewDAO.COLLECTION)
       PreviewDAO.remove(x)
     }
   }
-
 
   def removePreview(p: Preview) {
     for (tile <- tiles.get(p.id)) {
@@ -170,7 +167,7 @@ class MongoDBPreviewService @Inject()(files: FileService, tiles: TileService, st
     }
 
     if (!p.filename.isEmpty)
-    // for oni previews, read the ONI frame references from the preview file and remove them
+      // for oni previews, read the ONI frame references from the preview file and remove them
       if (p.filename.get.endsWith(".oniv")) {
         val theFile = getBlob(p.id)
         val frameRefReader = new BufferedReader(new InputStreamReader(theFile.get._1))
@@ -205,6 +202,7 @@ class MongoDBPreviewService @Inject()(files: FileService, tiles: TileService, st
   }
 
   def attachToFile(previewId: UUID, fileId: UUID, extractorId: Option[String], json: JsValue) {
+    //FixMe: metadata field is not part of model
     json match {
       case JsObject(fields) => {
         Logger.debug("attachToFile: extractorId is '" + extractorId.toString + "'.")
@@ -220,6 +218,7 @@ class MongoDBPreviewService @Inject()(files: FileService, tiles: TileService, st
   }
 
   def attachToCollection(previewId: UUID, collectionId: UUID, previewType: String, extractorId: Option[String], json: JsValue) {
+    //FixMe: metadata field is obsolete/is not part of model
     json match {
       case JsObject(fields) => {
         Logger.debug("attachToCollection: extractorId is '" + extractorId.toString + "'.")
@@ -236,6 +235,7 @@ class MongoDBPreviewService @Inject()(files: FileService, tiles: TileService, st
   }
 
   def updateMetadata(previewId: UUID, json: JsValue) {
+    //FixMe: metadata field is obsolete/is not part of model
     json match {
       case JsObject(fields) => {
         val metadata = fields.toMap.flatMap(tuple => MongoDBObject(tuple._1 -> tuple._2.as[String]))
@@ -263,7 +263,7 @@ class MongoDBPreviewService @Inject()(files: FileService, tiles: TileService, st
             $set("file_id" -> new ObjectId(file_id)),
             false, false, WriteConcern.Safe)
         }
-	      Logger.debug("Updating previews.files " + previewId + " with " + metadata)
+        Logger.debug("Updating previews.files " + previewId + " with " + metadata)
       }
       case _ => Logger.error("Expected a JSObject")
     }
@@ -271,30 +271,39 @@ class MongoDBPreviewService @Inject()(files: FileService, tiles: TileService, st
 
   def setTitle(previewId: UUID, title: String) {
     PreviewDAO.dao.collection.update(
-          MongoDBObject("_id" -> new ObjectId(previewId.stringify)),
-          $set("title" -> title),
-          upsert=false, multi=false, WriteConcern.Safe)
+      MongoDBObject("_id" -> new ObjectId(previewId.stringify)),
+      $set("title" -> title),
+      upsert = false, multi = false, WriteConcern.Safe)
   }
-  
+
   /**
-   * Get metadata from the mongo db as a map. 
-   * 
+   * Get metadata from the mongo db as a map.
+   *
    */
-   def getMetadata(id: UUID): scala.collection.immutable.Map[String,Any] = {
+  def getMetadata(id: UUID): JsValue = {
+    //FixMe: metadata field is obsolete/is not part of model
     PreviewDAO.dao.collection.findOneByID(new ObjectId(id.stringify)) match {
-      case None => new scala.collection.immutable.HashMap[String,Any]
+      case None => new JsUndefined("No metadata found")
       case Some(x) => {
-        val returnedMetadata = x.getAs[DBObject]("metadata").get.toMap.asScala.asInstanceOf[scala.collection.mutable.Map[String,Any]].toMap
+        val returnedMetadata = Json.toJson(x.getAs[DBObject]("metadata").get.toMap.asScala.asInstanceOf[scala.collection.mutable.Map[String, String]].toMap)
         returnedMetadata
       }
     }
   }
-  
-    def getExtractorId(id: UUID):String = {     
-      val extractor_id = getMetadata(id)("extractor_id").toString    
-      extractor_id
-   }
-    
+  //FixMe - looks like the methods to set metadata remove the extractor_id field before it gets stored...
+  //This has been updated to get the top level value, but it should not have been working before/may be obsolete
+  def getExtractorId(id: UUID): String = {
+    PreviewDAO.dao.collection.findOneByID(new ObjectId(id.stringify)) match {
+      case None => {
+        Logger.warn("extractor_id not found for preview")
+        ""
+      }
+      case Some(x) => {
+        x.getAs[String]("extractor_id").get
+      }
+    }
+  }
+
 }
 
 object PreviewDAO extends ModelCompanion[Preview, ObjectId] {

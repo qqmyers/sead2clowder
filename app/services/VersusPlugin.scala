@@ -52,11 +52,6 @@ class VersusPlugin(application: Application) extends Plugin {
               case Some(file) => {
                 val list = response.json \ ("versus_descriptors")
                 files.addVersusMetadata(fileid, list)
-                Logger.debug("GET META DATA")
-                files.getMetadata(fileid).map {
-                  md =>
-                    Logger.debug(":::" + md._2.toString)
-                }
               }
               case None => {}
             }

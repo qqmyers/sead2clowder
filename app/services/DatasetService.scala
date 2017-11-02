@@ -182,20 +182,8 @@ trait DatasetService {
    */
   def getTags(user: Option[User]): Map[String, Long]
 
-  def modifyRDFOfMetadataChangedDatasets()
-
   def dumpAllDatasetGroupings(): List[String]
   
-  def dumpAllDatasetMetadata(): List[String]
-
-  def modifyRDFUserMetadata(id: UUID, mappingNumber: String="1")
-
-  def addMetadata(id: UUID, json: String)
-
-  def addXMLMetadata(id: UUID, fileId: UUID, json: String)
-
-  def addUserMetadata(id: UUID, json: String)
-
   /** Change the metadataCount field for a dataset */
   def incrementMetadataCount(id: UUID, count: Long)
 
@@ -244,9 +232,7 @@ trait DatasetService {
 
   def removeAllTags(id: UUID)
 
-  def getUserMetadataJSON(id: UUID): String
-
-  def searchUserMetadataFormulateQuery(requestedMetadataQuery: Any): List[Dataset]
+   def searchUserMetadataFormulateQuery(requestedMetadataQuery: Any): List[Dataset]
 
   def searchAllMetadataFormulateQuery(requestedMetadataQuery: Any): List[Dataset]
 
@@ -262,26 +248,9 @@ trait DatasetService {
 
   def findByTag(tag: String, start: String, limit: Integer, reverse: Boolean, user: Option[User]): List[Dataset]
 
-  def getMetadata(id: UUID): Map[String, Any]
-
-  def getUserMetadata(id: UUID): scala.collection.mutable.Map[String, Any]
-
-  def getTechnicalMetadataJSON(id: UUID): String
-
-  def getXMLMetadataJSON(id: UUID): String
-
-  def removeXMLMetadata(id: UUID, fileId: UUID)
-
   def addTags(id: UUID, userIdStr: Option[String], eid: Option[String], tags: List[String])
 
-  def setUserMetadataWasModified(id: UUID, wasModified: Boolean)
-
   def findMetadataChangedDatasets(): List[Dataset]
-
-  /**
-   * Check recursively whether a dataset's user-input metadata match a requested search tree.
-   */
-  def searchUserMetadata(id: UUID, requestedMetadataQuery: Any): Boolean
 
   def searchMetadataFormulateQuery(requestedMap: java.util.LinkedHashMap[String, Any], root: String): MongoDBObject
 

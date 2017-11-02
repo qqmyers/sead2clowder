@@ -3,6 +3,7 @@ package controllers
 import javax.inject.Inject
 
 import api.Permission
+import api.Permission.Permission
 import models.{ResourceRef, UUID}
 import services._
 
@@ -20,7 +21,7 @@ class Metadata @Inject() (
   def view(id: UUID) = PermissionAction(Permission.ViewMetadata) { implicit request =>
     implicit val user = request.user
     metadata.getMetadataById(id) match {
-      case Some(m) => Ok(views.html.metadatald.view(List(m), true))
+      case Some(m) => Ok(views.html.metadatald.view(Some(List(m)), null, null, true))
       case None => NotFound
     }
   }
@@ -29,14 +30,10 @@ class Metadata @Inject() (
     implicit val user = request.user
     files.get(file_id) match {
       case Some(file) => {
-        val mds = metadata.getMetadataByAttachTo(ResourceRef(ResourceRef.file, file_id))
-        // TODO use to provide contextual definitions directly in the GUI
-        val contexts = (for (md <- mds;
-                             cId <- md.contextId;
-                             c <- contextLDService.getContextById(cId))
-          yield cId -> c).toMap
-
-        Ok(views.html.metadatald.viewFile(file, mds))
+        val m = metadata.getMetadataByAttachTo(ResourceRef(ResourceRef.file, file_id))
+        val r = metadata.getMetadataSummary(ResourceRef(ResourceRef.file, file_id),None)
+       
+        Ok(views.html.metadatald.viewFile(file, r, metadata.getDefinitions(r.contextSpace), m))
       }
       case None => NotFound
     }
@@ -47,7 +44,9 @@ class Metadata @Inject() (
     datasets.get(dataset_id) match {
       case Some(dataset) => {
         val m = metadata.getMetadataByAttachTo(ResourceRef(ResourceRef.dataset, dataset_id))
-        Ok(views.html.metadatald.viewDataset(dataset, m))
+        val r = metadata.getMetadataSummary(ResourceRef(ResourceRef.dataset, dataset_id),None)
+        
+        Ok(views.html.metadatald.viewDataset(dataset, r, metadata.getDefinitions(r.contextSpace), m))
       }
       case None => NotFound
     }
@@ -55,7 +54,9 @@ class Metadata @Inject() (
 
   def search() = PermissionAction(Permission.ViewMetadata) { implicit request =>
     implicit val user = request.user
-    Ok(views.html.metadatald.search())
+    val sList = spaces.listAccess(100, Set[Permission](Permission.ViewSpace), user, user.fold(false)(_.superAdminMode), true, false, showOnlyShared = false)
+    val sMap = sList.foldLeft(Map[String,String]()) { (m,s) => m + (s.name -> s.id.stringify) }
+    Ok(views.html.metadatald.search(sMap))
   }
 
   def getMetadataBySpace(id: UUID) = PermissionAction(Permission.EditSpace, Some(ResourceRef(ResourceRef.space, id))) { implicit request =>

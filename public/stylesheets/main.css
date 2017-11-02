@@ -321,8 +321,7 @@ code {
     width: 85%;
 }
 
-#nameDescrFieldSet .homePages .control-label
-{
+#nameDescrFieldSet .homePages .control-label {
     display: none;
 }
 
@@ -1120,4 +1119,26 @@ table.borderless tbody tr td, table.borderless tbody tr th {
 	-webkit-box-shadow: 0 1px 1px rgba(0, 0, 0, 0.05);
 	box-shadow: 0 1px 1px rgba(0, 0, 0, 0.05);
 }
+
+.metaprov {
+	float:right;
+	font-size: 12px;
+}
+
+.history_entry {
+  padding: 5px 5px 5px 5px;
+}
+
+.history_entry:hover {
+  background-color: aliceblue;
+}
+
+
+.ancestor {
+	background-color: antiquewhite;
+}
+
+#definitions th,td {
+	word-break: break-word;
+	word-wrap: break-word;
 }

@@ -78,7 +78,7 @@ object ApplicationBuild extends Build {
     "org.mongodb" %% "casbah" % "2.6.3",
 
     // geostreams
-    "org.postgresql" % "postgresql" % "9.4-1203-jdbc41",
+    "org.postgresql" % "postgresql" % "42.1.1",
 
     // Find listing of previewers/stylesheets at runtime
     //  servlet is needed here since it is not specified in org.reflections.
@@ -99,7 +99,7 @@ object ApplicationBuild extends Build {
     "info.aduna.commons" % "aduna-commons-net" % "2.7.0",
     "info.aduna.commons" % "aduna-commons-text" % "2.7.0",
     "info.aduna.commons" % "aduna-commons-xml" % "2.7.0",
-    "org.apache.jena" % "apache-jena-libs" % "3.1.1",
+    "org.apache.jena" % "apache-jena-libs" % "3.2.0",
 
     // ??
     "commons-lang" % "commons-lang" % "2.6",
