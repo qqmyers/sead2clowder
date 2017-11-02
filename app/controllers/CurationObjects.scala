@@ -16,7 +16,7 @@ import play.api.libs.json._
 import play.api.libs.json.Json._
 import play.api.libs.json.JsArray
 import services._
-import _root_.util.{ Formatters, RequiredFieldsConfig }
+import _root_.util.{ Formatters, RequiredFieldsConfig, Publications }
 import play.api.Play._
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.{ Future, Await }
@@ -892,52 +892,20 @@ class CurationObjects @Inject() (
     }
   }
 
-  def getPublishedData(index: Int, limit: Int) = UserAction(needActive = false) { implicit request =>
+  def getPublishedData(space: String) = UserAction(needActive = false) { implicit request =>
     implicit val user = request.user
     implicit val context = scala.concurrent.ExecutionContext.Implicits.global
-    var next = index + 1
+
     val endpoint = play.Play.application().configuration().getString("publishData.list.uri").replaceAll("/$", "")
     Logger.debug(endpoint)
     val futureResponse = WS.url(endpoint).get()
     var publishDataList: List[Map[String, String]] = List.empty
+    /*
     val result = futureResponse.map {
       case response =>
         if (response.status >= 200 && response.status < 300 || response.status == 304) {
           val rawDataList = response.json.as[List[JsValue]]
-          publishDataList = rawDataList.map {
-            js =>
-              var resultMap: Map[String, String] = Map(
-                "id" -> (js \ "Identifier").asOpt[String],
-                "title" -> (js \ "Title").asOpt[String],
-                "author" -> (js \ "Creator").asOpt[String],
-                "Abstract" -> (js \ "Abstract").asOpt[String],
-                spaceTitle -> (js \ "Publishing Project Name").asOpt[String],
-                "Published Dataset" -> (js \ "DOI").asOpt[String],
-                "Publication Date" -> (js \ "Publication Date").asOpt[String])
-                // remove (key, value) where value ==  None
-                .collect {
-                  case (key, Some(value)) => key -> value
-                  // do not add "case _ =>" here, otherwise report error:
-                  // type mismatch; found : scala.collection.immutable.Iterable[Any] required: Map[String,String]
-                }
-              // add creator as a list of string. do not use .asOpt[List[String]], otherwise nothing will be parsed
-              (js \ "Creator").asOpt[List[JsValue]] match {
-                case Some(authorList) => resultMap += ("author" -> authorList.map(_.as[String]).mkString(", "))
-                case None =>
-              }
-              // add Abstract as a list of string
-              (js \ "Abstract").asOpt[List[JsValue]] match {
-                case Some(authorList) => resultMap += ("description" -> authorList.map(_.as[String]).mkString(" \n"))
-                case None =>
-              }
-              resultMap
-          }
-
-          if (publishDataList.length < (index * limit + limit)) next = 0
-          //sort by Publication time, don't use joda.Datatime here or you have to write a comparaison by yourself
-          val format = new java.text.SimpleDateFormat("MMM dd, yyyy h:mm:ss aaa")
-          publishDataList.sortBy(x => format.parse(x.get("date").getOrElse("Sep 14, 2016 10:59:26 AM"))).reverse.take(limit + index * limit).takeRight(limit)
-
+          rawDataList.reverse
         } else {
           Logger.error("Error Getting published data: " + response.getAHCResponse.getResponseBody)
           List.empty
@@ -945,9 +913,11 @@ class CurationObjects @Inject() (
     }
 
     val rs = Await.result(result, Duration.Inf)
-
-    Ok(views.html.curations.publishedData(rs, index - 1, next, limit))
+*/
+    Ok(views.html.curations.publishedData(Publications.getPublications(space, spaces), play.Play.application().configuration().getString("SEADservices.uri")))
 
   }
-}
+
+
+  }
 
