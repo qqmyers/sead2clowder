@@ -414,6 +414,9 @@ class MongoSalatPlugin(app: Application) extends Plugin {
     
     // Remove collections for deprecated forms of metadata 
     updateMongo("remove-deprecated-metadata-collections", updateMetadataStorage)
+
+    // Change from User active and serverAdmin flags to single status 
+    updateMongo("change-to-user-status", updateToUserStatus)
   }
 
   private def updateMongo(updateKey: String, block: () => Unit): Unit = {
@@ -574,6 +577,7 @@ class MongoSalatPlugin(app: Application) extends Plugin {
   private def updateReplaceFilesInDataset() {
     collection("datasets").foreach { ds =>
       val files = ds.getAsOrElse[MongoDBList]("files", MongoDBList.empty)
+      //Following statement fails if datasets with fileIds already exist
       val fileIds = files.map(file => new ObjectId(file.asInstanceOf[BasicDBObject].get("_id").toString)).toList
       ds.put("files", fileIds)
       try {
@@ -1074,7 +1078,8 @@ class MongoSalatPlugin(app: Application) extends Plugin {
       val parentCollections = collection("collections").find(MongoDBObject("_id" -> MongoDBObject("$in" -> parents)))
       var parentSpaces = MongoDBList.empty
       parentCollections.foreach { pc =>
-       pc.getAsOrElse[MongoDBList]("spaces", MongoDBList.empty).foreach{ps => parentSpaces += ps} }
+        pc.getAsOrElse[MongoDBList]("spaces", MongoDBList.empty).foreach { ps => parentSpaces += ps }
+      }
       val root_spaces = scala.collection.mutable.ListBuffer.empty[ObjectId]
       spaces.foreach { s =>
 
@@ -1256,15 +1261,13 @@ class MongoSalatPlugin(app: Application) extends Plugin {
               // Find if user exists with lowercase email already
               val conflicts = collection("social.users").count(MongoDBObject(
                 "_id" -> MongoDBObject("$ne" -> userId),
-              "identityId" -> MongoDBObject("userId" -> username.toLowerCase, "providerId" -> "userpass")
-            ))
+                "identityId" -> MongoDBObject("userId" -> username.toLowerCase, "providerId" -> "userpass")))
 
               if (conflicts == 0) {
                 collection("social.users").update(MongoDBObject("_id" -> userId),
                   MongoDBObject("$set" -> MongoDBObject(
                     "email" -> email.toLowerCase,
-                  "identityId" -> MongoDBObject("userId" -> username.toLowerCase, "providerId" -> "userpass")
-                )), upsert = false, multi = true)
+                    "identityId" -> MongoDBObject("userId" -> username.toLowerCase, "providerId" -> "userpass"))), upsert = false, multi = true)
               } else {
                 // If there's already an account with lowercase email, deactivate this account
                 collection("social.users").update(MongoDBObject("_id" -> userId),
@@ -1382,4 +1385,25 @@ class MongoSalatPlugin(app: Application) extends Plugin {
     collection("datasetxmlmetadata").drop()
       
   }
+
+  private def updateToUserStatus() {
+    collection("social.users").foreach { su =>
+      val active = su.getAs[Boolean]("active")
+      val admin = su.getAs[Boolean]("serverAdmin")
+      if (!active.get) {
+        su.put("status", UserStatus.Inactive.toString)
+      } else {
+        if (admin.get) {
+          su.put("status", UserStatus.Admin.toString)
+        } else {
+          su.put("status", UserStatus.Active.toString)
+        }
+      }
+
+      su.removeField("active")
+      su.removeField("serverAdmin")
+      collection("social.users").save(su, WriteConcern.Safe)
+    }
+  }
+
 }

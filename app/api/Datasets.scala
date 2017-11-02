@@ -784,7 +784,7 @@ class  Datasets @Inject()(
         val list: List[JsValue]= dataset.files.map(fileId => files.get(fileId) match {
           case Some(file) => {
             val serveradmin = request.user match {
-              case Some(u) => u.serverAdmin
+              case Some(u) => (u.status==UserStatus.Admin)
               case None => false
             }
             jsonFile(file, serveradmin)
@@ -803,7 +803,7 @@ class  Datasets @Inject()(
         val listFiles: List[JsValue]= dataset.files.map(fileId => files.get(fileId) match {
           case Some(file) => {
             val serveradmin = request.user match {
-              case Some(u) => u.serverAdmin
+              case Some(u) => (u.status==UserStatus.Admin)
               case None => false
             }
             jsonFile(file, serveradmin)
@@ -811,7 +811,7 @@ class  Datasets @Inject()(
           case None => Logger.error(s"Error getting File $fileId")
         }).asInstanceOf[List[JsValue]]
         val serveradmin = request.user match {
-          case Some(u) => u.serverAdmin
+          case Some(u) => (u.status==UserStatus.Admin)
           case None => false
         }
         val list = listFiles ++ getFilesWithinFolders(id, serveradmin)
