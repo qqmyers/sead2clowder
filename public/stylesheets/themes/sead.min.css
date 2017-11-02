@@ -7033,6 +7033,10 @@ fieldset[disabled] .btn-default.active {
   padding-bottom: 5px;
 }
 
+.ellipses {
+	color: #2e6ca2;
+}
+
 .js-sort-single {
 	min-width:100px;
 }
@@ -7049,6 +7053,3 @@ fieldset[disabled] .btn-default.active {
 	padding-top: 3px!important;
 }
 
-.ellipses {
-	color: #2e6ca2;
-}

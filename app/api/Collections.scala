@@ -1,27 +1,35 @@
 package api
 
+import java.io.{ByteArrayInputStream, InputStream, ByteArrayOutputStream}
+import java.security.{DigestInputStream, MessageDigest}
+import java.text.SimpleDateFormat
+import java.util.zip.{ZipEntry, ZipOutputStream, Deflater}
+
+import Iterators.RootCollectionIterator
+import _root_.util.JSONLD
 import api.Permission.Permission
+import org.apache.commons.codec.binary.Hex
 import play.api.Logger
 import play.api.Play.current
 import models._
+import play.api.libs.iteratee.Enumerator
 import services._
 import play.api.libs.json._
 import play.api.libs.json.{JsObject, JsValue}
 import play.api.libs.json.Json.toJson
 import javax.inject.{ Singleton, Inject}
 import scala.collection.mutable.ListBuffer
+import scala.concurrent.{Future, ExecutionContext}
+import play.api.libs.concurrent.Execution.Implicits._
 import scala.util.parsing.json.JSONArray
 import scala.util.{Try, Success, Failure}
-import com.wordnik.swagger.annotations.Api
-import com.wordnik.swagger.annotations.ApiOperation
-import java.util.Date
+import java.util.{Calendar, Date}
 import controllers.Utils
 
 
 /**
  * Manipulate collections.
  */
-@Api(value = "/collections", listingPath = "/api-docs.json/collections", description = "Collections are groupings of datasets")
 @Singleton
 class Collections @Inject() (datasets: DatasetService,
                              collections: CollectionService,
@@ -29,11 +37,11 @@ class Collections @Inject() (datasets: DatasetService,
                              userService: UserService,
                              events: EventService,
                              spaces:SpaceService,
-                             appConfig: AppConfigurationService) extends ApiController {
+                             appConfig: AppConfigurationService,
+                             folders : FolderService,
+                             files: FileService,
+                             metadataService : MetadataService) extends ApiController {
 
-  @ApiOperation(value = "Create a collection",
-      notes = "",
-      responseClass = "None", httpMethod = "POST")
   def createCollection() = PermissionAction(Permission.CreateCollection) (parse.json) { implicit request =>
     Logger.debug("Creating new collection")
     (request.body \ "name").asOpt[String].map { name =>
@@ -71,9 +79,6 @@ class Collections @Inject() (datasets: DatasetService,
     }.getOrElse(BadRequest(toJson("Missing parameter [name]")))
   }
 
-  @ApiOperation(value = "Add dataset to collection",
-      notes = "",
-      responseClass = "None", httpMethod = "POST")
   def attachDataset(collectionId: UUID, datasetId: UUID) = PermissionAction(Permission.AddResourceToCollection, Some(ResourceRef(ResourceRef.collection, collectionId))) { implicit request =>
 
     collections.addDataset(collectionId, datasetId) match {
@@ -106,9 +111,6 @@ class Collections @Inject() (datasets: DatasetService,
    * Reindex the given collection, if recursive is set to true it will
    * also reindex all datasets and files.
    */
-  @ApiOperation(value = "Reindex a collection",
-    notes = "Reindex the existing collection, if recursive is set to true it will also reindex all datasets and files.",
-    httpMethod = "GET")
   def reindex(id: UUID, recursive: Boolean) = PermissionAction(Permission.CreateCollection, Some(ResourceRef(ResourceRef.collection, id))) {  implicit request =>
       collections.get(id) match {
         case Some(coll) => {
@@ -124,9 +126,6 @@ class Collections @Inject() (datasets: DatasetService,
       }
   }
 
-  @ApiOperation(value = "Remove dataset from collection",
-      notes = "",
-      responseClass = "None", httpMethod = "POST")
   def removeDataset(collectionId: UUID, datasetId: UUID, ignoreNotFound: String) = PermissionAction(Permission.RemoveResourceFromCollection, Some(ResourceRef(ResourceRef.collection, collectionId)), Some(ResourceRef(ResourceRef.dataset, datasetId))) { implicit request =>
     collections.removeDataset(collectionId, datasetId, Try(ignoreNotFound.toBoolean).getOrElse(true)) match {
       case Success(_) => {
@@ -151,9 +150,6 @@ class Collections @Inject() (datasets: DatasetService,
     }
   }
 
-  @ApiOperation(value = "Remove collection",
-      notes = "Does not delete the individual datasets in the collection.",
-      responseClass = "None", httpMethod = "DELETE")
   def removeCollection(collectionId: UUID) = PermissionAction(Permission.DeleteCollection, Some(ResourceRef(ResourceRef.collection, collectionId))) { implicit request =>
     collections.get(collectionId) match {
       case Some(collection) => {
@@ -169,15 +165,10 @@ class Collections @Inject() (datasets: DatasetService,
     Ok(toJson(Map("status" -> "success")))
   }
 
-  @ApiOperation(value = "List all collections the user can view",
-    notes = "This will check for Permission.ViewCollection",
-    responseClass = "None", multiValueResponse=true, httpMethod = "GET")
   def list(title: Option[String], date: Option[String], limit: Int) = PrivateServerAction { implicit request =>
     Ok(toJson(listCollections(title, date, limit, Set[Permission](Permission.ViewCollection), false, request.user, request.user.fold(false)(_.superAdminMode))))
   }
-  @ApiOperation(value = "List all collections the user can edit",
-    notes = "This will check for Permission.AddResourceToCollection and Permission.EditCollection",
-    responseClass = "None", httpMethod = "GET")
+
   def listCanEdit(title: Option[String], date: Option[String], limit: Int) = PrivateServerAction { implicit request =>
     Ok(toJson(listCollections(title, date, limit, Set[Permission](Permission.AddResourceToCollection, Permission.EditCollection), false, request.user, request.user.fold(false)(_.superAdminMode))))
   }
@@ -207,10 +198,21 @@ class Collections @Inject() (datasets: DatasetService,
     Ok(toJson(collectionList))
   }
 
+  private def getNextLevelCollections(current_collections : List[Collection]) : List[Collection] = {
+    val next_level_collections : ListBuffer[Collection] = ListBuffer.empty[Collection]
+    for (current_collection : Collection <- current_collections){
+      for (child_id <- current_collection.child_collection_ids){
+        collections.get(child_id) match {
+          case Some(child_col) => next_level_collections += child_col
+          case None =>
+        }
+      }
+    }
+    next_level_collections.toList
+  }
 
-  @ApiOperation(value = "List all collections the user can edit except itself and its parent collections",
-    notes = "This will check for Permission.AddResourceToCollection and Permission.EditCollection",
-    responseClass = "None", httpMethod = "GET")
+
+
   def listPossibleParents(currentCollectionId : String, title: Option[String], date: Option[String], limit: Int) = PrivateServerAction { implicit request =>
     val selfAndAncestors = collections.getSelfAndAncestors(UUID(currentCollectionId))
     val descendants = collections.getAllDescendants(UUID(currentCollectionId)).toList
@@ -249,31 +251,29 @@ class Collections @Inject() (datasets: DatasetService,
         if (mine)
           collections.listUser(d, true, limit, t, user, superAdmin, user.get)
         else
-          collections.listAccess(d, true, limit, t, permission, user, superAdmin, true)
+          collections.listAccess(d, true, limit, t, permission, user, superAdmin, true,false)
       }
       case (Some(t), None) => {
         if (mine)
           collections.listUser(limit, t, user, superAdmin, user.get)
         else
-          collections.listAccess(limit, t, permission, user, superAdmin, true)
+          collections.listAccess(limit, t, permission, user, superAdmin, true,false)
       }
       case (None, Some(d)) => {
         if (mine)
           collections.listUser(d, true, limit, user, superAdmin, user.get)
         else
-          collections.listAccess(d, true, limit, permission, user, superAdmin, true)
+          collections.listAccess(d, true, limit, permission, user, superAdmin, true,false)
       }
        case (None, None) => {
         if (mine)
           collections.listUser(limit, user, superAdmin, user.get)
         else
-          collections.listAccess(limit, permission, user, superAdmin, true)
+          collections.listAccess(limit, permission, user, superAdmin, true,false)
       }
     }
   }
 
-  @ApiOperation(value = "Get a specific collection",
-    responseClass = "Collection", httpMethod = "GET")
   def getCollection(collectionId: UUID) = PermissionAction(Permission.ViewCollection, Some(ResourceRef(ResourceRef.collection, collectionId))) { implicit request =>
     collections.get(collectionId) match {
       case Some(x) => Ok(jsonCollection(x))
@@ -288,9 +288,6 @@ class Collections @Inject() (datasets: DatasetService,
     "childCollectionsCount" -> collection.childCollectionsCount.toString, "datasetCount"-> collection.datasetCount.toString, "spaces" -> collection.spaces.toString))
   }
 
-  @ApiOperation(value = "Update a collection name",
-  notes= "Takes one argument, a UUID of the collection. Request body takes a key-value pair for the name",
-  responseClass = "None", httpMethod = "PUT")
   def updateCollectionName(id: UUID) = PermissionAction(Permission.EditCollection, Some(ResourceRef(ResourceRef.collection, id)))(parse.json) {
     implicit request =>
       implicit val user = request.user
@@ -323,9 +320,6 @@ class Collections @Inject() (datasets: DatasetService,
       }
   }
 
-  @ApiOperation(value = "Update collection description",
-  notes = "Takes one argument, a UUID of the collection. Request body takes key-value pair for the description",
-  responseClass = "None", httpMethod = "PUT")
   def updateCollectionDescription(id: UUID) = PermissionAction(Permission.EditCollection, Some(ResourceRef(ResourceRef.collection, id)))(parse.json) {
     implicit request =>
       implicit val user = request.user
@@ -361,9 +355,6 @@ class Collections @Inject() (datasets: DatasetService,
   /**
    * Add preview to file.
    */
-  @ApiOperation(value = "Attach existing preview to collection",
-    notes = "",
-    responseClass = "None", httpMethod = "POST")
   def attachPreview(collection_id: UUID, preview_id: UUID) = PermissionAction(Permission.EditCollection, Some(ResourceRef(ResourceRef.collection, collection_id)))(parse.json) { implicit request =>
       // Use the "extractor_id" field contained in the POST data.  Use "Other" if absent.
       val eid = (request.body \ "extractor_id").asOpt[String]
@@ -403,9 +394,6 @@ class Collections @Inject() (datasets: DatasetService,
       }
   }
 
-  @ApiOperation(value = "Follow collection.",
-    notes = "Add user to collection followers and add collection to user followed collections.",
-    responseClass = "None", httpMethod = "POST")
   def follow(id: UUID) = AuthenticatedAction { implicit request =>
       implicit val user = request.user
 
@@ -434,9 +422,6 @@ class Collections @Inject() (datasets: DatasetService,
       }
   }
 
-  @ApiOperation(value = "Unfollow collection.",
-    notes = "Remove user from collection followers and remove collection from user followed collections.",
-    responseClass = "None", httpMethod = "POST")
   def unfollow(id: UUID) = AuthenticatedAction { implicit request =>
       implicit val user = request.user
 
@@ -476,9 +461,6 @@ class Collections @Inject() (datasets: DatasetService,
   }
 
 
-  @ApiOperation(value = "Add subcollection to collection",
-    notes = "",
-    responseClass = "None", httpMethod = "POST")
   def attachSubCollection(collectionId: UUID, subCollectionId: UUID) = PermissionAction(Permission.AddResourceToCollection, Some(ResourceRef(ResourceRef.collection, collectionId))) { implicit request =>
     collections.addSubCollection(collectionId, subCollectionId, request.user) match {
       case Success(_) => {
@@ -499,9 +481,6 @@ class Collections @Inject() (datasets: DatasetService,
 
 
 
-  @ApiOperation(value = "Create a collection with parent",
-    notes = "",
-    responseClass = "None", httpMethod = "POST")
   def createCollectionWithParent() = PermissionAction(Permission.CreateCollection) (parse.json) { implicit request =>
     (request.body \ "name").asOpt[String].map{ name =>
       var c : Collection = null
@@ -561,9 +540,6 @@ class Collections @Inject() (datasets: DatasetService,
     }.getOrElse(BadRequest(toJson("Missing parameter [name]")))
   }
 
-  @ApiOperation(value = "Remove subcollection from collection",
-    notes="",
-    responseClass = "None", httpMethod = "POST")
   def removeSubCollection(collectionId: UUID, subCollectionId: UUID, ignoreNotFound: String) = PermissionAction(Permission.RemoveResourceFromCollection, Some(ResourceRef(ResourceRef.collection, collectionId)), Some(ResourceRef(ResourceRef.collection, subCollectionId))) { implicit request =>
 
     collections.removeSubCollection(collectionId, subCollectionId, Try(ignoreNotFound.toBoolean).getOrElse(true)) match {
@@ -602,9 +578,6 @@ class Collections @Inject() (datasets: DatasetService,
   /**
     * Adds a Root flag for a collection in a space
     */
-  @ApiOperation(value = "Add root flags for a collection in space",
-    notes = "",
-    responseClass = "None",httpMethod = "POST")
   def setRootSpace(collectionId: UUID, spaceId: UUID)  = PermissionAction(Permission.AddResourceToSpace, Some(ResourceRef(ResourceRef.space, spaceId))) { implicit request =>
     Logger.debug("changing the value of the root flag")
     (collections.get(collectionId), spaces.get(spaceId)) match {
@@ -627,9 +600,6 @@ class Collections @Inject() (datasets: DatasetService,
   /**
     * Remove root flag from a collection in a space
     */
-  @ApiOperation(value = "Removes root flag from a collection in  a space",
-    notes = "",
-    responseClass = "None",httpMethod = "POST")
   def unsetRootSpace(collectionId: UUID, spaceId: UUID)  = PermissionAction(Permission.AddResourceToSpace, Some(ResourceRef(ResourceRef.space, spaceId))) { implicit request =>
     Logger.debug("changing the value of the root flag")
     collections.get(collectionId) match {
@@ -643,19 +613,13 @@ class Collections @Inject() (datasets: DatasetService,
     }
   }
 
-  @ApiOperation(value = "Get all root collections",
-    notes = "",
-    responseClass = "None", httpMethod = "GET")
   def getRootCollections() = PermissionAction(Permission.ViewCollection) { implicit request =>
-    val root_collections_list = for (collection <- collections.listAccess(100,Set[Permission](Permission.ViewCollection),request.user,true, true); if collections.hasRoot(collection)  )
+    val root_collections_list = for (collection <- collections.listAccess(100,Set[Permission](Permission.ViewCollection),request.user,true, true,false); if collections.hasRoot(collection)  )
       yield jsonCollection(collection)
 
     Ok(toJson(root_collections_list))
   }
 
-  @ApiOperation(value = "Get all collections",
-    notes = "",
-    responseClass = "None", httpMethod = "GET")
   def getAllCollections(limit : Int, showAll: Boolean) = PermissionAction(Permission.ViewCollection) { implicit request =>
     val all_collections_list = request.user match {
       case Some(usr) => {
@@ -669,20 +633,15 @@ class Collections @Inject() (datasets: DatasetService,
 
 
 
-  @ApiOperation(value = "Get all root collections or collections that do not have a parent",
-    notes = "",
-    responseClass = "None", httpMethod = "GET")
   def getTopLevelCollections() = PermissionAction(Permission.ViewCollection){ implicit request =>
     implicit val user = request.user
     val count = collections.countAccess(Set[Permission](Permission.ViewCollection),user,true)
     val limit = count.toInt
-    val top_level_collections = for (collection <- collections.listAccess(limit,Set[Permission](Permission.ViewCollection),request.user,true, true); if (collections.hasRoot(collection) || collection.parent_collection_ids.isEmpty))
+    val top_level_collections = for (collection <- collections.listAccess(limit,Set[Permission](Permission.ViewCollection),request.user,true, true,false); if (collections.hasRoot(collection) || collection.parent_collection_ids.isEmpty))
       yield jsonCollection(collection)
     Ok(toJson(top_level_collections))
   }
 
-  @ApiOperation(value = "Get child collection ids in collection",
-    responseClass = "None", httpMethod = "GET")
   def getChildCollectionIds(collectionId: UUID) = PermissionAction(Permission.ViewCollection, Some(ResourceRef(ResourceRef.collection,collectionId))){implicit request =>
     collections.get(collectionId) match {
       case Some(collection) => {
@@ -693,8 +652,6 @@ class Collections @Inject() (datasets: DatasetService,
     }
   }
 
-  @ApiOperation(value = "Get parent collection ids in collection",
-    responseClass = "None", httpMethod = "GET")
   def getParentCollectionIds(collectionId: UUID) = PermissionAction(Permission.ViewCollection, Some(ResourceRef(ResourceRef.collection,collectionId))){implicit request =>
     collections.get(collectionId) match {
       case Some(collection) => {
@@ -707,8 +664,6 @@ class Collections @Inject() (datasets: DatasetService,
 
 
 
-  @ApiOperation(value = "Get child collections in collection",
-    responseClass = "None", httpMethod = "GET")
   def getChildCollections(collectionId: UUID) = PermissionAction(Permission.ViewCollection, Some(ResourceRef(ResourceRef.collection,collectionId))){implicit request =>
     collections.get(collectionId) match {
       case Some(collection) => {
@@ -731,8 +686,6 @@ class Collections @Inject() (datasets: DatasetService,
     }
   }
 
-  @ApiOperation(value = "Get parent collections for collection",
-    responseClass = "None", httpMethod = "GET")
   def getParentCollections(collectionId: UUID) = PermissionAction(Permission.ViewCollection, Some(ResourceRef(ResourceRef.collection,collectionId))){implicit request =>
     collections.get(collectionId) match {
       case Some(collection) => {
@@ -756,8 +709,6 @@ class Collections @Inject() (datasets: DatasetService,
     }
   }
 
-  @ApiOperation(value = "Checks if we can remove a collection from a space",
-    responseClass = "None", httpMethod = "GET")
   def removeFromSpaceAllowed(collectionId: UUID , spaceId : UUID) = PermissionAction(Permission.AddResourceToSpace, Some(ResourceRef(ResourceRef.space, spaceId))) { implicit request =>
     val user = request.user
     user match {
@@ -767,6 +718,93 @@ class Collections @Inject() (datasets: DatasetService,
       }
       case None => Ok(toJson(false))
     }
+  }
+
+  def download(id: UUID, compression: Int) = PermissionAction(Permission.DownloadFiles, Some(ResourceRef(ResourceRef.collection, id))) { implicit request =>
+    implicit val user = request.user
+    collections.get(id) match {
+      case Some(collection) => {
+        val bagit = play.api.Play.configuration.getBoolean("downloadCollectionBagit").getOrElse(true)
+        // Use custom enumerator to create the zip file on the fly
+        // Use a 1MB in memory byte array
+        Ok.chunked(enumeratorFromCollection(collection,1024*1024, compression,bagit,user)).withHeaders(
+          "Content-Type" -> "application/zip",
+          "Content-Disposition" -> ("attachment; filename=\"" + collection.name+ ".zip\"")
+        )
+      }
+      // If the dataset wasn't found by ID
+      case None => {
+        NotFound
+      }
+    }
+  }
+
+
+  def enumeratorFromCollection(collection: Collection, chunkSize: Int = 1024 * 8, compression: Int = Deflater.DEFAULT_COMPRESSION, bagit: Boolean, user : Option[User])
+                              (implicit ec: ExecutionContext): Enumerator[Array[Byte]] = {
+
+    implicit val pec = ec.prepare()
+    val md5Files = scala.collection.mutable.HashMap.empty[String, MessageDigest]
+    val md5Bag = scala.collection.mutable.HashMap.empty[String, MessageDigest]
+
+    var totalBytes = 0L
+
+    val byteArrayOutputStream = new ByteArrayOutputStream(chunkSize)
+    val zip = new ZipOutputStream(byteArrayOutputStream)
+
+    var bytesSet = false
+
+    //val datasetsInCollection = getDatasetsInCollection(collection,user.get)
+    var current_iterator = new RootCollectionIterator(collection.name,collection,zip,md5Files,md5Bag,user, totalBytes,bagit,collections,
+    datasets,files,folders,metadataService,spaces)
+
+
+
+    //var current_iterator = new FileIterator(folderNameMap(inputFiles(1).id),inputFiles(1), zip,md5Files)
+    var is = current_iterator.next()
+
+    Enumerator.generateM({
+      is match {
+        case Some(inputStream) => {
+          if (current_iterator.isBagIt() && bytesSet == false){
+            current_iterator.setBytes(totalBytes)
+            bytesSet = true
+          }
+          val buffer = new Array[Byte](chunkSize)
+          val bytesRead = scala.concurrent.blocking {
+            inputStream.read(buffer)
+
+          }
+          val chunk = bytesRead match {
+            case -1 => {
+              zip.closeEntry()
+              inputStream.close()
+              Some(byteArrayOutputStream.toByteArray)
+              if (current_iterator.hasNext()){
+                is = current_iterator.next()
+              } else{
+                zip.close()
+                is = None
+              }
+              Some(byteArrayOutputStream.toByteArray)
+            }
+            case read => {
+              if (!current_iterator.isBagIt()){
+                totalBytes += bytesRead
+              }
+              zip.write(buffer, 0, read)
+              Some(byteArrayOutputStream.toByteArray)
+            }
+          }
+          byteArrayOutputStream.reset()
+          Future.successful(chunk)
+        }
+        case None => {
+          Future.successful(None)
+        }
+      }
+    })(pec)
+
   }
 
 }

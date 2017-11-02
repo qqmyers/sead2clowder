@@ -32,7 +32,8 @@ class Datasets @Inject() (
     relations: RelationService,
     folders: FolderService,
     metadata: MetadataService,
-    events: EventService) extends SecuredController {
+    events: EventService,
+    selections: SelectionService) extends SecuredController {
 
   object ActivityFound extends Exception {}
 
@@ -198,8 +199,14 @@ class Datasets @Inject() (
             Some(mode)
           }
 
+        Logger.debug("User selections" + user)
+        val userSelections: List[String] =
+          if(user.isDefined) selections.get(user.get.identityId.userId).map(_.id.stringify)
+          else List.empty[String]
+        Logger.debug("User selection " + userSelections)
+
         //Pass the viewMode into the view
-        Ok(views.html.users.followingDatasets(decodedDatasetList.toList, commentMap, prev, next, limit, viewMode, None, title, None))
+        Ok(views.html.users.followingDatasets(decodedDatasetList.toList, commentMap, prev, next, limit, viewMode, None, title, None, userSelections))
       }
       case None => InternalServerError("No User found")
     }
@@ -208,7 +215,7 @@ class Datasets @Inject() (
   /**
    * List datasets.
    */
-  def list(when: String, date: String, limit: Int, space: Option[String], status: Option[String], mode: String, owner: Option[String], showPublic: Boolean) = UserAction(needActive=false) { implicit request =>
+  def list(when: String, date: String, limit: Int, space: Option[String], status: Option[String], mode: String, owner: Option[String], showPublic: Boolean, showOnlyShared : Boolean) = UserAction(needActive=false) { implicit request =>
     implicit val user = request.user
 
     val nextPage = (when == "a")
@@ -224,10 +231,16 @@ class Datasets @Inject() (
     }  
     var title: Option[String] = Some(Messages("list.title", Messages("datasets.title")))
 
+    Logger.debug("User selections" + user)
+    val userSelections: List[String] =
+      if(user.isDefined) selections.get(user.get.identityId.userId).map(_.id.stringify)
+      else List.empty[String]
+    Logger.debug("User selection " + userSelections)
+
     val datasetList = person match {
       case Some(p) => {
         space match {
-          case Some(s) if datasetSpace.isDefined => {
+          case Some(s) if datasetSpace.isDefined=> {
             title = Some(Messages("owner.in.resource.title", p.fullName, Messages("datasets.title"), spaceTitle, routes.Spaces.getSpace(datasetSpace.get.id), datasetSpace.get.name))
           }
           case _ => {
@@ -258,9 +271,9 @@ class Datasets @Inject() (
           }
           case _ => {
             if (date != "") {
-              datasets.listAccess(date, nextPage, limit, Set[Permission](Permission.ViewDataset), request.user, request.user.fold(false)(_.superAdminMode), showPublic)
+              datasets.listAccess(date, nextPage, limit, Set[Permission](Permission.ViewDataset), request.user, request.user.fold(false)(_.superAdminMode), showPublic, showOnlyShared)
             } else {
-              datasets.listAccess(limit, Set[Permission](Permission.ViewDataset), request.user, request.user.fold(false)(_.superAdminMode), showPublic)
+              datasets.listAccess(limit, Set[Permission](Permission.ViewDataset), request.user, request.user.fold(false)(_.superAdminMode), showPublic, showOnlyShared)
             }
 
           }
@@ -272,7 +285,7 @@ class Datasets @Inject() (
     val prev = if (datasetList.nonEmpty && date != "") {
       val first = Formatters.iso8601(datasetList.head.created)
       val ds = person match {
-        case Some(p) => datasets.listUser(first, nextPage = false, 1, request.user, request.user.fold(false)(_.superAdminMode), p)
+        case Some(p) => datasets.listUser(first, nextPage=false, 1, request.user, request.user.fold(false)(_.superAdminMode), p)
         case None => {
           space match {
             case Some(s) => {
@@ -281,7 +294,7 @@ class Datasets @Inject() (
                 case None => datasets.listSpace(first, nextPage=false, 1, s, user)
               }
             }
-            case None => datasets.listAccess(first, nextPage = false, 1, Set[Permission](Permission.ViewDataset), request.user, request.user.fold(false)(_.superAdminMode), showPublic)
+            case None => datasets.listAccess(first, nextPage = false, 1, Set[Permission](Permission.ViewDataset), request.user, request.user.fold(false)(_.superAdminMode), showPublic, showOnlyShared)
           }
         }
       }
@@ -298,7 +311,7 @@ class Datasets @Inject() (
     val next = if (datasetList.nonEmpty) {
       val last = Formatters.iso8601(datasetList.last.created)
       val ds = person match {
-        case Some(p) => datasets.listUser(last, nextPage = true, 1, request.user, request.user.fold(false)(_.superAdminMode), p)
+        case Some(p) => datasets.listUser(last, nextPage=true, 1, request.user, request.user.fold(false)(_.superAdminMode), p)
         case None => {
           space match {
             case Some(s) => {
@@ -307,7 +320,7 @@ class Datasets @Inject() (
                   case None => datasets.listSpace(last, nextPage=true, 1, s, user)
                 }
               }
-            case None => datasets.listAccess(last, nextPage = true, 1, Set[Permission](Permission.ViewDataset), request.user, request.user.fold(false)(_.superAdminMode), showPublic)
+            case None => datasets.listAccess(last, nextPage=true, 1, Set[Permission](Permission.ViewDataset), request.user, request.user.fold(false)(_.superAdminMode), showPublic, showOnlyShared)
           }
         }
       }
@@ -361,7 +374,7 @@ class Datasets @Inject() (
       case Some(s) if !Permission.checkPermission(Permission.ViewSpace, ResourceRef(ResourceRef.space, UUID(s))) => {
         BadRequest(views.html.notAuthorized("You are not authorized to access the " + spaceTitle + ".", s, "space"))
       }
-      case _ => Ok(views.html.datasetList(decodedDatasetList.toList, commentMap, prev, next, limit, viewMode, space, spaceName, status, title, owner, ownerName, when, date))
+      case _ => Ok(views.html.datasetList(decodedDatasetList.toList, commentMap, prev, next, limit, viewMode, space, spaceName, status, title, owner, ownerName, when, date, userSelections))
     }
   }
 
@@ -430,6 +443,12 @@ class Datasets @Inject() (
 
         val len = dList.length
 
+        Logger.debug("User selections" + user)
+        val userSelections: List[String] =
+          if(user.isDefined) selections.get(user.get.identityId.userId).map(_.id.stringify)
+          else List.empty[String]
+        Logger.debug("User selection " + userSelections)
+
         val datasetList = SortingUtils.sortDatasets(dList, sortOrder).drop(offset).take(limit)
 
         val commentMap = datasetList.map { dataset =>
@@ -470,7 +489,7 @@ class Datasets @Inject() (
           ""
         }
         val date = ""
-        Ok(views.html.datasetList(decodedDatasetList.toList, commentMap, prev, next, limit, viewMode, Some(space), spaceName, None, title, None, None, "a", date))
+        Ok(views.html.datasetList(decodedDatasetList.toList, commentMap, prev, next, limit, viewMode, Some(space), spaceName, None, title, None, None, "a", date, userSelections))
       }
     }
   }
@@ -538,7 +557,7 @@ class Datasets @Inject() (
 
         // associated sensors
         val sensors: List[(String, String, String)] = current.plugin[PostgresPlugin] match {
-          case Some(db) => {
+          case Some(db) if db.isEnabled => {
             // findRelationships will return a "Relation" model with all information about the relationship
             val relationships = relations.findRelationships(id.stringify, ResourceType.dataset, ResourceType.sensor)
 
@@ -551,7 +570,7 @@ class Datasets @Inject() (
               (r.id.stringify, nameToURLTuple._1, nameToURLTuple._2)
             }
           }
-          case None => List.empty[(String, String, String)]
+          case _ => List.empty[(String, String, String)]
         }
 
         var datasetSpaces: List[ProjectSpace] = List.empty[ProjectSpace]
@@ -614,6 +633,9 @@ class Datasets @Inject() (
         }
         accessOptions.append(DatasetStatus.PRIVATE.toString.substring(0, 1).toUpperCase() + DatasetStatus.PRIVATE.toString.substring(1).toLowerCase())
         accessOptions.append(DatasetStatus.PUBLIC.toString.substring(0, 1).toUpperCase() + DatasetStatus.PUBLIC.toString.substring(1).toLowerCase())
+
+        val accessData = new models.DatasetAccess(showAccess, access, accessOptions.toList)
+
         var canAddDatasetToCollection = Permission.checkOwner(user, ResourceRef(ResourceRef.dataset, dataset.id))
         if (!canAddDatasetToCollection) {
           datasetSpaces.map(space =>
@@ -625,7 +647,7 @@ class Datasets @Inject() (
         val stagingAreaDefined = play.api.Play.current.plugin[services.StagingAreaPlugin].isDefined
         Ok(views.html.dataset(datasetWithFiles, commentsByDataset, filteredPreviewers.toList, m,
           decodedCollectionsInside.toList, isRDFExportEnabled, sensors, Some(decodedSpaces_canRemove), fileList,
-          filesTags, toPublish, curPubObjects, currentSpace, limit, showDownload, showAccess, access, accessOptions.toList, canAddDatasetToCollection, stagingAreaDefined))
+          filesTags, toPublish, curPubObjects, currentSpace, limit, showDownload, accessData, canAddDatasetToCollection, stagingAreaDefined))
       }
       case None => {
         Logger.error("Error getting dataset" + id)

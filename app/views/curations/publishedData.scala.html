@@ -20,15 +20,15 @@
                   @if(key == "author") {
                     <p><b>Creator(s)</b> @value</p>
                   } else {
-                  @if(key == "Abstract") {
-                    <div><b>@key.capitalize:</b> <span style="width 100%"><div class="published
-                    @if(value.contains("\n")) {
-                    	 panel
-                    }
+                    @if(key == "Abstract") {
+                      <div><b>@key.capitalize:</b> <span style="width 100%"><div class="published
+                      @if(value.contains("\n")) {
+                      	 panel
+                      }
                       ">@Html(value.replace("\n","<br>"))</div></span></div>
-                     } else {
-                       <p><b>@key.capitalize:</b> @value</p>
-                     }
+                    } else {
+                      <p><b>@key.capitalize:</b> @value</p>
+                    }  
                   }
                 }  
             }

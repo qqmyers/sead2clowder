@@ -41,6 +41,7 @@
    	        	</span>
            	}	
         </span><br/>
+        
         <b>@Messages("owner.label")</b>: @curationObject.author.fullName <br/>
         <b>Created</b>: @curationObject.created.date.format("MMM dd, yyyy") <br/>
         <b>Repository</b>: @curationObject.repository.getOrElse("Not selected.") <br/>
@@ -65,6 +66,7 @@
         }
         case None => {Not Set}
       }
+
         <br/>
         <h4> @Messages("dataset.title") <a href ="@routes.Datasets.dataset(curationObject.datasets(0).id)">@curationObject.datasets(0).name</a></h4>
         Note: The links in this page redirect to the live objects.<br/>

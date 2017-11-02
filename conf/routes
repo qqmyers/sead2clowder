@@ -32,6 +32,7 @@ GET            /assets/*file                                                    
 GET            /users                                                                   @controllers.Users.getUsers(when: String ?= "", id: String ?= "", limit: Int ?=24)
 GET            /users/acceptTermsOfServices                                             @controllers.Users.acceptTermsOfServices(redirect: Option[String] ?= None)
 GET            /login/isLoggedIn                                                        @controllers.Login.isLoggedIn
+POST           /users/sendEmail                                                         @controllers.Users.sendEmail(subject: String, from: String, recipient: String, body: String)
 
 # ----------------------------------------------------------------------
 # PROFILE
@@ -102,7 +103,7 @@ GET            /files/:file_id/extractions                                      
 # ----------------------------------------------------------------------
 # DATASETS
 # ----------------------------------------------------------------------
-GET            /datasets                                                                @controllers.Datasets.list(when: String ?= "", date: String ?= "", size: Int ?= 12, space: Option[String] ?= None, status: Option[String] ?= None, mode: String ?= "", owner: Option[String] ?= None, showPublic: Boolean ?= true)
+GET            /datasets                                                                @controllers.Datasets.list(when: String ?= "", date: String ?= "", size: Int ?= 12, space: Option[String] ?= None, status: Option[String] ?= None, mode: String ?= "", owner: Option[String] ?= None, showPublic: Boolean ?= true, showOnlyShared : Boolean ?= false)
 GET            /datasets/sorted                                                         @controllers.Datasets.sortedListInSpace(space: String,offset: Integer, limit:Integer, showPublic: Boolean ?= true)
 GET            /datasets/new                                                            @controllers.Datasets.newDataset(space: Option[String], collection: Option[String])
 GET            /datasets/createStep2                                                    @controllers.Datasets.createStep2(id: UUID)
@@ -129,7 +130,7 @@ GET            /datasets/:id/extractions                                        
 # ----------------------------------------------------------------------
 # COLLECTIONS
 # ----------------------------------------------------------------------
-GET            /collections                                                             @controllers.Collections.list(when: String ?= "", date: String ?= "", size: Int ?= 12, space: Option[String] ?= None, mode: String ?= "", owner: Option[String] ?= None, showPublic: Boolean ?= true)
+GET            /collections                                                             @controllers.Collections.list(when: String ?= "", date: String ?= "", size: Int ?= 12, space: Option[String] ?= None, mode: String ?= "", owner: Option[String] ?= None, showPublic: Boolean ?= true, showOnlyShared : Boolean ?= false)
 GET            /collections/sorted                                                      @controllers.Collections.sortedListInSpace(space: String,offset: Integer, limit:Integer,  showPublic: Boolean ?= true)
 GET            /collections/listChildCollections                                        @controllers.Collections.listChildCollections(parentCollectionId : String, when: String ?= "", date: String ?= "", size: Int ?= 12,  space: Option[String] ?= None, mode: String ?= "", owner: Option[String] ?= None)
 GET            /collections/new                                                         @controllers.Collections.newCollection(space: Option[String])
@@ -144,7 +145,7 @@ GET            /collection/:id/childCollections                                 
 # ----------------------------------------------------------------------
 # Spaces
 # ----------------------------------------------------------------------
-GET            /spaces                                                                  @controllers.Spaces.list(when: String ?= "", date: String ?= "", size: Int ?= 12, mode: String ?= "", owner: Option[String] ?= None, showAll: Boolean ?= true, showPublic: Boolean ?= true, onlyTrial: Boolean ?=false)
+GET            /spaces                                                                  @controllers.Spaces.list(when: String ?= "", date: String ?= "", size: Int ?= 12, mode: String ?= "", owner: Option[String] ?= None, showAll: Boolean ?= false, showPublic: Boolean ?= true, onlyTrial: Boolean ?=false, showOnlyShared : Boolean ?= false)
 GET            /spaces/new                                                              @controllers.Spaces.newSpace
 GET            /spaces/following                                                        @controllers.Spaces.followingSpaces(index: Int ?=0, size: Int ?= 12, mode: String ?= "")
 GET            /spaces/:id                                                              @controllers.Spaces.getSpace(id: UUID, size: Int ?= 9, direction: String ?= "desc")
@@ -266,8 +267,8 @@ GET            /javascriptRoutes                                                
 # ----------------------------------------------------------------------
 # API DOCUMENTATION USING SWAGGER
 # ----------------------------------------------------------------------
-GET            /api-docs.json                                                           controllers.ApiHelpController.getResources
-GET            /api-docs.json/:path                                                     @controllers.Application.apidoc(path: String)
+GET            /swagger                                                                 @controllers.Application.swagger
+GET            /swaggerUI                                                               @controllers.Application.swaggerUI
 
 # ----------------------------------------------------------------------
 # RESTful API
@@ -372,6 +373,8 @@ POST           /api/files/:id/license                                           
 GET            /api/files/:id/extracted_metadata                                        @api.Files.extract(id:UUID)
 PUT            /api/files/:id/filename                                                  @api.Files.updateFileName(id: UUID)
 POST           /api/files/:id/reindex                                                   @api.Files.reindex(id:UUID)
+GET            /api/files/:id/users                                                     @api.Files.users(id: UUID)
+
 
 # ----------------------------------------------------------------------
 # EXTRACTORS ENDPOINTS
@@ -459,7 +462,7 @@ POST           /api/collections                                                 
 GET            /api/collections/rootCollections                                         @api.Collections.getRootCollections
 GET            /api/collections/topLevelCollections                                     @api.Collections.getTopLevelCollections
 GET            /api/collections/allCollections                                          @api.Collections.getAllCollections(limit : Int ?= 0, showAll: Boolean ?=false)
-
+GET            /api/collections/:id/download                                            @api.Collections.download(id: UUID, compression: Int ?= -1)
 # deprecrated
 GET            /api/collections/list                                                    @api.Collections.list(title: Option[String] ?= None, date: Option[String] ?= None, limit: Int ?= 12)
 POST           /api/collections/:id/follow                                              @api.Collections.follow(id: UUID)
@@ -525,7 +528,7 @@ GET            /api/datasets/:id/listAllFiles                                   
 GET            /api/datasets/:id/files                                                  @api.Datasets.datasetAllFilesList(id: UUID)
 POST           /api/datasets/:id/files                                                  @api.Datasets.uploadToDatasetFile(id: UUID)
 POST           /api/datasets/:id/urls                                                   @api.Datasets.uploadToDatasetJSON(id: UUID)
-GET            /api/datasets/:id/download                                               @api.Datasets.download(id: UUID, bagit : Boolean ?= false, compression: Int ?= -1)
+GET            /api/datasets/:id/download                                               @api.Datasets.download(id: UUID, compression: Int ?= -1)
 POST           /api/datasets/:id/comment                                                @api.Datasets.comment(id: UUID)
 POST           /api/datasets/:id/reindex                                                @api.Datasets.reindex(id:UUID, recursive: Boolean ?= true)
 POST           /api/datasets/:id/follow                                                 @api.Datasets.follow(id: UUID)
@@ -552,6 +555,7 @@ POST           /api/datasets/:id/detachdelete                                   
 POST           /api/datasets/:parentDatasetId/newFolder                                 @api.Folders.createFolder(parentDatasetId: UUID)
 PUT            /api/datasets/:id/access                                                 @api.Datasets.updateAccess(id:UUID, aceess:String ?="PRIVATE")
 POST           /api/datasets/:id/addFileEvent                                           @api.Datasets.addFileEvent(id:UUID, inFolder:Boolean, fileCount: Int )
+GET            /api/datasets/:id/users                                                  @api.Datasets.users(id:UUID)
 
 
 # ----------------------------------------------------------------------
@@ -601,9 +605,9 @@ GET            /api/search                                                      
 # ----------------------------------------------------------------------
 POST           /api/geostreams/datapoints                                               api.Geostreams.addDatapoint(invalidateCache: Boolean ?= true)
 DELETE         /api/geostreams/datapoints/:id                                           api.Geostreams.deleteDatapoint(id: String)
-GET            /api/geostreams/datapoints                                               api.Geostreams.searchDatapoints(operator = "", since: Option[String] ?= None, until: Option[String] ?= None, geocode: Option[String] ?= None,  stream_id: Option[String] ?= None, sensor_id: Option[String] ?= None, sources: List[String] ?= List.empty, attributes: List[String] ?= List.empty, format: String ?= "json", semi: Option[String], onlyCount: Boolean ?=false)
-GET            /api/geostreams/datapoints/averages                                      api.Geostreams.searchDatapoints(operator = "averages", since: Option[String] ?= None, until: Option[String] ?= None, geocode: Option[String] ?= None,  stream_id: Option[String] ?= None, sensor_id: Option[String] ?= None, sources: List[String] ?= List.empty, attributes: List[String] ?= List.empty, format: String ?= "json", semi: Option[String], onlyCount: Boolean ?=false)
-GET            /api/geostreams/datapoints/trends                                        api.Geostreams.searchDatapoints(operator = "trends", since: Option[String] ?= None, until: Option[String] ?= None, geocode: Option[String] ?= None,  stream_id: Option[String] ?= None, sensor_id: Option[String] ?= None, sources: List[String] ?= List.empty, attributes: List[String] ?= List.empty, format: String ?= "json", semi: Option[String], onlyCount: Boolean ?=false)
+GET            /api/geostreams/datapoints                                               api.Geostreams.searchDatapoints(operator = "", since: Option[String] ?= None, until: Option[String] ?= None, geocode: Option[String] ?= None,  stream_id: Option[String] ?= None, sensor_id: Option[String] ?= None, sources: List[String] ?= List.empty, attributes: List[String] ?= List.empty, format: String ?= "json", semi: Option[String], onlyCount: Boolean ?=false, window_start: Option[String] = None, window_end: Option[String] = None, binning: String ?= "semi", geojson: Option[String] ?= None)
+GET            /api/geostreams/datapoints/averages                                      api.Geostreams.searchDatapoints(operator = "averages", since: Option[String] ?= None, until: Option[String] ?= None, geocode: Option[String] ?= None,  stream_id: Option[String] ?= None, sensor_id: Option[String] ?= None, sources: List[String] ?= List.empty, attributes: List[String] ?= List.empty, format: String ?= "json", semi: Option[String], onlyCount: Boolean ?=false, window_start: Option[String] = None, window_end: Option[String] = None, binning: String ?= "semi", geojson: Option[String] ?= None)
+GET            /api/geostreams/datapoints/trends                                        api.Geostreams.searchDatapoints(operator = "trends", since: Option[String] ?= None, until: Option[String] ?= None, geocode: Option[String] ?= None,  stream_id: Option[String] ?= None, sensor_id: Option[String] ?= None, sources: List[String] ?= List.empty, attributes: List[String] ?= List.empty, format: String ?= "json", semi: Option[String], onlyCount: Boolean ?=false, window_start: Option[String] ?= None, window_end: Option[String] ?= None, binning: String ?= "semi", geojson: Option[String] ?= None)
 GET            /api/geostreams/datapoints/bin/:time/:depth                              api.Geostreams.binDatapoints(time, depth: Double, raw: Boolean ?= false, since: Option[String] ?= None, until: Option[String] ?= None, geocode: Option[String] ?= None,  stream_id: Option[String] ?= None, sensor_id: Option[String] ?= None, sources: List[String] ?= List.empty, attributes: List[String] ?= List.empty)
 GET            /api/geostreams/datapoints/:id                                           api.Geostreams.getDatapoint(id: String)
 GET            /api/geostreams/cache                                                    api.Geostreams.cacheListAction
@@ -616,14 +620,14 @@ PUT            /api/geostreams/sensors/:id                                      
 GET            /api/geostreams/sensors/:id/stats                                        api.Geostreams.getSensorStatistics(id: String)
 GET            /api/geostreams/sensors/:id/streams                                      api.Geostreams.getSensorStreams(id: String)
 GET            /api/geostreams/sensors/:id/update                                       api.Geostreams.updateStatisticsSensor(id: String)
-GET            /api/geostreams/sensors                                                  api.Geostreams.searchSensors(geocode: Option[String] ?= None, sensor_name: Option[String] ?= None)
+GET            /api/geostreams/sensors                                                  api.Geostreams.searchSensors(geocode: Option[String] ?= None, sensor_name: Option[String] ?= None, geojson: Option[String] ?= None)
 DELETE         /api/geostreams/sensors/:id                                              api.Geostreams.deleteSensor(id: String)
 POST           /api/geostreams/streams                                                  api.Geostreams.createStream
 GET            /api/geostreams/streams/update                                           api.Geostreams.updateStatisticsStreamSensor()
 GET            /api/geostreams/streams/:id                                              api.Geostreams.getStream(id: String)
 PUT            /api/geostreams/streams/:id                                              api.Geostreams.patchStreamMetadata(id: String)
 GET            /api/geostreams/streams/:id/update                                       api.Geostreams.updateStatisticsStream(id: String)
-GET            /api/geostreams/streams                                                  api.Geostreams.searchStreams(geocode: Option[String] ?= None, stream_name: Option[String] ?= None)
+GET            /api/geostreams/streams                                                  api.Geostreams.searchStreams(geocode: Option[String] ?= None, stream_name: Option[String] ?= None, geojson: Option[String] ?= None)
 DELETE         /api/geostreams/streams/:id                                              api.Geostreams.deleteStream(id: String)
 DELETE         /api/geostreams/dropall                                                  api.Geostreams.deleteAll
 GET            /api/geostreams/counts                                                   api.Geostreams.counts
@@ -648,9 +652,22 @@ DELETE         /api/sensors/:id                                                 
 # ----------------------------------------------------------------------
 # COMMENTS ENDPOINT
 # ----------------------------------------------------------------------
+POST           /api/comment/mention                                                     @api.Comments.mentionInComment(userID: UUID, resourceID: UUID, resourceName: String, resourceType: String, commenterId: UUID)
 POST           /api/comment/:id                                                         @api.Comments.comment(id: UUID)
 DELETE         /api/comment/:id/removeComment                                           @api.Comments.removeComment(id: UUID)
 POST           /api/comment/:id/editComment                                             @api.Comments.editComment(id: UUID)
+
+# ----------------------------------------------------------------------
+# SELECTIONS API
+# ----------------------------------------------------------------------
+GET            /selected                                                                @controllers.Selected.get
+GET            /api/selected                                                            @api.Selected.get
+POST           /api/selected                                                            @api.Selected.add
+POST           /api/selected/remove                                                     @api.Selected.remove
+DELETE         /api/selected/files                                                      @api.Selected.deleteAll
+GET            /api/selected/files                                                      @api.Selected.downloadAll
+POST           /api/selected/clear                                                      @api.Selected.clearAll
+POST           /api/selected/tag                                                        @api.Selected.tagAll(tags: List[String])
 
 # ----------------------------------------------------------------------
 # RELATIONS API

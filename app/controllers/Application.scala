@@ -1,17 +1,19 @@
 package controllers
 
+import java.net.URL
 import javax.inject.{Inject, Singleton}
 
 import api.Permission
 import api.Permission._
-import play.api.{Logger, Routes}
+import play.api.{Logger, Play, Routes}
 import play.api.mvc.Action
 import services._
-import models.{UUID, User, Event}
+import models.{Event, UUID, User}
 import play.api.Logger
 import play.api.libs.concurrent.Execution.Implicits._
-import models.DBCounts
+import play.api.Play.current
 
+import scala.collection.immutable.List
 import scala.collection.mutable.ListBuffer
 
 /**
@@ -20,7 +22,7 @@ import scala.collection.mutable.ListBuffer
 @Singleton
 class Application @Inject() (files: FileService, collections: CollectionService, datasets: DatasetService,
                              spaces: SpaceService, events: EventService, comments: CommentService,
-                             sections: SectionService, users: UserService) extends SecuredController {
+                             sections: SectionService, users: UserService, selections: SelectionService) extends SecuredController {
   /**
    * Redirect any url's that have a trailing /
    *
@@ -29,6 +31,65 @@ class Application @Inject() (files: FileService, collections: CollectionService,
    */
   def untrail(path: String) = Action {
     MovedPermanently("/" + path)
+  }
+
+  def swaggerUI = Action { implicit request =>
+    val swagger = routes.Application.swagger().absoluteURL(Utils.https(request))
+    Redirect("http://clowder.ncsa.illinois.edu/swagger/?url=" + swagger)
+  }
+
+    /**
+    * Returns the swagger documentation customized for this site.
+    */
+  def swagger = Action  { implicit request =>
+    Play.resource("/public/swagger.yml") match {
+      case Some(resource) => {
+        val https = Utils.https(request)
+        val clowderurl = new URL(Utils.baseUrl(request))
+        val host = if (clowderurl.getPort == -1) {
+          clowderurl.getHost
+        } else {
+          clowderurl.getHost + ":" + clowderurl.getPort
+        }
+        var skipit = false
+        val result = scala.io.Source.fromInputStream(resource.openStream()).getLines().flatMap(line =>
+          if (line.matches("\\s*#")) {
+            // comment
+            line + "\n"
+          } else {
+            if (skipit && !line.startsWith(" ")) {
+              skipit = false
+            }
+            if (skipit) {
+              None
+            } else if (line.startsWith("info:")) {
+              skipit = true
+              "info:\n" +
+                "  version: \"1\"\n" +
+                "  title: " + AppConfiguration.getDisplayName + "\n" +
+                "  description: " + AppConfiguration.getWelcomeMessage + "\n" +
+                "  contact: " + "\n" +
+                "    name: " + AppConfiguration.getDisplayName + "\n" +
+                "    url: " + routes.Application.email().absoluteURL(https) + "\n" +
+                "  termsOfService: " + routes.Application.tos().absoluteURL(https) + "\n"
+            } else if (line.startsWith("host:")) {
+              skipit = true
+              "host: " + host + "\n"
+            } else if (line.startsWith("basePath")) {
+              skipit = true
+              "basePath: " + clowderurl.getPath + "/api" + "\n"
+            } else if (line.startsWith("schemes:")) {
+              skipit = true
+              "schemes:\n  - " + clowderurl.getProtocol + "\n"
+            } else {
+              line + "\n"
+            }
+          }
+        )
+        Ok(result.mkString)
+      }
+      case None => NotFound("Could not find swagger.json")
+    }
   }
 
   /**
@@ -145,8 +206,13 @@ class Application @Inject() (files: FileService, collections: CollectionService,
             }
           }
         }
+        Logger.debug("User selections" + user)
+        val userSelections: List[String] =
+          if(user.isDefined) selections.get(user.get.identityId.userId).map(_.id.stringify)
+          else List.empty[String]
+        Logger.debug("User selection " + userSelections)
         Ok(views.html.home(AppConfiguration.getDisplayName, newsfeedEvents, clowderUser, datasetsUser, datasetcommentMap, decodedCollections.toList, spacesUser, true, followers, followedUsers.take(12),
-       followedFiles.take(8), followedDatasets.take(8), followedCollections.take(8),followedSpaces.take(8), Some(true)))
+       followedFiles.take(8), followedDatasets.take(8), followedCollections.take(8),followedSpaces.take(8), Some(true), userSelections))
       }
       case _ => {
         val counts = appConfig.getIndexCounts()
@@ -190,15 +256,13 @@ class Application @Inject() (files: FileService, collections: CollectionService,
     Ok("")
    }
 
-  def apidoc(path: String) = ApiHelpController.getResource("/api-docs.json/" + path)
-
   /**
    * Bookmarklet
    */
   def bookmarklet() = AuthenticatedAction { implicit request =>
     Ok(views.html.bookmarklet(Utils.baseUrl(request))).as("application/javascript")
   }
-  
+
   /**
    *  Javascript routing.
    */
@@ -232,10 +296,12 @@ class Application @Inject() (files: FileService, collections: CollectionService,
         routes.javascript.Collections.getUpdatedChildCollections,
         routes.javascript.Profile.viewProfileUUID,
         routes.javascript.Assets.at,
+        routes.javascript.Application.swaggerUI,
         api.routes.javascript.Admin.reindex,
         api.routes.javascript.Comments.comment,
         api.routes.javascript.Comments.removeComment,
         api.routes.javascript.Comments.editComment,
+        api.routes.javascript.Comments.mentionInComment,
         api.routes.javascript.Datasets.get,
         api.routes.javascript.Datasets.list,
         api.routes.javascript.Datasets.listCanEdit,
@@ -272,6 +338,7 @@ class Application @Inject() (files: FileService, collections: CollectionService,
         api.routes.javascript.Datasets.addFileEvent,
         api.routes.javascript.Datasets.getMetadataDefinitions,
         api.routes.javascript.Datasets.moveFileBetweenDatasets,
+        api.routes.javascript.Datasets.users,
         api.routes.javascript.Files.download,
         api.routes.javascript.Files.comment,
         api.routes.javascript.Files.getTags,
@@ -290,6 +357,7 @@ class Application @Inject() (files: FileService, collections: CollectionService,
         api.routes.javascript.Files.updateMetadata,
         api.routes.javascript.Files.addMetadata,
         api.routes.javascript.Files.getMetadataDefinitions,
+        api.routes.javascript.Files.users,
         api.routes.javascript.Previews.upload,
         api.routes.javascript.Previews.uploadMetadata,
         api.routes.javascript.Previews.download,
@@ -317,6 +385,13 @@ class Application @Inject() (files: FileService, collections: CollectionService,
         api.routes.javascript.Collections.listCanEdit,
         api.routes.javascript.Collections.addDatasetToCollectionOptions,
         api.routes.javascript.Collections.listPossibleParents,
+        api.routes.javascript.Selected.get,
+        api.routes.javascript.Selected.add,
+        api.routes.javascript.Selected.remove,
+        api.routes.javascript.Selected.deleteAll,
+        api.routes.javascript.Selected.downloadAll,
+        api.routes.javascript.Selected.clearAll,
+        api.routes.javascript.Selected.tagAll,
         api.routes.javascript.Collections.attachPreview,
         api.routes.javascript.Collections.attachDataset,
         api.routes.javascript.Collections.removeDataset,
@@ -329,6 +404,7 @@ class Application @Inject() (files: FileService, collections: CollectionService,
         api.routes.javascript.Collections.updateCollectionDescription,
         api.routes.javascript.Collections.getCollection,
         api.routes.javascript.Collections.removeFromSpaceAllowed,
+        api.routes.javascript.Collections.download,
         api.routes.javascript.Spaces.get,
         api.routes.javascript.Spaces.removeSpace,
         api.routes.javascript.Spaces.list,
@@ -350,6 +426,7 @@ class Application @Inject() (files: FileService, collections: CollectionService,
         api.routes.javascript.Users.follow,
         api.routes.javascript.Users.unfollow,
         api.routes.javascript.Users.updateName,
+        api.routes.javascript.Users.list,
         api.routes.javascript.Relations.findTargets,
         api.routes.javascript.Relations.add,
         api.routes.javascript.Relations.delete,
@@ -419,7 +496,7 @@ class Application @Inject() (files: FileService, collections: CollectionService,
         controllers.routes.javascript.Events.getEvents,
         controllers.routes.javascript.Collections.sortedListInSpace,
         controllers.routes.javascript.Datasets.sortedListInSpace,
-        controllers.routes.javascript.Collections.collection
+        controllers.routes.javascript.Users.sendEmail
       )
     ).as(JSON) 
   }

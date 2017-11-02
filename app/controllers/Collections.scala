@@ -22,7 +22,7 @@ import play.api.i18n.Messages
 @Singleton
 class Collections @Inject() (datasets: DatasetService, collections: CollectionService, previewsService: PreviewService,
                             spaceService: SpaceService, users: UserService, events: EventService,
-                            appConfig: AppConfigurationService) extends SecuredController {
+                            appConfig: AppConfigurationService, selections: SelectionService) extends SecuredController {
 
   /**
    * String name of the Space such as 'Project space' etc. parsed from conf/messages
@@ -228,7 +228,7 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
   /**
    * List collections.
    */
-  def list(when: String, date: String, limit: Int, space: Option[String], mode: String, owner: Option[String], showPublic: Boolean) = UserAction(needActive = false) { implicit request =>
+  def list(when: String, date: String, limit: Int, space: Option[String], mode: String, owner: Option[String], showPublic: Boolean, showOnlyShared : Boolean) = UserAction(needActive=false) { implicit request =>
     implicit val user = request.user
     val nextPage = (when == "a")
     val person = owner.flatMap(o => users.get(UUID(o)))
@@ -271,9 +271,9 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
           }
           case _ => {
             if (date != "") {
-              collections.listAccess(date, nextPage, limit, Set[Permission](Permission.ViewCollection), request.user, request.user.fold(false)(_.superAdminMode), showPublic)
+              collections.listAccess(date, nextPage, limit, Set[Permission](Permission.ViewCollection), request.user, request.user.fold(false)(_.superAdminMode), showPublic, showOnlyShared)
             } else {
-              collections.listAccess(limit, Set[Permission](Permission.ViewCollection), request.user, request.user.fold(false)(_.superAdminMode), showPublic)
+              collections.listAccess(limit, Set[Permission](Permission.ViewCollection), request.user, request.user.fold(false)(_.superAdminMode), showPublic, showOnlyShared)
             }
 
           }
@@ -289,7 +289,7 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
         case None => {
           space match {
             case Some(s) => collections.listSpace(first, nextPage = false, 1, s)
-            case None => collections.listAccess(first, nextPage = false, 1, Set[Permission](Permission.ViewCollection), request.user, request.user.fold(false)(_.superAdminMode), showPublic)
+            case None => collections.listAccess(first, nextPage = false, 1, Set[Permission](Permission.ViewCollection), request.user, request.user.fold(false)(_.superAdminMode), showPublic, showOnlyShared)
           }
         }
       }
@@ -310,7 +310,7 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
         case None => {
           space match {
             case Some(s) => collections.listSpace(last, nextPage = true, 1, s)
-            case None => collections.listAccess(last, nextPage = true, 1, Set[Permission](Permission.ViewCollection), request.user, request.user.fold(false)(_.superAdminMode), showPublic)
+            case None => collections.listAccess(last, nextPage = true, 1, Set[Permission](Permission.ViewCollection), request.user, request.user.fold(false)(_.superAdminMode), showPublic, showOnlyShared)
           }
         }
       }
@@ -557,7 +557,8 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
           var collectionSpaces: List[ProjectSpace] = List.empty[ProjectSpace]
           var collectionSpaces_canRemove: Map[ProjectSpace, Boolean] = Map.empty
           collection.spaces.map {
-            sp=> spaceService.get(sp) match {
+            sp =>
+              spaceService.get(sp) match {
                 case Some(s) => {
                   collectionSpaces = s :: collectionSpaces
                   var removeFromSpace = removeFromSpaceAllowed(dCollection.id, s.id)
@@ -596,9 +597,13 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
               }
             })
           }
+          val userSelections = user match {
+            case Some(u) => selections.get(u.email.get).map(ds => ds.id.toString)
+            case None => List.empty
+          }
           Ok(views.html.collectionofdatasets(decodedDatasetsInside.toList, decodedChildCollections.toList,
             Some(decodedParentCollections.toList), dCollection, filteredPreviewers.toList, commentMap, Some(collectionSpaces_canRemove),
-            prevd, nextd, prevcc, nextcc, limit, canAddToParent))
+            prevd,nextd, prevcc, nextcc, limit, canAddToParent, userSelections))
 
         }
         case None => {
@@ -637,7 +642,17 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
         } else {
           -1
         }
-        Ok(views.html.collections.datasetsInCollection(decodedDatasetsInside.toList, commentMap, id, prev, next))
+        user match {
+          case Some(u) => {
+            val selectIds = selections.get(u.email.get).map(d => {
+              d.id.toString
+            })
+            Ok(views.html.collections.datasetsInCollection(decodedDatasetsInside.toList, commentMap, id, prev, next, selectIds))
+          }
+          case None => Ok(views.html.collections.datasetsInCollection(decodedDatasetsInside.toList, commentMap, id, prev, next, List.empty))
+        }
+
+
       }
       case None => Logger.error("Error getting " + Messages("collection.title") + " " + id); BadRequest(Messages("collection.title") + " not found")
     }
@@ -720,9 +735,8 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
 
         if(userList.nonEmpty) {
           Ok(views.html.collections.users(collection, userListSpaceRoleTupleMap, userList))
+        } else Redirect(routes.Collections.collection(id)).flashing("error" -> s"Error: No users found for collection $id.")
         }
-        else Redirect(routes.Collections.collection(id)).flashing("error" -> s"Error: No users found for collection $id.")
-      }
       case None => Redirect(routes.Collections.collection(id)).flashing("error" -> s"Error: Collection $id not found.")
     }
 
@@ -791,9 +805,9 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
           }
           case None => {
             if (date != "") {
-              (collections.listAccess(date, nextPage, limit, Set[Permission](Permission.ViewCollection), request.user, request.user.fold(false)(_.superAdminMode), true)).filter((c: Collection) => c.parent_collection_ids.contains(parentCollectionId) == true)
+              (collections.listAccess(date, nextPage, limit, Set[Permission](Permission.ViewCollection), request.user, request.user.fold(false)(_.superAdminMode), true, false)).filter((c : Collection) => c.parent_collection_ids.contains(parentCollectionId) == true)
             } else {
-              (collections.listAccess(limit, Set[Permission](Permission.ViewCollection), request.user, request.user.fold(false)(_.superAdminMode), true)).filter((c: Collection) => c.parent_collection_ids.contains(parentCollectionId) == true)
+              (collections.listAccess(limit, Set[Permission](Permission.ViewCollection), request.user, request.user.fold(false)(_.superAdminMode), true, false)).filter((c : Collection) => c.parent_collection_ids.contains(parentCollectionId) == true)
             }
 
           }
@@ -811,7 +825,7 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
         case None => {
           space match {
             case Some(s) => (collections.listSpace(first, nextPage = false, 1, s)).filter((c: Collection) => c.parent_collection_ids.contains(parentCollectionId) == true)
-            case None => (collections.listAccess(first, nextPage = false, 1, Set[Permission](Permission.ViewCollection), request.user, request.user.fold(false)(_.superAdminMode), true)).filter((c: Collection) => c.parent_collection_ids.contains(parentCollectionId) == true)
+            case None => (collections.listAccess(first, nextPage = false, 1, Set[Permission](Permission.ViewCollection), request.user, request.user.fold(false)(_.superAdminMode), true, false)).filter((c : Collection) => c.parent_collection_ids.contains(parentCollectionId) == true)
           }
         }
       }
@@ -832,7 +846,7 @@ class Collections @Inject() (datasets: DatasetService, collections: CollectionSe
         case None => {
           space match {
             case Some(s) => (collections.listSpace(last, nextPage = true, 1, s)).filter((c: Collection) => c.parent_collection_ids.contains(parentCollectionId) == true)
-            case None => (collections.listAccess(last, nextPage = true, 1, Set[Permission](Permission.ViewCollection), request.user, request.user.fold(false)(_.superAdminMode), true)).filter((c: Collection) => c.parent_collection_ids.contains(parentCollectionId) == true)
+            case None => (collections.listAccess(last, nextPage = true, 1, Set[Permission](Permission.ViewCollection), request.user, request.user.fold(false)(_.superAdminMode), true,false)).filter((c : Collection) => c.parent_collection_ids.contains(parentCollectionId) == true)
           }
         }
       }

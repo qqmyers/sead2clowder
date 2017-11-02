@@ -23,7 +23,7 @@
                 <li><div id="format">File Formats: </div></li>
                 <li>@Messages("owner.label"): @curationObject.author.fullName</li>
                 <li>Created: @curationObject.created.format("MMM dd, yyyy")</li>
-              </ul>
+            </ul>
             @if(Permission.checkPermission(Permission.EditStagingArea, ResourceRef(ResourceRef.space, curationObject.space))){
                 <a class="btn btn-sm btn-link" href="@routes.Spaces.stagingArea(curationObject.space)">
                     <span class="glyphicon glyphicon-briefcase"></span> Staging Area</a>
