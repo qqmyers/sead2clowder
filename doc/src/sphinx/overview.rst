@@ -27,5 +27,6 @@ Data Model
 Clowder is designed to support any data format and multiple research domains and contains three major extension points:
 preprocessing, processing and previewing.
 
-.. image:: _static/data-model.jpg
+.. image:: _static/data-model.png
+    :width: 750px
 

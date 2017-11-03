@@ -58,8 +58,6 @@ Developer's Guide
 
     architecture
     setup_dev
-    source
-    setup
     extractors
     previewers
     api
