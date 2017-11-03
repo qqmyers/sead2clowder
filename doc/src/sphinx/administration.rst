@@ -41,8 +41,8 @@ Before installing Clowder make sure you have looked at the :ref:`requirements` a
 
 The first step is for you to figure out which one to use, there are two major versions to choose from:
 
-* `Latest stable version <https://opensource.ncsa.illinois.edu/projects/artifacts.php?key=CATS&version=1.3.2&filename=clowder-1.3.2.zip>`_ - This version is more tested, but is not as up to date as the development version.
-* `Latest development version <https://opensource.ncsa.illinois.edu/projects/artifacts.php?key=CATS&version=1.3.2&filename=clowder-1.3.2.zip>`_ - This version contains the latest code and has been lightly tested.
+* `Latest stable version <https://opensource.ncsa.illinois.edu/projects/artifacts.php?key=CATS>`_ - This version is more tested, but is not as up to date as the development version.
+* `Latest development version <https://opensource.ncsa.illinois.edu/projects/artifacts.php?key=CATS>`_ - This version contains the latest code and has been lightly tested.
 
 After downloading the version you have selected you will unzip that version.
 
@@ -185,8 +185,8 @@ Make sure you have backed up your database.
 
 Download the version you want to install, some common versions are:
 
-* `Latest stable version <https://opensource.ncsa.illinois.edu/projects/artifacts.php?key=CATS&version=0.9.3&filename=clowder-0.9.3.zip>`_ - This version is more tested, but is not as up to date as the development version.
-* `Latest development version <https://opensource.ncsa.illinois.edu/projects/artifacts.php?key=CATS&version=0.9.x-SNAPSHOT&filename=clowder-0.9.x-SNAPSHOT.zip>`_ - This version contains the latest code and has been lightly tested.
+* `Latest stable version <https://opensource.ncsa.illinois.edu/projects/artifacts.php?key=CATS>`_ - This version is more tested, but is not as up to date as the development version.
+* `Latest development version <https://opensource.ncsa.illinois.edu/projects/artifacts.php?key=CATS>`_ - This version contains the latest code and has been lightly tested.
 
 Stop the current version of Clowder you have running
 
