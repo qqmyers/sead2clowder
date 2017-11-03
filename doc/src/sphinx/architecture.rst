@@ -8,7 +8,8 @@ Information in Clowder is organized using the following data model:
 Clowder uses a variety of technologies to accomplish its goals. The overall architecture of a typical deployment looks
 as follows:
 
-.. image:: _static/architecture.jpg
+.. image:: _static/architecture.png
+    :width: 800px
 
 The web application and individual extractors comprise most of the custom Clowder code and the core of the system.
 Most of the other blocks in the diagram are external services Clowder depends on. The next section covers how to

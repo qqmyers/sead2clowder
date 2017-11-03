@@ -1,5 +1,6 @@
 .. image:: _static/logo_full.png
    :alt: Clowder: web data management system, bringing the cats to the cloud
+   :width: 750px
 
 Welcome to Clowder's documentation. Clowder is a web-based data management system that allows users to share, annotate,
 organize and analyze large collections of datasets.
@@ -26,6 +27,13 @@ User's Guide
     :maxdepth: 2
 
     overview
+    ug_signingup
+    ug_homepage
+    ug_datasets
+    ug_collections
+    ug_spaces
+    ug_search
+    ug_following
     interface
 
 

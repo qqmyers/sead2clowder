@@ -18,7 +18,7 @@ To start using Clowder using docker you can use the `docker compose file <https:
 Requirements
 ************
 
-Following is a list of requirements for the Clowder software. Besides JAVA you can have all other services/software installed on other machines and can configure Clowder to communicate with these services. Items marked as always are hard requirements (Java and mongo), the others are only required if you want to enable certain features in Clowder.
+Following is a list of requirements for the Clowder software. Besides Java you can have all other services/software installed on other machines and can configure Clowder to communicate with these services. Items marked as always are hard requirements (Java and mongo), the others are only required if you want to enable certain features in Clowder.
 
 ============== ======= ==================== =====
 Software       Version Required for         Notes
@@ -26,7 +26,7 @@ Software       Version Required for         Notes
 Java           1.8+    always               The Clowder software is written in Scala and javascript and requires Java to execute. Clowder has been tested with OpenJDK.
 MongoDB        2.2+    always               Clowder uses MongoDB to store the information about the files and if configured the files as well.
 RabbitMQ       3.5+    extractors           RabbitMQ is used to communicate between Clowder and the extractors. When deploying extractors it is required to deploy RabbitMQ as well.
-ElasticSearch  1.3     searching            ElasticSearch is used to search Clowder. We have not tested Clowder with version 2.0 or larger of ElasticSearch
+ElasticSearch  1.3     searching            ElasticSearch is used to search Clowder. We have not tested Clowder with version 2.0 or larger of ElasticSearch.
 GeoServer      2.7+    geospatial overlays  GeoServer is used with the geospatial extractor to generate overlays for maps.
 Versus         0.1+    content based search Versus is used to allow the user to do content based searching. This also requires the versus extractor, and thus the RabbitMQ system.
 ============== ======= ==================== =====

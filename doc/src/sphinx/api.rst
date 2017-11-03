@@ -1,7 +1,7 @@
 Using the API
 =============
 
-The RESTFul application programming interface is the best way to interact with Clowder programmatically. Much of the web
+The RESTful application programming interface is the best way to interact with Clowder programmatically. Much of the web
 frontend and the extractors use this same API to interact with the system.
 
 Following is a brief description of all the available endpoints. For more information take a look at the source under
@@ -127,8 +127,8 @@ you can use it to get and post data to Clowder.
 
 **When to use**
 
-pyClowder 2 provides straightforward submodules for various Clowder API endpoints. Python scripts that interact with
-Clowder can usually be simplified by replacing custom implementations with calls to the appropriate pyClowder 2 methods.
+pyClowder2 provides straight forward submodules for various Clowder API endpoints. Python scripts that interact with
+Clowder can usually be simplified by replacing custom implementations with calls to the appropriate pyClowder2 methods.
 
 - **files** (e.g. upload/download/get metadata/update/submit for extraction)
 - **datasets** (e.g. create/download/get metadata & contents/submit for extraction)
@@ -137,4 +137,4 @@ Clowder can usually be simplified by replacing custom implementations with calls
 
 For details about pyClowder2 functions and how they can be used, please see the `library documentation <https://opensource.ncsa.illinois.edu/bitbucket/projects/CATS/repos/pyclowder2/browse/docs>`_.
 
-pyClowder 2 is updated as relevant API endpoints in Clowder are added or changed, so by using this library your code is better insulated from breaking changes as well.
+pyClowder2 is updated as relevant API endpoints in Clowder are added or changed, so by using this library your code is better insulated from breaking changes as well.

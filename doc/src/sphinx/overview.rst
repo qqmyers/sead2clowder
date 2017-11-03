@@ -20,7 +20,6 @@ The ugly?
 ---------
 
 * It's research software, use at your own risk
-* A 1.0 version has not been released yet
 
 Data Model
 ------------
@@ -28,5 +27,5 @@ Data Model
 Clowder is designed to support any data format and multiple research domains and contains three major extension points:
 preprocessing, processing and previewing.
 
-.. image:: _static/dataset.png
+.. image:: _static/data-model.jpg
 
