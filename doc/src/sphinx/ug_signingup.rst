@@ -1,3 +1,4 @@
+.. index:: Signing Up
 Signing Up
 ================================
 

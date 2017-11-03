@@ -1,4 +1,5 @@
-Datasets 
+.. index:: Datasets
+Datasets
 ===========
   A group of files that through some defined relationship or corresponding metadata are strongly tied together and not representable otherwise by the individual files.
  

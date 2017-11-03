@@ -1,3 +1,4 @@
+
 .. image:: _static/logo_full.png
    :alt: Clowder: web data management system, bringing the cats to the cloud
    :width: 750px

@@ -1,3 +1,4 @@
+.. index:: Development Environment
 Development Environment
 =============================
 

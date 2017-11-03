@@ -1,3 +1,4 @@
+.. index: Home Page
 Home Page
 =========
 

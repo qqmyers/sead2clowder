@@ -1,10 +1,7 @@
-Interface
-============
-
-Once you have successfully installed Clowder, you can browse and create spaces, collections and datasets.
+.. index:: Publishing Data
 
 Publishing Data
----------------------------
+===============
 
 Clowder directly supports submission of datasets to known repositories for publication. Your Clowder administrator must
 enable services.StagingAreaPlugin in order to access these services.

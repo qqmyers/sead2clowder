@@ -1,4 +1,5 @@
-Spaces 
+.. index:: Spaces
+Spaces
 ========
 
 A space is a group of collections, data sets, and files with defined user access rights. Spaces are used to share data within datasets and collections with other users. There are different permissions assigned to each role. The 3 most common roles are Admins, Editors, and Viewers. In summary,  a viewer can only see the datasets, files and collections within a space. An editor, besides the view privileges can add new datasets and collections to the space, as well as remove them, it can also edit the datasets and collections within the space. An admin can do what an editor does and also edit the space itself, invite and remove people from the space, edit the extractor available. Note: Roles are customizable there is a section below about permissions and roles. 

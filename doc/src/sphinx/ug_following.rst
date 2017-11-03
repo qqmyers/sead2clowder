@@ -1,4 +1,4 @@
-
+.. index:: Following
 Following
 ===========
 You can follow spaces, collections, datasets, files and users. 
