@@ -1,10 +1,11 @@
 #Fields requiring values
 
 #initialAdmins=""
-#stagingarea.uri = "http://seadva-test.d2i.indiana.edu/sead-c3pr/api/researchobjects"
-#matchmaker.uri =  "http://seadva-test.d2i.indiana.edu/sead-c3pr/api/researchobjects/matchingrepositories"
-#publishData.list.uri = "http://seadva-test.d2i.indiana.edu/sead-c3pr/api/search"
-#people.uri = "http://seadva-test.d2i.indiana.edu/sead-c3pr/api/people"
+#stagingarea.uri = "http://d2i-dev.d2i.indiana.edu:8081/sead-c3pr/api/researchobjects"
+#matchmaker.uri =  "http://d2i-dev.d2i.indiana.edu:8081/sead-c3pr/api/researchobjects/matchingrepositories"
+#publishData.list.uri = "http://d2i-dev.d2i.indiana.edu:8081/sead-c3pr/api/search"
+#people.uri = "http://d2i-dev.d2i.indiana.edu:8081/sead-c3pr/api/people"
+SEADservices.uri = "http://d2i-dev.d2i.indiana.edu:8081/sead-c3pr/api/"
 #application.secret=""
 #commKey=
 
