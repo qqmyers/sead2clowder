@@ -414,6 +414,9 @@ class MongoSalatPlugin(app: Application) extends Plugin {
     
     // Remove collections for deprecated forms of metadata 
     updateMongo("remove-deprecated-metadata-collections", updateMetadataStorage)
+
+    // Capture original filename from FRBR metadata supplied by SEAD Migrator 
+    updateMongo("populate-original-filename", updateOriginalFilename)
   }
 
   private def updateMongo(updateKey: String, block: () => Unit): Unit = {
@@ -1381,5 +1384,39 @@ class MongoSalatPlugin(app: Application) extends Plugin {
     private def updateMetadataStorage(): Unit = {
     collection("datasetxmlmetadata").drop()
       
+  }
+
+  private def updateOriginalFilename(): Unit = {
+
+    val metadataService: MetadataService = DI.injector.getInstance(classOf[MetadataService])
+    val mdQuery = MongoDBObject("attachedTo.resourceType" -> "file", "creator.typeOfAgent" -> "cat:user")
+    val attachedMdCount = collection("metadata").count(mdQuery)
+
+    if (attachedMdCount > 0) {
+      // There is file digest metadata for this file, so check it
+      collection("metadata").find(mdQuery).foreach { md =>
+        md.getAs[DBObject]("content") match {
+          case Some(content) => {
+            val path = content.getAsOrElse[String]("Upload Path", "")
+            if (path.length > 0) {
+              if (path.lastIndexOf("/") >= 0) {
+                Logger.info("Assigning name/: " + path.substring(path.lastIndexOf("/")+1) + " from path " + path)
+                md.getAs[DBObject]("attachedTo") match {
+                  case Some(ref) => {
+                                  collection("uploads").update(MongoDBObject("_id" -> new ObjectId(ref.get("_id").toString())),
+                  MongoDBObject("$set" -> MongoDBObject(
+                    "originalname" -> path.substring(path.lastIndexOf("/")+1))), false, false, WriteConcern.Safe)
+                  
+                  }
+                  case _ => Logger.info("Nope")
+                }
+              }
+
+            }
+
+          }
+        }
+      }
+    }
   }
 }
