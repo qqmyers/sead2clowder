@@ -2,7 +2,7 @@
 Administration
 ==============
 
-There are two options for installation. You can either use `Docker <http://docker.com>`_ for installation or install all services on either a single machine or multiple machines yourself. The quickest method is :ref:`docker_install` installation. If you choose to install clowder by yourself see :ref:`requirements`
+There are two options for installation. You can either use `Docker <http://docker.com>`_ for installation or install all services on either a single machine or multiple machines yourself. The quickest method is :ref:`docker_install` installation. If you choose to install Clowder by yourself see :ref:`requirements`
 
 .. _docker_install:
 
@@ -10,7 +10,7 @@ There are two options for installation. You can either use `Docker <http://docke
 Docker
 ******
 
-To start using clowder using docker you can use the `docker compose file <https://opensource.ncsa.illinois.edu/bitbucket/projects/CATS/repos/clowder/browse/docker-compose.yml>`_. This will start docker
+To start using Clowder using docker you can use the `docker compose file <https://opensource.ncsa.illinois.edu/bitbucket/projects/CATS/repos/clowder/browse/docker-compose.yml>`_. This will start docker
 
 .. _requirements:
 
@@ -18,16 +18,16 @@ To start using clowder using docker you can use the `docker compose file <https:
 Requirements
 ************
 
-Following is a list of requirements for the Clowder software. Besides JAVA you can have all other services/software installed on other machines and can configure clowder to communicate with these services. Items marked as always are hard requirements (java and mongo), the others are only required if you want to enable certain features in clowder.
+Following is a list of requirements for the Clowder software. Besides JAVA you can have all other services/software installed on other machines and can configure Clowder to communicate with these services. Items marked as always are hard requirements (Java and mongo), the others are only required if you want to enable certain features in Clowder.
 
 ============== ======= ==================== =====
 Software       Version Required for         Notes
 ============== ======= ==================== =====
-JAVA           1.8+    always               The clowder software is written in Scala and javascript and requires JAVA to execute. Clowder has been tested with OpenJDK
+Java           1.8+    always               The Clowder software is written in Scala and javascript and requires Java to execute. Clowder has been tested with OpenJDK.
 MongoDB        2.2+    always               Clowder uses MongoDB to store the information about the files and if configured the files as well.
 RabbitMQ       3.5+    extractors           RabbitMQ is used to communicate between Clowder and the extractors. When deploying extractors it is required to deploy RabbitMQ as well.
-ElasticSearch  1.3     searching            ElasticSearch is used to search Clowder. We have not tested clowder with version 2.0 or larger of ElasticSearch
-GeoServer      2.7+    geospatial overlays  GeoServer is used to with the geospatial extractor to generate overlays for maps.
+ElasticSearch  1.3     searching            ElasticSearch is used to search Clowder. We have not tested Clowder with version 2.0 or larger of ElasticSearch
+GeoServer      2.7+    geospatial overlays  GeoServer is used with the geospatial extractor to generate overlays for maps.
 Versus         0.1+    content based search Versus is used to allow the user to do content based searching. This also requires the versus extractor, and thus the RabbitMQ system.
 ============== ======= ==================== =====
 
@@ -36,18 +36,18 @@ Versus         0.1+    content based search Versus is used to allow the user to 
 Installation
 ************
 
-Before installing clowder make sure you have looked at the :ref:`requirements` and have setup all the software that is needed.
+Before installing Clowder make sure you have looked at the :ref:`requirements` and have setup all the software that is needed.
 
 The first step is for you to figure out which one to use, there are two major versions to choose from:
 
-* `Latest stable version <https://opensource.ncsa.illinois.edu/projects/artifacts.php?key=CATS&version=0.9.3&filename=clowder-0.9.3.zip>`_ - This version is more tested, but is not as up to date as the development version.
-* `Latest development version <https://opensource.ncsa.illinois.edu/projects/artifacts.php?key=CATS&version=0.9.x-SNAPSHOT&filename=clowder-0.9.x-SNAPSHOT.zip>`_ - This version contains the latest code and has been lightly tested.
+* `Latest stable version <https://opensource.ncsa.illinois.edu/projects/artifacts.php?key=CATS&version=1.3.2&filename=clowder-1.3.2.zip>`_ - This version is more tested, but is not as up to date as the development version.
+* `Latest development version <https://opensource.ncsa.illinois.edu/projects/artifacts.php?key=CATS&version=1.3.2&filename=clowder-1.3.2.zip>`_ - This version contains the latest code and has been lightly tested.
 
 After downloading the version you have selected you will unzip that version.
 
-The final step in the installation is to customize your installation of clowder. The customizations of the clowder software are stored in the custom folder inside the clowder installation. The main two files you will need to configure are custom.conf and play.plugins. Adding changes made to the files in the conf folder will NOT be used by clowder.
+The final step in the installation is to customize your installation of Clowder. The customizations of the Clowder software are stored in the custom folder inside the Clowder installation. The main two files you will need to configure are custom.conf and play.plugins. Adding changes made to the files in the conf folder will NOT be used by Clowder.
 
-The play.plugins describes all the additional plugins that should be enabled. This file can only add additional plugins, and is not capable of turning of any of the `default plugins <https://opensource.ncsa.illinois.edu/bitbucket/projects/CATS/repos/clowder/browse/conf/play.plugins>`_. For example the following play.plugins file will add some additional plugins:
+The play.plugins describes all the additional plugins that should be enabled. This file can only add additional plugins, and is not capable of turning off any of the `default plugins <https://opensource.ncsa.illinois.edu/bitbucket/projects/CATS/repos/clowder/browse/conf/play.plugins>`_. For example the following play.plugins file will add some additional plugins:
 
 .. code-block:: properties
   :caption: play.plugins
@@ -64,7 +64,7 @@ The file custom.conf file is used to overwrite any of the defaults values for Cl
   # mongodb
   mongodb.default="mongodb://mongoserver:27017/mongodatabase"
    
-  # where to store the blobs (higly recommended)
+  # where to store the blobs (highly recommended)
   service.byteStorage=services.filesystem.DiskByteStorageService
   medici2.diskStorage.path="/home/clowder/data"
    
@@ -101,7 +101,7 @@ The file custom.conf file is used to overwrite any of the defaults values for Cl
 Upgrading
 *********
 
-This page describes how to upgrade the Clowder software. The steps described will do an in-place upgrade of clowder. The biggest advantage of this upgrade is that it is fast and requires the least amount of changes to the current system.
+This page describes how to upgrade the Clowder software. The steps described will do an in-place upgrade of Clowder. The biggest advantage of this upgrade is that it is fast and requires the least amount of changes to the current system.
 
 Before you start
 ================
@@ -126,7 +126,7 @@ If you have any problems with your test environment upgrade which you cannot res
 Backing up your database
 ========================
 
-Before you begin the upgrade process, make you have upgraded your database. During the upgrade process your database will be updated to match withe the new version of the software. If you ever want to rollback to a previous version of the software you will have to rollback the database as well. Following are command to backup your database, as well as the commands needed to restore the specific database
+Before you begin the upgrade process, make you have upgraded your database. During the upgrade process your database will be updated to match with the new version of the software. If you ever want to rollback to a previous version of the software you will have to rollback the database as well. Following are commands to backup your database, as well as the commands needed to restore the specific database
 
 Backing up MongoDB
 ------------------
@@ -141,7 +141,7 @@ This will describe how to backup the mongo database. If you have the files store
 Restoring MongoDB
 -----------------
 
-This will describe how to backup the mongo database. If you have the files stored in the mongo database (default) this can take a long time and take up a significant amount of space since it will also restore the actual files. There are two ways to restore the mongo database, the first one will drop the database first, and thus will also remove any additional collections you added. The second way will only drop those collections that are imported, this can leave some additional collections that could create trouble in future updates.
+This describes how to restore the mongo database. If you have the files stored in the mongo database (default) this can take a long time and take up a significant amount of space since it will also restore the actual files. There are two ways to restore the mongo database, the first one will drop the database first, and thus will also remove any additional collections you added. The second way will only drop those collections that are imported, this can leave some additional collections that could create trouble in future updates.
 
 .. code-block:: bash
   :caption: Restoring MongoDB 1
@@ -178,7 +178,7 @@ To restore the database geostream database you can use the following command.
 Performing the upgrade
 ======================
 
-The actual update consists of a few steps. After these steps are completed you will have an updated version of clowder.
+The actual update consists of a few steps. After these steps are completed you will have an updated version of Clowder.
 
 Make sure you have backed up your database. 
 
@@ -187,15 +187,15 @@ Download the version you want to install, some common versions are:
 * `Latest stable version <https://opensource.ncsa.illinois.edu/projects/artifacts.php?key=CATS&version=0.9.3&filename=clowder-0.9.3.zip>`_ - This version is more tested, but is not as up to date as the development version.
 * `Latest development version <https://opensource.ncsa.illinois.edu/projects/artifacts.php?key=CATS&version=0.9.x-SNAPSHOT&filename=clowder-0.9.x-SNAPSHOT.zip>`_ - This version contains the latest code and has been lightly tested.
 
-Stop the current version of clowder you have running
+Stop the current version of Clowder you have running
 
 Move the folder of the current version
 
-Unzip the downloaded version of clowder
+Unzip the downloaded version of Clowder
 
-Move the custom folder of the original clowder to the custom folder of the new clowder
+Move the custom folder of the original Clowder to the custom folder of the new Clowder
 
-Start clowder. Make sure your startup script uses the flag `-DMONGOUPDATE=1` and `-DPOSTGRESUPDATE=1` to update the databases. If the database is not updated the application might not run correctly and/or you might not be able to login.
+Start Clowder. Make sure your startup script uses the flag `-DMONGOUPDATE=1` and `-DPOSTGRESUPDATE=1` to update the databases. If the database is not updated the application might not run correctly and/or you might not be able to login.
 
 To make this process easier we have a script "update-clowder.sh" that will perform all these tasks for you (except for the backup, your are still responsible for the backup). The script does assume you have in the startup script that will have the UPDATE flags enabled.
 
@@ -226,7 +226,7 @@ Congratulations! You have completed your Clowder upgrade.
 Customization
 *************
 
-To customize clowder you can put all configuration changes in a folder called custom inside the clowder folder. If you are working on the source code this folder is excluded from git so you can use that also to customize your development environment, and not accidentally commit changes to either play.plugins or application.conf. If you make any changes to the files in the custom folder you will need to restart the application (both in production and development).
+To customize Clowder you can put all configuration changes in a folder called custom inside the Clowder folder. If you are working on the source code this folder is excluded from git so you can use that also to customize your development environment, and not accidentally commit changes to either play.plugins or application.conf. If you make any changes to the files in the custom folder you will need to restart the application (both in production and development).
 
 play.plugins
 ============
@@ -242,7 +242,7 @@ The play.plugins file is used to enable plugins. You can only enable plugins, yo
 custom.conf
 ===========
 
-The custom.conf file is used to override any of the changes in the application.conf or any included conf files (such as securesocial.conf). One change every instance of clowder should do is to modify the commKey and application.secret. Common changes we do is to modify clowder to use a directory on disk to store all blobs instead of storing them in mongo. Following is an example that we use for some of the instances we have at NCSA.
+The custom.conf file is used to override any of the changes in the application.conf or any included conf files (such as securesocial.conf). One change every instance of Clowder should do is to modify the commKey and application.secret. Common changes we do is to modify Clowder to use a directory on disk to store all blobs instead of storing them in mongo. Following is an example that we use for some of the instances we have at NCSA.
 
 .. code-block:: properties
   :caption: custom.conf
@@ -291,7 +291,7 @@ The custom.conf file is used to override any of the changes in the application.c
 messages.XY
 ===========
 
-This allows to translate or customize certain aspects of clowder. All messages in clowder are in english and are as messages.default. Unfortunatly it is not possible to use messages.default to use for translations since it falls back to those embedded in the clowder jar files. To update the messages in english, you can use messages.en. The default is for clowder to only know about english, this can be changed in your custom.conf with application.langs="nl".
+This allows to translate or customize certain aspects of Clowder. All messages in Clowder are in english and are as messages.default. Unfortunately it is not possible to use messages.default to use for translations since it falls back to those embedded in the Clowder jar files. To update the messages in english, you can use messages.en. The default is for Clowder to only know about english, this can be changed in your custom.conf with application.langs="nl".
 
 public folder
 =============

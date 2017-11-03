@@ -21,7 +21,7 @@ To create a collection from the list of collections page click on the create but
  
 .. image:: /image/ug-collections-3.png
 
-To create a collection within a space, go into the space and click on the click on the create collection button displayed in the image below within a blue box. 
+To create a collection within a space, go into the space and click on the create collection button displayed in the image below within a blue box.
 
 .. image:: /image/ug-collections-4.png
 
