@@ -1250,12 +1250,12 @@ class Files @Inject()(
 
   /**
     * Rest endpoint,
-    * given a file id, tag this file with the name of any parent/ancestor folder or dataset containing this file.
+    * given a file id, get a list of traversing path from dataset to the parent folder containing this file.
     * @param id a file id in dataset.
-    * @return String
+    * @return a list of paths
     */
-  def accumTags(id: UUID) = PermissionAction(Permission.ViewMetadata, Some(ResourceRef(ResourceRef.file, id))) { implicit request =>
-    Logger.debug("tag file with names of any dataset and folders (parent, ancestor) which contains the file with id " + id)
+  def paths(id: UUID) = PermissionAction(Permission.ViewMetadata, Some(ResourceRef(ResourceRef.file, id))) { implicit request =>
+    Logger.debug("get a list of path from dataset to the parent folder containing the file with id " + id)
     import scala.annotation.tailrec
     @tailrec def folderPath(folder: Folder, path: List[String]) : List[String]= {
       folder.parentType match {
@@ -1267,7 +1267,7 @@ class Files @Inject()(
         }
         case "dataset" => {
           datasets.get(folder.parentId) match {
-            case Some(dataset) => folder.name :: dataset.name :: path
+            case Some(dataset) => dataset.name :: folder.name :: path
             case _ => folder.name :: path
           }
         }
@@ -1278,15 +1278,13 @@ class Files @Inject()(
     if (UUID.isValid(id.stringify)) {
       files.get(id) match {
         case Some(file) =>
-          var tags: Set[String] = Set()
           // 1. get name of dataset directorly containing this file.
           val datasetList = datasets.findByFileId(file.id)
-          tags ++= (for(dataset <- datasetList) yield(dataset.name))
-          //2. get name of any parent/ancestor folder or dataset containing this file.
+          val datasetNames = for(dataset <- datasetList) yield(dataset.name)
+          //2. get paths from datasets to the parent folders containing this file.
           val foldersContainingFile = folders.findByFileId(file.id)
-          tags ++= (for(folder <- foldersContainingFile) yield (folderPath(folder, List()))).flatten
-          files.addTags(file.id, None, None, tags.toList)
-          Ok("Success")
+          val allPaths : List[List[String]] = datasetNames +: (for(folder <- foldersContainingFile) yield (folderPath(folder, List())))
+          Ok(Json.obj("paths" -> allPaths.filterNot(_.forall(_.isEmpty))))
         case None => {
           val error_str = "The file with id " + id + " is not found."
           Logger.error(error_str)
