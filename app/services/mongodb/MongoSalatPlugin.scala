@@ -417,6 +417,9 @@ class MongoSalatPlugin(app: Application) extends Plugin {
 
     // Change from User active and serverAdmin flags to single status 
     updateMongo("change-to-user-status", updateToUserStatus)
+
+    // Capture original filename from FRBR metadata supplied by SEAD Migrator
+    updateMongo("populate-original-filename-from-path", updateOriginalFilename)
   }
 
   private def updateMongo(updateKey: String, block: () => Unit): Unit = {
@@ -1406,4 +1409,36 @@ class MongoSalatPlugin(app: Application) extends Plugin {
     }
   }
 
+
+  private def updateOriginalFilename(): Unit = {
+
+    val metadataService: MetadataService = DI.injector.getInstance(classOf[MetadataService])
+    val mdQuery = MongoDBObject("attachedTo.resourceType" -> "file", "entries.Upload Path" -> MongoDBObject("$exists" -> true))
+    collection("metadatasummary").find(mdQuery, MongoDBObject("attachedTo._id" -> 1, "entries.Upload Path" -> 1)).foreach { md =>
+      md.getAs[DBObject]("entries") match {
+        case Some(entries) => {
+          Logger.info(entries.toString())
+          val pathentry = entries.getAs[BasicDBObject]("Upload Path").get
+          //Should be only one Upload Path
+          for ((k,path:String) <- pathentry) {
+    
+            if (path.length > 0) {
+              if (path.lastIndexOf("/") >= 0) {
+                Logger.info("Assigning name/: " + path.substring(path.lastIndexOf("/") + 1) + " from path " + path)
+                md.getAs[DBObject]("attachedTo") match {
+                  case Some(ref) => {
+                    collection("uploads").update(
+                      MongoDBObject("_id" -> new ObjectId(ref.get("_id").toString())),
+                      MongoDBObject("$set" -> MongoDBObject(
+                        "originalname" -> path.substring(path.lastIndexOf("/") + 1))), false, false, WriteConcern.Safe)
+
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
 }
