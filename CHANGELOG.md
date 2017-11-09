@@ -7,7 +7,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## [In Development]
 
 ### Added
-
+- endpoint to get a list of traversing paths from datasets to the parent folders of the given file
+  [CATS-811](https://opensource.ncsa.illinois.edu/jira/browse/CATS-811)
 ### Changed
 - Created email to be sent when registerThroughAdmins=true
   [CATS-791](https://opensource.ncsa.illinois.edu/jira/browse/CATS-791)

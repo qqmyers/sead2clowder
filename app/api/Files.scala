@@ -1,5 +1,6 @@
 package api
 
+import scala.annotation.tailrec
 import java.io.FileInputStream
 import java.net.{URL, URLEncoder}
 import javax.inject.Inject
@@ -1248,32 +1249,39 @@ class Files @Inject()(
   * 
   */
 
+
+  /**
+    * get the hierarchical path from dataset to the given folder.
+    * @param folder a Folder object
+    * @param path a list name of folder/dataset
+    * @return the list of names on the hierarchical path from dataset to the given folder
+    */
+  @tailrec final def folderPath(folder: Folder, path: List[String]) : List[String]= {
+    folder.parentType match {
+      case "folder" => {
+        folders.get(folder.parentId) match {
+          case Some(fparent) => folderPath(fparent, folder.name :: path)
+          case _ => folder.name :: path
+        }
+      }
+      case "dataset" => {
+        datasets.get(folder.parentId) match {
+          case Some(dataset) => dataset.name.trim :: folder.name :: path
+          case _ => folder.name :: path
+        }
+      }
+      case _ => folder.name :: path
+    }
+  }
+
   /**
     * Rest endpoint,
-    * given a file id, get a list of traversing path from dataset to the parent folder containing this file.
+    * given a file id, get a list of traversing path from datasets to the parent folder containing this file.
     * @param id a file id in dataset.
     * @return a list of paths
     */
-  def paths(id: UUID) = PermissionAction(Permission.ViewMetadata, Some(ResourceRef(ResourceRef.file, id))) { implicit request =>
+  def paths(id: UUID) = PermissionAction(Permission.ViewFile, Some(ResourceRef(ResourceRef.file, id))) { implicit request =>
     Logger.debug("get a list of path from dataset to the parent folder containing the file with id " + id)
-    import scala.annotation.tailrec
-    @tailrec def folderPath(folder: Folder, path: List[String]) : List[String]= {
-      folder.parentType match {
-        case "folder" => {
-          folders.get(folder.parentId) match {
-            case Some(fparent) => folderPath(fparent, folder.name :: path)
-            case _ => folder.name :: path
-          }
-        }
-        case "dataset" => {
-          datasets.get(folder.parentId) match {
-            case Some(dataset) => dataset.name :: folder.name :: path
-            case _ => folder.name :: path
-          }
-        }
-        case _ => folder.name :: path
-      }
-    }
 
     if (UUID.isValid(id.stringify)) {
       files.get(id) match {
